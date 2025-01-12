@@ -1,5 +1,5 @@
 Flask
 flask-socketio
-torch
 transformers
 diffusers
+accelerate
