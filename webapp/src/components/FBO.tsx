@@ -1,9 +1,12 @@
 import { useMemo, useRef } from "react";
 import { useThree, createPortal, useFrame, extend } from "@react-three/fiber";
 import { useFBO } from "@react-three/drei";
-import { Scene, Color } from "three";
+import { Scene, Color, WebGLRenderer } from "three";
 import { button, useControls } from "leva";
 import Main from "./Main";
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:5000"); // Flask backend address
 
 const FBO = () => {
   const { viewport } = useThree();
@@ -15,7 +18,7 @@ const FBO = () => {
     bgColor: "#000000",
     testColor: "#000000",
     number: 3,
-    sendTarget: button((get) => alert(`Number value is ${get("number").toFixed(2)}`)),
+    sendTarget: button((get) => captureRenderBuffer()),
   });
 
   const FBOscene = useMemo(() => {
@@ -23,6 +26,35 @@ const FBO = () => {
     return FBOscene;
   }, []);
   const target = useFBO();
+
+  const captureRenderBuffer = () => {
+    console.log("Processing texture.");
+
+    // Create an offscreen canvas to read the texture's pixel data
+    const width = target.texture.image.width;
+    const height = target.texture.image.height;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = width;
+    canvas.height = height;
+
+    // Create a temporary WebGLRenderer to read pixels from the texture
+    const renderer = new WebGLRenderer();
+    renderer.setSize(width, height);
+    renderer.render(FBOscene, main.current.camera); // Ensure the texture is available in the render target
+
+    // Read the texture data directly into the canvas
+    const imageData = ctx.createImageData(width, height);
+    renderer.readRenderTargetPixels(target, 0, 0, width, height, imageData.data);
+
+    // Put the pixel data into the canvas and convert it to a Base64 image
+    ctx.putImageData(imageData, 0, 0);
+    const base64Image = canvas.toDataURL("image/png");
+
+    // Send the Base64 image data over the socket
+    socket.emit("rendered_image", { data: base64Image });
+    console.log("Base64 image sent to server.");
+  };
 
   useFrame((state) => {
     if (main.current.camera) {
