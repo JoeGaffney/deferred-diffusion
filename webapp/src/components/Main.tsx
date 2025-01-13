@@ -22,14 +22,33 @@ const Main = forwardRef((props, ref) => {
   return (
     <group ref={ref}>
       <OrbitControls camera={FBOcamera.current} />
-      <PerspectiveCamera near={0.001} position={[0, 0, 2]} fov={100} ref={FBOcamera} makeDefault={true} />
-      <mesh ref={box} onPointerEnter={() => handlePointer(true)} onPointerOut={() => handlePointer(false)}>
+      <PerspectiveCamera near={0.001} position={[0, 0, 10]} fov={35} ref={FBOcamera} makeDefault={true} />
+      <ambientLight intensity={1} />
+
+      <mesh
+        ref={box}
+        onPointerEnter={() => handlePointer(true)}
+        onPointerOut={() => handlePointer(false)}
+        position={[-1, 0.5, 0]}
+      >
         <icosahedronGeometry args={[0.8, 2]} />
-        <meshStandardMaterial color={0xcccccc} roughness={0.1} flatShading={true} />
+        <meshStandardMaterial color={"rgb(0, 256, 0)"} roughness={0.1} flatShading={true} />
       </mesh>
-      <mesh ref={box} onPointerEnter={() => handlePointer(true)} onPointerOut={() => handlePointer(false)}>
+      <mesh
+        ref={box}
+        onPointerEnter={() => handlePointer(true)}
+        onPointerOut={() => handlePointer(false)}
+        position={[1, 1, 0]}
+      >
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={0xcccccc} roughness={0.1} flatShading={false} />
+        <meshStandardMaterial color={"rgb(256, 0, 0)"} roughness={0.1} flatShading={true} />
+      </mesh>
+      <mesh
+        position={[0, 0, 0]} // Adjust position to place it below the box
+        rotation={[-Math.PI / 2, 0, 0]} // Rotate to make it flat
+      >
+        <planeGeometry args={[100, 100]} /> // Large plane
+        <meshStandardMaterial color={"brown"} side={2} />
       </mesh>
     </group>
   );
