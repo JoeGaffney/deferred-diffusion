@@ -1,0 +1,23 @@
+{
+  "editor.formatOnSave": true,
+  "pylint.enabled": true,
+  "pylint.args": [
+    "--max-line-length=119",
+    "--disable=missing-module-docstring",
+    "--disable=missing-class-docstring",
+    "--disable=missing-function-docstring"
+  ],
+  "black-formatter.args": ["--line-length=119"],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  },
+  "prettier.printWidth": 119,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportOptionalMemberAccess": "none"
+  }
+}

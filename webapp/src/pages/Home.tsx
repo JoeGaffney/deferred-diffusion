@@ -7,7 +7,7 @@ import FBO from "../components/FBO";
 const Home: React.FC = () => {
   return (
     <div style={{ width: "90%", height: "90%", border: "2px solid gray", backgroundColor: "black" }}>
-      <Canvas>
+      <Canvas shadows>
         {/* <OrbitControls />
         <ambientLight />
         <pointLight position={[10, 10, 10]} />

@@ -12,9 +12,11 @@ lerna-debug.log*
 venv/
 venv/pyenv.cfg
 pyenv.cfg
+__pycache__/
 
 # misc
 tmp/
+nuke/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

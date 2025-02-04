@@ -3,3 +3,5 @@ flask-socketio
 transformers
 diffusers
 accelerate
+sentencepiece
+opencv-python
