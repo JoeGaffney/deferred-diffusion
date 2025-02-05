@@ -4,15 +4,13 @@ import torch
 from diffusers import AutoPipelineForImage2Image
 
 from api.common.context import Context
+from api.utils import device_info
 
 
 # Load Stable Diffusion model
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using device: {device}")
 pipe = AutoPipelineForImage2Image.from_pretrained(
     "stabilityai/stable-diffusion-xl-refiner-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True
 )
-
 pipe.enable_model_cpu_offload()
 
 
@@ -43,7 +41,6 @@ def main(context: Context):
 
     # Save the processed image with a timestamp
     processed_image_path = context.save_image(processed_image)
-    context.log("Image processed successfully {}".format(processed_image_path))
 
 
 if __name__ == "__main__":

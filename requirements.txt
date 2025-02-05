@@ -5,3 +5,4 @@ diffusers
 accelerate
 sentencepiece
 opencv-python
+pyffmpeg
