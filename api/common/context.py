@@ -2,20 +2,21 @@ from datetime import datetime
 import math
 import os
 from diffusers.utils import export_to_video, load_image
-from api.utils.logger import logger
+from utils.logger import logger
+from utils import device_info
 
 
 class Context:
     def __init__(
         self,
         image="",
-        input_dir="./tmp",
-        max_height=round(1080 * 0.5333),  # 576
-        max_width=round(1920 * 0.5333),  # 1024
+        input_dir="../tmp",
+        max_height=576,
+        max_width=1024,
         negative_prompt="worst quality, inconsistent motion, blurry, jittery, distorted",
         num_frames=48,
         num_inference_steps=25,
-        output_dir="./tmp/outputs",
+        output_dir="../tmp/outputs",
         output_name="processed",
         prompt="Detailed, 8k, photorealistic",
         seed=42,
@@ -67,7 +68,7 @@ class Context:
 
         export_to_video(video, path, fps=fps)
 
-        self.log(f"Video saved at {path} size: {video.size}")
+        self.log(f"Video saved at {path}")
         return path
 
     def get_input_image_path(self):
@@ -102,5 +103,5 @@ class Context:
         self.orig_width, self.orig_height = image.size
 
         tmp = self.resize_image(image)
-        self.save_image(tmp, name_override="resized")
+        self.save_image(tmp, name_override="resized", with_timestamp=False)
         return tmp

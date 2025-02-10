@@ -1,18 +1,25 @@
 import torch
 from diffusers import LTXImageToVideoPipeline
-from api.common.context import Context
-from api.utils import device_info
+from utils.utils import get_16_9_resolution
+from common.context import Context
 
-model_id = "Lightricks/LTX-Video"
-pipe = LTXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
-pipe.to("cuda")
-pipe.vae.enable_tiling()
-pipe.vae.enable_slicing()
-pipe.enable_model_cpu_offload()
+pipe = None
+
+
+def get_pipeline():
+    global pipe
+    if pipe is None:
+        model_id = "Lightricks/LTX-Video"
+        pipe = LTXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
+        pipe.vae.enable_tiling()
+        pipe.vae.enable_slicing()
+        pipe.enable_model_cpu_offload()
+
+    return pipe
 
 
 def main(context: Context):
-    print("loading image")
+    pipe = get_pipeline()
     image = context.load_image()
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
 
@@ -28,16 +35,21 @@ def main(context: Context):
     ).frames[0]
 
     processed_path = context.save_video(video)
+    return processed_path
 
 
 if __name__ == "__main__":
+    width, height = get_16_9_resolution("540p")
+    width, height = get_16_9_resolution("432p")
+
     main(
         Context(
             image="tornado_v001.jpg",
             strength=0.2,
             prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
             num_inference_steps=50,
-            size_multiplier=0.3,
+            max_width=width,
+            max_height=height,
         )
     )
     # main(

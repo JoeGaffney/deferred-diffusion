@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from api.common.context import Context
+from common.context import Context
 from models.stable_video_diffusion import main as stable_video_diffusion_main
 from models.cog_video_x import main as cog_video_x_main
 from models.ltx_video import main as ltx_video_main
@@ -14,13 +14,13 @@ def diffusion():
     model = data.get("model")
     context = Context(
         image=data.get("image", ""),
-        input_dir=data.get("input_dir", "./tmp"),
-        max_height=data.get("max_height", round(1080 * 0.5333)),
-        max_width=data.get("max_width", round(1920 * 0.5333)),
+        input_dir=data.get("input_dir", "../tmp"),
+        max_height=data.get("max_height", 540),
+        max_width=data.get("max_width", 960),
         negative_prompt=data.get("negative_prompt", "worst quality, inconsistent motion, blurry, jittery, distorted"),
         num_frames=data.get("num_frames", 48),
         num_inference_steps=data.get("num_inference_steps", 25),
-        output_dir=data.get("output_dir", "./tmp/outputs"),
+        output_dir=data.get("output_dir", "../tmp/outputs"),
         output_name=data.get("output_name", "processed"),
         prompt=data.get("prompt", "Detailed, 8k, photorealistic"),
         seed=data.get("seed", 42),

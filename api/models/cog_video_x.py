@@ -1,19 +1,24 @@
 import torch
 from diffusers import CogVideoXImageToVideoPipeline
-from api.common.context import Context
-from api.utils import device_info
+from common.context import Context
 
-model_id = "THUDM/CogVideoX1.5-5b-I2V"
-pipe = CogVideoXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
-pipe.to("cuda")
+pipe = None
 
-pipe.enable_model_cpu_offload()
-pipe.vae.enable_tiling()
-pipe.vae.enable_slicing()
+
+def get_pipeline():
+    global pipe
+    if pipe is None:
+        model_id = "THUDM/CogVideoX1.5-5b-I2V"
+        pipe = CogVideoXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
+        pipe.enable_model_cpu_offload()
+        pipe.vae.enable_tiling()
+        pipe.vae.enable_slicing()
+
+    return pipe
 
 
 def main(context: Context):
-    print("loading image")
+    pipe = get_pipeline()
     image = context.load_image()
     generator = torch.Generator(device="cuda").manual_seed(42)
 
@@ -38,7 +43,7 @@ if __name__ == "__main__":
             image="tornado_v001.jpg",
             strength=0.2,
             prompt="Detailed, 8k, photorealistic, wind, grass blowing in the wind, enchance keep original elements",
-            size_multiplier=0.33,
-            num_inference_steps=10,
+            # size_multiplier=0.33,
+            # num_inference_steps=10,
         )
     )

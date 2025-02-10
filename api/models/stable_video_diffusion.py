@@ -1,18 +1,23 @@
 import torch
 from diffusers import StableVideoDiffusionPipeline
-from api.common.context import Context
-from api.utils import device_info
+from utils.utils import get_16_9_resolution
+from common.context import Context
 
-model_id = "stabilityai/stable-video-diffusion-img2vid-xt"
-pipe = StableVideoDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16, variant="fp16")
-pipe.to("cuda")
-# pipe.vae.enable_tiling()
-# pipe.vae.enable_slicing()
-pipe.enable_model_cpu_offload()
+pipe = None
+
+
+def get_pipeline():
+    global pipe
+    if pipe is None:
+        model_id = "stabilityai/stable-video-diffusion-img2vid-xt"
+        pipe = StableVideoDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16, variant="fp16")
+        pipe.enable_model_cpu_offload()
+
+    return pipe
 
 
 def main(context: Context):
-    print("loading image")
+    pipe = get_pipeline()
     image = context.load_image()
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
 
@@ -27,24 +32,28 @@ def main(context: Context):
     ).frames[0]
 
     processed_path = context.save_video(video)
+    return processed_path
 
 
 if __name__ == "__main__":
-    main(
-        Context(
-            image="space_v001.jpg",
-            output_name="space",
-            prompt="Detailed, 8k, add a spaceship, higher contrast, enchance keep original elements",
-            num_frames=24,
-            num_inference_steps=10,
-        )
-    )
+    width, height = get_16_9_resolution("450p")
     # main(
     #     Context(
-    #         image="tornado_v001.jpg",
-    #         strength=0.2,
-    #         prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
-    #         # num_inference_steps=50,
-    #         size_multiplier=0.33,
+    #         image="space_v001.jpg",
+    #         output_name="space",
+    #         prompt="Detailed, 8k, add a spaceship, higher contrast, enchance keep original elements",
+    #         num_frames=24,
+    #         num_inference_steps=10,
+    #         max_width=width,
+    #         max_height=height,
     #     )
     # )
+    main(
+        Context(
+            image="tornado_v001.jpg",
+            strength=0.2,
+            prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
+            max_width=width,
+            max_height=height,
+        )
+    )

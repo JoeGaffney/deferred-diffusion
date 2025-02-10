@@ -1,5 +1,5 @@
 from flask import Flask
-from api.common.context import Context
+from common.context import Context
 
 
 from flask import Blueprint, request, jsonify
