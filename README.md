@@ -2,8 +2,14 @@
 
 deferred-diffusion
 
-# run models from route
+# to run main
 
-python -m api.models.stable_diffusion_xl_refine
-python -m api.models.ltx_video
-python -m api.models.stable_video_diffusion
+./start_dev.bat
+
+# to test running models directly
+
+cd api/
+
+python -m models.stable_diffusion_xl_refine
+python -m models.ltx_video
+python -m models.stable_video_diffusion
