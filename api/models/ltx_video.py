@@ -13,7 +13,7 @@ pipe.enable_model_cpu_offload()
 
 def main(context: Context):
     print("loading image")
-    image = context.load_image(add_compression=True)
+    image = context.load_image()
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
 
     video = pipe.__call__(
@@ -31,30 +31,20 @@ def main(context: Context):
 
 
 if __name__ == "__main__":
-    # main(
-    #     Context(
-    #         image="space_v001.jpg",
-    #         strength=0.1,
-    #         prompt="Traveling through space towards earth, asteroids moving, god rays, Detailed, 8k, photorealistic, add a spaceship, higher contrast, enchance keep original elements",
-    #         size_multiplier=0.2,
-    #         num_inference_steps=40,
-    #     )
-    # )
-
     main(
         Context(
             image="tornado_v001.jpg",
             strength=0.2,
             prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
-            num_inference_steps=40,
-            size_multiplier=0.75,
+            num_inference_steps=50,
+            size_multiplier=0.3,
         )
     )
-    main(
-        Context(
-            image="earth_quake_v001.jpg",
-            strength=0.2,
-            prompt="Detailed, 8k, earthQuake, photorealistic",
-            size_multiplier=0.75,
-        )
-    )
+    # main(
+    #     Context(
+    #         image="earth_quake_v001.jpg",
+    #         strength=0.2,
+    #         prompt="Slow pan over a forest, trees falling, buildings shaking, Detailed, 8k, photorealistic, enchance keep original elements",
+    #         num_inference_steps=50,
+    #     )
+    # )
