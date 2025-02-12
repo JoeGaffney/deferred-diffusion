@@ -36,7 +36,7 @@ def main(context: Context):
 
 
 if __name__ == "__main__":
-    width, height = get_16_9_resolution("450p")
+    width, height = get_16_9_resolution("480p")
     # main(
     #     Context(
     #         image="space_v001.jpg",
