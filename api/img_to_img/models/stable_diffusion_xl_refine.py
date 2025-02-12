@@ -42,7 +42,7 @@ def main(context: Context):
     ).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image, with_timestamp=False)
+    processed_path = context.save_image(processed_image)
     return processed_path
 
 

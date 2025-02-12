@@ -2,8 +2,10 @@ from datetime import datetime
 import math
 import os
 from diffusers.utils import export_to_video, load_image
+from utils.utils import assure_path_exists, save_copy_with_timestamp
 from utils.logger import logger
 from utils import device_info
+import shutil
 
 
 class Context:
@@ -11,8 +13,8 @@ class Context:
         self,
         image="",
         input_dir="../tmp",
-        max_height=576,
-        max_width=1024,
+        max_height=2048,
+        max_width=2048,
         negative_prompt="worst quality, inconsistent motion, blurry, jittery, distorted",
         num_frames=48,
         num_inference_steps=25,
@@ -20,7 +22,6 @@ class Context:
         output_name="processed",
         prompt="Detailed, 8k, photorealistic",
         seed=42,
-        size_multiplier=1.0,
         strength=0.5,
     ):
         self.image = image
@@ -36,7 +37,6 @@ class Context:
         self.output_name = output_name
         self.prompt = prompt
         self.seed = seed
-        self.size_multiplier = size_multiplier
         self.strength = strength
 
         if not os.path.exists(self.output_dir):
@@ -45,30 +45,24 @@ class Context:
         if not os.path.exists(self.input_dir):
             os.makedirs(self.input_dir)
 
-    def save_image(self, image, name_override="", with_timestamp=True):
+    def save_image(self, image, name_override=""):
         name = name_override if name_override != "" else self.output_name
 
         path = os.path.join(self.output_dir, f"{name}.png")
-        if with_timestamp:
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            path = os.path.join(self.output_dir, f"{name}_{timestamp}.png")
-
         image.save(path)
-
         self.log(f"Image saved at {path} size: {image.size}")
+
+        save_copy_with_timestamp(path)
         return path
 
-    def save_video(self, video, name_override="", with_timestamp=True, fps=24):
+    def save_video(self, video, name_override="", fps=24):
         name = name_override if name_override != "" else self.output_name
 
         path = os.path.join(self.output_dir, f"{name}.mp4")
-        if with_timestamp:
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            path = os.path.join(self.output_dir, f"{name}_{timestamp}.mp4")
-
         export_to_video(video, path, fps=fps)
-
         self.log(f"Video saved at {path}")
+
+        save_copy_with_timestamp(path)
         return path
 
     def get_input_image_path(self):
@@ -80,28 +74,24 @@ class Context:
     def log(self, message):
         logger.info(message)
 
-    def resize_image(self, image):
-        width = image.size[0] * self.size_multiplier
-        height = image.size[1] * self.size_multiplier
-
+    def resize_image(self, image, division=32):
         # Ensure the new dimensions do not exceed max_width and max_height
-        width = min(width, self.max_width)
-        height = min(height, self.max_height)
+        width = min(image.size[0], self.max_width)
+        height = min(image.size[1], self.max_height)
 
-        # Adjust width and height to be divisible by 32
-        width = math.ceil(width / 32) * 32
-        height = math.ceil(height / 32) * 32
+        # Adjust width and height to be divisible by 32 or 8
+        width = math.ceil(width / division) * division
+        height = math.ceil(height / division) * division
 
         return image.resize((width, height))
 
     def resize_image_to_orig(self, image):
         return image.resize((self.orig_width, self.orig_height))
 
-    def load_image(self):
+    def load_image(self, division=32):
         image = load_image(self.get_input_image_path())
         self.log(f"Image loaded from {self.get_input_image_path()} size: {image.size}")
         self.orig_width, self.orig_height = image.size
 
-        tmp = self.resize_image(image)
-        self.save_image(tmp, name_override="resized", with_timestamp=False)
+        tmp = self.resize_image(image, division)
         return tmp

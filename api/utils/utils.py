@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import shutil
 from typing import Literal, Tuple
 from .logger import logger
 
@@ -18,3 +19,26 @@ resolutions_16_9 = {
 
 def get_16_9_resolution(resolution: Resolutions) -> Tuple[int, int]:
     return resolutions_16_9.get(resolution, (960, 540))
+
+
+def assure_path_exists(path):
+    my_dir = os.path.dirname(path)
+    if not os.path.exists(my_dir):
+        try:
+            os.makedirs(my_dir)
+        except Exception as e:
+            print(e)
+            pass
+
+
+def save_copy_with_timestamp(path):
+    if os.path.exists(path):
+        directory, filename = os.path.split(path)
+        name, ext = os.path.splitext(filename)
+
+        # Create the timestamped path
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        timestamp_path = os.path.join(directory, "tmp", f"{name}_{timestamp}{ext}")
+        assure_path_exists(timestamp_path)
+
+        shutil.copy(path, timestamp_path)
