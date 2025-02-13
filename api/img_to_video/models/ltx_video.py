@@ -20,7 +20,7 @@ def get_pipeline():
 
 def main(context: Context):
     pipe = get_pipeline()
-    image = context.load_image()
+    image = context.load_image(division=32)
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
 
     video = pipe.__call__(
