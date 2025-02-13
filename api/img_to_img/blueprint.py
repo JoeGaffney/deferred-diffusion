@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from common.context import Context
 from .models.stable_diffusion_xl_refine import main as stable_diffusion_xl_refine_main
+from .models.stable_diffusion_xl_inpainting import main as stable_diffusion_xl_inpainting
 
 bp = Blueprint("img_to_img", __name__, url_prefix="/api")
 
@@ -8,9 +9,10 @@ bp = Blueprint("img_to_img", __name__, url_prefix="/api")
 @bp.route("img_to_img", methods=["POST"])
 def img_to_img():
     data = request.json
-    model = data.get("model")
+    model = data.get("img_to_img_model")
     context = Context(
         input_image_path=data.get("input_image_path", "../tmp/input.png"),
+        input_mask_path=data.get("input_mask_path", "../tmp/input_mask.png"),
         output_video_path=data.get("output_video_path", "../tmp/outputs/processed.mp4"),
         output_image_path=data.get("output_image_path", "../tmp/outputs/processed.png"),
         max_height=data.get("max_height", 2048),
@@ -21,11 +23,14 @@ def img_to_img():
         prompt=data.get("prompt", "Detailed, 8k, photorealistic"),
         seed=data.get("seed", 42),
         strength=data.get("strength", 0.5),
+        guidance_scale=data.get("guidance_scale", 10.0),
     )
 
     main = None
     if model == "stable_diffusion_xl_refine":
         main = stable_diffusion_xl_refine_main
+    elif model == "stable_diffusion_xl_inpainting":
+        main = stable_diffusion_xl_inpainting
 
     if not main:
         return jsonify({"error": "Invalid model"})

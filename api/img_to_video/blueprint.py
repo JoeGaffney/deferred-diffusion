@@ -10,7 +10,7 @@ bp = Blueprint("diffusion", __name__, url_prefix="/api")
 @bp.route("img_to_video", methods=["POST"])
 def diffusion():
     data = request.json
-    model = data.get("model")
+    model = data.get("img_to_video_model")
     context = Context(
         input_image_path=data.get("input_image_path", "../tmp/input.png"),
         output_video_path=data.get("output_video_path", "../tmp/outputs/processed.mp4"),
@@ -34,7 +34,7 @@ def diffusion():
         main = ltx_video_main
 
     if not main:
-        return jsonify({"error": "Invalid model"})
+        return jsonify({"error": f"Invalid model {str(model)}"})
 
     result = main(context)
 
