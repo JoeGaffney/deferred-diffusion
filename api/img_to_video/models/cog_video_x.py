@@ -1,6 +1,7 @@
 import torch
 from diffusers import CogVideoXImageToVideoPipeline
 from common.context import Context
+from utils.utils import get_16_9_resolution
 
 pipe = None
 
@@ -38,12 +39,15 @@ def main(context: Context):
 
 
 if __name__ == "__main__":
+    width, height = get_16_9_resolution("480p")
     main(
         Context(
-            image="tornado_v001.jpg",
+            input_image_path="../tmp/tornado_v001.jpg",
+            output_video_path="../tmp/output/tornado_v001_cog_video_x.mp4",
             strength=0.2,
-            prompt="Detailed, 8k, photorealistic, wind, grass blowing in the wind, enchance keep original elements",
-            # size_multiplier=0.33,
-            # num_inference_steps=10,
+            prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
+            num_inference_steps=50,
+            max_width=width,
+            max_height=height,
         )
     )

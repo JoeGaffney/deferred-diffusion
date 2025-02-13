@@ -44,7 +44,8 @@ if __name__ == "__main__":
 
     main(
         Context(
-            image="tornado_v001.jpg",
+            input_image_path="../tmp/tornado_v001.jpg",
+            output_video_path="../tmp/output/tornado_v001_ltx_video.mp4",
             strength=0.2,
             prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
             num_inference_steps=50,
@@ -52,11 +53,3 @@ if __name__ == "__main__":
             max_height=height,
         )
     )
-    # main(
-    #     Context(
-    #         image="earth_quake_v001.jpg",
-    #         strength=0.2,
-    #         prompt="Slow pan over a forest, trees falling, buildings shaking, Detailed, 8k, photorealistic, enchance keep original elements",
-    #         num_inference_steps=50,
-    #     )
-    # )

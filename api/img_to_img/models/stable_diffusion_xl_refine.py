@@ -49,29 +49,12 @@ def main(context: Context):
 if __name__ == "__main__":
 
     for strength in [0.1, 0.35]:
+
         main(
             Context(
-                image="space_v001.jpg",
-                output_name=f"space_{strength}",
-                strength=strength,
-                prompt="Detailed, 8k, add a spaceship, higher contrast, enchance keep original elements",
-            )
-        )
-        main(
-            Context(
-                image="tornado_v001.jpg",
-                output_name=f"tornado_{strength}",
-                strength=strength,
+                input_image_path="../tmp/tornado_v001.JPG",
+                output_image_path=f"../tmp/output/tornado_v001_refine_{strength}.png",
                 prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
-                size_multiplier=1.0,
-            )
-        )
-        main(
-            Context(
-                image="earth_quake_v001.jpg",
-                output_name=f"earth_quake_{strength}",
                 strength=strength,
-                prompt="Detailed, 8k, photorealistic",
             )
         )
-        main(Context(image="elf_v001.jpg", strength=0.1, prompt="Detailed, 8k, photorealistic", size_multiplier=1.0))

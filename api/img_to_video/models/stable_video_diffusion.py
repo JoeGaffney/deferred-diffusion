@@ -37,22 +37,14 @@ def main(context: Context):
 
 if __name__ == "__main__":
     width, height = get_16_9_resolution("480p")
-    # main(
-    #     Context(
-    #         image="space_v001.jpg",
-    #         output_name="space",
-    #         prompt="Detailed, 8k, add a spaceship, higher contrast, enchance keep original elements",
-    #         num_frames=24,
-    #         num_inference_steps=10,
-    #         max_width=width,
-    #         max_height=height,
-    #     )
-    # )
+
     main(
         Context(
-            image="tornado_v001.jpg",
+            input_image_path="../tmp/tornado_v001.jpg",
+            output_video_path="../tmp/output/tornado_v001_stable_video_diffusion.mp4",
             strength=0.2,
             prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
+            num_inference_steps=50,
             max_width=width,
             max_height=height,
         )
