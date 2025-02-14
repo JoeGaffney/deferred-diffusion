@@ -8,7 +8,7 @@ import numpy as np
 pipe = None
 
 model_id = "tensorart/stable-diffusion-3.5-medium-turbo"
-model_id = "stabilityai/stable-diffusion-3.5-large-turbo"
+# model_id = "stabilityai/stable-diffusion-3.5-large-turbo"
 
 
 def get_pipeline():
@@ -29,7 +29,6 @@ def main(context: Context):
 
     image = pipe.__call__(
         # width=original_size[0],
-        # height=original_size[1],
         prompt=context.prompt,
         negative_prompt=context.negative_prompt,
         num_inference_steps=context.num_inference_steps,
