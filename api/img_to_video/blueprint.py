@@ -10,7 +10,7 @@ bp = Blueprint("diffusion", __name__, url_prefix="/api")
 @bp.route("img_to_video", methods=["POST"])
 def diffusion():
     data = request.json
-    model = data.get("img_to_video_model")
+    model = data.get("model")
     context = Context(
         input_image_path=data.get("input_image_path", "../tmp/input.png"),
         output_video_path=data.get("output_video_path", "../tmp/outputs/processed.mp4"),

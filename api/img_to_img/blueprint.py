@@ -9,7 +9,7 @@ bp = Blueprint("img_to_img", __name__, url_prefix="/api")
 @bp.route("img_to_img", methods=["POST"])
 def img_to_img():
     data = request.json
-    model = data.get("img_to_img_model")
+    model = data.get("model")
     context = Context(
         input_image_path=data.get("input_image_path", "../tmp/input.png"),
         input_mask_path=data.get("input_mask_path", "../tmp/input_mask.png"),

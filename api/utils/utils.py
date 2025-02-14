@@ -2,6 +2,9 @@ from datetime import datetime
 import os
 import shutil
 from typing import Literal, Tuple
+
+import numpy as np
+import torch
 from .logger import logger
 
 Resolutions = Literal["1080p", "900p", "720p", "576p", "540p", "480p", "432p", "360p"]
@@ -42,3 +45,37 @@ def save_copy_with_timestamp(path):
         ensure_path_exists(timestamp_path)
 
         shutil.copy(path, timestamp_path)
+
+
+def vae_encode_crop_pixels(pixels):
+    x = (pixels.shape[1] // 8) * 8
+    y = (pixels.shape[2] // 8) * 8
+    if pixels.shape[1] != x or pixels.shape[2] != y:
+        x_offset = (pixels.shape[1] % 8) // 2
+        y_offset = (pixels.shape[2] % 8) // 2
+        pixels = pixels[:, x_offset : x + x_offset, y_offset : y + y_offset, :]
+    return pixels
+
+
+def vae_encode(image, vae):
+    pixels = np.array(image)
+    pixels = vae_encode_crop_pixels(pixels)
+    print(f"Final shape after crop and batch dimension: {pixels.shape}")
+    t = vae.encode(pixels[:, :, :, :3])
+    return t
+    # Convert the NumPy array directly to a PyTorch float16 tensor
+    pixels_tensor = torch.from_numpy(pixels_result).half()  # Convert to float16 immediately
+
+    # If the VAE model is on a GPU, move the tensor to the same device as the model
+    # if next(vae.parameters()).is_cuda:
+    #
+    pixels_tensor = pixels_tensor.cuda()
+    # Ensure that the input is in the correct shape (batch, channels, height, width)
+    pixels_tensor = pixels_tensor.permute(
+        0, 3, 1, 2
+    )  # Reorder from (batch, height, width, channels) -> (batch, channels, height, width)
+
+    # Use only the first 3 channels (RGB)
+    latents = vae.encode(pixels_tensor[:, :3, :, :])  # Use only the first 3 channels (RGB)
+
+    return latents
