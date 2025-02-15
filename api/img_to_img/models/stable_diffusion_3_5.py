@@ -1,28 +1,22 @@
 import os
 import torch
-from diffusers import AutoPipelineForImage2Image
+from diffusers import StableDiffusion3Img2ImgPipeline
 from common.context import Context
 from utils.diffusers_helpers import diffusers_image_call
 
 pipe = None
+model_id = "stabilityai/stable-diffusion-3.5-medium"
+# model_id = "tensorart/stable-diffusion-3.5-medium-turbo"
 
 
 def get_pipeline():
     global pipe
     if pipe is None:
-
-        # Override the safety checker
-        def dummy_safety_checker(images, **kwargs):
-            return images, [False] * len(images)
-
-        pipe = AutoPipelineForImage2Image.from_pretrained(
-            "stabilityai/stable-diffusion-xl-refiner-1.0",
-            torch_dtype=torch.float16,
-            variant="fp16",
-            use_safetensors=True,
+        pipe = StableDiffusion3Img2ImgPipeline.from_pretrained(
+            model_id, torch_dtype=torch.float16, use_safetensors=True
         )
         pipe.enable_model_cpu_offload()
-        pipe.safety_checker = dummy_safety_checker
+        pipe.vae.enable_tiling()
 
     return pipe
 
@@ -35,7 +29,7 @@ def main(context: Context):
 if __name__ == "__main__":
     output_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    for strength in [0.1, 0.35]:
+    for strength in [0.2, 0.5, 0.75, 1.0]:
 
         main(
             Context(
@@ -43,5 +37,6 @@ if __name__ == "__main__":
                 output_image_path=f"../tmp/output/{output_name}_{strength}.png",
                 prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
                 strength=strength,
+                guidance_scale=0.0,
             )
         )

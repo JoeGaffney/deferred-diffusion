@@ -6,9 +6,7 @@ from PIL import Image
 import numpy as np
 
 pipe = None
-
-model_id = "tensorart/stable-diffusion-3.5-medium-turbo"
-# model_id = "stabilityai/stable-diffusion-3.5-large-turbo"
+model_id = "stabilityai/stable-diffusion-3.5-medium"
 
 
 def get_pipeline():

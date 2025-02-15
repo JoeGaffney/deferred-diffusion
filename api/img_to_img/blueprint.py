@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify
 from common.context import Context
-from .models.stable_diffusion_xl_refine import main as stable_diffusion_xl_refine_main
+from .models.stable_diffusion_xl_refine import main as stable_diffusion_xl_refine
 from .models.stable_diffusion_xl_inpainting import main as stable_diffusion_xl_inpainting
+from .models.stable_diffusion_3_5 import main as stable_diffusion_3_5
+from .models.stable_diffusion_3_5_canny import main as stable_diffusion_3_5_canny
 
 bp = Blueprint("img_to_img", __name__, url_prefix="/api")
 
@@ -28,9 +30,13 @@ def img_to_img():
 
     main = None
     if model == "stable_diffusion_xl_refine":
-        main = stable_diffusion_xl_refine_main
+        main = stable_diffusion_xl_refine
     elif model == "stable_diffusion_xl_inpainting":
         main = stable_diffusion_xl_inpainting
+    elif model == "stable_diffusion_3_5":
+        main = stable_diffusion_3_5
+    elif model == "stable_diffusion_3_5_canny":
+        main = stable_diffusion_3_5_canny
 
     if not main:
         return jsonify({"error": "Invalid model"})

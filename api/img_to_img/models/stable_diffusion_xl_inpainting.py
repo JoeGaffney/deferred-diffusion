@@ -1,5 +1,7 @@
+import os
 import torch
 from diffusers import AutoPipelineForInpainting
+from utils.diffusers_helpers import diffusers_inpainting_call
 from common.context import Context
 from PIL import Image
 import numpy as np
@@ -29,30 +31,11 @@ def get_pipeline():
 
 def main(context: Context):
     pipe = get_pipeline()
-    image = context.load_image()
-    mask = context.load_mask()
-    generator = torch.Generator(device="cuda").manual_seed(context.seed)
-
-    processed_image = pipe(
-        width=image.size[0],
-        height=image.size[1],
-        prompt=context.prompt,
-        negative_prompt=context.negative_prompt,
-        image=image,
-        mask_image=mask,
-        num_inference_steps=context.num_inference_steps,
-        generator=generator,
-        strength=context.strength,
-        guidance_scale=context.guidance_scale,
-        padding_mask_crop=32,
-    ).images[0]
-
-    processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image)
-    return processed_path
+    return diffusers_inpainting_call(pipe, context)
 
 
 if __name__ == "__main__":
+    output_name = os.path.splitext(os.path.basename(__file__))[0]
 
     for strength in [0.5, 0.8]:
 
@@ -60,7 +43,7 @@ if __name__ == "__main__":
             Context(
                 input_image_path="../tmp/tornado_v001.JPG",
                 input_mask_path="../tmp/tornado_v001_mask.png",
-                output_image_path=f"../tmp/output/tornado_v001_inpainting_{strength}.png",
+                output_image_path=f"../tmp/output/{output_name}_{strength}.png",
                 prompt="Trees and roads in the forground, detailed, 8k, photorealistic",
                 strength=strength,
                 guidance_scale=10,

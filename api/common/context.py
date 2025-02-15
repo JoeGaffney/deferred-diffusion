@@ -43,6 +43,11 @@ class Context:
         ensure_path_exists(self.output_video_path)
         ensure_path_exists(self.input_image_path)
 
+    def to_dict(self):
+        print("context settings")
+        print(self.__dict__)
+        return self.__dict__
+
     def save_image(self, image):
         path = self.output_image_path
         image.save(path)

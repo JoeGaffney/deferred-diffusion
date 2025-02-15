@@ -1,41 +1,35 @@
 import os
 import torch
-from diffusers import AutoPipelineForImage2Image
+from diffusers import StableDiffusion3ControlNetPipeline, SD3ControlNetModel
+from utils.diffusers_helpers import diffusers_controlnet_call
 from common.context import Context
-from utils.diffusers_helpers import diffusers_image_call
 
 pipe = None
+model_id = "stabilityai/stable-diffusion-3.5-medium"
+controlnet_id = "InstantX/SD3-Controlnet-Canny"
 
 
 def get_pipeline():
     global pipe
     if pipe is None:
-
-        # Override the safety checker
-        def dummy_safety_checker(images, **kwargs):
-            return images, [False] * len(images)
-
-        pipe = AutoPipelineForImage2Image.from_pretrained(
-            "stabilityai/stable-diffusion-xl-refiner-1.0",
-            torch_dtype=torch.float16,
-            variant="fp16",
-            use_safetensors=True,
+        controlnet = SD3ControlNetModel.from_pretrained(controlnet_id, torch_dtype=torch.float16)
+        pipe = StableDiffusion3ControlNetPipeline.from_pretrained(
+            model_id, torch_dtype=torch.float16, use_safetensors=True, controlnet=controlnet
         )
         pipe.enable_model_cpu_offload()
-        pipe.safety_checker = dummy_safety_checker
 
     return pipe
 
 
 def main(context: Context):
     pipe = get_pipeline()
-    return diffusers_image_call(pipe, context)
+    return diffusers_controlnet_call(pipe, context)
 
 
 if __name__ == "__main__":
     output_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    for strength in [0.1, 0.35]:
+    for strength in [0.2, 0.5, 0.75, 1.0]:
 
         main(
             Context(
@@ -43,5 +37,6 @@ if __name__ == "__main__":
                 output_image_path=f"../tmp/output/{output_name}_{strength}.png",
                 prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
                 strength=strength,
+                guidance_scale=0.0,
             )
         )
