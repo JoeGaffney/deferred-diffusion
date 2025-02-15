@@ -2,7 +2,6 @@ from datetime import datetime
 import os
 import shutil
 from typing import Literal, Tuple
-
 import numpy as np
 import torch
 from .logger import logger
@@ -47,35 +46,15 @@ def save_copy_with_timestamp(path):
         shutil.copy(path, timestamp_path)
 
 
-def vae_encode_crop_pixels(pixels):
-    x = (pixels.shape[1] // 8) * 8
-    y = (pixels.shape[2] // 8) * 8
-    if pixels.shape[1] != x or pixels.shape[2] != y:
-        x_offset = (pixels.shape[1] % 8) // 2
-        y_offset = (pixels.shape[2] % 8) // 2
-        pixels = pixels[:, x_offset : x + x_offset, y_offset : y + y_offset, :]
-    return pixels
+# still some issues with this using as img2img
+def encode_image_to_latents(image, vae):
+    image = image.convert("RGB")  # Ensure no alpha channel
+    image = np.array(image).astype(np.float16) / 255.0  # Normalize to [0,1]
+    image = torch.tensor(image).permute(2, 0, 1).unsqueeze(0).to("cuda")  # (H, W, C) → (1, C, H, W)
+    image = (image - 0.5) * 2  # Normalize to [-1,1]
 
-
-def vae_encode(image, vae):
-    pixels = np.array(image)
-    pixels = vae_encode_crop_pixels(pixels)
-    print(f"Final shape after crop and batch dimension: {pixels.shape}")
-    t = vae.encode(pixels[:, :, :, :3])
-    return t
-    # Convert the NumPy array directly to a PyTorch float16 tensor
-    pixels_tensor = torch.from_numpy(pixels_result).half()  # Convert to float16 immediately
-
-    # If the VAE model is on a GPU, move the tensor to the same device as the model
-    # if next(vae.parameters()).is_cuda:
-    #
-    pixels_tensor = pixels_tensor.cuda()
-    # Ensure that the input is in the correct shape (batch, channels, height, width)
-    pixels_tensor = pixels_tensor.permute(
-        0, 3, 1, 2
-    )  # Reorder from (batch, height, width, channels) -> (batch, channels, height, width)
-
-    # Use only the first 3 channels (RGB)
-    latents = vae.encode(pixels_tensor[:, :3, :, :])  # Use only the first 3 channels (RGB)
+    with torch.no_grad():
+        latent_dist = vae.encode(image).latent_dist
+        latents = latent_dist.sample() * 0.18215
 
     return latents
