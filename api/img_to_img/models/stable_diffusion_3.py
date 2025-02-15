@@ -2,10 +2,10 @@ import os
 import torch
 from diffusers import StableDiffusion3Img2ImgPipeline
 from common.context import Context
-from utils.diffusers_helpers import diffusers_image_call, get_t5_quantized
+from utils.diffusers_helpers import diffusers_image_call
 
 pipe = None
-model_id = "stabilityai/stable-diffusion-3.5-medium"
+model_id = "stabilityai/stable-diffusion-3-medium-diffusers"
 # model_id = "tensorart/stable-diffusion-3.5-medium-turbo"
 
 
@@ -17,13 +17,10 @@ def get_pipeline():
             torch_dtype=torch.float16,
             use_safetensors=True,
             text_encoder_3=None,
-            # tokenizer_3=None,
-            # text_encoder_3=get_t5_quantized(model_id),
-            # device_map="balanced",
+            tokenizer_3=None,
         )
         pipe.enable_model_cpu_offload()
-        pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
-        pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
+        pipe.vae.enable_tiling()
 
     return pipe
 
@@ -44,7 +41,6 @@ if __name__ == "__main__":
                 output_image_path=f"../tmp/output/{output_name}_{strength}.png",
                 prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
                 strength=strength,
-                guidance_scale=7.5,
-                # num_inference_steps=50,
+                guidance_scale=0.0,
             )
         )

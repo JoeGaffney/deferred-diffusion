@@ -58,7 +58,8 @@ def trigger_api(kwargs=None, model_type="img_to_img"):
 
     # Extract top-level parameters
     parameters = get_top_level_parameters(node)
-    hou.ui.displayMessage(f"Extracted Parameters: {parameters}")
+    print(f"Extracted Parameters: {parameters}")
+    # hou.ui.displayMessage(f"Extracted Parameters: {parameters}")
 
     # API Call
     api_root = "http://127.0.0.1:5000/api"
@@ -67,7 +68,8 @@ def trigger_api(kwargs=None, model_type="img_to_img"):
 
     try:
         response = requests.post(api_url, json=body)
-        hou.ui.displayMessage(f"API Response: {response.text}")
+        # hou.ui.displayMessage(f"API Response: {response.text}")
+        print(f"API Response: {response.text}")
         if model_type == "img_to_img":
             reload_outputs(node, "output_read")
         elif model_type == "img_to_video":

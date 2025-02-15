@@ -1,47 +1,52 @@
 import os
 import torch
-from diffusers import StableDiffusion3ControlNetPipeline, SD3ControlNetModel
-from utils.diffusers_helpers import diffusers_controlnet_call
+from diffusers import AutoPipelineForInpainting
+from utils.diffusers_helpers import diffusers_inpainting_call
 from common.context import Context
 
 pipe = None
 model_id = "stabilityai/stable-diffusion-3.5-medium"
-controlnet_id = "InstantX/SD3-Controlnet-Canny"
 
 
 def get_pipeline():
     global pipe
     if pipe is None:
-        controlnet = SD3ControlNetModel.from_pretrained(controlnet_id, torch_dtype=torch.float16)
-        pipe = StableDiffusion3ControlNetPipeline.from_pretrained(
+
+        # Override the safety checker
+        def dummy_safety_checker(images, **kwargs):
+            return images, [False] * len(images)
+
+        pipe = AutoPipelineForInpainting.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
+            variant="fp16",
             use_safetensors=True,
-            controlnet=controlnet,
             # text_encoder_3=None,
             # tokenizer_3=None,
         )
         pipe.enable_model_cpu_offload()
+        pipe.safety_checker = dummy_safety_checker
 
     return pipe
 
 
 def main(context: Context):
     pipe = get_pipeline()
-    return diffusers_controlnet_call(pipe, context)
+    return diffusers_inpainting_call(pipe, context)
 
 
 if __name__ == "__main__":
     output_name = os.path.splitext(os.path.basename(__file__))[0]
 
-    for strength in [0.2, 0.5, 0.75, 1.0]:
+    for strength in [0.5, 0.8]:
 
         main(
             Context(
-                input_image_path="../tmp/canny.png",
+                input_image_path="../tmp/tornado_v001.JPG",
+                input_mask_path="../tmp/tornado_v001_mask.png",
                 output_image_path=f"../tmp/output/{output_name}_{strength}.png",
-                prompt="An eye",
+                prompt="Trees and roads in the forground, detailed, 8k, photorealistic",
                 strength=strength,
-                guidance_scale=1.5,
+                guidance_scale=10,
             )
         )

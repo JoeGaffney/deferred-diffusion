@@ -1,4 +1,5 @@
 import torch
+from transformers import T5EncoderModel, BitsAndBytesConfig
 
 from common.context import Context
 
@@ -59,7 +60,7 @@ def diffusers_controlnet_call(pipe, context: Context):
         control_image=image,
         num_inference_steps=context.num_inference_steps,
         generator=generator,
-        controlnet_conditioning_scale=context.strength,
+        controlnet_conditioning_scale=1 - context.strength,
         guidance_scale=context.guidance_scale,
         # max_sequence_length=77,
     ).images[0]
@@ -70,8 +71,8 @@ def diffusers_controlnet_call(pipe, context: Context):
 
 
 def diffusers_inpainting_call(pipe, context: Context):
-    image = context.load_image()
-    mask = context.load_mask()
+    image = context.load_image(division=16)
+    mask = context.load_mask(division=16)
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
 
     processed_image = pipe(
@@ -91,3 +92,15 @@ def diffusers_inpainting_call(pipe, context: Context):
     processed_image = context.resize_image_to_orig(processed_image)
     processed_path = context.save_image(processed_image)
     return processed_path
+
+
+quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
+
+def get_t5_quantized(model_id):
+
+    return T5EncoderModel.from_pretrained(
+        model_id,
+        subfolder="text_encoder_3",
+        quantization_config=quantization_config,
+    )

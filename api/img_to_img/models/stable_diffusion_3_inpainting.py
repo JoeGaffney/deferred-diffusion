@@ -5,7 +5,7 @@ from utils.diffusers_helpers import diffusers_inpainting_call
 from common.context import Context
 
 pipe = None
-model_id = "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
+model_id = "stabilityai/stable-diffusion-3-medium-diffusers"
 
 
 def get_pipeline():
@@ -21,6 +21,8 @@ def get_pipeline():
             torch_dtype=torch.float16,
             variant="fp16",
             use_safetensors=True,
+            text_encoder_3=None,
+            tokenizer_3=None,
         )
         pipe.enable_model_cpu_offload()
         pipe.safety_checker = dummy_safety_checker
