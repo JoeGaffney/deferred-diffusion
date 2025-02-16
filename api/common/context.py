@@ -67,7 +67,7 @@ class Context:
     def log(self, message):
         logger.info(message)
 
-    def resize_image(self, image, division=32, scale=1.0):
+    def resize_image(self, image, division=16, scale=1.0):
 
         # Ensure the new dimensions do not exceed max_width and max_height
         width = min(image.size[0] * scale, self.max_width)
@@ -80,8 +80,16 @@ class Context:
         self.log(f"Image Resized from: {image.size} to {width}x{height}")
         return image.resize((width, height))
 
+    def resize_max_wh(self, division=16):
+        width = math.ceil(self.max_width / division) * division
+        height = math.ceil(self.max_height / division) * division
+        return width, height
+
     def resize_image_to_orig(self, image, scale=1):
         return image.resize((self.orig_width * scale, self.orig_height * scale))
+
+    def resize_image_to_max_wh(self, image, scale=1):
+        return image.resize((self.max_width * scale, self.max_height * scale))
 
     def load_image(self, division=8, scale=1.0):
         if not os.path.exists(self.input_image_path):

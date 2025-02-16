@@ -8,19 +8,18 @@ from common.context import Context
 def diffusers_call(pipe, context: Context):
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
-
+    wh = context.resize_max_wh(division=16)
     processed_image = pipe.__call__(
-        width=context.max_width,
-        height=context.max_height,
+        width=wh[0],
+        height=wh[1],
         prompt=context.prompt,
         negative_prompt=context.negative_prompt,
         num_inference_steps=context.num_inference_steps,
         generator=generator,
-        # strength=context.strength,
         guidance_scale=context.guidance_scale,
     ).images[0]
 
-    # processed_image = context.resize_image_to_orig(processed_image)
+    processed_image = context.resize_image_to_max_wh(processed_image)
     processed_path = context.save_image(processed_image)
     return processed_path
 
@@ -60,7 +59,7 @@ def diffusers_controlnet_call(pipe, context: Context):
         control_image=image,
         num_inference_steps=context.num_inference_steps,
         generator=generator,
-        controlnet_conditioning_scale=1 - context.strength,
+        controlnet_conditioning_scale=context.strength,
         guidance_scale=context.guidance_scale,
         # max_sequence_length=77,
     ).images[0]

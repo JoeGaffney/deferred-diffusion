@@ -1,7 +1,6 @@
 import os
 import torch
 from diffusers import StableDiffusionUpscalePipeline
-from utils.utils import get_16_9_resolution
 from common.context import Context
 from utils.diffusers_helpers import diffusers_upscale_call
 

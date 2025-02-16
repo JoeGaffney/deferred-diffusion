@@ -51,9 +51,10 @@ def trigger_api(kwargs=None, model_type="img_to_img"):
         return
 
     # Save the specific ROP node 'tmp_input_image'
-    save_tmp_image(node, "tmp_input_image")
-
-    if model_type == "img_to_img":
+    if model_type == "video_to_img":
+        save_tmp_image(node, "tmp_input_image")
+    elif model_type == "img_to_img":
+        save_tmp_image(node, "tmp_input_image")
         save_tmp_image(node, "tmp_input_mask")
 
     # Extract top-level parameters
@@ -72,6 +73,8 @@ def trigger_api(kwargs=None, model_type="img_to_img"):
         print(f"API Response: {response.text}")
         if model_type == "img_to_img":
             reload_outputs(node, "output_read")
+        elif model_type == "text_to_img":
+            reload_outputs(node, "output_read")
         elif model_type == "img_to_video":
             reload_outputs(node, "output_read_video")
     except Exception as e:
@@ -84,3 +87,7 @@ def api_img_to_img(kwargs=None):
 
 def api_img_to_video(kwargs=None):
     trigger_api(kwargs, "img_to_video")
+
+
+def api_text_to_img(kwargs=None):
+    trigger_api(kwargs, "text_to_img")

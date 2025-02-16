@@ -12,7 +12,7 @@ controlnet_id = "InstantX/SD3-Controlnet-Canny"
 def get_pipeline():
     global pipe
     if pipe is None:
-        controlnet = SD3ControlNetModel.from_pretrained(controlnet_id, torch_dtype=torch.float16)
+        controlnet = SD3ControlNetModel.from_pretrained(controlnet_id, torch_dtype=torch.bfloat16)
         pipe = StableDiffusion3ControlNetPipeline.from_pretrained(
             model_id,
             torch_dtype=torch.bfloat16,

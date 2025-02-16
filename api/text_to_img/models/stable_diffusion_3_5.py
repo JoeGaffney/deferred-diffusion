@@ -37,7 +37,6 @@ if __name__ == "__main__":
     for guidance_scale in [0.0, 2.0, 5.0]:
         main(
             Context(
-                # input_image_path="../tmp/tornado_v001.JPG",
                 output_image_path=f"../tmp/output/text_to_img_{output_name}_{guidance_scale}.png",
                 prompt="A Tidal wave approaching a city, DSLR photo, Detailed, 8k, photorealistic, ",
                 negative_prompt="render, artwork, low quality, cartoonish",

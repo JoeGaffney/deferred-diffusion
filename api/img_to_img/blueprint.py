@@ -3,7 +3,12 @@ from common.context import Context
 from .models.stable_diffusion_xl_refine import main as stable_diffusion_xl_refine
 from .models.stable_diffusion_xl_inpainting import main as stable_diffusion_xl_inpainting
 from .models.stable_diffusion_3_5 import main as stable_diffusion_3_5
+from .models.stable_diffusion_3_5_inpainting import main as stable_diffusion_3_5_inpainting
 from .models.stable_diffusion_3_5_canny import main as stable_diffusion_3_5_canny
+from .models.stable_diffusion_3 import main as stable_diffusion_3
+from .models.stable_diffusion_3_inpainting import main as stable_diffusion_3_inpainting
+from .models.stable_diffusion_3_canny import main as stable_diffusion_3_canny
+from .models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
 
 bp = Blueprint("img_to_img", __name__, url_prefix="/api")
 
@@ -33,10 +38,20 @@ def img_to_img():
         main = stable_diffusion_xl_refine
     elif model == "stable_diffusion_xl_inpainting":
         main = stable_diffusion_xl_inpainting
+    elif model == "stable_diffusion_3":
+        main = stable_diffusion_3
+    elif model == "stable_diffusion_3_canny":
+        main = stable_diffusion_3_canny
+    elif model == "stable_diffusion_3_inpainting":
+        main = stable_diffusion_3_inpainting
     elif model == "stable_diffusion_3_5":
         main = stable_diffusion_3_5
     elif model == "stable_diffusion_3_5_canny":
         main = stable_diffusion_3_5_canny
+    elif model == "stable_diffusion_3_5_inpainting":
+        main = stable_diffusion_3_5_inpainting
+    elif model == "stable_diffusion_upscaler":
+        main = stable_diffusion_upscaler
 
     if not main:
         return jsonify({"error": "Invalid model"})

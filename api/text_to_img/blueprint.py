@@ -33,7 +33,7 @@ def img_to_img():
         main = stable_diffusion_3_5
 
     if not main:
-        return jsonify({"error": "Invalid model"})
+        return jsonify({"error": f"Invalid model {model}"})
 
     result = main(context)
 

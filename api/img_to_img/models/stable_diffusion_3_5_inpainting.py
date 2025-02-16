@@ -15,7 +15,6 @@ def get_pipeline():
         pipe = AutoPipelineForInpainting.from_pretrained(
             model_id,
             torch_dtype=torch.bfloat16,
-            variant="fp16",
             use_safetensors=True,
             # text_encoder_3=None,
             # tokenizer_3=None,
