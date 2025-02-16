@@ -1,6 +1,7 @@
 import torch
 from transformers import T5EncoderModel, BitsAndBytesConfig
 
+from utils.utils import get_16_9_resolution
 from common.context import Context
 
 
@@ -90,6 +91,30 @@ def diffusers_inpainting_call(pipe, context: Context):
     ).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image)
+    processed_path = context.save_image(processed_image)
+    return processed_path
+
+
+def diffusers_upscale_call(pipe, context: Context):
+
+    width, height = get_16_9_resolution("540p")  # 4k
+    # width, height = get_16_9_resolution("360p")  # 1440p
+    context.max_width = width
+    context.max_height = height
+
+    image = context.load_image(division=16, scale=0.5)
+    generator = torch.Generator(device="cuda").manual_seed(context.seed)
+
+    processed_image = pipe(
+        prompt=context.prompt,
+        negative_prompt=context.negative_prompt,
+        image=image,
+        num_inference_steps=context.num_inference_steps,
+        generator=generator,
+        guidance_scale=context.guidance_scale,
+    ).images[0]
+
+    processed_image = context.resize_image_to_orig(processed_image, scale=2)
     processed_path = context.save_image(processed_image)
     return processed_path
 

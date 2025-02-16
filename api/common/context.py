@@ -67,21 +67,23 @@ class Context:
     def log(self, message):
         logger.info(message)
 
-    def resize_image(self, image, division=32):
+    def resize_image(self, image, division=32, scale=1.0):
+
         # Ensure the new dimensions do not exceed max_width and max_height
-        width = min(image.size[0], self.max_width)
-        height = min(image.size[1], self.max_height)
+        width = min(image.size[0] * scale, self.max_width)
+        height = min(image.size[1] * scale, self.max_height)
 
         # Adjust width and height to be divisible by 32 or 8
         width = math.ceil(width / division) * division
         height = math.ceil(height / division) * division
 
+        self.log(f"Image Resized from: {image.size} to {width}x{height}")
         return image.resize((width, height))
 
-    def resize_image_to_orig(self, image):
-        return image.resize((self.orig_width, self.orig_height))
+    def resize_image_to_orig(self, image, scale=1):
+        return image.resize((self.orig_width * scale, self.orig_height * scale))
 
-    def load_image(self, division=8):
+    def load_image(self, division=8, scale=1.0):
         if not os.path.exists(self.input_image_path):
 
             raise FileNotFoundError(self.input_image_path)
@@ -91,10 +93,10 @@ class Context:
         self.log(f"Image loaded from {self.input_image_path} size: {image.size}")
         self.orig_width, self.orig_height = image.size
 
-        tmp = self.resize_image(image, division)
+        tmp = self.resize_image(image, division, scale)
         return tmp
 
-    def load_mask(self, division=8):
+    def load_mask(self, division=8, scale=1.0):
         if not os.path.exists(self.input_mask_path):
             raise FileNotFoundError(self.input_mask_path)
 
@@ -104,5 +106,5 @@ class Context:
         image = self.resize_image_to_orig(image)
         self.log(f"Mask loaded from {self.input_mask_path} size: {image.size}")
 
-        tmp = self.resize_image(image, division)
+        tmp = self.resize_image(image, division, scale)
         return tmp
