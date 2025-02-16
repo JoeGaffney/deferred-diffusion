@@ -1,29 +1,25 @@
 import os
 import torch
-from diffusers import StableDiffusion3Img2ImgPipeline
+from diffusers import AutoPipelineForImage2Image
 from common.context import Context
-from utils.diffusers_helpers import diffusers_image_call, get_t5_quantized
+from utils.diffusers_helpers import diffusers_image_call, get_t5_quantized, optimize_pipeline
 
 pipe = None
 model_id = "stabilityai/stable-diffusion-3.5-medium"
-# model_id = "tensorart/stable-diffusion-3.5-medium-turbo"
 
 
 def get_pipeline():
     global pipe
     if pipe is None:
-        pipe = StableDiffusion3Img2ImgPipeline.from_pretrained(
+        pipe = AutoPipelineForImage2Image.from_pretrained(
             model_id,
-            torch_dtype=torch.float16,
+            torch_dtype=torch.bfloat16,
             use_safetensors=True,
-            text_encoder_3=None,
+            # text_encoder_3=None,
             # tokenizer_3=None,
             # text_encoder_3=get_t5_quantized(model_id),
-            # device_map="balanced",
         )
-        pipe.enable_model_cpu_offload()
-        pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
-        pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
+        pipe = optimize_pipeline(pipe)
 
     return pipe
 

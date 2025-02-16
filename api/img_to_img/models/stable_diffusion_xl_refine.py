@@ -2,7 +2,7 @@ import os
 import torch
 from diffusers import AutoPipelineForImage2Image
 from common.context import Context
-from utils.diffusers_helpers import diffusers_image_call
+from utils.diffusers_helpers import diffusers_image_call, optimize_pipeline
 
 pipe = None
 
@@ -10,19 +10,13 @@ pipe = None
 def get_pipeline():
     global pipe
     if pipe is None:
-
-        # Override the safety checker
-        def dummy_safety_checker(images, **kwargs):
-            return images, [False] * len(images)
-
         pipe = AutoPipelineForImage2Image.from_pretrained(
             "stabilityai/stable-diffusion-xl-refiner-1.0",
             torch_dtype=torch.float16,
             variant="fp16",
             use_safetensors=True,
         )
-        pipe.enable_model_cpu_offload()
-        pipe.safety_checker = dummy_safety_checker
+        pipe = optimize_pipeline(pipe)
 
     return pipe
 

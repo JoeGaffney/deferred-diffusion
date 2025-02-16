@@ -6,22 +6,21 @@ from common.context import Context
 
 
 def diffusers_call(pipe, context: Context):
-    image = context.load_image(division=16)  # Load input image
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
 
     processed_image = pipe.__call__(
-        width=image.size[0],
-        height=image.size[1],
+        width=context.max_width,
+        height=context.max_height,
         prompt=context.prompt,
         negative_prompt=context.negative_prompt,
         num_inference_steps=context.num_inference_steps,
         generator=generator,
-        strength=context.strength,
+        # strength=context.strength,
         guidance_scale=context.guidance_scale,
     ).images[0]
 
-    processed_image = context.resize_image_to_orig(processed_image)
+    # processed_image = context.resize_image_to_orig(processed_image)
     processed_path = context.save_image(processed_image)
     return processed_path
 
@@ -117,6 +116,19 @@ def diffusers_upscale_call(pipe, context: Context):
     processed_image = context.resize_image_to_orig(processed_image, scale=2)
     processed_path = context.save_image(processed_image)
     return processed_path
+
+
+def optimize_pipeline(pipe):
+    # Override the safety checker
+    def dummy_safety_checker(images, **kwargs):
+        return images, [False] * len(images)
+
+    pipe.enable_model_cpu_offload()
+    pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
+    pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
+    pipe.safety_checker = dummy_safety_checker
+
+    return pipe
 
 
 quantization_config = BitsAndBytesConfig(load_in_8bit=True)

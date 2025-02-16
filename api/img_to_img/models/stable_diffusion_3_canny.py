@@ -1,7 +1,7 @@
 import os
 import torch
 from diffusers import StableDiffusion3ControlNetPipeline, SD3ControlNetModel
-from utils.diffusers_helpers import diffusers_controlnet_call
+from utils.diffusers_helpers import diffusers_controlnet_call, optimize_pipeline
 from common.context import Context
 
 pipe = None
@@ -21,7 +21,7 @@ def get_pipeline():
             text_encoder_3=None,
             tokenizer_3=None,
         )
-        pipe.enable_model_cpu_offload()
+        pipe = optimize_pipeline(pipe)
 
     return pipe
 

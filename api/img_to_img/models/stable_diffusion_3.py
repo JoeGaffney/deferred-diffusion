@@ -1,26 +1,24 @@
 import os
 import torch
-from diffusers import StableDiffusion3Img2ImgPipeline
+from diffusers import AutoPipelineForImage2Image
 from common.context import Context
-from utils.diffusers_helpers import diffusers_image_call
+from utils.diffusers_helpers import diffusers_image_call, optimize_pipeline
 
 pipe = None
 model_id = "stabilityai/stable-diffusion-3-medium-diffusers"
-# model_id = "tensorart/stable-diffusion-3.5-medium-turbo"
 
 
 def get_pipeline():
     global pipe
     if pipe is None:
-        pipe = StableDiffusion3Img2ImgPipeline.from_pretrained(
+        pipe = AutoPipelineForImage2Image.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
             use_safetensors=True,
             text_encoder_3=None,
             tokenizer_3=None,
         )
-        pipe.enable_model_cpu_offload()
-        pipe.vae.enable_tiling()
+        pipe = optimize_pipeline(pipe)
 
     return pipe
 
