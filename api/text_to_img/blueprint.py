@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from common.context import Context
-from .models.stable_diffusion_3 import main as stable_diffusion_3
-from .models.stable_diffusion_3_5 import main as stable_diffusion_3_5
+from img_to_img.models.auto_diffusion import main as auto_diffusion
 
 bp = Blueprint("text_to_img", __name__, url_prefix="/api")
 
@@ -27,14 +26,11 @@ def img_to_img():
     )
 
     main = None
-    if model == "stable_diffusion_3":
-        main = stable_diffusion_3
-    elif model == "stable_diffusion_3_5":
-        main = stable_diffusion_3_5
+    main = auto_diffusion
 
     if not main:
         return jsonify({"error": f"Invalid model {model}"})
 
-    result = main(context)
+    result = main(context, model_id=model, mode="text_to_image")
 
     return jsonify(result)

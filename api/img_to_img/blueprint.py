@@ -1,14 +1,7 @@
 from flask import Blueprint, request, jsonify
 from common.context import Context
-from .models.stable_diffusion_xl_refine import main as stable_diffusion_xl_refine
-from .models.stable_diffusion_xl_inpainting import main as stable_diffusion_xl_inpainting
-from .models.stable_diffusion_3_5 import main as stable_diffusion_3_5
-from .models.stable_diffusion_3_5_inpainting import main as stable_diffusion_3_5_inpainting
-from .models.stable_diffusion_3_5_canny import main as stable_diffusion_3_5_canny
-from .models.stable_diffusion_3 import main as stable_diffusion_3
-from .models.stable_diffusion_3_inpainting import main as stable_diffusion_3_inpainting
-from .models.stable_diffusion_3_canny import main as stable_diffusion_3_canny
 from .models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
+from .models.auto_diffusion import main as auto_diffusion
 
 bp = Blueprint("img_to_img", __name__, url_prefix="/api")
 
@@ -19,7 +12,7 @@ def img_to_img():
     model = data.get("model")
     context = Context(
         input_image_path=data.get("input_image_path", "../tmp/input.png"),
-        input_mask_path=data.get("input_mask_path", "../tmp/input_mask.png"),
+        input_mask_path=data.get("input_mask_path", ""),
         output_video_path=data.get("output_video_path", "../tmp/outputs/processed.mp4"),
         output_image_path=data.get("output_image_path", "../tmp/outputs/processed.png"),
         max_height=data.get("max_height", 2048),
@@ -34,28 +27,23 @@ def img_to_img():
     )
 
     main = None
-    if model == "stable_diffusion_xl_refine":
-        main = stable_diffusion_xl_refine
-    elif model == "stable_diffusion_xl_inpainting":
-        main = stable_diffusion_xl_inpainting
-    elif model == "stable_diffusion_3":
-        main = stable_diffusion_3
-    elif model == "stable_diffusion_3_canny":
-        main = stable_diffusion_3_canny
-    elif model == "stable_diffusion_3_inpainting":
-        main = stable_diffusion_3_inpainting
-    elif model == "stable_diffusion_3_5":
-        main = stable_diffusion_3_5
-    elif model == "stable_diffusion_3_5_canny":
-        main = stable_diffusion_3_5_canny
-    elif model == "stable_diffusion_3_5_inpainting":
-        main = stable_diffusion_3_5_inpainting
-    elif model == "stable_diffusion_upscaler":
+    if model == "stable_diffusion_upscaler":
         main = stable_diffusion_upscaler
+        result = main(context, model_id=model, mode="upscaler")
+        return jsonify(result)
+
+    #
+    mode = "img_to_img"
+    if context.input_mask_path != "":
+        mode = "img_to_img_inpainting"
+
+    if model == "stabilityai/stable-diffusion-xl-refiner-1.0":
+        mode = "img_to_img"
+
+    main = auto_diffusion
 
     if not main:
         return jsonify({"error": "Invalid model"})
 
-    result = main(context)
-
+    result = main(context, model_id=model, mode=mode)
     return jsonify(result)

@@ -5,10 +5,9 @@ from common.context import Context
 from utils.diffusers_helpers import diffusers_upscale_call
 
 pipe = None
-model_id = "stabilityai/stable-diffusion-x4-upscaler"
 
 
-def get_pipeline():
+def get_pipeline(model_id):
     global pipe
     if pipe is None:
         pipe = StableDiffusionUpscalePipeline.from_pretrained(
@@ -22,8 +21,8 @@ def get_pipeline():
     return pipe
 
 
-def main(context: Context):
-    pipe = get_pipeline()
+def main(context: Context, model_id="stabilityai/stable-diffusion-x4-upscaler", mode="upscaler"):
+    pipe = get_pipeline(model_id)
 
     return diffusers_upscale_call(pipe, context)
 

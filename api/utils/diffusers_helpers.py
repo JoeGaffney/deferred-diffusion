@@ -9,6 +9,7 @@ def diffusers_call(pipe, context: Context):
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
     wh = context.resize_max_wh(division=16)
+
     processed_image = pipe.__call__(
         width=wh[0],
         height=wh[1],
@@ -117,7 +118,7 @@ def diffusers_upscale_call(pipe, context: Context):
     return processed_path
 
 
-def optimize_pipeline(pipe):
+def optimize_pipeline(pipe, disable_safety_checker=True):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
@@ -125,7 +126,8 @@ def optimize_pipeline(pipe):
     pipe.enable_model_cpu_offload()
     pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
     pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
-    pipe.safety_checker = dummy_safety_checker
+    if disable_safety_checker:
+        pipe.safety_checker = dummy_safety_checker
 
     return pipe
 
