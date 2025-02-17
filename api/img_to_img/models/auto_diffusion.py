@@ -26,34 +26,51 @@ torch_dtype_map = {
 
 
 @lru_cache(maxsize=4)  # Cache up to 4 different pipelines
-def get_pipeline(model_id):
+def get_pipeline(model_id, disable_text_encoder_3=True):
     torch_dtype = torch_dtype_map.get(model_id, torch.float16)
+
+    # this can really eat up the memory
+    if disable_text_encoder_3 == True:
+        pipe = DiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch_dtype,
+            use_safetensors=True,
+            text_encoder_3=None,
+            tokenizer_3=None,
+        )
+        print("loaded pipeline", model_id, torch_dtype, model_id)
+        return optimize_pipeline(pipe)
+
     pipe = DiffusionPipeline.from_pretrained(
         model_id,
         torch_dtype=torch_dtype,
         use_safetensors=True,
-        text_encoder_3=None,
-        tokenizer_3=None,
     )
     print("loaded pipeline", model_id, torch_dtype, model_id)
     return optimize_pipeline(pipe)
 
 
-def get_text_pipeline(model_id, control_nets=[]):
+def get_text_pipeline(model_id, control_nets=[], disable_text_encoder_3=True):
     return AutoPipelineForText2Image.from_pipe(
-        get_pipeline(model_id), control_nets=control_nets, requires_safety_checker=False
+        get_pipeline(model_id, disable_text_encoder_3=disable_text_encoder_3),
+        control_nets=control_nets,
+        requires_safety_checker=False,
     )
 
 
-def get_image_pipeline(model_id, control_nets=[]):
+def get_image_pipeline(model_id, control_nets=[], disable_text_encoder_3=True):
     return AutoPipelineForImage2Image.from_pipe(
-        get_pipeline(model_id), control_nets=control_nets, requires_safety_checker=False
+        get_pipeline(model_id, disable_text_encoder_3=disable_text_encoder_3),
+        control_nets=control_nets,
+        requires_safety_checker=False,
     )
 
 
-def get_inpainting_pipeline(model_id, control_nets=[]):
+def get_inpainting_pipeline(model_id, control_nets=[], disable_text_encoder_3=True):
     return AutoPipelineForInpainting.from_pipe(
-        get_pipeline(model_id), control_nets=control_nets, requires_safety_checker=False
+        get_pipeline(model_id, disable_text_encoder_3=disable_text_encoder_3),
+        control_nets=control_nets,
+        requires_safety_checker=False,
     )
 
 
@@ -62,12 +79,17 @@ def main(
     model_id="stabilityai/stable-diffusion-3-medium-diffusers",
     mode="text",
 ):
+    disable_text_encoder_3 = context.disable_text_encoder_3
     if mode == "text_to_image":
-        return diffusers_call(get_text_pipeline(model_id), context)
+        return diffusers_call(get_text_pipeline(model_id, disable_text_encoder_3=disable_text_encoder_3), context)
     elif mode == "img_to_img":
-        return diffusers_image_call(get_image_pipeline(model_id), context)
+        return diffusers_image_call(
+            get_image_pipeline(model_id, disable_text_encoder_3=disable_text_encoder_3), context
+        )
     elif mode == "img_to_img_inpainting":
-        return diffusers_inpainting_call(get_inpainting_pipeline(model_id), context)
+        return diffusers_inpainting_call(
+            get_inpainting_pipeline(model_id, disable_text_encoder_3=disable_text_encoder_3), context
+        )
 
     return "invalid mode"
 

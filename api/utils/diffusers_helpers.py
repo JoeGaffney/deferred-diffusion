@@ -74,6 +74,7 @@ def diffusers_inpainting_call(pipe, context: Context):
     image = context.load_image(division=16)
     mask = context.load_mask(division=16)
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
+    context.to_dict()
 
     processed_image = pipe(
         width=image.size[0],
@@ -86,8 +87,13 @@ def diffusers_inpainting_call(pipe, context: Context):
         generator=generator,
         strength=context.strength,
         guidance_scale=context.guidance_scale,
-        padding_mask_crop=32,
+        padding_mask_crop=None if context.inpainting_full_image == True else 32,
     ).images[0]
+
+    # we can mask the unmasked image with the original image to get the original image ares
+    # unmasked_unchanged_image = pipe.image_processor.apply_overlay(mask, image, processed_image)
+    # unmasked_unchanged_image = context.resize_image_to_orig(unmasked_unchanged_image)
+    # processed_path = context.save_image(unmasked_unchanged_image)
 
     processed_image = context.resize_image_to_orig(processed_image)
     processed_path = context.save_image(processed_image)

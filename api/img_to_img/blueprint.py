@@ -24,6 +24,8 @@ def img_to_img():
         seed=data.get("seed", 42),
         strength=data.get("strength", 0.5),
         guidance_scale=data.get("guidance_scale", 10.0),
+        inpainting_full_image=data.get("inpainting_full_image", True),
+        disable_text_encoder_3=data.get("disable_text_encoder_3", True),
     )
 
     main = None

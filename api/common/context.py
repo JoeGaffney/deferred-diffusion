@@ -22,6 +22,8 @@ class Context:
         prompt="Detailed, 8k, photorealistic",
         seed=42,
         strength=0.5,
+        disable_text_encoder_3=True,
+        inpainting_full_image=True,
     ):
         self.guidance_scale = guidance_scale
         self.input_image_path = input_image_path
@@ -38,6 +40,8 @@ class Context:
         self.prompt = prompt
         self.seed = seed
         self.strength = strength
+        self.disable_text_encoder_3 = bool(disable_text_encoder_3)
+        self.inpainting_full_image = bool(inpainting_full_image)
 
         ensure_path_exists(self.output_image_path)
         ensure_path_exists(self.output_video_path)
