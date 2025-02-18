@@ -37,6 +37,15 @@ def get_top_level_parameters(hda_node):
     for parm_tuple in hda_node.parmTuples():
         values = [parm.eval() for parm in parm_tuple]
         params[parm_tuple.name()] = values[0] if len(values) == 1 else values
+
+    valid_inputs = []
+    for i in hda_node.inputConnections():
+        valid_inputs.append(i.outputLabel())
+
+    # Remove 'input_image' if not in valid_inputs
+    if (not "mask" in valid_inputs) and ("input_mask_path" in params):
+        params.pop("input_mask_path")
+
     return params
 
 
