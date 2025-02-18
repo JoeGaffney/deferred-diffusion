@@ -1,14 +1,30 @@
+import copy
 import math
 import os
+from typing import List
 from diffusers.utils import export_to_video, load_image
+import torch
+from common.control_net import ControlNet
 from utils.utils import ensure_path_exists, save_copy_with_timestamp
 from utils.logger import logger
 from utils import device_info
+
+torch_dtype_map = {
+    "stabilityai/stable-diffusion-3-medium-diffusers": torch.float16,
+    "stabilityai/stable-diffusion-3.5-medium": torch.bfloat16,
+    "stabilityai/stable-diffusion-xl-base-1.0": torch.float16,
+    "stabilityai/stable-diffusion-xl-refiner-1.0": torch.float16,
+}
+
+
+def is_model_sd3(model):
+    return "stable-diffusion-3" in model
 
 
 class Context:
     def __init__(
         self,
+        model="",
         guidance_scale=10.0,
         input_image_path="../tmp/input.png",
         input_mask_path="../tmp/mask.png",
@@ -24,7 +40,9 @@ class Context:
         strength=0.5,
         disable_text_encoder_3=True,
         inpainting_full_image=True,
+        controlnets=[],
     ):
+        self.model = model
         self.guidance_scale = guidance_scale
         self.input_image_path = input_image_path
         self.input_mask_path = input_mask_path
@@ -33,8 +51,8 @@ class Context:
         self.negative_prompt = negative_prompt
         self.num_frames = num_frames
         self.num_inference_steps = num_inference_steps
-        self.orig_height = 0
-        self.orig_width = 0
+        self.orig_height = copy.copy(max_height)
+        self.orig_width = copy.copy(max_width)
         self.output_image_path = output_image_path
         self.output_video_path = output_video_path
         self.prompt = prompt
@@ -47,9 +65,24 @@ class Context:
         ensure_path_exists(self.output_video_path)
         ensure_path_exists(self.input_image_path)
 
+        # we can switch this for optimal performance control net data type needs to match also
+        self.torch_dtype = torch_dtype_map.get(self.model, torch.float16)
+
+        # add our control nets
+        self.model_sd3 = is_model_sd3(model)
+        self.controlnets: List[ControlNet] = []
+        for current in controlnets:
+            tmp = ControlNet(current, torch_dtype=self.torch_dtype)
+            if tmp.is_valid:
+                self.controlnets.append(tmp)
+
+        self.controlnets_enabled = len(self.controlnets) > 0
+
+        # requires different path as auto diffusers don't map the control net models for sd3 variants
+        self.sd3_controlnet_mode = self.model_sd3 and self.controlnets_enabled
+
     def to_dict(self):
-        print("context settings")
-        print(self.__dict__)
+        self.log(f"Context settings: {self.__dict__}")
         return self.__dict__
 
     def save_image(self, image):
@@ -108,15 +141,45 @@ class Context:
         tmp = self.resize_image(image, division, scale)
         return tmp
 
-    def load_mask(self, division=8, scale=1.0):
+    def load_mask(self):
         if not os.path.exists(self.input_mask_path):
             raise FileNotFoundError(self.input_mask_path)
 
         image = load_image(self.input_mask_path)
         image = image.convert("L")
-        # ensure the mask is the same size as the color image
+
+        # ensure he same size as the color image
         image = self.resize_image_to_orig(image)
         self.log(f"Mask loaded from {self.input_mask_path} size: {image.size}")
+        return image
 
-        tmp = self.resize_image(image, division, scale)
-        return tmp
+    def get_controlnet_images(self):
+        if self.controlnets_enabled == False:
+            return []
+
+        images = []
+        for controlnet in self.controlnets:
+            image = load_image(controlnet.input_image)
+
+            # ensure the same size as the color image
+            image = self.resize_image_to_orig(image)
+            images.append(image)
+        return images
+
+    def get_controlnet_conditioning_scales(self):
+        if self.controlnets_enabled == False:
+            return 0.8
+
+        controlnet_conditioning_scales = []
+        for controlnet in self.controlnets:
+            controlnet_conditioning_scales.append(controlnet.conditioning_scale)
+        return controlnet_conditioning_scales
+
+    def get_loaded_controlnets(self):
+        if self.controlnets_enabled == False:
+            return []
+
+        loaded_controlnets = []
+        for controlnet in self.controlnets:
+            loaded_controlnets.append(controlnet.loaded_controlnet)
+        return loaded_controlnets

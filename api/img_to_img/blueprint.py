@@ -26,6 +26,7 @@ def img_to_img():
         guidance_scale=data.get("guidance_scale", 10.0),
         inpainting_full_image=data.get("inpainting_full_image", True),
         disable_text_encoder_3=data.get("disable_text_encoder_3", True),
+        controlnets=data.get("controlnets", []),
     )
 
     main = None

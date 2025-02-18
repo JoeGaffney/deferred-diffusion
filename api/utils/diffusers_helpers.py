@@ -5,22 +5,38 @@ from utils.utils import get_16_9_resolution
 from common.context import Context
 
 
-def diffusers_call(pipe, context: Context):
+def diffusers_call(pipe, context: Context, use_image_wh=False):
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
     wh = context.resize_max_wh(division=16)
+    if use_image_wh:
+        image = context.load_image(division=16)  # Load input image
+        wh = image.size
 
-    processed_image = pipe.__call__(
-        width=wh[0],
-        height=wh[1],
-        prompt=context.prompt,
-        negative_prompt=context.negative_prompt,
-        num_inference_steps=context.num_inference_steps,
-        generator=generator,
-        guidance_scale=context.guidance_scale,
-    ).images[0]
+    args = {
+        "width": wh[0],
+        "height": wh[1],
+        "prompt": context.prompt,
+        "negative_prompt": context.negative_prompt,
+        "num_inference_steps": context.num_inference_steps,
+        "generator": generator,
+        "guidance_scale": context.guidance_scale,
+    }
+    if context.controlnets_enabled:
+        # different pattern of arguments
+        if context.sd3_controlnet_mode:
+            args["control_image"] = context.get_controlnet_images()
+        else:
+            args["image"] = context.get_controlnet_images()
+        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    processed_image = context.resize_image_to_max_wh(processed_image)
+    processed_image = pipe.__call__(**args).images[0]
+
+    if use_image_wh:
+        processed_image = context.resize_image_to_orig(processed_image)
+    else:
+        processed_image = context.resize_image_to_max_wh(processed_image)
+
     processed_path = context.save_image(processed_image)
     return processed_path
 
@@ -29,41 +45,22 @@ def diffusers_image_call(pipe, context: Context):
     image = context.load_image(division=16)  # Load input image
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
+    args = {
+        "width": image.size[0],
+        "height": image.size[1],
+        "prompt": context.prompt,
+        "negative_prompt": context.negative_prompt,
+        "image": image,
+        "num_inference_steps": context.num_inference_steps,
+        "generator": generator,
+        "strength": context.strength,
+        "guidance_scale": context.guidance_scale,
+    }
+    if context.controlnets_enabled:
+        args["control_image"] = context.get_controlnet_images()
+        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    processed_image = pipe.__call__(
-        width=image.size[0],
-        height=image.size[1],
-        prompt=context.prompt,
-        negative_prompt=context.negative_prompt,
-        image=image,
-        num_inference_steps=context.num_inference_steps,
-        generator=generator,
-        strength=context.strength,
-        guidance_scale=context.guidance_scale,
-    ).images[0]
-
-    processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image)
-    return processed_path
-
-
-def diffusers_controlnet_call(pipe, context: Context):
-    image = context.load_image(division=16)  # Load input image
-    generator = torch.Generator(device="cuda").manual_seed(context.seed)
-    context.to_dict()
-
-    processed_image = pipe.__call__(
-        width=image.size[0],
-        height=image.size[1],
-        prompt=context.prompt,
-        negative_prompt=context.negative_prompt,
-        control_image=image,
-        num_inference_steps=context.num_inference_steps,
-        generator=generator,
-        controlnet_conditioning_scale=context.strength,
-        guidance_scale=context.guidance_scale,
-        # max_sequence_length=77,
-    ).images[0]
+    processed_image = pipe.__call__(**args).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image)
     processed_path = context.save_image(processed_image)
@@ -72,28 +69,28 @@ def diffusers_controlnet_call(pipe, context: Context):
 
 def diffusers_inpainting_call(pipe, context: Context):
     image = context.load_image(division=16)
-    mask = context.load_mask(division=16)
+    mask = context.load_mask()
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
 
-    processed_image = pipe(
-        width=image.size[0],
-        height=image.size[1],
-        prompt=context.prompt,
-        negative_prompt=context.negative_prompt,
-        image=image,
-        mask_image=mask,
-        num_inference_steps=context.num_inference_steps,
-        generator=generator,
-        strength=context.strength,
-        guidance_scale=context.guidance_scale,
-        padding_mask_crop=None if context.inpainting_full_image == True else 32,
-    ).images[0]
+    args = {
+        "width": image.size[0],
+        "height": image.size[1],
+        "prompt": context.prompt,
+        "negative_prompt": context.negative_prompt,
+        "image": image,
+        "mask_image": mask,
+        "num_inference_steps": context.num_inference_steps,
+        "generator": generator,
+        "strength": context.strength,
+        "guidance_scale": context.guidance_scale,
+        "padding_mask_crop": None if context.inpainting_full_image == True else 32,
+    }
+    if context.controlnets_enabled:
+        args["control_image"] = context.get_controlnet_images()
+        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    # we can mask the unmasked image with the original image to get the original image ares
-    # unmasked_unchanged_image = pipe.image_processor.apply_overlay(mask, image, processed_image)
-    # unmasked_unchanged_image = context.resize_image_to_orig(unmasked_unchanged_image)
-    # processed_path = context.save_image(unmasked_unchanged_image)
+    processed_image = pipe(**args).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image)
     processed_path = context.save_image(processed_image)
