@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from common.context import Context
-from .models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
-from .models.auto_diffusion import main as auto_diffusion
+from models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
+from models.auto_diffusion import main as auto_diffusion
 
 bp = Blueprint("img_to_img", __name__, url_prefix="/api")
 

@@ -1,6 +1,6 @@
 from utils.utils import get_16_9_resolution
 from common.context import Context
-from img_to_img.models.auto_diffusion import main
+from models.auto_diffusion import main
 import os
 
 

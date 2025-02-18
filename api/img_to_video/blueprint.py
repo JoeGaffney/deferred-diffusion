@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from common.context import Context
-from .models.stable_video_diffusion import main as stable_video_diffusion_main
-from .models.cog_video_x import main as cog_video_x_main
-from .models.ltx_video import main as ltx_video_main
+from models.stable_video_diffusion import main as stable_video_diffusion_main
+from models.cog_video_x import main as cog_video_x_main
+from models.ltx_video import main as ltx_video_main
 
 bp = Blueprint("diffusion", __name__, url_prefix="/api")
 
