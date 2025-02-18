@@ -2,7 +2,7 @@ import os
 import torch
 from diffusers import StableDiffusionUpscalePipeline
 from common.context import Context
-from utils.diffusers_helpers import diffusers_upscale_call
+from utils.diffusers_helpers import upscale_call
 
 pipe = None
 
@@ -24,7 +24,7 @@ def get_pipeline(model_id):
 def main(context: Context, model_id="stabilityai/stable-diffusion-x4-upscaler", mode="upscaler"):
     pipe = get_pipeline(model_id)
 
-    return diffusers_upscale_call(pipe, context)
+    return upscale_call(pipe, context)
 
 
 if __name__ == "__main__":

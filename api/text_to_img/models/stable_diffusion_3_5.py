@@ -1,8 +1,6 @@
 import torch
 import os
-from diffusers import StableDiffusion3Pipeline
 from utils.utils import get_16_9_resolution
-from utils.diffusers_helpers import diffusers_call, optimize_pipeline
 from common.context import Context
 from img_to_img.models.auto_diffusion import main as auto_diffusion
 

@@ -5,7 +5,7 @@ from utils.utils import get_16_9_resolution
 from common.context import Context
 
 
-def diffusers_call(pipe, context: Context, use_image_wh=False):
+def text_to_image_call(pipe, context: Context, use_image_wh=False):
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
     wh = context.resize_max_wh(division=16)
@@ -41,10 +41,11 @@ def diffusers_call(pipe, context: Context, use_image_wh=False):
     return processed_path
 
 
-def diffusers_image_call(pipe, context: Context):
+def image_to_image_call(pipe, context: Context):
     image = context.load_image(division=16)  # Load input image
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
+
     args = {
         "width": image.size[0],
         "height": image.size[1],
@@ -67,7 +68,7 @@ def diffusers_image_call(pipe, context: Context):
     return processed_path
 
 
-def diffusers_inpainting_call(pipe, context: Context):
+def inpainting_call(pipe, context: Context):
     image = context.load_image(division=16)
     mask = context.load_mask()
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
@@ -97,7 +98,7 @@ def diffusers_inpainting_call(pipe, context: Context):
     return processed_path
 
 
-def diffusers_upscale_call(pipe, context: Context):
+def upscale_call(pipe, context: Context):
 
     width, height = get_16_9_resolution("540p")  # 4k
     # width, height = get_16_9_resolution("360p")  # 1440p

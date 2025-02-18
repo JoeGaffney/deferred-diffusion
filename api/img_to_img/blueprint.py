@@ -35,13 +35,17 @@ def img_to_img():
         result = main(context, model_id=model, mode="upscaler")
         return jsonify(result)
 
-    #
+    # vary the mode based on the inputs
     mode = "img_to_img"
     if context.input_mask_path != "":
         mode = "img_to_img_inpainting"
 
+    # does not support inpainting
     if model == "stabilityai/stable-diffusion-xl-refiner-1.0":
         mode = "img_to_img"
+
+    if context.input_image_path == "":
+        mode = "text_to_image"
 
     main = auto_diffusion
 
