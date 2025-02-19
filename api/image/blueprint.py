@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from common.context import Context
-from models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
-from models.auto_diffusion import main as auto_diffusion
+from image.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
+from image.models.auto_diffusion import main as auto_diffusion
 
 bp = Blueprint("image", __name__, url_prefix="/api")
 
@@ -27,6 +27,7 @@ def image():
         inpainting_full_image=data.get("inpainting_full_image", True),
         disable_text_encoder_3=data.get("disable_text_encoder_3", True),
         controlnets=data.get("controlnets", []),
+        model=data.get("model"),
     )
 
     main = None

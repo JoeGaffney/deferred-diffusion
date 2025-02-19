@@ -47,6 +47,23 @@ def get_top_level_parameters(hda_node):
     if (not "src" in valid_inputs) and ("input_image_path" in params):
         params.pop("input_image_path")
 
+    # Extract the controlnets all parameters should be prefixed with 'controlnet_*'
+    controlnets = []
+    for current in valid_inputs:
+        if current.startswith("controlnet_"):
+
+            tmp = {
+                "model": params.get(f"{current}_model", ""),
+                "input_image": params.get(f"{current}_path", ""),
+                "conditioning_scale": params.get(f"{current}_conditioning_scale", 0.5),
+                "current": current,
+            }
+            if tmp["model"] != "":
+                controlnets.append(tmp)
+
+    print("Controlnets:", controlnets)
+    params["controlnets"] = controlnets
+
     return params
 
 
@@ -64,6 +81,8 @@ def trigger_api(kwargs=None, mode="image"):
     save_tmp_image(node, "tmp_input_image")
     save_tmp_image(node, "tmp_input_image")
     save_tmp_image(node, "tmp_input_mask")
+    for i in range(2):
+        save_tmp_image(node, f"tmp_controlnet_{i}")
 
     # Extract top-level parameters
     parameters = get_top_level_parameters(node)
