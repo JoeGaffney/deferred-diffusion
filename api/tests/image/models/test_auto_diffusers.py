@@ -1,6 +1,6 @@
 from utils.utils import get_16_9_resolution
 from common.context import Context
-from models.auto_diffusion import main
+from image.models.auto_diffusion import main
 import os
 
 
@@ -16,8 +16,6 @@ def validation_tests(
 ):
     width, height = get_16_9_resolution("540p")
 
-    prompt = "Detailed, 8k, DSLR photo, photorealistic, Eye, enchance keep original elements"
-
     for model_id in model_ids:
         for mode in ["text_to_image", "img_to_img", "img_to_img_inpainting"]:
             model_id_nice = model_id.replace("/", "_")
@@ -30,7 +28,7 @@ def validation_tests(
                     output_image_path=f"../tmp/output/{model_id_nice}/{output_name}_{mode}.png",
                     prompt=prompt,
                     strength=0.5,
-                    guidance_scale=7.5,
+                    guidance_scale=5,
                     max_width=width,
                     max_height=height,
                     controlnets=controlnets,

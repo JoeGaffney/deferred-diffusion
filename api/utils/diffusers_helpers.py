@@ -36,7 +36,7 @@ def text_to_image_call(pipe, context: Context):
             args["image"] = context.get_controlnet_images(wh)
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    context.log("Text to image call {args}")
+    context.log(f"Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
 
     if use_image_wh:

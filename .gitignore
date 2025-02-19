@@ -15,7 +15,7 @@ pyenv.cfg
 __pycache__/
 
 # misc
-tmp/
+tmp
 nuke/
 hda/backup/
 

@@ -1,5 +1,4 @@
 from flask import Flask
-from common.context import Context
 
 app = Flask(__name__)
 

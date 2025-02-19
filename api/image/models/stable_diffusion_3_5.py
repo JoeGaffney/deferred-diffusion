@@ -2,7 +2,7 @@ import torch
 import os
 from utils.utils import get_16_9_resolution
 from common.context import Context
-from img_to_img.models.auto_diffusion import main as auto_diffusion
+from image.models.auto_diffusion import main as auto_diffusion
 
 
 model_id = "stabilityai/stable-diffusion-3.5-medium"
