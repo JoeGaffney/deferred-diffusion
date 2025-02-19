@@ -3,18 +3,18 @@ from common.context import Context
 from models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
 from models.auto_diffusion import main as auto_diffusion
 
-bp = Blueprint("img_to_img", __name__, url_prefix="/api")
+bp = Blueprint("image", __name__, url_prefix="/api")
 
 
-@bp.route("img_to_img", methods=["POST"])
-def img_to_img():
+@bp.route("image", methods=["POST"])
+def image():
     data = request.json
     model = data.get("model")
     context = Context(
-        input_image_path=data.get("input_image_path", "../tmp/input.png"),
+        input_image_path=data.get("input_image_path", ""),
         input_mask_path=data.get("input_mask_path", ""),
-        output_video_path=data.get("output_video_path", "../tmp/outputs/processed.mp4"),
-        output_image_path=data.get("output_image_path", "../tmp/outputs/processed.png"),
+        output_video_path=data.get("output_video_path", ""),
+        output_image_path=data.get("output_image_path", ""),
         max_height=data.get("max_height", 2048),
         max_width=data.get("max_width", 2048),
         negative_prompt=data.get("negative_prompt", "worst quality, inconsistent motion, blurry, jittery, distorted"),

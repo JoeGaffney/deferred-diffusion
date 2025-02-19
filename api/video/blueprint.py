@@ -1,17 +1,18 @@
 from flask import Blueprint, request, jsonify
 from common.context import Context
-from models.auto_diffusion import main as auto_diffusion
+from models.stable_video_diffusion import main as stable_video_diffusion_main
+from models.cog_video_x import main as cog_video_x_main
+from models.ltx_video import main as ltx_video_main
 
-bp = Blueprint("text_to_img", __name__, url_prefix="/api")
+bp = Blueprint("video", __name__, url_prefix="/api")
 
 
-@bp.route("text_to_img", methods=["POST"])
-def img_to_img():
+@bp.route("video", methods=["POST"])
+def diffusion():
     data = request.json
     model = data.get("model")
     context = Context(
         input_image_path=data.get("input_image_path", "../tmp/input.png"),
-        input_mask_path=data.get("input_mask_path", "../tmp/input_mask.png"),
         output_video_path=data.get("output_video_path", "../tmp/outputs/processed.mp4"),
         output_image_path=data.get("output_image_path", "../tmp/outputs/processed.png"),
         max_height=data.get("max_height", 2048),
@@ -22,15 +23,19 @@ def img_to_img():
         prompt=data.get("prompt", "Detailed, 8k, photorealistic"),
         seed=data.get("seed", 42),
         strength=data.get("strength", 0.5),
-        guidance_scale=data.get("guidance_scale", 10.0),
     )
 
     main = None
-    main = auto_diffusion
+    if model == "stable_video_diffusion":
+        main = stable_video_diffusion_main
+    elif model == "cog_video_x":
+        main = cog_video_x_main
+    elif model == "ltx_video":
+        main = ltx_video_main
 
     if not main:
-        return jsonify({"error": f"Invalid model {model}"})
+        return jsonify({"error": f"Invalid model {str(model)}"})
 
-    result = main(context, model_id=model, mode="text_to_image")
+    result = main(context)
 
     return jsonify(result)

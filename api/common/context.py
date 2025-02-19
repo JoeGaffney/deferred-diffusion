@@ -26,8 +26,8 @@ class Context:
         self,
         model="",
         guidance_scale=10.0,
-        input_image_path="../tmp/input.png",
-        input_mask_path="../tmp/mask.png",
+        input_image_path="",
+        input_mask_path="",
         max_height=2048,
         max_width=2048,
         negative_prompt="worst quality, inconsistent motion, blurry, jittery, distorted",
@@ -130,7 +130,6 @@ class Context:
 
     def load_image(self, division=8, scale=1.0):
         if not os.path.exists(self.input_image_path):
-
             raise FileNotFoundError(self.input_image_path)
 
         image = load_image(self.input_image_path)
@@ -141,7 +140,7 @@ class Context:
         tmp = self.resize_image(image, division, scale)
         return tmp
 
-    def load_mask(self):
+    def load_mask(self, size):
         if not os.path.exists(self.input_mask_path):
             raise FileNotFoundError(self.input_mask_path)
 
@@ -149,11 +148,11 @@ class Context:
         image = image.convert("L")
 
         # ensure he same size as the color image
-        image = self.resize_image_to_orig(image)
+        image = image.resize(size)
         self.log(f"Mask loaded from {self.input_mask_path} size: {image.size}")
         return image
 
-    def get_controlnet_images(self):
+    def get_controlnet_images(self, size):
         if self.controlnets_enabled == False:
             return []
 
@@ -162,7 +161,7 @@ class Context:
             image = load_image(controlnet.input_image)
 
             # ensure the same size as the color image
-            image = self.resize_image_to_orig(image)
+            image = image.resize(size)
             images.append(image)
         return images
 

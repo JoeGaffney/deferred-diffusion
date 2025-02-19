@@ -5,9 +5,15 @@ from utils.utils import get_16_9_resolution
 from common.context import Context
 
 
-def text_to_image_call(pipe, context: Context, use_image_wh=False):
+def text_to_image_call(pipe, context: Context):
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
+
+    # is there is base image attached use it's dimensions
+    use_image_wh = False
+    if context.input_image_path != "":
+        use_image_wh = True
+
     wh = context.resize_max_wh(division=16)
     if use_image_wh:
         image = context.load_image(division=16)  # Load input image
@@ -25,11 +31,12 @@ def text_to_image_call(pipe, context: Context, use_image_wh=False):
     if context.controlnets_enabled:
         # different pattern of arguments
         if context.sd3_controlnet_mode:
-            args["control_image"] = context.get_controlnet_images()
+            args["control_image"] = context.get_controlnet_images(wh)
         else:
-            args["image"] = context.get_controlnet_images()
+            args["image"] = context.get_controlnet_images(wh)
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
+    context.log("Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
 
     if use_image_wh:
@@ -58,9 +65,10 @@ def image_to_image_call(pipe, context: Context):
         "guidance_scale": context.guidance_scale,
     }
     if context.controlnets_enabled:
-        args["control_image"] = context.get_controlnet_images()
+        args["control_image"] = context.get_controlnet_images(image.size)
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
+    context.log(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image)
@@ -70,7 +78,7 @@ def image_to_image_call(pipe, context: Context):
 
 def inpainting_call(pipe, context: Context):
     image = context.load_image(division=16)
-    mask = context.load_mask()
+    mask = context.load_mask(image.size)
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
     context.to_dict()
 
@@ -88,9 +96,10 @@ def inpainting_call(pipe, context: Context):
         "padding_mask_crop": None if context.inpainting_full_image == True else 32,
     }
     if context.controlnets_enabled:
-        args["control_image"] = context.get_controlnet_images()
+        args["control_image"] = context.get_controlnet_images(image.size)
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
+    context.log(f"Inpainting call {args}")
     processed_image = pipe(**args).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image)

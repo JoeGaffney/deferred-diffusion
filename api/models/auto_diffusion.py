@@ -109,7 +109,6 @@ def main_sd3_controlnets(context: Context, model_id="stabilityai/stable-diffusio
                 disable_text_encoder_3=disable_text_encoder_3,
             ),
             context,
-            use_image_wh=False,
         )
     elif mode == "img_to_img":
         # there is no dedicated img to img control net for SD3
@@ -121,7 +120,6 @@ def main_sd3_controlnets(context: Context, model_id="stabilityai/stable-diffusio
                 disable_text_encoder_3=disable_text_encoder_3,
             ),
             context,
-            use_image_wh=True,
         )
 
     elif mode == "img_to_img_inpainting":
@@ -134,7 +132,6 @@ def main_sd3_controlnets(context: Context, model_id="stabilityai/stable-diffusio
                 disable_text_encoder_3=disable_text_encoder_3,
             ),
             context,
-            use_image_wh=True,
         )
 
     return "invalid mode"

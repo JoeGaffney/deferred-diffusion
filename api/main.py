@@ -3,13 +3,11 @@ from common.context import Context
 
 app = Flask(__name__)
 
-from img_to_video.blueprint import bp as img_to_video
-from img_to_img.blueprint import bp as img_to_img
-from text_to_img.blueprint import bp as text_to_img
+from video.blueprint import bp as video
+from image.blueprint import bp as image
 
-app.register_blueprint(img_to_video)
-app.register_blueprint(img_to_img)
-app.register_blueprint(text_to_img)
+app.register_blueprint(video)
+app.register_blueprint(image)
 
 
 if __name__ == "__main__":
