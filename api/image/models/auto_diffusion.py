@@ -9,10 +9,10 @@ from diffusers import (
 )
 from utils.diffusers_helpers import (
     image_to_image_call,
-    optimize_pipeline,
     text_to_image_call,
     inpainting_call,
 )
+from utils.pipeline_helpers import optimize_pipeline
 from common.context import Context
 
 
@@ -29,14 +29,17 @@ def get_pipeline(model_id, torch_dtype=torch.float16, disable_text_encoder_3=Tru
             text_encoder_3=None,
             tokenizer_3=None,
         )
+        pipe = optimize_pipeline(pipe)
     else:
         pipe = DiffusionPipeline.from_pretrained(
             model_id,
             torch_dtype=torch_dtype,
             use_safetensors=True,
         )
+        pipe = optimize_pipeline(pipe, enable_sequential_cpu_offload=True)
+
     print("loaded pipeline", model_id, torch_dtype)
-    return optimize_pipeline(pipe)
+    return pipe
 
 
 def get_text_pipeline(model_id, torch_dtype=torch.float16, controlnets=[], disable_text_encoder_3=True):

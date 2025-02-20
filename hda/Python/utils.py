@@ -111,5 +111,16 @@ def api_image(kwargs=None):
     trigger_api(kwargs, "image")
 
 
+def api_image_frame_range(kwargs=None):
+    start_frame = int(hou.playbar.frameRange().x())
+    end_frame = int(hou.playbar.frameRange().y())
+    print(f"Frame Range: {start_frame} - {end_frame}")
+
+    for frame in range(start_frame, end_frame + 1):
+        hou.setFrame(frame)
+        api_image(kwargs)
+        # hou.ui.waitUntil(lambda: False)  # Allow Houdini to update the UI
+
+
 def api_video(kwargs=None):
     trigger_api(kwargs, "video")

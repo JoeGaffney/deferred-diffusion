@@ -58,7 +58,6 @@ class Context:
         self.prompt = prompt
         self.seed = seed
         self.strength = strength
-        self.disable_text_encoder_3 = bool(disable_text_encoder_3)
         self.inpainting_full_image = bool(inpainting_full_image)
 
         ensure_path_exists(self.output_image_path)
@@ -68,8 +67,15 @@ class Context:
         # we can switch this for optimal performance control net data type needs to match also
         self.torch_dtype = torch_dtype_map.get(self.model, torch.float16)
 
-        # add our control nets
+        # check if the model is a sd3 model
         self.model_sd3 = is_model_sd3(model)
+
+        # SD3 models disabling the text encoder 3 can reduce vram usage
+        self.disable_text_encoder_3 = True
+        if self.model_sd3 and bool(disable_text_encoder_3) == False:
+            self.disable_text_encoder_3 = False
+
+        # add our control nets
         self.controlnets: List[ControlNet] = []
         for current in controlnets:
             tmp = ControlNet(current, torch_dtype=self.torch_dtype)
