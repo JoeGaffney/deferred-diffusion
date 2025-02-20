@@ -31,24 +31,23 @@ def image():
     )
 
     main = None
-    if model == "stable_diffusion_upscaler":
+    if model == "stabilityai/stable-diffusion-x4-upscaler":
         main = stable_diffusion_upscaler
-        result = main(context, model_id=model, mode="upscaler")
-        return jsonify(result)
-
-    # vary the mode based on the inputs
-    mode = "img_to_img"
-    if context.input_mask_path != "":
-        mode = "img_to_img_inpainting"
-
-    # does not support inpainting
-    if model == "stabilityai/stable-diffusion-xl-refiner-1.0":
+        mode = "upscale"
+    else:
+        # vary the mode based on the inputs
         mode = "img_to_img"
+        if context.input_mask_path != "":
+            mode = "img_to_img_inpainting"
 
-    if context.input_image_path == "":
-        mode = "text_to_image"
+        # does not support inpainting
+        if model == "stabilityai/stable-diffusion-xl-refiner-1.0":
+            mode = "img_to_img"
 
-    main = auto_diffusion
+        if context.input_image_path == "":
+            mode = "text_to_image"
+
+        main = auto_diffusion
 
     if not main:
         return jsonify({"error": "Invalid model"})

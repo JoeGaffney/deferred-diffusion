@@ -18,7 +18,7 @@ def load_controlnet(model, torch_dtype=torch.float16):
     except:
         print("Failed to load SD3ControlNetModel", model, torch_dtype)
 
-    # need to offload
+    # if not setting cuda here we get clashes with the main model unsure if the controlnet inherits the cup offload
     controlnet.to("cuda")
     return controlnet
 

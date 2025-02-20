@@ -1,30 +1,26 @@
+from functools import lru_cache
 import os
 import torch
 from diffusers import StableDiffusionUpscalePipeline
 from common.context import Context
 from utils.diffusers_helpers import upscale_call
+from utils.pipeline_helpers import optimize_pipeline
 
-pipe = None
 
-
+@lru_cache(maxsize=1)
 def get_pipeline(model_id):
-    global pipe
-    if pipe is None:
-        pipe = StableDiffusionUpscalePipeline.from_pretrained(
-            model_id,
-            torch_dtype=torch.float16,
-            revision="fp16",
-        )
-        pipe.enable_model_cpu_offload()
-        pipe.vae.enable_tiling()
+    pipe = StableDiffusionUpscalePipeline.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+    )
 
-    return pipe
+    return optimize_pipeline(pipe)
 
 
 def main(context: Context, model_id="stabilityai/stable-diffusion-x4-upscaler", mode="upscaler"):
     pipe = get_pipeline(model_id)
 
-    return upscale_call(pipe, context)
+    return upscale_call(pipe, context, scale=4)
 
 
 if __name__ == "__main__":

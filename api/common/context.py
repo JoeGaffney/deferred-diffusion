@@ -9,13 +9,6 @@ from utils.utils import ensure_path_exists, save_copy_with_timestamp
 from utils.logger import logger
 from utils import device_info
 
-torch_dtype_map = {
-    "stabilityai/stable-diffusion-3-medium-diffusers": torch.float16,
-    "stabilityai/stable-diffusion-3.5-medium": torch.bfloat16,
-    "stabilityai/stable-diffusion-xl-base-1.0": torch.float16,
-    "stabilityai/stable-diffusion-xl-refiner-1.0": torch.float16,
-}
-
 
 def is_model_sd3(model):
     return "stable-diffusion-3" in model
@@ -59,18 +52,14 @@ class Context:
         self.seed = seed
         self.strength = strength
         self.inpainting_full_image = bool(inpainting_full_image)
+        self.torch_dtype = torch.float16  # just keep float 16 for now
 
         ensure_path_exists(self.output_image_path)
         ensure_path_exists(self.output_video_path)
         ensure_path_exists(self.input_image_path)
 
-        # we can switch this for optimal performance control net data type needs to match also
-        self.torch_dtype = torch_dtype_map.get(self.model, torch.float16)
-
-        # check if the model is a sd3 model
-        self.model_sd3 = is_model_sd3(model)
-
         # SD3 models disabling the text encoder 3 can reduce vram usage
+        self.model_sd3 = is_model_sd3(model)
         self.disable_text_encoder_3 = True
         if self.model_sd3 and bool(disable_text_encoder_3) == False:
             self.disable_text_encoder_3 = False

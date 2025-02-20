@@ -1,18 +1,13 @@
 from transformers import T5EncoderModel, BitsAndBytesConfig
 
 
-def optimize_pipeline(pipe, disable_safety_checker=True, enable_sequential_cpu_offload=False):
+def optimize_pipeline(pipe, disable_safety_checker=True):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
 
     # Enable CPU offload to save GPU memory
     pipe.enable_model_cpu_offload()
-
-    # slower but allows larger SD3 models
-    if enable_sequential_cpu_offload:
-        pipe.enable_sequential_cpu_offload()
-
     pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
     pipe.vae.enable_slicing()
     pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
@@ -32,3 +27,7 @@ def get_t5_quantized(model_id):
         subfolder="text_encoder_3",
         quantization_config=quantization_config,
     )
+
+
+def get_t5_8_bit(model_id):
+    return T5EncoderModel.from_pretrained(model_id, subfolder="text_encoder_3", load_in_8bit=True, device_map="auto")

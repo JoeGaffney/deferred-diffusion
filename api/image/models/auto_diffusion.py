@@ -19,81 +19,66 @@ from common.context import Context
 @lru_cache(maxsize=4)  # Cache up to 4 different pipelines
 def get_pipeline(model_id, torch_dtype=torch.float16, disable_text_encoder_3=True):
 
+    args = {"torch_dtype": torch_dtype, "use_safetensors": True}
+
     # this can really eat up the memory
-    pipe = None
     if disable_text_encoder_3 == True:
-        pipe = DiffusionPipeline.from_pretrained(
-            model_id,
-            torch_dtype=torch_dtype,
-            use_safetensors=True,
-            text_encoder_3=None,
-            tokenizer_3=None,
-        )
-        pipe = optimize_pipeline(pipe)
-    else:
-        pipe = DiffusionPipeline.from_pretrained(
-            model_id,
-            torch_dtype=torch_dtype,
-            use_safetensors=True,
-        )
-        pipe = optimize_pipeline(pipe, enable_sequential_cpu_offload=True)
+        args["text_encoder_3"] = None
+        args["tokenizer_3"] = None
+
+    pipe = DiffusionPipeline.from_pretrained(
+        model_id,
+        **args,
+    )
 
     print("loaded pipeline", model_id, torch_dtype)
-    return pipe
+    return optimize_pipeline(pipe)
 
 
 def get_text_pipeline(model_id, torch_dtype=torch.float16, controlnets=[], disable_text_encoder_3=True):
+    args = {}
     if controlnets != []:
-        return AutoPipelineForText2Image.from_pipe(
-            get_pipeline(model_id, torch_dtype=torch_dtype, disable_text_encoder_3=disable_text_encoder_3),
-            requires_safety_checker=False,
-            controlnet=controlnets,
-        )
+        args["controlnet"] = controlnets
 
     return AutoPipelineForText2Image.from_pipe(
         get_pipeline(model_id, torch_dtype=torch_dtype, disable_text_encoder_3=disable_text_encoder_3),
         requires_safety_checker=False,
+        **args,
     )
 
 
 def get_image_pipeline(model_id, torch_dtype=torch.float16, controlnets=[], disable_text_encoder_3=True):
+    args = {}
     if controlnets != []:
-        return AutoPipelineForImage2Image.from_pipe(
-            get_pipeline(model_id, torch_dtype=torch_dtype, disable_text_encoder_3=disable_text_encoder_3),
-            requires_safety_checker=False,
-            controlnet=controlnets,
-        )
+        args["controlnet"] = controlnets
 
     return AutoPipelineForImage2Image.from_pipe(
         get_pipeline(model_id, torch_dtype=torch_dtype, disable_text_encoder_3=disable_text_encoder_3),
         requires_safety_checker=False,
+        **args,
     )
 
 
 def get_inpainting_pipeline(model_id, torch_dtype=torch.float16, controlnets=[], disable_text_encoder_3=True):
+    args = {}
     if controlnets != []:
-        return AutoPipelineForInpainting.from_pipe(
-            get_pipeline(model_id, torch_dtype=torch_dtype, disable_text_encoder_3=disable_text_encoder_3),
-            requires_safety_checker=False,
-            controlnet=controlnets,
-        )
-
+        args["controlnet"] = controlnets
     return AutoPipelineForInpainting.from_pipe(
         get_pipeline(model_id, torch_dtype=torch_dtype, disable_text_encoder_3=disable_text_encoder_3),
         requires_safety_checker=False,
+        **args,
     )
 
 
 # need to grab direct as SD3 control nets not full supported by diffusers
 def get_sd3_controlnet_pipeline(model_id, torch_dtype=torch.float16, controlnets=[], disable_text_encoder_3=True):
-    pipe = None
     pipe = StableDiffusion3ControlNetPipeline.from_pipe(
         get_pipeline(model_id, torch_dtype=torch_dtype, disable_text_encoder_3=disable_text_encoder_3),
         controlnet=controlnets,
     )
 
     print("loaded pipeline", model_id, torch_dtype, controlnets)
-    return optimize_pipeline(pipe)
+    return pipe
 
 
 # work around as SD3 control nets not full supported by diffusers
@@ -103,41 +88,16 @@ def main_sd3_controlnets(context: Context, model_id="stabilityai/stable-diffusio
     torch_dtype = context.torch_dtype
 
     # work around as SD3 not full supported by diffusers
-    if mode == "text_to_image":
-        return text_to_image_call(
-            get_sd3_controlnet_pipeline(
-                model_id,
-                torch_dtype=torch_dtype,
-                controlnets=controlnets,
-                disable_text_encoder_3=disable_text_encoder_3,
-            ),
-            context,
-        )
-    elif mode == "img_to_img":
-        # there is no dedicated img to img control net for SD3
-        return text_to_image_call(
-            get_sd3_controlnet_pipeline(
-                model_id,
-                torch_dtype=torch_dtype,
-                controlnets=controlnets,
-                disable_text_encoder_3=disable_text_encoder_3,
-            ),
-            context,
-        )
-
-    elif mode == "img_to_img_inpainting":
-        # there is no dedicated img to img inpainting control net for SD3
-        return text_to_image_call(
-            get_sd3_controlnet_pipeline(
-                model_id,
-                torch_dtype=torch_dtype,
-                controlnets=controlnets,
-                disable_text_encoder_3=disable_text_encoder_3,
-            ),
-            context,
-        )
-
-    return "invalid mode"
+    # there is no dedicated img to img or inpainting control net for SD3 atm
+    return text_to_image_call(
+        get_sd3_controlnet_pipeline(
+            model_id,
+            torch_dtype=torch_dtype,
+            controlnets=controlnets,
+            disable_text_encoder_3=disable_text_encoder_3,
+        ),
+        context,
+    )
 
 
 def main(
