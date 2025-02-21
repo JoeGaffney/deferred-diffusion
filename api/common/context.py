@@ -4,6 +4,7 @@ import os
 from typing import List
 from diffusers.utils import export_to_video, load_image
 import torch
+import requests
 from common.control_net import ControlNet
 from utils.utils import ensure_path_exists, save_copy_with_timestamp
 from utils.logger import logger
@@ -94,6 +95,22 @@ class Context:
         self.log(f"Video saved at {path}")
 
         save_copy_with_timestamp(path)
+        return path
+
+    def save_video_url(self, url):
+        path = self.output_video_path
+
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            with open(path, "wb") as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
+
+            self.log(f"Video saved at {path}")
+            save_copy_with_timestamp(path)
+        else:
+            raise Exception(f"Failed to download file. Status code: {response.status_code}")
+
         return path
 
     def log(self, message):

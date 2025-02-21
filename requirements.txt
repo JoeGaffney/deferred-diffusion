@@ -9,3 +9,4 @@ imageio
 imageio-ffmpeg
 protobuf
 bitsandbytes
+runwayml

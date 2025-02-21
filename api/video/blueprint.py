@@ -3,6 +3,7 @@ from common.context import Context
 from video.models.stable_video_diffusion import main as stable_video_diffusion_main
 from video.models.cog_video_x import main as cog_video_x_main
 from video.models.ltx_video import main as ltx_video_main
+from video.models.runway_gen3 import main as runway_gen3_main
 
 bp = Blueprint("video", __name__, url_prefix="/api")
 
@@ -32,6 +33,8 @@ def diffusion():
         main = cog_video_x_main
     elif model == "ltx_video":
         main = ltx_video_main
+    elif model == "runway/gen3a_turbo":
+        main = runway_gen3_main
 
     if not main:
         return jsonify({"error": f"Invalid model {str(model)}"})
