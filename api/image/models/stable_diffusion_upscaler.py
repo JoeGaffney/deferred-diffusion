@@ -14,13 +14,11 @@ def get_pipeline(model_id):
         torch_dtype=torch.float16,
     )
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, disable_safety_checker=False)
 
 
 def main(context: Context, model_id="stabilityai/stable-diffusion-x4-upscaler", mode="upscaler"):
-    pipe = get_pipeline(model_id)
-
-    return upscale_call(pipe, context, scale=4)
+    return upscale_call(get_pipeline(model_id), context, scale=4)
 
 
 if __name__ == "__main__":
