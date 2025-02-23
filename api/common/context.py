@@ -35,6 +35,7 @@ class Context:
         disable_text_encoder_3=True,
         inpainting_full_image=True,
         controlnets=[],
+        messages=[],
     ):
         self.model = model
         self.guidance_scale = guidance_scale
@@ -54,6 +55,7 @@ class Context:
         self.strength = strength
         self.inpainting_full_image = bool(inpainting_full_image)
         self.torch_dtype = torch.float16  # just keep float 16 for now
+        self.messages = messages
 
         ensure_path_exists(self.output_image_path)
         ensure_path_exists(self.output_video_path)
