@@ -10,3 +10,4 @@ imageio-ffmpeg
 protobuf
 bitsandbytes
 runwayml
+qwen-vl-utils
