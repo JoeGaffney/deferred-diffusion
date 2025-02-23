@@ -39,7 +39,7 @@ def save_copy_with_timestamp(path):
         name, ext = os.path.splitext(filename)
 
         # Create the timestamped path
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]  # Keep only 3 digits of milliseconds
         timestamp_path = os.path.join(directory, "tmp", f"{name}_{timestamp}{ext}")
         ensure_path_exists(timestamp_path)
 

@@ -36,6 +36,7 @@ class Context:
         inpainting_full_image=True,
         controlnets=[],
         messages=[],
+        num_images_per_prompt=1,
     ):
         self.model = model
         self.guidance_scale = guidance_scale
@@ -56,6 +57,7 @@ class Context:
         self.inpainting_full_image = bool(inpainting_full_image)
         self.torch_dtype = torch.float16  # just keep float 16 for now
         self.messages = messages
+        self.num_images_per_prompt = num_images_per_prompt
 
         ensure_path_exists(self.output_image_path)
         ensure_path_exists(self.output_video_path)

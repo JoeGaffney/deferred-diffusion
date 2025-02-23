@@ -25,6 +25,7 @@ def text_to_image_call(pipe, context: Context):
         "num_inference_steps": context.num_inference_steps,
         "generator": generator,
         "guidance_scale": context.guidance_scale,
+        "num_images_per_prompt": context.num_images_per_prompt,
     }
     if context.controlnets_enabled:
         # different pattern of arguments
@@ -35,14 +36,16 @@ def text_to_image_call(pipe, context: Context):
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
     context.log(f"Text to image call {args}")
-    processed_image = pipe.__call__(**args).images[0]
+    processed_images = pipe.__call__(**args).images
+    processed_path = ""
 
-    if use_image_wh:
-        processed_image = context.resize_image_to_orig(processed_image)
-    else:
-        processed_image = context.resize_image_to_max_wh(processed_image)
+    for processed_image in processed_images:
+        if use_image_wh:
+            processed_image = context.resize_image_to_orig(processed_image)
+        else:
+            processed_image = context.resize_image_to_max_wh(processed_image)
 
-    processed_path = context.save_image(processed_image)
+        processed_path = context.save_image(processed_image)
     return processed_path
 
 
