@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pythonPanelDocument>
+  <!-- This file contains definitions of Python interfaces and the
+ interfaces menu.  It should not be hand-edited when it is being
+ used by the application.  Note, that two definitions of the
+ same interface or of the interfaces menu are not allowed
+ in a single file. -->
+  <interface name="ChainOfThought" label="ChainOfThought" icon="MISC_python" showNetworkNavigationBar="true" help_url="">
+    <script><![CDATA[########################################################################
+# Replace the sample code below with your own to create a
+# PySide interface.  Your code must define an
+# onCreateInterface() function that returns the root widget of
+# your interface.
+#
+# The 'hutil.PySide' is for internal-use only.
+#
+# When developing your own Python Panel, import directly from PySide
+# instead of from 'hutil.PySide'.
+########################################################################
+
+#
+# SAMPLE CODE
+#
+from hutil.PySide import QtWidgets
+
+class MarkdownViewer(QtWidgets.QWidget):
+    """Custom Qt Interface that embeds a Markdown Viewer into the Parameters Pane."""
+    def __init__(self):
+        super(MarkdownViewer, self).__init__()
+
+        layout = QtWidgets.QVBoxLayout()
+
+        self.text_edit = QtWidgets.QTextEdit()
+        self.text_edit.setReadOnly(True)
+
+        self.node = None  # Placeholder for the current node
+        self.updateMarkdown()
+
+        layout.addWidget(self.text_edit)
+        self.setLayout(layout)
+
+    def updateMarkdown(self):
+        """Update the markdown content from the selected node's parameter."""
+        if self.node:
+            parm = self.node.parm("response")
+            if parm:
+                self.text_edit.setMarkdown(parm.eval())
+            else:
+                self.text_edit.setText("No markdown_info parameter found.")
+
+    def onNodePathChanged(self, node):
+        """Called when the Parameters Pane switches to a new node."""
+        self.node = node
+        self.updateMarkdown()
+        
+def onCreateInterface():
+    """Required function to instantiate the UI in Houdini's Python Panel system."""
+    print("here")
+    return MarkdownViewer()
+]]></script>
+    <includeInPaneTabMenu menu_position="0" create_separator="true"/>
+    <includeInToolbarMenu menu_position="202" create_separator="true"/>
+    <showInParametersPane optype=""/>
+    <help><![CDATA[]]></help>
+  </interface>
+</pythonPanelDocument>

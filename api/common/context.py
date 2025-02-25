@@ -120,6 +120,9 @@ class Context:
     def log(self, message):
         logger.info(message)
 
+    def log_error(self, message):
+        logger.error(message)
+
     def resize_image(self, image, division=16, scale=1.0):
 
         # Ensure the new dimensions do not exceed max_width and max_height

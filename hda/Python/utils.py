@@ -7,6 +7,27 @@ import time
 MAX_ADDITIONAL_IMAGES = 3
 
 
+def split_text(text, max_length=120):
+    words = text.split()
+    lines = []
+    current_line = ""
+
+    for word in words:
+        if len(current_line) + len(word) + 1 > max_length:
+            lines.append(current_line)
+            current_line = word
+        else:
+            if current_line:
+                current_line += " " + word
+            else:
+                current_line = word
+
+    if current_line:
+        lines.append(current_line)
+
+    return "\n".join(lines)
+
+
 def save_tmp_image(node, node_name):
     tmp_image_node = node.node(node_name)
     if tmp_image_node is None:
@@ -66,7 +87,10 @@ def extract_and_format_parameters(hda_node):
 
 
 def get_messages(params):
+
+    # get the current message
     message_content = []
+
     for i in range(MAX_ADDITIONAL_IMAGES):
         if f"image_{i}_path" in params:
             message_content.append(
@@ -76,13 +100,23 @@ def get_messages(params):
                 }
             )
     message_content.append({"type": "text", "text": params.get("prompt", "")})
-    messages = [
+    message = [
         {
             "role": "user",
             "content": message_content,
         }
     ]
 
+    # factor previous chaing of thought
+    previous_messages = []
+    previous_messages_str = params.get("previous_messages", "[]")
+    try:
+        previous_messages = json.loads(previous_messages_str)
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        previous_messages = []
+
+    messages = previous_messages + message
     return messages
 
 
@@ -117,19 +151,25 @@ def add_response_data(node, body, mode, response, start_time):
 
     # Check if the parameter already exists
     if not node.parm("call_metadata"):
-        # Create a string parameter (single-component)
         parm_template = hou.StringParmTemplate(
             "call_metadata", "Call Metadata", 1, string_type=hou.stringParmType.Regular
         )
         parm_template.setTags({"editor": "1", "editorlang": "python"})
         node.addSpareParmTuple(parm_template)
 
-    # Set the parameter value as a string
     node.parm("call_metadata").set(call_metadata_str)
 
-    # only on text node atm
-    if node.parm("response"):
-        node.parm("response").set(str(response.text))
+    # apply json response to the text node
+    json_response = response.json() or {}
+
+    # apply to the text node
+    if json_response.get("chain_of_thought") and node.parm("chain_of_thought"):
+        chain_of_thought_str = json.dumps(json_response.get("chain_of_thought"), indent=2)  # More readable
+        node.parm("chain_of_thought").set(chain_of_thought_str)
+
+    if json_response.get("response") and node.parm("response"):
+        # text box does not wrap text
+        node.parm("response").set(split_text(str(json_response["response"])))
 
 
 def trigger_api(node, mode="image"):

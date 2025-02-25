@@ -1,3 +1,4 @@
+import copy
 from functools import lru_cache
 import os
 import sys
@@ -7,6 +8,7 @@ from common.context import Context
 from utils.pipeline_helpers import free_gpu_memory
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
+from utils.logger import logger
 
 
 @lru_cache(maxsize=1)
@@ -26,19 +28,26 @@ def get_pipeline(model_id):
 
 def main(context: Context, model_id="Qwen/Qwen2.5-VL-3B-Instruct", mode="text", flush_gpu_memory=True):
     model, processor = get_pipeline(model_id)
-
     messages = context.messages
 
-    print(messages)
     # Preparation for inference
     text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    print("messages: ")
+    for message in messages:
+        print(message)
+    print("text: ", text)
+
+    # only reprocess the images and videos in the last message
+    last_message = messages[-1]
     try:
-        image_inputs, video_inputs = process_vision_info(messages)
+        image_inputs, video_inputs = process_vision_info([last_message])
     except Exception as e:
         error_message = f"Error during vision info processing: {e}\n{traceback.format_exc()}"
-        print(error_message)
-        return error_message
+        context.log_error(error_message)
+        return {"error": error_message}
 
+    print(f"image_inputs: {image_inputs}")
+    print(f"video_inputs: {video_inputs}")
     output = ""
     try:
         model = model.to("cuda")  # Move GPU
@@ -57,7 +66,6 @@ def main(context: Context, model_id="Qwen/Qwen2.5-VL-3B-Instruct", mode="text", 
         output_text = processor.batch_decode(
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )
-        print(output_text)
         output = output_text[0]
     except Exception as e:
         print(f"Error during inference: {e}")
@@ -68,7 +76,23 @@ def main(context: Context, model_id="Qwen/Qwen2.5-VL-3B-Instruct", mode="text", 
             inputs = inputs.to("cpu")  # Move inputs back to CPU
             free_gpu_memory()
 
-    return output
+    chain_of_thought = copy.deepcopy(messages)
+    chain_of_thought.append(
+        {
+            "role": "assistant",
+            "content": {
+                "type": "text",
+                "text": output,
+            },
+        }
+    )
+    result = {
+        "response": output,
+        "chain_of_thought": chain_of_thought,
+    }
+
+    context.log(result)
+    return result
 
 
 if __name__ == "__main__":
