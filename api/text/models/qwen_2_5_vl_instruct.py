@@ -32,10 +32,6 @@ def main(context: Context, model_id="Qwen/Qwen2.5-VL-3B-Instruct", mode="text", 
 
     # Preparation for inference
     text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    print("messages: ")
-    for message in messages:
-        print(message)
-    print("text: ", text)
 
     # only reprocess the images and videos in the last message
     last_message = messages[-1]
@@ -46,8 +42,6 @@ def main(context: Context, model_id="Qwen/Qwen2.5-VL-3B-Instruct", mode="text", 
         context.log_error(error_message)
         return {"error": error_message}
 
-    print(f"image_inputs: {image_inputs}")
-    print(f"video_inputs: {video_inputs}")
     output = ""
     try:
         model = model.to("cuda")  # Move GPU
@@ -80,10 +74,12 @@ def main(context: Context, model_id="Qwen/Qwen2.5-VL-3B-Instruct", mode="text", 
     chain_of_thought.append(
         {
             "role": "assistant",
-            "content": {
-                "type": "text",
-                "text": output,
-            },
+            "content": [
+                {
+                    "type": "text",
+                    "text": output,
+                }
+            ],
         }
     )
     result = {

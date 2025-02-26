@@ -168,7 +168,7 @@ def add_response_data(node, body, mode, response, start_time):
         node.parm("chain_of_thought").set(chain_of_thought_str)
 
     if json_response.get("response") and node.parm("response"):
-        # text box does not wrap text
+        # text box does not wrap
         node.parm("response").set(split_text(str(json_response["response"])))
 
 
@@ -182,7 +182,7 @@ def trigger_api(node, mode="image"):
 
     # Extract top-level parameters
     parameters = extract_and_format_parameters(node)
-    print(f"Extracted Parameters: {parameters}")
+    # print(f"Extracted Parameters: {parameters}")
 
     # API Call
     api_root = os.getenv("DD_SERVER_ADDRESS", "http://127.0.0.1:5000/api")
