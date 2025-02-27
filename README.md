@@ -23,11 +23,12 @@ more applications or a standalone ui.
 
 # Testing
 
-Manual functions at the moment but will run through common diffuser pipelines
+Pytest is used for integration tests confirming the models run.
 
 ```
 cd api
-python -m tests.image.models.test_auto_diffusers
+pytest -v
+pytest .\tests\text\models\test_qwen_2_5_vl_instruct.py
 ```
 
 ## To test running models directly

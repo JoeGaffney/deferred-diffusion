@@ -10,8 +10,12 @@
   "black-formatter.args": ["--line-length=119"],
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    }
   },
+  "isort.args": ["--profile", "black"],
   "prettier.printWidth": 119,
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": "active",

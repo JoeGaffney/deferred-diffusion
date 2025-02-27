@@ -1,19 +1,21 @@
-import torch
 from functools import lru_cache
+
+import torch
+from common.context import Context
 from diffusers import (
     AutoPipelineForImage2Image,
-    AutoPipelineForText2Image,
     AutoPipelineForInpainting,
+    AutoPipelineForText2Image,
     DiffusionPipeline,
     StableDiffusion3ControlNetPipeline,
 )
 from utils.diffusers_helpers import (
     image_to_image_call,
-    text_to_image_call,
     inpainting_call,
+    text_to_image_call,
 )
+from utils.logger import logger
 from utils.pipeline_helpers import optimize_pipeline
-from common.context import Context
 
 
 @lru_cache(maxsize=4)  # Cache up to 4 different pipelines
@@ -31,7 +33,7 @@ def get_pipeline(model_id, torch_dtype=torch.float16, disable_text_encoder_3=Tru
         **args,
     )
 
-    print("loaded pipeline", model_id, torch_dtype)
+    logger.warning(f"Loaded pipeline {model_id}")
     return optimize_pipeline(pipe)
 
 

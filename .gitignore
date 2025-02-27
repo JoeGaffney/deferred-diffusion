@@ -13,6 +13,7 @@ venv/
 venv/pyenv.cfg
 pyenv.cfg
 __pycache__/
+.pytest_cache/
 
 # misc
 tmp

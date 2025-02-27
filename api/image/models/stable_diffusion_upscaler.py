@@ -1,9 +1,11 @@
-from functools import lru_cache
 import os
+from functools import lru_cache
+
 import torch
-from diffusers import StableDiffusionUpscalePipeline
 from common.context import Context
+from diffusers import StableDiffusionUpscalePipeline
 from utils.diffusers_helpers import upscale_call
+from utils.logger import logger
 from utils.pipeline_helpers import optimize_pipeline
 
 
@@ -14,6 +16,7 @@ def get_pipeline(model_id):
         torch_dtype=torch.float16,
     )
 
+    logger.warning(f"Loaded pipeline {model_id}")
     return optimize_pipeline(pipe, disable_safety_checker=False)
 
 
