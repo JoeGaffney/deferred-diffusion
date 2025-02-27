@@ -21,7 +21,7 @@ class TextResponse(BaseModel):
 
 
 @router.post("/", response_model=TextResponse)
-def diffusion(request: TextRequest):
+def create(request: TextRequest):
     context = Context(
         negative_prompt=request.negative_prompt,
         num_frames=request.num_frames,

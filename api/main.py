@@ -3,7 +3,7 @@ from fastapi import FastAPI
 import uvicorn
 
 app = Flask(__name__)
-app = FastAPI(title="Defferred Diffusion API App")
+app = FastAPI(title="API")
 
 from image import router as image
 from video import router as video

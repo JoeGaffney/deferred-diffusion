@@ -41,7 +41,22 @@ python -m video.models.ltx_video
 python -m video.models.stable_video_diffusion
 ```
 
-# HDA's
+# HDA's houdini setup
+
+## Python Modules
+
+httpx needs to be available to houdini fothe api client to work.
+
+You can install like this to put on roaming path.
+
+```
+"C:\Program Files\Side Effects Software\Houdini XX.X\bin\hython.exe" -m pip install httpx
+"C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
+```
+
+## Env file
+
+Adjust directories depending on where you have the hda folder.
 
 ```
 HOUDINI_PATH = C:/development/deferred-diffusion/hda;&

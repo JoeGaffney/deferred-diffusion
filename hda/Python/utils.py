@@ -185,8 +185,8 @@ def trigger_api(node, mode="image"):
     # print(f"Extracted Parameters: {parameters}")
 
     # API Call
-    api_root = os.getenv("DD_SERVER_ADDRESS", "http://127.0.0.1:5000/api")
-    api_url = f"{api_root}/{mode}"
+    api_root = os.getenv("DD_SERVER_ADDRESS", "http://127.0.0.1:5000/")
+    api_url = f"{api_root}/api/{mode}"
     body = parameters
 
     response = None

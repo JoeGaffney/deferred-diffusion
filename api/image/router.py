@@ -31,7 +31,7 @@ class ImageResponse(BaseModel):
 
 
 @router.post("/", response_model=ImageResponse)
-def image(request: ImageRequest):
+def create(request: ImageRequest):
     context = Context(
         input_image_path=request.input_image_path,
         input_mask_path=request.input_mask_path,

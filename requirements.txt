@@ -12,3 +12,4 @@ runwayml
 sentencepiece
 transformers
 uvicorn
+openapi-python-client

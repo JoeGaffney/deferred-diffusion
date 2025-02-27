@@ -28,7 +28,7 @@ class VideoResponse(BaseModel):
 
 
 @router.post("/", response_model=VideoResponse)
-def diffusion(request: VideoRequest):
+def create(request: VideoRequest):
     context = Context(
         input_image_path=request.input_image_path,
         output_video_path=request.output_video_path,
