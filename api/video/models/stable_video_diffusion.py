@@ -1,23 +1,24 @@
+from functools import lru_cache
+
 import torch
-from diffusers import StableVideoDiffusionPipeline
-from utils.utils import get_16_9_resolution
 from common.context import Context
+from diffusers import StableVideoDiffusionPipeline
+from utils.logger import logger
+from utils.utils import get_16_9_resolution
 
-pipe = None
 
+@lru_cache(maxsize=1)
+def get_pipeline(model_id):
+    pipe = StableVideoDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16, variant="fp16")
+    pipe.enable_model_cpu_offload()
 
-def get_pipeline():
-    global pipe
-    if pipe is None:
-        model_id = "stabilityai/stable-video-diffusion-img2vid-xt"
-        pipe = StableVideoDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16, variant="fp16")
-        pipe.enable_model_cpu_offload()
-
+    logger.warning(f"Loaded pipeline {model_id}")
     return pipe
 
 
 def main(context: Context):
-    pipe = get_pipeline()
+    model_id = "stabilityai/stable-video-diffusion-img2vid-xt"
+    pipe = get_pipeline(model_id)
     image = context.load_image()
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
 

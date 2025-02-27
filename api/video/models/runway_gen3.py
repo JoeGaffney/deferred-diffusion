@@ -1,9 +1,11 @@
+import base64
+import time
 from io import BytesIO
-import time, base64
 from typing import Literal
-from utils.utils import get_16_9_resolution
+
 from common.context import Context
 from runwayml import RunwayML
+from utils.utils import get_16_9_resolution
 
 
 def poll_result(context: Context, task_id, wait=10):
@@ -15,7 +17,7 @@ def poll_result(context: Context, task_id, wait=10):
     while task.status not in ["SUCCEEDED", "FAILED"]:
         time.sleep(wait)  # Wait for ten seconds before polling
         task = client.tasks.retrieve(task_id)
-        context.log(f"Checking Task: {task}")
+        logger.info(f"Checking Task: {task}")
 
     if task.status == "SUCCEEDED" and task.output:
         return context.save_video_url(task.output[0])
@@ -50,7 +52,7 @@ def create(context: Context):
     model: Literal["gen3a_turbo"] = "gen3a_turbo"
 
     # Create a new image-to-video task using the "gen3a_turbo" model
-    context.log(f"Creating Runway {model} task")
+    logger.info(f"Creating Runway {model} task")
 
     task = client.image_to_video.create(
         model=model,
@@ -63,7 +65,7 @@ def create(context: Context):
     task_id = task.id
 
     # context.task_id = task_id
-    context.log(f"Task ID: {task_id}")
+    logger.info(f"Task ID: {task_id}")
     return task_id
 
 

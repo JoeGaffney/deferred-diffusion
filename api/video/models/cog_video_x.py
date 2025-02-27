@@ -1,28 +1,27 @@
+from functools import lru_cache
+
 import torch
-from diffusers import CogVideoXImageToVideoPipeline
 from common.context import Context
+from diffusers import CogVideoXImageToVideoPipeline
+from utils.logger import logger
 from utils.utils import get_16_9_resolution
 
-pipe = None
 
-model_id = "THUDM/CogVideoX1.5-5b-I2V"
-# model_id = "NimVideo/cogvideox-2b-img2vid"
+@lru_cache(maxsize=1)
+def get_pipeline(model_id):
+    pipe = CogVideoXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
+    pipe.enable_model_cpu_offload()
+    pipe.enable_sequential_cpu_offload()
+    pipe.vae.enable_tiling()
+    pipe.vae.enable_slicing()
 
-
-def get_pipeline():
-    global pipe
-    if pipe is None:
-        pipe = CogVideoXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
-        pipe.enable_model_cpu_offload()
-        pipe.enable_sequential_cpu_offload()
-        pipe.vae.enable_tiling()
-        pipe.vae.enable_slicing()
-
+    logger.warning(f"Loaded pipeline {model_id}")
     return pipe
 
 
 def main(context: Context):
-    pipe = get_pipeline()
+    model_id = "THUDM/CogVideoX1.5-5b-I2V"
+    pipe = get_pipeline(model_id)
     image = context.load_image(division=16)
     generator = torch.Generator(device="cuda").manual_seed(42)
 

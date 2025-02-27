@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Request, HTTPException
-from pydantic import BaseModel
 from common.context import Context
-from image.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
+from fastapi import APIRouter, HTTPException, Request
 from image.models.auto_diffusion import main as auto_diffusion
+from image.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/image", tags=["Image"])
 

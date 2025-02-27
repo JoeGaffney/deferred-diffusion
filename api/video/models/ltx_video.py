@@ -1,25 +1,26 @@
+from functools import lru_cache
+
 import torch
-from diffusers import LTXImageToVideoPipeline
-from utils.utils import get_16_9_resolution
 from common.context import Context
+from diffusers import LTXImageToVideoPipeline
+from utils.logger import logger
+from utils.utils import get_16_9_resolution
 
-pipe = None
 
+@lru_cache(maxsize=1)
+def get_pipeline(model_id):
+    pipe = LTXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
+    pipe.vae.enable_tiling()
+    pipe.vae.enable_slicing()
+    pipe.enable_model_cpu_offload()
 
-def get_pipeline():
-    global pipe
-    if pipe is None:
-        model_id = "Lightricks/LTX-Video"
-        pipe = LTXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
-        pipe.vae.enable_tiling()
-        pipe.vae.enable_slicing()
-        pipe.enable_model_cpu_offload()
-
+    logger.warning(f"Loaded pipeline {model_id}")
     return pipe
 
 
 def main(context: Context):
-    pipe = get_pipeline()
+    model_id = "Lightricks/LTX-Video"
+    pipe = get_pipeline(model_id)
     image = context.load_image(division=32)
     generator = torch.Generator(device="cuda").manual_seed(context.seed)
 

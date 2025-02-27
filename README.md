@@ -28,6 +28,7 @@ Pytest is used for integration tests confirming the models run.
 ```
 cd api
 pytest -v
+pytest .\tests\text\models\test_qwen_2_5_vl_instruct.py
 ```
 
 ## To test running models directly

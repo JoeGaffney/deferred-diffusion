@@ -2,13 +2,14 @@ import copy
 import math
 import os
 from typing import List
-from diffusers.utils import export_to_video, load_image
-import torch
+
 import requests
+import torch
 from common.control_net import ControlNet
-from utils.utils import ensure_path_exists, save_copy_with_timestamp
-from utils.logger import logger
+from diffusers.utils import export_to_video, load_image
 from utils import device_info
+from utils.logger import logger
+from utils.utils import ensure_path_exists, save_copy_with_timestamp
 
 
 def is_model_sd3(model):
@@ -82,13 +83,13 @@ class Context:
         self.sd3_controlnet_mode = self.model_sd3 and self.controlnets_enabled
 
     def to_dict(self):
-        self.log(f"Context settings: {self.__dict__}")
+        logger.info(f"Context settings: {self.__dict__}")
         return self.__dict__
 
     def save_image(self, image):
         path = self.output_image_path
         image.save(path)
-        self.log(f"Image saved at {path} size: {image.size}")
+        logger.info(f"Image saved at {path} size: {image.size}")
 
         save_copy_with_timestamp(path)
         return path
@@ -96,7 +97,7 @@ class Context:
     def save_video(self, video, fps=24):
         path = self.output_video_path
         export_to_video(video, path, fps=fps)
-        self.log(f"Video saved at {path}")
+        logger.info(f"Video saved at {path}")
 
         save_copy_with_timestamp(path)
         return path
@@ -110,18 +111,12 @@ class Context:
                 for chunk in response.iter_content(chunk_size=8192):
                     file.write(chunk)
 
-            self.log(f"Video saved at {path}")
+            logger.info(f"Video saved at {path}")
             save_copy_with_timestamp(path)
         else:
             raise Exception(f"Failed to download file. Status code: {response.status_code}")
 
         return path
-
-    def log(self, message):
-        logger.info(message)
-
-    def log_error(self, message):
-        logger.error(message)
 
     def resize_image(self, image, division=16, scale=1.0):
 
@@ -133,7 +128,7 @@ class Context:
         width = math.ceil(width / division) * division
         height = math.ceil(height / division) * division
 
-        self.log(f"Image Resized from: {image.size} to {width}x{height}")
+        logger.info(f"Image Resized from: {image.size} to {width}x{height}")
         return image.resize((width, height))
 
     def resize_max_wh(self, division=16):
@@ -153,7 +148,7 @@ class Context:
 
         image = load_image(self.input_image_path)
 
-        self.log(f"Image loaded from {self.input_image_path} size: {image.size}")
+        logger.info(f"Image loaded from {self.input_image_path} size: {image.size}")
         self.orig_width, self.orig_height = image.size
 
         tmp = self.resize_image(image, division, scale)
@@ -168,7 +163,7 @@ class Context:
 
         # ensure he same size as the color image
         image = image.resize(size)
-        self.log(f"Mask loaded from {self.input_mask_path} size: {image.size}")
+        logger.info(f"Mask loaded from {self.input_mask_path} size: {image.size}")
         return image
 
     def get_controlnet_images(self, size):

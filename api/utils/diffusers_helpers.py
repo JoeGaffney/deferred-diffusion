@@ -1,6 +1,6 @@
 import torch
-from utils.utils import get_16_9_resolution
 from common.context import Context
+from utils.logger import logger
 
 
 def text_to_image_call(pipe, context: Context):
@@ -35,7 +35,7 @@ def text_to_image_call(pipe, context: Context):
             args["image"] = context.get_controlnet_images(wh)
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    context.log(f"Text to image call {args}")
+    logger.info(f"Text to image call {args}")
     processed_images = pipe.__call__(**args).images
     processed_path = ""
 
@@ -69,7 +69,7 @@ def image_to_image_call(pipe, context: Context):
         args["control_image"] = context.get_controlnet_images(image.size)
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    context.log(f"Image to image call {args}")
+    logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image)
@@ -100,7 +100,7 @@ def inpainting_call(pipe, context: Context):
         args["control_image"] = context.get_controlnet_images(image.size)
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    context.log(f"Inpainting call {args}")
+    logger.info(f"Inpainting call {args}")
     processed_image = pipe(**args).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image)
