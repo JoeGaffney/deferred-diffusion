@@ -1,18 +1,16 @@
+from common.context import Context
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from common.context import Context
 from text.models.qwen_2_5_vl_instruct import main as qwen_2_5_vl_instruct_main
 
 router = APIRouter(prefix="/text", tags=["Text"])
 
 
 class TextRequest(BaseModel):
-    negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
-    num_frames: int = 48
-    prompt: str = "Detailed, 8k, photorealistic"
+    temperature: float = 0.7
     seed: int = 42
     model: str = "qwen_2_5_vl_instruct"
-    messages: list = []
+    messages: list
 
 
 class TextResponse(BaseModel):
@@ -23,9 +21,6 @@ class TextResponse(BaseModel):
 @router.post("/", response_model=TextResponse)
 def create(request: TextRequest):
     context = Context(
-        negative_prompt=request.negative_prompt,
-        num_frames=request.num_frames,
-        prompt=request.prompt,
         seed=request.seed,
         model=request.model,
         messages=request.messages,

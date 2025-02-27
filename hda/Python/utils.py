@@ -1,31 +1,11 @@
 import json
 import os
-import hou
-import requests
 import time
 
+import hou
+import requests
+
 MAX_ADDITIONAL_IMAGES = 3
-
-
-def split_text(text, max_length=120):
-    words = text.split()
-    lines = []
-    current_line = ""
-
-    for word in words:
-        if len(current_line) + len(word) + 1 > max_length:
-            lines.append(current_line)
-            current_line = word
-        else:
-            if current_line:
-                current_line += " " + word
-            else:
-                current_line = word
-
-    if current_line:
-        lines.append(current_line)
-
-    return "\n".join(lines)
 
 
 def save_tmp_image(node, node_name):
@@ -50,19 +30,19 @@ def reload_outputs(node, node_name):
         hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
 
 
-def extract_and_format_parameters(hda_node):
+def extract_and_format_parameters(node):
     """Extract all top-level parameters from the HDA."""
-    if hda_node is None:
+    if node is None:
         return {}
 
     params = {}
-    for parm_tuple in hda_node.parmTuples():
+    for parm_tuple in node.parmTuples():
         values = [parm.eval() for parm in parm_tuple]
         params[parm_tuple.name()] = values[0] if len(values) == 1 else values
 
     # Remove 'images' if not in valid_inputs
     valid_inputs = []
-    for i in hda_node.inputConnections():
+    for i in node.inputConnections():
         valid_inputs.append(i.outputLabel())
 
     key_map = {
@@ -80,44 +60,7 @@ def extract_and_format_parameters(hda_node):
     # Extract the controlnets all parameters should be prefixed with 'controlnet_*'
     params["controlnets"] = get_control_nets(params)
 
-    # apply messages
-    params["messages"] = get_messages(params)
-
     return params
-
-
-def get_messages(params):
-
-    # get the current message
-    message_content = []
-
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        if f"image_{i}_path" in params:
-            message_content.append(
-                {
-                    "type": "image",
-                    "image": params[f"image_{i}_path"],
-                }
-            )
-    message_content.append({"type": "text", "text": params.get("prompt", "")})
-    message = [
-        {
-            "role": "user",
-            "content": message_content,
-        }
-    ]
-
-    # factor previous chaing of thought
-    previous_messages = []
-    previous_messages_str = params.get("previous_messages", "[]")
-    try:
-        previous_messages = json.loads(previous_messages_str)
-    except json.JSONDecodeError as e:
-        print(f"JSON decode error: {e}")
-        previous_messages = []
-
-    messages = previous_messages + message
-    return messages
 
 
 def get_control_nets(params):
@@ -136,40 +79,16 @@ def get_control_nets(params):
     return controlnets
 
 
-def add_response_data(node, body, mode, response, start_time):
-    formatted_time = round(time.time() - start_time, 5)
-
+def add_call_metadata(node, body, response_content, start_time):
     call_metadata = {
         "body": body,
-        "mode": mode,
-        "response": response.text,
-        "time_taken": formatted_time,
+        "response": response_content,
+        "time_taken": round(time.time() - start_time, 5),
     }
+    call_metadata_str = json.dumps(call_metadata, indent=2)
 
-    # Convert dictionary to a neatly formatted string
-    call_metadata_str = json.dumps(call_metadata, indent=2)  # More readable
-
-    # Check if the parameter already exists
-    if not node.parm("call_metadata"):
-        parm_template = hou.StringParmTemplate(
-            "call_metadata", "Call Metadata", 1, string_type=hou.stringParmType.Regular
-        )
-        parm_template.setTags({"editor": "1", "editorlang": "python"})
-        node.addSpareParmTuple(parm_template)
-
-    node.parm("call_metadata").set(call_metadata_str)
-
-    # apply json response to the text node
-    json_response = response.json() or {}
-
-    # apply to the text node
-    if json_response.get("chain_of_thought") and node.parm("chain_of_thought"):
-        chain_of_thought_str = json.dumps(json_response.get("chain_of_thought"), indent=2)  # More readable
-        node.parm("chain_of_thought").set(chain_of_thought_str)
-
-    if json_response.get("response") and node.parm("response"):
-        # text box does not wrap
-        node.parm("response").set(split_text(str(json_response["response"])))
+    if node.parm("call_metadata"):
+        node.parm("call_metadata").set(call_metadata_str)
 
 
 def trigger_api(node, mode="image"):
@@ -204,9 +123,6 @@ def trigger_api(node, mode="image"):
         error_response = f"API Call Failed: {str(e)}"
         hou.ui.displayMessage(error_response)
         return
-
-    if response is not None:
-        add_response_data(node, body, mode, response, start_time)
 
 
 def api_image(kwargs=None):
