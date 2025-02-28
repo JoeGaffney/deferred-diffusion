@@ -1,8 +1,10 @@
-import pytest
 import os
-from utils.utils import get_16_9_resolution
-from common.context import Context
+
+import pytest
+from image.context import ImageContext
 from image.models.auto_diffusion import main
+from image.schemas import ImageRequest
+from utils.utils import get_16_9_resolution
 
 # Define constants
 MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
@@ -42,19 +44,20 @@ def test(model_id, mode):
         os.remove(output_name)
 
     main(
-        Context(
-            model=model_id,
-            input_image_path="../tmp/tornado_v001.JPG",
-            input_mask_path="../tmp/tornado_v001_mask.png",
-            output_image_path=output_name,
-            prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
-            strength=0.5,
-            guidance_scale=5,
-            max_width=width,
-            max_height=height,
-            controlnets=[],
+        ImageContext(
+            ImageRequest(
+                model=model_id,
+                input_image_path="../tmp/tornado_v001.JPG",
+                input_mask_path="../tmp/tornado_v001_mask.png",
+                output_image_path=output_name,
+                prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
+                strength=0.5,
+                guidance_scale=5,
+                max_width=width,
+                max_height=height,
+                controlnets=[],
+            )
         ),
-        model_id=model_id,
         mode=mode,
     )
 
@@ -75,19 +78,20 @@ def test_with_controlnets(model_id, mode):
         os.remove(output_name)
 
     main(
-        Context(
-            model=model_id,
-            input_image_path="../tmp/tornado_v001.JPG",
-            input_mask_path="../tmp/tornado_v001_mask.png",
-            output_image_path=output_name,
-            prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
-            strength=0.5,
-            guidance_scale=5,
-            max_width=width,
-            max_height=height,
-            controlnets=controlnets,
+        ImageContext(
+            ImageRequest(
+                model=model_id,
+                input_image_path="../tmp/tornado_v001.JPG",
+                input_mask_path="../tmp/tornado_v001_mask.png",
+                output_image_path=output_name,
+                prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
+                strength=0.5,
+                guidance_scale=5,
+                max_width=width,
+                max_height=height,
+                controlnets=controlnets,
+            )
         ),
-        model_id=model_id,
         mode=mode,
     )
 

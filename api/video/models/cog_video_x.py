@@ -1,10 +1,11 @@
 from functools import lru_cache
 
 import torch
-from common.context import Context
 from diffusers import CogVideoXImageToVideoPipeline
 from utils.logger import logger
 from utils.utils import get_16_9_resolution
+from video.context import VideoContext
+from video.schemas import VideoRequest
 
 
 @lru_cache(maxsize=1)
@@ -19,20 +20,20 @@ def get_pipeline(model_id):
     return pipe
 
 
-def main(context: Context):
-    model_id = "THUDM/CogVideoX1.5-5b-I2V"
-    pipe = get_pipeline(model_id)
+def main(context: VideoContext):
+    context.model = "THUDM/CogVideoX1.5-5b-I2V"
+    pipe = get_pipeline(context.model)
     image = context.load_image(division=16)
     generator = torch.Generator(device="cuda").manual_seed(42)
 
     video = pipe.__call__(
         width=image.size[0],
         height=image.size[1],
-        prompt=context.prompt,
-        negative_prompt=context.negative_prompt,
+        prompt=context.data.prompt,
+        negative_prompt=context.data.negative_prompt,
         image=image,
-        num_inference_steps=context.num_inference_steps,
-        num_frames=context.num_frames,
+        num_inference_steps=context.data.num_inference_steps,
+        num_frames=context.data.num_frames,
         generator=generator,
         num_videos_per_prompt=1,
     ).frames[0]
@@ -42,18 +43,21 @@ def main(context: Context):
 
 
 if __name__ == "__main__":
-    # width, height = get_16_9_resolution("432p")
     width, height = get_16_9_resolution("540p")
+
     main(
-        Context(
-            input_image_path="../tmp/tornado_v001.jpg",
-            output_video_path="../tmp/output/tornado_v001_cog_video_x.mp4",
-            strength=0.2,
-            prompt="Tornado spinning in a farm land",
-            negative_prompt="blurry, distorted",
-            num_inference_steps=40,
-            max_width=width,
-            max_height=height,
-            num_frames=81,
+        VideoContext(
+            VideoRequest(
+                model="THUDM/CogVideoX1.5-5b-I2V",
+                input_image_path="../tmp/tornado_v001.jpg",
+                output_video_path="../tmp/output/tornado_v001_cog_video_x.mp4",
+                strength=0.2,
+                prompt="Tornado spinning in a farm land",
+                negative_prompt="blurry, distorted",
+                num_inference_steps=40,
+                max_width=width,
+                max_height=height,
+                num_frames=81,
+            )
         )
     )

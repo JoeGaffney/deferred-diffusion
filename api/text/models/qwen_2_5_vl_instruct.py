@@ -2,16 +2,17 @@ import copy
 import traceback
 from functools import lru_cache
 
+from common.pipeline_helpers import free_gpu_memory
 from qwen_vl_utils import process_vision_info
 from text.context import TextContext
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from utils.logger import logger
-from utils.pipeline_helpers import free_gpu_memory
 
 
 @lru_cache(maxsize=1)
 def get_pipeline(model_id):
     # can affect performance could be reduced further
+    # ref original
     # min_pixels = 256 * 28 * 28
     # max_pixels = 1280 * 28 * 28
     min_pixels = 64 * 28 * 28
@@ -26,6 +27,7 @@ def get_pipeline(model_id):
 
 
 def main(context: TextContext, flush_gpu_memory=True):
+    model = "Qwen/Qwen2.5-VL-3B-Instruct"
     model, processor = get_pipeline(context.data.model)
     messages = context.data.messages
 

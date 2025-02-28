@@ -94,7 +94,7 @@ python -m video.models.stable_video_diffusion
 
 ## Python Modules
 
-httpx needs to be available to houdini fothe api client to work.
+httpx needs to be available to houdini for the api client to work.
 
 You can install like this to put on roaming path.
 

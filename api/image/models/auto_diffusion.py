@@ -1,7 +1,7 @@
 from functools import lru_cache
 
 import torch
-from common.context import Context
+from common.pipeline_helpers import optimize_pipeline
 from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
@@ -9,13 +9,13 @@ from diffusers import (
     DiffusionPipeline,
     StableDiffusion3ControlNetPipeline,
 )
-from utils.diffusers_helpers import (
+from image.context import ImageContext
+from image.models.diffusers_helpers import (
     image_to_image_call,
     inpainting_call,
     text_to_image_call,
 )
 from utils.logger import logger
-from utils.pipeline_helpers import optimize_pipeline
 
 
 @lru_cache(maxsize=4)  # Cache up to 4 different pipelines
@@ -79,12 +79,14 @@ def get_sd3_controlnet_pipeline(model_id, torch_dtype=torch.float16, controlnets
         controlnet=controlnets,
     )
 
-    print("loaded pipeline", model_id, torch_dtype, controlnets)
+    logger.warning(f"Loaded pipeline {model_id} with controlnets")
     return pipe
 
 
 # work around as SD3 control nets not full supported by diffusers
-def main_sd3_controlnets(context: Context, model_id="stabilityai/stable-diffusion-3-medium-diffusers", mode="text"):
+def main_sd3_controlnets(
+    context: ImageContext, model_id="stabilityai/stable-diffusion-3-medium-diffusers", mode="text"
+):
     disable_text_encoder_3 = context.disable_text_encoder_3
     controlnets = context.get_loaded_controlnets()
     torch_dtype = context.torch_dtype
@@ -103,12 +105,11 @@ def main_sd3_controlnets(context: Context, model_id="stabilityai/stable-diffusio
 
 
 def main(
-    context: Context,
-    model_id="stabilityai/stable-diffusion-3-medium-diffusers",
+    context: ImageContext,
     mode="text",
 ):
     if context.sd3_controlnet_mode == True:
-        return main_sd3_controlnets(context, model_id=model_id, mode=mode)
+        return main_sd3_controlnets(context, model_id=context.model, mode=mode)
 
     disable_text_encoder_3 = context.disable_text_encoder_3
     controlnets = context.get_loaded_controlnets()
@@ -117,7 +118,7 @@ def main(
     if mode == "text_to_image":
         return text_to_image_call(
             get_text_pipeline(
-                model_id,
+                context.model,
                 torch_dtype=torch_dtype,
                 controlnets=controlnets,
                 disable_text_encoder_3=disable_text_encoder_3,
@@ -127,7 +128,7 @@ def main(
     elif mode == "img_to_img":
         return image_to_image_call(
             get_image_pipeline(
-                model_id,
+                context.model,
                 torch_dtype=torch_dtype,
                 controlnets=controlnets,
                 disable_text_encoder_3=disable_text_encoder_3,
@@ -137,7 +138,7 @@ def main(
     elif mode == "img_to_img_inpainting":
         return inpainting_call(
             get_inpainting_pipeline(
-                model_id,
+                context.model,
                 torch_dtype=torch_dtype,
                 controlnets=controlnets,
                 disable_text_encoder_3=disable_text_encoder_3,
