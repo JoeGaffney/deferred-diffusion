@@ -8,21 +8,29 @@ from utils.logger import logger
 
 @lru_cache(maxsize=4)  # Cache up to 4 different controlnets
 def load_controlnet(model, torch_dtype=torch.float16):
+    last_exception = ""
+
+    # NOT this variance could be handled better for now we just try both
     try:
         controlnet = ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
-        logger.warn("loaded controlnet", model, torch_dtype)
-    except:
-        logger.warn("Failed to load ControlNetModel", model, torch_dtype)
+        logger.warning(f"loaded controlnet {model}")
+        # if not setting cuda here we get clashes with the main model unsure if the controlnet inherits the cpu offload
+        controlnet.to("cuda")
+        return controlnet
+    except Exception as e:
+        last_exception = e
 
     try:
         controlnet = SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
-        logger.warn("loaded controlnet", model, torch_dtype)
-    except:
-        logger.warn("Failed to load SD3ControlNetModel", model, torch_dtype)
+        logger.warning(f"loaded controlnet {model}")
+        # if not setting cuda here we get clashes with the main model unsure if the controlnet inherits the cpu offload
+        controlnet.to("cuda")
+        return controlnet
+    except Exception as e:
+        last_exception = e
 
-    # if not setting cuda here we get clashes with the main model unsure if the controlnet inherits the cup offload
-    controlnet.to("cuda")
-    return controlnet
+    logger.warning(f"Failed to load ControlNetModel {model} {last_exception}")
+    return None
 
 
 class ControlNet:

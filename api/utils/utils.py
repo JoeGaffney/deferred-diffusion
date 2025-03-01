@@ -1,10 +1,7 @@
-from datetime import datetime
 import os
 import shutil
+from datetime import datetime
 from typing import Literal, Tuple
-import numpy as np
-import torch
-from .logger import logger
 
 Resolutions = Literal["1080p", "900p", "720p", "576p", "540p", "480p", "432p", "360p"]
 resolutions_16_9 = {
@@ -44,17 +41,3 @@ def save_copy_with_timestamp(path):
         ensure_path_exists(timestamp_path)
 
         shutil.copy(path, timestamp_path)
-
-
-# still some issues with this using as img2img
-def encode_image_to_latents(image, vae):
-    image = image.convert("RGB")  # Ensure no alpha channel
-    image = np.array(image).astype(np.float16) / 255.0  # Normalize to [0,1]
-    image = torch.tensor(image).permute(2, 0, 1).unsqueeze(0).to("cuda")  # (H, W, C) → (1, C, H, W)
-    image = (image - 0.5) * 2  # Normalize to [-1,1]
-
-    with torch.no_grad():
-        latent_dist = vae.encode(image).latent_dist
-        latents = latent_dist.sample() * 0.18215
-
-    return latents

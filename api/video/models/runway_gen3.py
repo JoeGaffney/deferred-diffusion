@@ -3,12 +3,14 @@ import time
 from io import BytesIO
 from typing import Literal
 
-from common.context import Context
 from runwayml import RunwayML
+from utils.logger import logger
 from utils.utils import get_16_9_resolution
+from video.context import VideoContext
+from video.schemas import VideoRequest
 
 
-def poll_result(context: Context, task_id, wait=10):
+def poll_result(context: VideoContext, task_id, wait=10):
     client = RunwayML()
 
     # Poll the task until it's complete
@@ -33,14 +35,14 @@ def pill_to_base64(image):
     return base64_image
 
 
-def create(context: Context):
+def create(context: VideoContext):
     client = RunwayML()
 
     # atm only these 16 by 9 or 9 by 16 supported
     # TODO switch to closest resolution as per the aspect ratio
     width, height = get_16_9_resolution("1080p")
-    context.max_height = 10000
-    context.max_width = 10000
+    context.data.max_height = 10000
+    context.data.max_width = 10000
     image = context.load_image(division=1)
     image = image.resize((width, height))
 
@@ -57,7 +59,7 @@ def create(context: Context):
     task = client.image_to_video.create(
         model=model,
         prompt_image=f"data:image/png;base64,{base64_image}",
-        prompt_text=context.prompt,
+        prompt_text=context.data.prompt,
         ratio=ratio[0],
         duration=duration[0],
         # seed=context.seed,
@@ -69,26 +71,21 @@ def create(context: Context):
     return task_id
 
 
-def main(context: Context):
+def main(context: VideoContext):
     task_id = create(context)
     return poll_result(context, task_id)
 
 
 if __name__ == "__main__":
-    context = Context(
-        input_image_path="../tmp/tornado_v001.jpg",
-        output_video_path="../tmp/output/tornado_v001_runway_video.mp4",
-        strength=0.2,
-        prompt="A farm landscape with a tornado destroying houses and ripping up land,Fire and lighting",
-        num_inference_steps=50,
+    context = VideoContext(
+        VideoRequest(
+            model="gen3a_turbo",
+            input_image_path="../tmp/tornado_v001.jpg",
+            output_video_path="../tmp/output/tornado_v001_runway_video.mp4",
+            strength=0.2,
+            prompt="A farm landscape with a tornado destroying houses and ripping up land,Fire and lighting",
+            num_inference_steps=50,
+        )
     )
-    context = Context(
-        input_image_path="../tmp/earth_quake_v001.JPG",
-        output_video_path="../tmp/output/earth_quake_runway_video.mp4",
-        strength=0.2,
-        prompt="Ground collaping trees falling, Dust and debris, Static camera, DLSR photo",
-        num_inference_steps=50,
-    )
+
     main(context)
-    # task_id = create(context)
-    # poll_result(context, task_id)

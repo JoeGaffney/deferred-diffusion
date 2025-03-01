@@ -1,46 +1,17 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from common.context import Context
-from video.models.stable_video_diffusion import main as stable_video_diffusion_main
+from video.context import VideoContext
 from video.models.cog_video_x import main as cog_video_x_main
 from video.models.ltx_video import main as ltx_video_main
 from video.models.runway_gen3 import main as runway_gen3_main
+from video.models.stable_video_diffusion import main as stable_video_diffusion_main
+from video.schemas import VideoRequest, VideoResponse
 
 router = APIRouter(prefix="/video", tags=["Video"])
 
 
-class VideoRequest(BaseModel):
-    input_image_path: str = "../tmp/input.png"
-    max_height: int = 2048
-    max_width: int = 2048
-    model: str
-    negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
-    num_frames: int = 48
-    num_inference_steps: int = 25
-    output_video_path: str = "../tmp/outputs/processed.mp4"
-    prompt: str = "Detailed, 8k, photorealistic"
-    seed: int = 42
-    strength: float = 0.5
-
-
-class VideoResponse(BaseModel):
-    data: str
-
-
 @router.post("/", response_model=VideoResponse)
-def diffusion(request: VideoRequest):
-    context = Context(
-        input_image_path=request.input_image_path,
-        output_video_path=request.output_video_path,
-        max_height=request.max_height,
-        max_width=request.max_width,
-        negative_prompt=request.negative_prompt,
-        num_frames=request.num_frames,
-        num_inference_steps=request.num_inference_steps,
-        prompt=request.prompt,
-        seed=request.seed,
-        strength=request.strength,
-    )
+def create(request: VideoRequest):
+    context = VideoContext(request)
 
     main = None
     if request.model == "stable_video_diffusion":

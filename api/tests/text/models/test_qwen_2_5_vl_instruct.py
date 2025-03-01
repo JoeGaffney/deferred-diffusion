@@ -1,9 +1,9 @@
-import os
 import time
 
 import pytest
-from common.context import Context
+from text.context import TextContext
 from text.models.qwen_2_5_vl_instruct import main
+from text.schemas import TextRequest
 
 
 @pytest.fixture
@@ -30,47 +30,53 @@ def validate_result(result, expected_keyword=None):
 
 
 def test_image_description(input_paths):
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "image", "image": input_paths["image"]},
-                {"type": "text", "text": "Describe this image."},
-            ],
-        }
-    ]
-    result = main(Context(messages=messages), flush_gpu_memory=True)
+    data = TextRequest(
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": input_paths["image"]},
+                    {"type": "text", "text": "Describe this image."},
+                ],
+            }
+        ]
+    )
+    result = main(TextContext(data), flush_gpu_memory=True)
     validate_result(result)
 
 
 def test_image_prompt_generation(input_paths):
     time.sleep(2)  # Simulating GPU memory flush delay
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "image", "image": input_paths["image"]},
-                {"type": "text", "text": "Give me a prompt for SD image generation to generate similar images."},
-            ],
-        }
-    ]
-    result = main(Context(messages=messages), flush_gpu_memory=False)
+    data = TextRequest(
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": input_paths["image"]},
+                    {"type": "text", "text": "Give me a prompt for SD image generation to generate similar images."},
+                ],
+            }
+        ]
+    )
+    result = main(TextContext(data), flush_gpu_memory=False)
     validate_result(result)
 
 
 def test_image_video_comparison(input_paths):
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "image", "image": input_paths["image"]},
-                {"type": "video", "video": input_paths["video"]},
-                {
-                    "type": "text",
-                    "text": "Tell me the differences between the image and video. I want to know the differences not the content of each.",
-                },
-            ],
-        }
-    ]
-    result = main(Context(messages=messages), flush_gpu_memory=False)
+    data = TextRequest(
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": input_paths["image"]},
+                    {"type": "video", "video": input_paths["video"]},
+                    {
+                        "type": "text",
+                        "text": "Tell me the differences between the image and video. I want to know the differences not the content of each.",
+                    },
+                ],
+            }
+        ]
+    )
+    result = main(TextContext(data), flush_gpu_memory=False)
     validate_result(result)
