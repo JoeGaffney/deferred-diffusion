@@ -2,8 +2,7 @@
 
 deferred-diffusion api that can run diffusion and other models with py-torch. This can be ran locally or on another machine on the same network accessing the same paths.
 
-Currently Houdini HDA's are provided as it already provides a rich compositing node based ui, but would be possible to add
-more applications or a standalone ui.
+Currently Houdini HDA's are provided as it already provides a rich compositing node based ui, but would be possible to add more applications or a standalone ui.
 
 # **Project Structure Overview**
 

@@ -1,11 +1,8 @@
 import json
-import os
 import time
 
 import hou
-import requests
-
-MAX_ADDITIONAL_IMAGES = 3
+from config import MAX_ADDITIONAL_IMAGES
 
 
 def save_tmp_image(node, node_name):
@@ -57,9 +54,6 @@ def extract_and_format_parameters(node):
         if key not in valid_inputs and param_key in params:
             params.pop(param_key)
 
-    # Extract the controlnets all parameters should be prefixed with 'controlnet_*'
-    params["controlnets"] = get_control_nets(params)
-
     return params
 
 
@@ -89,84 +83,3 @@ def add_call_metadata(node, body, response_content, start_time):
 
     if node.parm("call_metadata"):
         node.parm("call_metadata").set(call_metadata_str)
-
-
-def trigger_api(node, mode="image"):
-    # Save the specific ROP node 'tmp_input_image'
-    save_tmp_image(node, "tmp_input_image")
-    save_tmp_image(node, "tmp_input_mask")
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        save_tmp_image(node, f"tmp_controlnet_{i}")
-        save_tmp_image(node, f"tmp_image_{i}")
-
-    # Extract top-level parameters
-    parameters = extract_and_format_parameters(node)
-    # print(f"Extracted Parameters: {parameters}")
-
-    # API Call
-    api_root = os.getenv("DD_SERVER_ADDRESS", "http://127.0.0.1:5000/")
-    api_url = f"{api_root}/api/{mode}"
-    body = parameters
-
-    response = None
-    try:
-        start_time = time.time()
-        response = requests.post(api_url, json=body)
-        if response.status_code != 200:
-            hou.ui.displayMessage(f"API Call Failed: {response.text}")
-            return
-
-        print(f"API Response: {response.text}")
-        reload_outputs(node, "output_read")
-        reload_outputs(node, "output_read_video")
-    except Exception as e:
-        error_response = f"API Call Failed: {str(e)}"
-        hou.ui.displayMessage(error_response)
-        return
-
-
-def api_image(kwargs=None):
-    if kwargs is None:
-        return
-
-    node = kwargs.get("node")
-    if node is None:
-        hou.ui.displayMessage("Node not found in kwargs!")
-        return
-
-    trigger_api(node, "image")
-
-
-def api_video(kwargs=None):
-    if kwargs is None:
-        return
-
-    node = kwargs.get("node")
-    if node is None:
-        hou.ui.displayMessage("Node not found in kwargs!")
-        return
-
-    trigger_api(node, "video")
-
-
-def api_text(kwargs=None):
-    if kwargs is None:
-        return
-
-    node = kwargs.get("node")
-    if node is None:
-        hou.ui.displayMessage("Node not found in kwargs!")
-        return
-
-    trigger_api(node, "text")
-
-
-def api_image_frame_range(kwargs=None):
-    start_frame = int(hou.playbar.frameRange().x())
-    end_frame = int(hou.playbar.frameRange().y())
-    print(f"Frame Range: {start_frame} - {end_frame}")
-
-    for frame in range(start_frame, end_frame + 1):
-        hou.setFrame(frame)
-        api_image(kwargs)
-        # hou.ui.waitUntil(lambda: False)  # Allow Houdini to update the UI

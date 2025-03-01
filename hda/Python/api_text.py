@@ -3,10 +3,10 @@ import os
 import time
 
 import hou
-from api_client.api_client.api.text import create_api_text_post
-from api_client.api_client.models import TextRequest, TextResponse
-from api_client.api_client.types import Response
 from config import MAX_ADDITIONAL_IMAGES, client
+from generated.api_client.api.text import create_api_text_post
+from generated.api_client.models import TextRequest, TextResponse
+from generated.api_client.types import Response
 from utils import add_call_metadata, extract_and_format_parameters, save_tmp_image
 
 
@@ -66,20 +66,20 @@ def get_messages(params):
 
 
 def main(node):
-
     # gather our parameters and save any temporary images
     for i in range(MAX_ADDITIONAL_IMAGES):
         save_tmp_image(node, f"tmp_image_{i}")
 
     params = extract_and_format_parameters(node)
     params["messages"] = get_messages(params)
-    body = TextRequest(prompt=params["prompt"], messages=params["messages"])
+    valid_params = {k: v for k, v in params.items() if k in TextRequest.__annotations__}
+    body = TextRequest(**valid_params)
 
     # make the API call
     start_time = time.time()
     response: Response[TextResponse] = create_api_text_post.sync_detailed(client=client, body=body)
     if response.status_code != 200:
-        hou.ui.displayMessage(f"API Call Failed: {response.parsed}")
+        hou.ui.displayMessage(f"API Call Failed: {response}")
         return
 
     # apply back to the node

@@ -11,7 +11,7 @@ def create(request: TextRequest):
     context = TextContext(request)
 
     main = None
-    if request.model == "qwen_2_5_vl_instruct":
+    if request.model == "Qwen/Qwen2.5-VL-3B-Instruct":
         main = qwen_2_5_vl_instruct_main
 
     if not main:

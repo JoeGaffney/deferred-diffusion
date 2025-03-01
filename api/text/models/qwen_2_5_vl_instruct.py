@@ -41,7 +41,7 @@ def main(context: TextContext, flush_gpu_memory=True):
     except Exception as e:
         error_message = f"Error during vision info processing: {e}\n{traceback.format_exc()}"
         logger.error(error_message)
-        return {"error": error_message}
+        raise Exception(error_message)
 
     output = ""
     try:
@@ -65,6 +65,7 @@ def main(context: TextContext, flush_gpu_memory=True):
     except Exception as e:
         logger.error(f"Error during inference: {e}")
         output = f"Error during inference: {e}"
+        raise Exception(output)
     finally:
         if flush_gpu_memory:
             model = model.to("cpu")  # Move model back to CPU

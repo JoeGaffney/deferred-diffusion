@@ -1,6 +1,6 @@
 import os
 
-from api_client.api_client import Client
+from generated.api_client import Client
 
 MAX_ADDITIONAL_IMAGES = 3
 
