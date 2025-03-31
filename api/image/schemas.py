@@ -1,3 +1,5 @@
+from typing import Literal, Optional
+
 from pydantic import BaseModel
 
 
@@ -21,3 +23,5 @@ class ImageRequest(BaseModel):
     prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
     strength: float = 0.5
+    style_strength: float = 0.5
+    style_image_path: str = ""

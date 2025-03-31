@@ -1,14 +1,12 @@
-from flask import Flask
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
+from utils import device_info
 
-app = Flask(__name__)
 app = FastAPI(title="API")
 
 from image import router as image
-from video import router as video
 from text import router as text
-
+from video import router as video
 
 app.include_router(image.router, prefix="/api")
 app.include_router(text.router, prefix="/api")

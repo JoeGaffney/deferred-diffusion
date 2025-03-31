@@ -1,16 +1,17 @@
 import copy
-import math
-import os
 from typing import List
 
-import requests
 import torch
 from common.control_net import ControlNet
-from diffusers.utils import load_image
 from image.schemas import ImageRequest
 from utils import device_info
 from utils.logger import logger
-from utils.utils import ensure_path_exists, save_copy_with_timestamp
+from utils.utils import (
+    ensure_path_exists,
+    load_image_if_exists,
+    resize_image,
+    save_copy_with_timestamp,
+)
 
 
 def is_model_sd3(model):
@@ -23,7 +24,26 @@ class ImageContext:
         self.model = data.model
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
+
+        # Round down to nearest multiple of 16
+        self.division = 16
+        self.width = (copy.copy(data.max_width) // self.division) * self.division
+        self.height = (copy.copy(data.max_height) // self.division) * self.division
+
         self.torch_dtype = torch.float16  # just keep float 16 for now
+
+        self.color_image = load_image_if_exists(data.input_image_path)
+        if self.color_image:
+            self.color_image = resize_image(
+                self.color_image, self.division, 1.0, self.data.max_width, self.data.max_height
+            )
+            self.orig_width, self.orig_height = self.color_image.size
+            self.width, self.height = self.color_image.size
+
+        self.mask_image = load_image_if_exists(data.input_mask_path)
+        if self.mask_image:
+            self.mask_image = self.mask_image.convert("L")
+            self.mask_image = self.mask_image.resize([self.width, self.height])
 
         ensure_path_exists(self.data.output_image_path)
         ensure_path_exists(self.data.input_image_path)
@@ -37,8 +57,8 @@ class ImageContext:
         # add our control nets
         self.controlnets: List[ControlNet] = []
         for current in data.controlnets:
-            tmp = ControlNet(current, torch_dtype=self.torch_dtype)
-            if tmp.is_valid:
+            tmp = ControlNet(current, self.width, self.height, torch_dtype=self.torch_dtype)
+            if tmp.enabled:
                 self.controlnets.append(tmp)
 
         self.controlnets_enabled = len(self.controlnets) > 0
@@ -54,65 +74,16 @@ class ImageContext:
         save_copy_with_timestamp(path)
         return path
 
-    def resize_image(self, image, division=16, scale=1.0):
-
-        # Ensure the new dimensions do not exceed max_width and max_height
-        width = min(image.size[0] * scale, self.data.max_width)
-        height = min(image.size[1] * scale, self.data.max_height)
-
-        # Adjust width and height to be divisible by 32 or 8
-        width = math.ceil(width / division) * division
-        height = math.ceil(height / division) * division
-
-        logger.info(f"Image Resized from: {image.size} to {width}x{height}")
-        return image.resize((width, height))
-
-    def resize_max_wh(self, division=16):
-        width = math.ceil(self.data.max_width / division) * division
-        height = math.ceil(self.data.max_height / division) * division
-        return width, height
-
     def resize_image_to_orig(self, image, scale=1):
         return image.resize((self.orig_width * scale, self.orig_height * scale))
 
-    def resize_image_to_max_wh(self, image, scale=1):
-        return image.resize((self.data.max_width * scale, self.data.max_height * scale))
-
-    def load_image(self, division=8, scale=1.0):
-        if not os.path.exists(self.data.input_image_path):
-            raise FileNotFoundError(self.data.input_image_path)
-
-        image = load_image(self.data.input_image_path)
-
-        logger.info(f"Image loaded from {self.data.input_image_path} size: {image.size}")
-        self.orig_width, self.orig_height = image.size
-
-        tmp = self.resize_image(image, division, scale)
-        return tmp
-
-    def load_mask(self, size):
-        if not os.path.exists(self.data.input_mask_path):
-            raise FileNotFoundError(self.data.input_mask_path)
-
-        image = load_image(self.data.input_mask_path)
-        image = image.convert("L")
-
-        # ensure he same size as the color image
-        image = image.resize(size)
-        logger.info(f"Mask loaded from {self.data.input_mask_path} size: {image.size}")
-        return image
-
-    def get_controlnet_images(self, size):
+    def get_controlnet_images(self):
         if self.controlnets_enabled == False:
             return []
 
         images = []
         for controlnet in self.controlnets:
-            image = load_image(controlnet.input_image)
-
-            # ensure the same size as the color image
-            image = image.resize(size)
-            images.append(image)
+            images.append(controlnet.image)
         return images
 
     def get_controlnet_conditioning_scales(self):

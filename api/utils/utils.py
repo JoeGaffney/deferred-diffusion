@@ -1,7 +1,11 @@
+import math
 import os
 import shutil
 from datetime import datetime
 from typing import Literal, Tuple
+
+from diffusers.utils import load_image
+from utils.logger import logger
 
 Resolutions = Literal["1080p", "900p", "720p", "576p", "540p", "480p", "432p", "360p"]
 resolutions_16_9 = {
@@ -41,3 +45,27 @@ def save_copy_with_timestamp(path):
         ensure_path_exists(timestamp_path)
 
         shutil.copy(path, timestamp_path)
+
+
+def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048):
+
+    # Ensure the new dimensions do not exceed max_width and max_height
+    width = min(image.size[0] * scale, max_width)
+    height = min(image.size[1] * scale, max_height)
+
+    # Adjust width and height to be divisible by 32 or 8
+    width = math.ceil(width / division) * division
+    height = math.ceil(height / division) * division
+
+    logger.info(f"Image Resized from: {image.size} to {width}x{height}")
+    return image.resize((width, height))
+
+
+def load_image_if_exists(image_path):
+    if not os.path.exists(image_path):
+        return None
+
+    image = load_image(image_path)
+
+    logger.info(f"Image loaded from {image_path} size: {image.size}")
+    return image
