@@ -19,15 +19,23 @@ MODEL_CONTROLNET_MAPPING = {
     "stabilityai/stable-diffusion-xl-base-1.0": [
         {
             "model": "diffusers/controlnet-canny-sdxl-1.0",
-            "input_image": "../tmp/canny.png",
+            "input_image": "../test_data/canny_v001.png",
             "conditioning_scale": "0.5",
         }
     ],
     "stabilityai/stable-diffusion-3-medium-diffusers": [
-        {"model": "InstantX/SD3-Controlnet-Canny", "input_image": "../tmp/canny.png", "conditioning_scale": "0.5"}
+        {
+            "model": "InstantX/SD3-Controlnet-Canny",
+            "input_image": "../test_data/canny_v001.png",
+            "conditioning_scale": "0.5",
+        }
     ],
     "stabilityai/stable-diffusion-3.5-medium": [
-        {"model": "InstantX/SD3-Controlnet-Canny", "input_image": "../tmp/canny.png", "conditioning_scale": "0.5"}
+        {
+            "model": "InstantX/SD3-Controlnet-Canny",
+            "input_image": "../test_data/canny_v001.png",
+            "conditioning_scale": "0.5",
+        }
     ],
 }
 
@@ -47,8 +55,8 @@ def test(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="../tmp/tornado_v001.JPG",
-                input_mask_path="../tmp/tornado_v001_mask.png",
+                input_image_path="../test_data/color_v001.jpeg",
+                input_mask_path="../test_data/mask_v001.png",
                 output_image_path=output_name,
                 prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,
@@ -81,8 +89,8 @@ def test_with_controlnets(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="../tmp/tornado_v001.JPG",
-                input_mask_path="../tmp/tornado_v001_mask.png",
+                input_image_path="../test_data/color_v001.jpeg",
+                input_mask_path="../test_data/mask_v001.png",
                 output_image_path=output_name,
                 prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
                 strength=0.5,

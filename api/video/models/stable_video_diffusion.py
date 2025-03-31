@@ -44,8 +44,8 @@ if __name__ == "__main__":
         VideoContext(
             VideoRequest(
                 model="stabilityai/stable-video-diffusion-img2vid-xt",
-                input_image_path="../tmp/tornado_v001.jpg",
-                output_video_path="../tmp/output/tornado_v001_stable_video_diffusion.mp4",
+                input_image_path="../tmp/color_v001.jpeg",
+                output_video_path="../tmp/output/stable_video_diffusion.mp4",
                 strength=0.2,
                 prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
                 num_inference_steps=50,

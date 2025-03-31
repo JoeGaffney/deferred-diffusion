@@ -80,8 +80,8 @@ if __name__ == "__main__":
     context = VideoContext(
         VideoRequest(
             model="gen3a_turbo",
-            input_image_path="../tmp/tornado_v001.jpg",
-            output_video_path="../tmp/output/tornado_v001_runway_video.mp4",
+            input_image_path="../tmp/color_v001.jpeg",
+            output_video_path="../tmp/output/runway_video.mp4",
             strength=0.2,
             prompt="A farm landscape with a tornado destroying houses and ripping up land,Fire and lighting",
             num_inference_steps=50,
