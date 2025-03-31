@@ -6,7 +6,7 @@ from text.schemas import TextRequest, TextResponse
 router = APIRouter(prefix="/text", tags=["Text"])
 
 
-@router.post("/", response_model=TextResponse)
+@router.post("", response_model=TextResponse, operation_id="create_text")
 def create(request: TextRequest):
     context = TextContext(request)
 

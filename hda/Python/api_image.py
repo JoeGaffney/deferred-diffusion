@@ -2,9 +2,8 @@ import time
 
 import hou
 from config import MAX_ADDITIONAL_IMAGES, client
-from generated.api_client.api.image import create_api_image_post
+from generated.api_client.api.image import create_image
 from generated.api_client.models import ImageRequest, ImageResponse
-from generated.api_client.types import Response
 from utils import (
     add_call_metadata,
     extract_and_format_parameters,
@@ -28,9 +27,13 @@ def main(node):
 
     # make the API call
     start_time = time.time()
-    response: Response[ImageResponse] = create_api_image_post.sync_detailed(client=client, body=body)
+    response = create_image.sync_detailed(client=client, body=body)
     if response.status_code != 200:
         hou.ui.displayMessage(f"API Call Failed: {response}")
+        return
+
+    if not isinstance(response.parsed, ImageResponse):
+        hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
         return
 
     reload_outputs(node, "output_read")
