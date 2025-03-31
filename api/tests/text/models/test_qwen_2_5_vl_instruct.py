@@ -8,7 +8,7 @@ from text.schemas import TextRequest
 
 @pytest.fixture
 def input_paths():
-    return {"image": "../tmp/elf_v001.JPG", "video": "../tmp/tornado_v001.mp4"}
+    return {"image": "../test_data/color_v001.jpeg", "video": "../test_data/video_v001.mp4"}
 
 
 def validate_result(result, expected_keyword=None):

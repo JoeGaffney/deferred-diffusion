@@ -49,7 +49,7 @@ if __name__ == "__main__":
             VideoRequest(
                 model="Lightricks/LTX-Video",
                 input_image_path="../tmp/tornado_v001.jpg",
-                output_video_path="../tmp/output/tornado_v001_ltx_video.mp4",
+                output_video_path="../tmp/output/ltx_video.mp4",
                 strength=0.2,
                 prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
                 num_inference_steps=50,

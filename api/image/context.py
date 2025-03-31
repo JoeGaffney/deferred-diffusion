@@ -6,7 +6,7 @@ from typing import List
 import requests
 import torch
 from common.control_net import ControlNet
-from diffusers.utils import export_to_video, load_image
+from diffusers.utils import load_image
 from image.schemas import ImageRequest
 from utils import device_info
 from utils.logger import logger

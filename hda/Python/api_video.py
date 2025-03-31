@@ -2,9 +2,8 @@ import time
 
 import hou
 from config import client
-from generated.api_client.api.video import create_api_video_post
+from generated.api_client.api.video import create_video
 from generated.api_client.models import VideoRequest, VideoResponse
-from generated.api_client.types import Response
 from utils import (
     add_call_metadata,
     extract_and_format_parameters,
@@ -23,9 +22,13 @@ def main(node):
 
     # make the API call
     start_time = time.time()
-    response: Response[VideoResponse] = create_api_video_post.sync_detailed(client=client, body=body)
+    response = create_video.sync_detailed(client=client, body=body)
     if response.status_code != 200:
         hou.ui.displayMessage(f"API Call Failed: {response}")
+        return
+
+    if not isinstance(response.parsed, VideoResponse):
+        hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
         return
 
     reload_outputs(node, "output_read_video")

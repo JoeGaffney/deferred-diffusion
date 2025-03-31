@@ -9,7 +9,7 @@ from video.schemas import VideoRequest, VideoResponse
 router = APIRouter(prefix="/video", tags=["Video"])
 
 
-@router.post("/", response_model=VideoResponse)
+@router.post("", response_model=VideoResponse, operation_id="create_video")
 def create(request: VideoRequest):
     context = VideoContext(request)
 

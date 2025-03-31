@@ -49,8 +49,8 @@ if __name__ == "__main__":
         VideoContext(
             VideoRequest(
                 model="THUDM/CogVideoX1.5-5b-I2V",
-                input_image_path="../tmp/tornado_v001.jpg",
-                output_video_path="../tmp/output/tornado_v001_cog_video_x.mp4",
+                input_image_path="../test_data/color_v001.jpeg",
+                output_video_path="../tmp/output/cog_video_x.mp4",
                 strength=0.2,
                 prompt="Tornado spinning in a farm land",
                 negative_prompt="blurry, distorted",

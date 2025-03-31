@@ -7,7 +7,7 @@ from image.schemas import ImageRequest, ImageResponse
 router = APIRouter(prefix="/image", tags=["Image"])
 
 
-@router.post("/", response_model=ImageResponse)
+@router.post("", response_model=ImageResponse, operation_id="create_image")
 def create(request: ImageRequest):
     context = ImageContext(request)
 
