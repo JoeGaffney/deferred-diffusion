@@ -33,6 +33,7 @@ This project follows a **feature-based structure**, grouping related components 
 
 This structure balances **clarity, maintainability, and scalability**, making it well-suited for AI-driven projects where different domains have distinct processing needs. 🚀
 
+```
 /api
 │── /image # Grouped by results type
 │ ├── models/ # ✅ AI models (ML/DL models, weights, configs)
@@ -54,6 +55,7 @@ This structure balances **clarity, maintainability, and scalability**, making it
 │── /tests # ✅ Tests mirror the /api structure
 │── main.py # ✅ FastAPI entry point
 │── pytest.ini # ✅ Test configuration
+```
 
 # Setup windows
 
