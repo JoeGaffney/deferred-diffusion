@@ -62,6 +62,9 @@ def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048)
 
 
 def load_image_if_exists(image_path):
+    if (image_path is None) or (image_path == ""):
+        return None
+
     if not os.path.exists(image_path):
         return None
 

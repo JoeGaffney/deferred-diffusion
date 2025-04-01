@@ -40,7 +40,7 @@ MODEL_CONTROLNET_MAPPING = {
 }
 
 
-@pytest.mark.parametrize("mode", ["text_to_image", "img_to_img", "img_to_img_inpainting"])
+@pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize("model_id", MODELS)
 def test_models_with_control_nets(model_id, mode):
     """Test models with control nets."""

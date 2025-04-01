@@ -3,8 +3,8 @@ from typing import List
 
 import torch
 from common.control_net import ControlNet
+from common.ip_adapter import IpAdapter
 from image.schemas import ImageRequest
-from utils import device_info
 from utils.logger import logger
 from utils.utils import (
     ensure_path_exists,
@@ -24,6 +24,7 @@ class ImageContext:
         self.model = data.model
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
+        self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
 
         # Round down to nearest multiple of 16
         self.division = 16
@@ -65,6 +66,10 @@ class ImageContext:
 
         # requires different path as auto diffusers don't map the control net models for sd3 variants
         self.sd3_controlnet_mode = self.model_sd3 and self.controlnets_enabled
+
+        self.style_ip_adapter = IpAdapter(
+            self.data.model, self.data.style_image_path, self.data.style_strength, self.width, self.height
+        )
 
     def save_image(self, image):
         path = self.data.output_image_path

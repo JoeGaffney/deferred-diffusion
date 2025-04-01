@@ -1,5 +1,5 @@
-from transformers import T5EncoderModel, BitsAndBytesConfig
 import torch
+from transformers import BitsAndBytesConfig, T5EncoderModel
 
 
 def optimize_pipeline(pipe, disable_safety_checker=True):
@@ -11,7 +11,9 @@ def optimize_pipeline(pipe, disable_safety_checker=True):
     pipe.enable_model_cpu_offload()
     pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
     pipe.vae.enable_slicing()
-    pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
+
+    # NOTE Breaks adapter workflows
+    # pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
     if disable_safety_checker:
         pipe.safety_checker = dummy_safety_checker
 
