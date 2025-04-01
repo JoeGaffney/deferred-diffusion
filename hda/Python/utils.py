@@ -10,6 +10,7 @@ def save_tmp_image(node, node_name):
     if tmp_image_node is None:
         return
 
+    print(f"Saving temporary image for node: {tmp_image_node.name()}")
     try:
         tmp_image_node.parm("execute").pressButton()  # Trigger execution
     except Exception as e:

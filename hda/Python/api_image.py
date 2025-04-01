@@ -1,7 +1,7 @@
 import time
 
 import hou
-from config import MAX_ADDITIONAL_IMAGES, client
+from config import client
 from generated.api_client.api.image import create_image
 from generated.api_client.models import ImageRequest, ImageResponse
 from utils import (
@@ -14,11 +14,10 @@ from utils import (
 
 
 def main(node):
-    # gather our parameters and save any temporary images
-    save_tmp_image(node, "tmp_input_image")
-    save_tmp_image(node, "tmp_input_mask")
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        save_tmp_image(node, f"tmp_controlnet_{i}")
+    # Get all ROP image nodes from children
+    rop_nodes = [child for child in node.children() if child.type().name() == "rop_image"]
+    for rop_node in rop_nodes:
+        save_tmp_image(node, rop_node.name())
 
     params = extract_and_format_parameters(node)
     params["controlnets"] = get_control_nets(params)

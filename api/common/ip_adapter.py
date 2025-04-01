@@ -55,7 +55,8 @@ class IpAdapter:
                 pipe.set_ip_adapter_scale(self.strength)
 
                 # Move to CUDA - the pipeline's CPU offload will handle subsequent device management?
-                pipe.to("cuda")
+                # pipe.to("cuda")
+                pipe.enable_model_cpu_offload()
             else:
                 logger.warning("IP Adapter not supported for this model")
                 self.enabled = False
