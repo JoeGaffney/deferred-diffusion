@@ -5,6 +5,7 @@ import torch
 from common.control_net import ControlNet
 from common.ip_adapter import IpAdapter
 from image.schemas import ImageRequest
+from transformers import CLIPVisionModelWithProjection
 from utils.logger import logger
 from utils.utils import (
     ensure_path_exists,
@@ -140,11 +141,18 @@ class ImageContext:
         subfolders = []
         weights = []
         scales = []
+        image_encoder_model = ""
+        image_encoder_subfolder = ""
+
+        # NOTE do we validate against clashes here? Or allow passing through the natural errors?
         for ip_adapter in self.ip_adapters:
             models.append(ip_adapter.model)
             subfolders.append(ip_adapter.subfolder)
             weights.append(ip_adapter.weight_name)
             scales.append(ip_adapter.scale)
+            if ip_adapter.image_encoder:
+                image_encoder_model = ip_adapter.model
+                image_encoder_subfolder = ip_adapter.image_encoder_subfolder
 
         if hasattr(pipe, "load_ip_adapter"):
             # Store current device
@@ -155,6 +163,14 @@ class ImageContext:
             pipe.load_ip_adapter(models, subfolder=subfolders, weight_name=weights)
 
             pipe.set_ip_adapter_scale(scales)
+
+            # image_encoder is require for some adapters
+            if image_encoder_model != "":
+                logger.warning(f"Loading Image Encoder {image_encoder_model} {image_encoder_subfolder}")
+                image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+                    image_encoder_model, subfolder=image_encoder_subfolder, torch_dtype=torch.float16
+                )
+                pipe.image_encoder = image_encoder
 
             # Move to CUDA - the pipeline's CPU offload will handle subsequent device management?
             # pipe.to("cuda")

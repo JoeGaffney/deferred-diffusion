@@ -11,6 +11,8 @@ class IpAdapter:
         self.subfolder = data.subfolder
         self.weight_name = data.weight_name
         self.image = load_image_if_exists(self.image_path)
+        self.image_encoder = data.image_encoder
+        self.image_encoder_subfolder = "models/image_encoder"
         self.enabled = False
 
         if self.model is None or self.image_path is None:
@@ -18,6 +20,7 @@ class IpAdapter:
 
         if self.image:
             # NOTE should we resize the image to the input size?
+            # self.image = self.image.resize([512, 512])
             # self.image = self.image.resize([width, height])
             if self.model is not None and self.subfolder is not None and self.weight_name is not None:
                 self.enabled = True

@@ -17,6 +17,7 @@ class IpAdapterModel(BaseModel):
     scale: float = 0.5
     subfolder: str = Field("models", min_length=1)
     weight_name: str = Field("ip-adapter_sd15.bin", min_length=1)
+    image_encoder: bool = False
 
 
 class ImageRequest(BaseModel):
