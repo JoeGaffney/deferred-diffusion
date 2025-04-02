@@ -37,15 +37,15 @@ def load_controlnet(model, torch_dtype=torch.float16):
 class ControlNet:
     def __init__(self, data, width, height, torch_dtype=torch.float16):
         self.model = data.get("model")
-        self.input_image = data.get("input_image")
+        self.image_path = data.get("image_path")
         self.conditioning_scale = float(data.get("conditioning_scale", 0.5))
         self.enabled = False
-        self.enabled = self.model is not None and self.input_image is not None
+        self.enabled = self.model is not None and self.image_path is not None
         self.loaded_controlnet = None
 
         # validate input image
         if self.enabled:
-            if not os.path.exists(self.input_image):
+            if not os.path.exists(self.image_path):
                 self.enabled = False
 
         if self.enabled:
@@ -54,7 +54,7 @@ class ControlNet:
         if self.loaded_controlnet is None:
             self.enabled = False
 
-        self.image = load_image_if_exists(self.input_image)
+        self.image = load_image_if_exists(self.image_path)
         if self.image:
             self.image = self.image.resize([width, height])
         else:

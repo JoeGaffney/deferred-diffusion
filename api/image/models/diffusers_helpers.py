@@ -22,9 +22,11 @@ def text_to_image_call(pipe, context: ImageContext):
             args["image"] = context.get_controlnet_images()
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    if context.style_ip_adapter.enabled:
-        args["ip_adapter_image"] = context.style_ip_adapter.image
-        pipe = context.style_ip_adapter.load_adapter(pipe)
+    if context.ip_adapters_enabled:
+        args["ip_adapter_image"] = context.get_ip_adapter_images()
+        pipe = context.load_ip_adapter(pipe)
+    else:
+        context.unload_ip_adapter(pipe)
 
     logger.info(f"Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
@@ -52,9 +54,11 @@ def image_to_image_call(pipe, context: ImageContext):
         args["control_image"] = context.get_controlnet_images()
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    if context.style_ip_adapter.enabled:
-        args["ip_adapter_image"] = context.style_ip_adapter.image
-        pipe = context.style_ip_adapter.load_adapter(pipe)
+    if context.ip_adapters_enabled:
+        args["ip_adapter_image"] = context.get_ip_adapter_images()
+        pipe = context.load_ip_adapter(pipe)
+    else:
+        context.unload_ip_adapter(pipe)
 
     logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
@@ -83,9 +87,11 @@ def inpainting_call(pipe, context: ImageContext):
         args["control_image"] = context.get_controlnet_images()
         args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
 
-    if context.style_ip_adapter.enabled:
-        args["ip_adapter_image"] = context.style_ip_adapter.image
-        pipe = context.style_ip_adapter.load_adapter(pipe)
+    if context.ip_adapters_enabled:
+        args["ip_adapter_image"] = context.get_ip_adapter_images()
+        pipe = context.load_ip_adapter(pipe)
+    else:
+        context.unload_ip_adapter(pipe)
 
     logger.info(f"Inpainting call {args}")
     processed_image = pipe(**args).images[0]

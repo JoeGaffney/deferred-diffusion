@@ -39,6 +39,8 @@ class ImageContext:
                 self.color_image, self.division, 1.0, self.data.max_width, self.data.max_height
             )
             self.orig_width, self.orig_height = self.color_image.size
+
+            # NOTE base width and height now become the color image size masks and contolnet images are resized to this
             self.width, self.height = self.color_image.size
 
         self.mask_image = load_image_if_exists(data.input_mask_path)
@@ -67,9 +69,14 @@ class ImageContext:
         # requires different path as auto diffusers don't map the control net models for sd3 variants
         self.sd3_controlnet_mode = self.model_sd3 and self.controlnets_enabled
 
-        self.style_ip_adapter = IpAdapter(
-            self.data.model, self.data.style_image_path, self.data.style_strength, self.width, self.height
-        )
+        # add our ip adapters
+        self.ip_adapters: List[IpAdapter] = []
+        for current in data.ip_adapters:
+            tmp = IpAdapter(current, self.width, self.height)
+            if tmp.enabled:
+                self.ip_adapters.append(tmp)
+
+        self.ip_adapters_enabled = len(self.ip_adapters) > 0
 
     def save_image(self, image):
         path = self.data.output_image_path
@@ -91,6 +98,15 @@ class ImageContext:
             images.append(controlnet.image)
         return images
 
+    def get_ip_adapter_images(self):
+        if self.ip_adapters_enabled == False:
+            return []
+
+        images = []
+        for ip_adapter in self.ip_adapters:
+            images.append(ip_adapter.image)
+        return images
+
     def get_controlnet_conditioning_scales(self):
         if self.controlnets_enabled == False:
             return 0.8
@@ -108,3 +124,43 @@ class ImageContext:
         for controlnet in self.controlnets:
             loaded_controlnets.append(controlnet.loaded_controlnet)
         return loaded_controlnets
+
+    def unload_ip_adapter(self, pipe):
+        # NOTE we sort of need to unload the adapters each run possibly as they could change.
+        # Possibly need to know if the adapters are different to the last run
+        if self.ip_adapters_enabled == False:
+            logger.warning(f"Unloading IP Adapter")
+            pipe.unload_ip_adapter()
+
+        return pipe
+
+    def load_ip_adapter(self, pipe):
+        # it wants in a array for multiple adapters
+        models = []
+        subfolders = []
+        weights = []
+        scales = []
+        for ip_adapter in self.ip_adapters:
+            models.append(ip_adapter.model)
+            subfolders.append(ip_adapter.subfolder)
+            weights.append(ip_adapter.weight_name)
+            scales.append(ip_adapter.scale)
+
+        if hasattr(pipe, "load_ip_adapter"):
+            # Store current device
+            device = pipe.device
+            logger.warning(f"Loading IP Adapter {device} - {models} {subfolders} {weights} {scales}")
+
+            # Load IP adapter
+            pipe.load_ip_adapter(models, subfolder=subfolders, weight_name=weights)
+
+            pipe.set_ip_adapter_scale(scales)
+
+            # Move to CUDA - the pipeline's CPU offload will handle subsequent device management?
+            # pipe.to("cuda")
+            pipe.enable_model_cpu_offload()
+        else:
+            logger.warning("IP Adapter not supported for this model")
+            raise Exception("IP Adapter not supported for this model")
+
+        return pipe
