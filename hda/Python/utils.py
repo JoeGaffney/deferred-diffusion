@@ -77,7 +77,7 @@ def get_control_nets(params):
         if f"controlnet_{i}_path" in params:
             tmp = {
                 "model": params.get(f"controlnet_{i}_model", ""),
-                "input_image": params.get(f"controlnet_{i}_path", ""),
+                "image_path": params.get(f"controlnet_{i}_path", ""),
                 "conditioning_scale": params.get(f"controlnet_{i}_conditioning_scale", 0.5),
                 "current": f"controlnet_{i}",
             }
