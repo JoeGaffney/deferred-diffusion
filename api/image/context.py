@@ -1,16 +1,17 @@
 import copy
-import math
-import os
 from typing import List
 
-import requests
 import torch
 from common.control_net import ControlNet
-from diffusers.utils import load_image
-from image.schemas import ImageRequest
-from utils import device_info
+from common.ip_adapter import IpAdapter
+from image.schemas import ImageRequest, PipelineConfig
 from utils.logger import logger
-from utils.utils import ensure_path_exists, save_copy_with_timestamp
+from utils.utils import (
+    ensure_path_exists,
+    load_image_if_exists,
+    resize_image,
+    save_copy_with_timestamp,
+)
 
 
 def is_model_sd3(model):
@@ -23,28 +24,91 @@ class ImageContext:
         self.model = data.model
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
+        self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
+
+        # Round down to nearest multiple of 16
+        self.division = 16
+        self.width = (copy.copy(data.max_width) // self.division) * self.division
+        self.height = (copy.copy(data.max_height) // self.division) * self.division
+
         self.torch_dtype = torch.float16  # just keep float 16 for now
+
+        self.color_image = load_image_if_exists(data.input_image_path)
+        if self.color_image:
+            self.color_image = resize_image(
+                self.color_image, self.division, 1.0, self.data.max_width, self.data.max_height
+            )
+            self.orig_width, self.orig_height = self.color_image.size
+
+            # NOTE base width and height now become the color image size masks and contolnet images are resized to this
+            self.width, self.height = self.color_image.size
+
+        self.mask_image = load_image_if_exists(data.input_mask_path)
+        if self.mask_image:
+            self.mask_image = self.mask_image.convert("L")
+            self.mask_image = self.mask_image.resize([self.width, self.height])
 
         ensure_path_exists(self.data.output_image_path)
         ensure_path_exists(self.data.input_image_path)
 
         # SD3 models disabling the text encoder 3 can reduce vram usage
         self.model_sd3 = is_model_sd3(data.model)
-        self.disable_text_encoder_3 = True
-        if self.model_sd3 and bool(data.disable_text_encoder_3) == False:
-            self.disable_text_encoder_3 = False
+        self.disable_text_encoder_3 = bool(data.disable_text_encoder_3)
 
         # add our control nets
         self.controlnets: List[ControlNet] = []
         for current in data.controlnets:
-            tmp = ControlNet(current, torch_dtype=self.torch_dtype)
-            if tmp.is_valid:
+            tmp = ControlNet(current, self.width, self.height, torch_dtype=self.torch_dtype)
+            if tmp.enabled:
                 self.controlnets.append(tmp)
 
         self.controlnets_enabled = len(self.controlnets) > 0
 
         # requires different path as auto diffusers don't map the control net models for sd3 variants
         self.sd3_controlnet_mode = self.model_sd3 and self.controlnets_enabled
+
+        # add our ip adapters
+        self.ip_adapters: List[IpAdapter] = []
+        for current in data.ip_adapters:
+            tmp = IpAdapter(current, self.width, self.height)
+            if tmp.enabled:
+                self.ip_adapters.append(tmp)
+
+        self.ip_adapters_enabled = len(self.ip_adapters) > 0
+
+    def get_pipeline_config(self) -> PipelineConfig:
+        # it wants in a array for multiple adapters
+        models = []
+        subfolders = []
+        weights = []
+        image_encoder_model = ""
+        image_encoder_subfolder = ""
+
+        if self.ip_adapters_enabled == True:
+            # NOTE do we validate against clashes here? Or allow passing through the natural errors?
+            for ip_adapter in self.ip_adapters:
+                models.append(ip_adapter.model)
+                subfolders.append(ip_adapter.subfolder)
+                weights.append(ip_adapter.weight_name)
+                if ip_adapter.image_encoder:
+                    image_encoder_model = ip_adapter.model
+                    image_encoder_subfolder = ip_adapter.image_encoder_subfolder
+
+        disable_text_encoder_3 = True
+        if self.model_sd3 and self.disable_text_encoder_3 == False:
+            disable_text_encoder_3 = False
+
+        return PipelineConfig(
+            model_id=self.model,
+            torch_dtype=self.torch_dtype,
+            disable_text_encoder_3=disable_text_encoder_3,
+            use_safetensors=True,
+            ip_adapter_models=tuple(models),
+            ip_adapter_subfolders=tuple(subfolders),
+            ip_adapter_weights=tuple(weights),
+            ip_adapter_image_encoder_model=image_encoder_model,
+            ip_adapter_image_encoder_subfolder=image_encoder_subfolder,
+        )
 
     def save_image(self, image):
         path = self.data.output_image_path
@@ -54,65 +118,16 @@ class ImageContext:
         save_copy_with_timestamp(path)
         return path
 
-    def resize_image(self, image, division=16, scale=1.0):
-
-        # Ensure the new dimensions do not exceed max_width and max_height
-        width = min(image.size[0] * scale, self.data.max_width)
-        height = min(image.size[1] * scale, self.data.max_height)
-
-        # Adjust width and height to be divisible by 32 or 8
-        width = math.ceil(width / division) * division
-        height = math.ceil(height / division) * division
-
-        logger.info(f"Image Resized from: {image.size} to {width}x{height}")
-        return image.resize((width, height))
-
-    def resize_max_wh(self, division=16):
-        width = math.ceil(self.data.max_width / division) * division
-        height = math.ceil(self.data.max_height / division) * division
-        return width, height
-
     def resize_image_to_orig(self, image, scale=1):
         return image.resize((self.orig_width * scale, self.orig_height * scale))
 
-    def resize_image_to_max_wh(self, image, scale=1):
-        return image.resize((self.data.max_width * scale, self.data.max_height * scale))
-
-    def load_image(self, division=8, scale=1.0):
-        if not os.path.exists(self.data.input_image_path):
-            raise FileNotFoundError(self.data.input_image_path)
-
-        image = load_image(self.data.input_image_path)
-
-        logger.info(f"Image loaded from {self.data.input_image_path} size: {image.size}")
-        self.orig_width, self.orig_height = image.size
-
-        tmp = self.resize_image(image, division, scale)
-        return tmp
-
-    def load_mask(self, size):
-        if not os.path.exists(self.data.input_mask_path):
-            raise FileNotFoundError(self.data.input_mask_path)
-
-        image = load_image(self.data.input_mask_path)
-        image = image.convert("L")
-
-        # ensure he same size as the color image
-        image = image.resize(size)
-        logger.info(f"Mask loaded from {self.data.input_mask_path} size: {image.size}")
-        return image
-
-    def get_controlnet_images(self, size):
+    def get_controlnet_images(self):
         if self.controlnets_enabled == False:
             return []
 
         images = []
         for controlnet in self.controlnets:
-            image = load_image(controlnet.input_image)
-
-            # ensure the same size as the color image
-            image = image.resize(size)
-            images.append(image)
+            images.append(controlnet.image)
         return images
 
     def get_controlnet_conditioning_scales(self):
@@ -132,3 +147,20 @@ class ImageContext:
         for controlnet in self.controlnets:
             loaded_controlnets.append(controlnet.loaded_controlnet)
         return loaded_controlnets
+
+    def get_ip_adapter_images(self):
+        if self.ip_adapters_enabled == False:
+            return []
+
+        images = []
+        for ip_adapter in self.ip_adapters:
+            images.append(ip_adapter.image)
+        return images
+
+    def set_ip_adapter_scale(self, pipe):
+        if self.ip_adapters_enabled == True:
+            scales = []
+            for ip_adapter in self.ip_adapters:
+                scales.append(ip_adapter.scale)
+            pipe.set_ip_adapter_scale(scales)
+        return pipe

@@ -5,7 +5,6 @@ import os
 import requests
 import torch
 from diffusers.utils import export_to_video, load_image
-from utils import device_info
 from utils.logger import logger
 from utils.utils import ensure_path_exists, save_copy_with_timestamp
 from video.schemas import VideoRequest
@@ -58,17 +57,6 @@ class VideoContext:
 
         logger.info(f"Image Resized from: {image.size} to {width}x{height}")
         return image.resize((width, height))
-
-    def resize_max_wh(self, division=16):
-        width = math.ceil(self.data.max_width / division) * division
-        height = math.ceil(self.data.max_height / division) * division
-        return width, height
-
-    def resize_image_to_orig(self, image, scale=1):
-        return image.resize((self.orig_width * scale, self.orig_height * scale))
-
-    def resize_image_to_max_wh(self, image, scale=1):
-        return image.resize((self.data.max_width * scale, self.data.max_height * scale))
 
     def load_image(self, division=8, scale=1.0):
         if not os.path.exists(self.data.input_image_path):

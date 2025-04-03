@@ -3,6 +3,7 @@ import time
 
 import hou
 from config import MAX_ADDITIONAL_IMAGES
+from generated.api_client.models.ip_adapter_model import IpAdapterModel
 
 
 def save_tmp_image(node, node_name):
@@ -10,10 +11,18 @@ def save_tmp_image(node, node_name):
     if tmp_image_node is None:
         return
 
+    print(f"Saving temporary image for node: {tmp_image_node.name()}")
     try:
         tmp_image_node.parm("execute").pressButton()  # Trigger execution
     except Exception as e:
         hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
+
+
+def save_all_tmp_images(node):
+    # Get all ROP image nodes from children
+    rop_nodes = [child for child in node.children() if child.type().name() == "rop_image"]
+    for rop_node in rop_nodes:
+        save_tmp_image(node, rop_node.name())
 
 
 def reload_outputs(node, node_name):
@@ -27,7 +36,7 @@ def reload_outputs(node, node_name):
         hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
 
 
-def extract_and_format_parameters(node):
+def get_node_parameters(node):
     """Extract all top-level parameters from the HDA."""
     if node is None:
         return {}
@@ -36,6 +45,11 @@ def extract_and_format_parameters(node):
     for parm_tuple in node.parmTuples():
         values = [parm.eval() for parm in parm_tuple]
         params[parm_tuple.name()] = values[0] if len(values) == 1 else values
+    return params
+
+
+def extract_and_format_parameters(node):
+    params = get_node_parameters(node)
 
     # Remove 'images' if not in valid_inputs
     valid_inputs = []
@@ -63,7 +77,7 @@ def get_control_nets(params):
         if f"controlnet_{i}_path" in params:
             tmp = {
                 "model": params.get(f"controlnet_{i}_model", ""),
-                "input_image": params.get(f"controlnet_{i}_path", ""),
+                "image_path": params.get(f"controlnet_{i}_path", ""),
                 "conditioning_scale": params.get(f"controlnet_{i}_conditioning_scale", 0.5),
                 "current": f"controlnet_{i}",
             }
@@ -71,6 +85,34 @@ def get_control_nets(params):
                 controlnets.append(tmp)
 
     return controlnets
+
+
+# Get the parameter template group
+def get_ip_adapters(node) -> list[IpAdapterModel]:
+    # only the adapter nodes are valid inputs
+    valid_inputs = []
+    for i in node.inputs():
+        if i:
+            if i.type().name() == "deferred_diffusion::ip_adapter":
+                valid_inputs.append(i)
+
+    ip_adapters = []
+    for current in valid_inputs:
+
+        params = get_node_parameters(current)
+        save_all_tmp_images(current)
+
+        tmp = IpAdapterModel(
+            model=params.get("model", ""),
+            image_path=params.get("image_path", ""),
+            image_encoder=bool(params.get("image_encoder", False)),
+            subfolder=params.get("subfolder", "models"),
+            weight_name=params.get("weight_name", "ip-adapter_sd15.bin"),
+            scale=params.get("scale", 0.5),
+        )
+        ip_adapters.append(tmp)
+
+    return ip_adapters
 
 
 def add_call_metadata(node, body, response_content, start_time):

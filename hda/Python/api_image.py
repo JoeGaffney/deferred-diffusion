@@ -1,29 +1,26 @@
 import time
 
 import hou
-from config import MAX_ADDITIONAL_IMAGES, client
+from config import client
 from generated.api_client.api.image import create_image
 from generated.api_client.models import ImageRequest, ImageResponse
 from utils import (
     add_call_metadata,
     extract_and_format_parameters,
     get_control_nets,
+    get_ip_adapters,
     reload_outputs,
-    save_tmp_image,
+    save_all_tmp_images,
 )
 
 
 def main(node):
-    # gather our parameters and save any temporary images
-    save_tmp_image(node, "tmp_input_image")
-    save_tmp_image(node, "tmp_input_mask")
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        save_tmp_image(node, f"tmp_controlnet_{i}")
+    # Get all ROP image nodes from children
+    save_all_tmp_images(node)
 
     params = extract_and_format_parameters(node)
-    params["controlnets"] = get_control_nets(params)
     valid_params = {k: v for k, v in params.items() if k in ImageRequest.__annotations__}
-    body = ImageRequest(**valid_params)
+    body = ImageRequest(**valid_params, ip_adapters=get_ip_adapters(node), controlnets=get_control_nets(params))
 
     # make the API call
     start_time = time.time()
