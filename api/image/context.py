@@ -94,7 +94,10 @@ class ImageContext:
                     image_encoder_model = ip_adapter.model
                     image_encoder_subfolder = ip_adapter.image_encoder_subfolder
 
-        disable_text_encoder_3 = True
+    disable_text_encoder_3 = True
+    if self.model_sd3 and self.disable_text_encoder_3 == False:
+        disable_text_encoder_3 = False
+        ```
         if self.model_sd3 and self.disable_text_encoder_3 == False:
             self.disable_text_encoder_3 = False
 
