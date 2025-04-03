@@ -93,7 +93,7 @@ def main_sd3_controlnets(
     context: ImageContext, model_id="stabilityai/stable-diffusion-3-medium-diffusers", mode="text"
 ):
     controlnets = context.get_loaded_controlnets()
-    pipeline_config = context.get_pipleine_config()
+    pipeline_config = context.get_pipeline_config()
 
     # work around as SD3 not full supported by diffusers
     # there is no dedicated img to img or inpainting control net for SD3 atm
@@ -111,7 +111,7 @@ def main(
         return main_sd3_controlnets(context, model_id=context.model, mode=mode)
 
     controlnets = context.get_loaded_controlnets()
-    pipeline_config = context.get_pipleine_config()
+    pipeline_config = context.get_pipeline_config()
 
     if mode == "text_to_image":
         return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)

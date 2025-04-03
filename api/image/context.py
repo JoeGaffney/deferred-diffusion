@@ -76,7 +76,7 @@ class ImageContext:
 
         self.ip_adapters_enabled = len(self.ip_adapters) > 0
 
-    def get_pipleine_config(self) -> PipelineConfig:
+    def get_pipeline_config(self) -> PipelineConfig:
         # it wants in a array for multiple adapters
         models = []
         subfolders = []
