@@ -1,8 +1,7 @@
+from typing import Tuple
+
 from pydantic import BaseModel, Field
-
-
-class ImageResponse(BaseModel):
-    data: str
+from torch import dtype
 
 
 class ControlNet(BaseModel):
@@ -37,3 +36,38 @@ class ImageRequest(BaseModel):
     prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
     strength: float = 0.5
+
+
+class ImageResponse(BaseModel):
+    data: str
+
+
+class PipelineConfig(BaseModel):
+    model_id: str
+    torch_dtype: dtype
+    disable_text_encoder_3: bool
+    use_safetensors: bool
+    ip_adapter_models: Tuple[str, ...]
+    ip_adapter_subfolders: Tuple[str, ...]
+    ip_adapter_weights: Tuple[str, ...]
+    ip_adapter_image_encoder_model: str
+    ip_adapter_image_encoder_subfolder: str
+
+    class Config:
+        frozen = True  # Makes the model immutable/hashable
+        arbitrary_types_allowed = True  # Needed for torch.dtype
+
+    def __hash__(self):
+        return hash(
+            (
+                self.model_id,
+                self.torch_dtype,
+                self.disable_text_encoder_3,
+                self.use_safetensors,
+                self.ip_adapter_models,
+                self.ip_adapter_subfolders,
+                self.ip_adapter_weights,
+                self.ip_adapter_image_encoder_model,
+                self.ip_adapter_image_encoder_subfolder,
+            )
+        )

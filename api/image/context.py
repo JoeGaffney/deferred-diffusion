@@ -4,8 +4,7 @@ from typing import List
 import torch
 from common.control_net import ControlNet
 from common.ip_adapter import IpAdapter
-from image.schemas import ImageRequest
-from transformers import CLIPVisionModelWithProjection
+from image.schemas import ImageRequest, PipelineConfig
 from utils.logger import logger
 from utils.utils import (
     ensure_path_exists,
@@ -54,9 +53,7 @@ class ImageContext:
 
         # SD3 models disabling the text encoder 3 can reduce vram usage
         self.model_sd3 = is_model_sd3(data.model)
-        self.disable_text_encoder_3 = True
-        if self.model_sd3 and bool(data.disable_text_encoder_3) == False:
-            self.disable_text_encoder_3 = False
+        self.disable_text_encoder_3 = bool(data.disable_text_encoder_3)
 
         # add our control nets
         self.controlnets: List[ControlNet] = []
@@ -79,6 +76,40 @@ class ImageContext:
 
         self.ip_adapters_enabled = len(self.ip_adapters) > 0
 
+    def get_pipleine_config(self) -> PipelineConfig:
+        # it wants in a array for multiple adapters
+        models = []
+        subfolders = []
+        weights = []
+        image_encoder_model = ""
+        image_encoder_subfolder = ""
+
+        if self.ip_adapters_enabled == True:
+            # NOTE do we validate against clashes here? Or allow passing through the natural errors?
+            for ip_adapter in self.ip_adapters:
+                models.append(ip_adapter.model)
+                subfolders.append(ip_adapter.subfolder)
+                weights.append(ip_adapter.weight_name)
+                if ip_adapter.image_encoder:
+                    image_encoder_model = ip_adapter.model
+                    image_encoder_subfolder = ip_adapter.image_encoder_subfolder
+
+        disable_text_encoder_3 = True
+        if self.model_sd3 and self.disable_text_encoder_3 == False:
+            self.disable_text_encoder_3 = False
+
+        return PipelineConfig(
+            model_id=self.model,
+            torch_dtype=self.torch_dtype,
+            disable_text_encoder_3=disable_text_encoder_3,
+            use_safetensors=True,
+            ip_adapter_models=tuple(models),
+            ip_adapter_subfolders=tuple(subfolders),
+            ip_adapter_weights=tuple(weights),
+            ip_adapter_image_encoder_model=image_encoder_model,
+            ip_adapter_image_encoder_subfolder=image_encoder_subfolder,
+        )
+
     def save_image(self, image):
         path = self.data.output_image_path
         image.save(path)
@@ -99,15 +130,6 @@ class ImageContext:
             images.append(controlnet.image)
         return images
 
-    def get_ip_adapter_images(self):
-        if self.ip_adapters_enabled == False:
-            return []
-
-        images = []
-        for ip_adapter in self.ip_adapters:
-            images.append(ip_adapter.image)
-        return images
-
     def get_controlnet_conditioning_scales(self):
         if self.controlnets_enabled == False:
             return 0.8
@@ -126,57 +148,19 @@ class ImageContext:
             loaded_controlnets.append(controlnet.loaded_controlnet)
         return loaded_controlnets
 
-    def unload_ip_adapter(self, pipe):
-        # NOTE we sort of need to unload the adapters each run possibly as they could change.
-        # Possibly need to know if the adapters are different to the last run
+    def get_ip_adapter_images(self):
         if self.ip_adapters_enabled == False:
-            logger.warning(f"Unloading IP Adapter")
-            pipe.unload_ip_adapter()
+            return []
 
-        return pipe
-
-    def load_ip_adapter(self, pipe):
-        # it wants in a array for multiple adapters
-        models = []
-        subfolders = []
-        weights = []
-        scales = []
-        image_encoder_model = ""
-        image_encoder_subfolder = ""
-
-        # NOTE do we validate against clashes here? Or allow passing through the natural errors?
+        images = []
         for ip_adapter in self.ip_adapters:
-            models.append(ip_adapter.model)
-            subfolders.append(ip_adapter.subfolder)
-            weights.append(ip_adapter.weight_name)
-            scales.append(ip_adapter.scale)
-            if ip_adapter.image_encoder:
-                image_encoder_model = ip_adapter.model
-                image_encoder_subfolder = ip_adapter.image_encoder_subfolder
+            images.append(ip_adapter.image)
+        return images
 
-        if hasattr(pipe, "load_ip_adapter"):
-            # Store current device
-            device = pipe.device
-            logger.warning(f"Loading IP Adapter {device} - {models} {subfolders} {weights} {scales}")
-
-            # Load IP adapter
-            pipe.load_ip_adapter(models, subfolder=subfolders, weight_name=weights)
-
+    def set_ip_adapter_scale(self, pipe):
+        if self.ip_adapters_enabled == True:
+            scales = []
+            for ip_adapter in self.ip_adapters:
+                scales.append(ip_adapter.scale)
             pipe.set_ip_adapter_scale(scales)
-
-            # image_encoder is require for some adapters
-            if image_encoder_model != "":
-                logger.warning(f"Loading Image Encoder {image_encoder_model} {image_encoder_subfolder}")
-                image_encoder = CLIPVisionModelWithProjection.from_pretrained(
-                    image_encoder_model, subfolder=image_encoder_subfolder, torch_dtype=torch.float16
-                )
-                pipe.image_encoder = image_encoder
-
-            # Move to CUDA - the pipeline's CPU offload will handle subsequent device management?
-            # pipe.to("cuda")
-            pipe.enable_model_cpu_offload()
-        else:
-            logger.warning("IP Adapter not supported for this model")
-            raise Exception("IP Adapter not supported for this model")
-
         return pipe

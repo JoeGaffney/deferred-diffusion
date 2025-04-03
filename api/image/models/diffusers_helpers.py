@@ -24,9 +24,7 @@ def text_to_image_call(pipe, context: ImageContext):
 
     if context.ip_adapters_enabled:
         args["ip_adapter_image"] = context.get_ip_adapter_images()
-        pipe = context.load_ip_adapter(pipe)
-    else:
-        context.unload_ip_adapter(pipe)
+        pipe = context.set_ip_adapter_scale(pipe)
 
     logger.info(f"Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
@@ -56,9 +54,7 @@ def image_to_image_call(pipe, context: ImageContext):
 
     if context.ip_adapters_enabled:
         args["ip_adapter_image"] = context.get_ip_adapter_images()
-        pipe = context.load_ip_adapter(pipe)
-    else:
-        context.unload_ip_adapter(pipe)
+        pipe = context.set_ip_adapter_scale(pipe)
 
     logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
@@ -89,9 +85,7 @@ def inpainting_call(pipe, context: ImageContext):
 
     if context.ip_adapters_enabled:
         args["ip_adapter_image"] = context.get_ip_adapter_images()
-        pipe = context.load_ip_adapter(pipe)
-    else:
-        context.unload_ip_adapter(pipe)
+        pipe = context.set_ip_adapter_scale(pipe)
 
     logger.info(f"Inpainting call {args}")
     processed_image = pipe(**args).images[0]

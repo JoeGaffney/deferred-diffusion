@@ -1,6 +1,7 @@
 import math
 import os
 import shutil
+import time
 from datetime import datetime
 from typing import Literal, Tuple
 
@@ -72,3 +73,22 @@ def load_image_if_exists(image_path):
 
     logger.info(f"Image loaded from {image_path} size: {image.size}")
     return image
+
+
+def cache_info_decorator(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        logger.info(f"Calling {func.__name__} with args: {args}, kwargs: {kwargs}")
+
+        result = func(*args, **kwargs)
+        end = time.time()
+
+        info = func.cache_info()
+        logger.info(
+            f"Cache info - hits: {info.hits}, misses: {info.misses}, "
+            f"current size: {info.currsize}, max size: {info.maxsize}"
+            f" - took {end - start:.2f}s"
+        )
+        return result
+
+    return wrapper
