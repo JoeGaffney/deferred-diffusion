@@ -8,21 +8,19 @@ from utils import (
     add_call_metadata,
     extract_and_format_parameters,
     get_control_nets,
+    get_ip_adapters,
     reload_outputs,
-    save_tmp_image,
+    save_all_tmp_images,
 )
 
 
 def main(node):
     # Get all ROP image nodes from children
-    rop_nodes = [child for child in node.children() if child.type().name() == "rop_image"]
-    for rop_node in rop_nodes:
-        save_tmp_image(node, rop_node.name())
+    save_all_tmp_images(node)
 
     params = extract_and_format_parameters(node)
-    params["controlnets"] = get_control_nets(params)
     valid_params = {k: v for k, v in params.items() if k in ImageRequest.__annotations__}
-    body = ImageRequest(**valid_params)
+    body = ImageRequest(**valid_params, ip_adapters=get_ip_adapters(node), controlnets=get_control_nets(params))
 
     # make the API call
     start_time = time.time()
