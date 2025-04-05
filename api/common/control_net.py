@@ -1,61 +1,56 @@
-import os
 from functools import lru_cache
 
 import torch
 from diffusers import ControlNetModel, SD3ControlNetModel
+from image.schemas import ControlNetSchema
 from utils.logger import logger
-from utils.utils import load_image_if_exists
+from utils.utils import cache_info_decorator, load_image_if_exists
 
 
-@lru_cache(maxsize=4)  # Cache up to 4 different controlnets
+@cache_info_decorator
+@lru_cache(maxsize=2)
 def load_controlnet(model, torch_dtype=torch.float16):
-    last_exception = ""
+    result = ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
+    return result
 
-    # NOT this variance could be handled better for now we just try both
-    try:
-        controlnet = ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
-        logger.warning(f"loaded controlnet {model}")
-        # if not setting cuda here we get clashes with the main model unsure if the controlnet inherits the cpu offload
-        controlnet.to("cuda")
-        return controlnet
-    except Exception as e:
-        last_exception = e
 
-    try:
-        controlnet = SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
-        logger.warning(f"loaded controlnet {model}")
-        # if not setting cuda here we get clashes with the main model unsure if the controlnet inherits the cpu offload
-        controlnet.to("cuda")
-        return controlnet
-    except Exception as e:
-        last_exception = e
-
-    logger.warning(f"Failed to load ControlNetModel {model} {last_exception}")
-    return None
+@cache_info_decorator
+@lru_cache(maxsize=2)
+def load_sd3_controlnet(model, torch_dtype=torch.float16):
+    result = SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
+    return result
 
 
 class ControlNet:
-    def __init__(self, data, width, height, torch_dtype=torch.float16):
-        self.model = data.get("model")
-        self.image_path = data.get("image_path")
-        self.conditioning_scale = float(data.get("conditioning_scale", 0.5))
+    def __init__(self, data: ControlNetSchema, width, height, torch_dtype=torch.float16):
+        self.model = data.model
+        self.image_path = data.image_path
+        self.conditioning_scale = data.conditioning_scale
         self.enabled = False
         self.enabled = self.model is not None and self.image_path is not None
         self.loaded_controlnet = None
-
-        # validate input image
-        if self.enabled:
-            if not os.path.exists(self.image_path):
-                self.enabled = False
-
-        if self.enabled:
-            self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)
-
-        if self.loaded_controlnet is None:
-            self.enabled = False
+        self.control_net_type = "default"
+        if "sd3" in self.model.lower() or "sd-3" in self.model.lower():
+            self.control_net_type = "sd3"
 
         self.image = load_image_if_exists(self.image_path)
         if self.image:
             self.image = self.image.resize([width, height])
         else:
             self.enabled = False
+
+        if self.enabled:
+            if self.control_net_type == "sd3":
+                self.loaded_controlnet = load_sd3_controlnet(self.model, torch_dtype=torch_dtype)
+            else:
+                self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)
+
+    # we load then offload to match the same behavior as cpu offloading
+    def get_loaded_controlnet(self):
+        if self.loaded_controlnet is None:
+            return None
+        return self.loaded_controlnet.to("cuda")
+
+    def cleanup(self):
+        if self.loaded_controlnet:
+            self.loaded_controlnet.to("cpu")

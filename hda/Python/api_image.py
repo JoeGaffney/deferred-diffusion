@@ -20,7 +20,7 @@ def main(node):
 
     params = extract_and_format_parameters(node)
     valid_params = {k: v for k, v in params.items() if k in ImageRequest.__annotations__}
-    body = ImageRequest(**valid_params, ip_adapters=get_ip_adapters(node), controlnets=get_control_nets(params))
+    body = ImageRequest(**valid_params, ip_adapters=get_ip_adapters(node), controlnets=get_control_nets(node))
 
     # make the API call
     start_time = time.time()

@@ -2,11 +2,11 @@ import copy
 import traceback
 from functools import lru_cache
 
-from common.pipeline_helpers import free_gpu_memory
 from qwen_vl_utils import process_vision_info
 from text.context import TextContext
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from utils.logger import logger
+from utils.utils import free_gpu_memory
 
 
 @lru_cache(maxsize=1)
@@ -26,7 +26,7 @@ def get_pipeline(model_id):
     return model, processor
 
 
-def main(context: TextContext, flush_gpu_memory=True):
+def main(context: TextContext):
     model = "Qwen/Qwen2.5-VL-3B-Instruct"
     model, processor = get_pipeline(context.data.model)
     messages = context.data.messages
@@ -45,7 +45,7 @@ def main(context: TextContext, flush_gpu_memory=True):
 
     output = ""
     try:
-        model = model.to("cuda")  # Move GPU
+        model = model.to("cuda")
         inputs = processor(
             text=[text],
             images=image_inputs,
@@ -53,7 +53,7 @@ def main(context: TextContext, flush_gpu_memory=True):
             padding=True,
             return_tensors="pt",
         )
-        inputs = inputs.to("cuda")
+        inputs = inputs.to(model.device)  # Move inputs to the same device as the model
 
         # Inference: Generation of the output
         generated_ids = model.generate(**inputs, max_new_tokens=256)
@@ -67,10 +67,8 @@ def main(context: TextContext, flush_gpu_memory=True):
         output = f"Error during inference: {e}"
         raise Exception(output)
     finally:
-        if flush_gpu_memory:
-            model = model.to("cpu")  # Move model back to CPU
-            inputs = inputs.to("cpu")  # Move inputs back to CPU
-            free_gpu_memory()
+        model = model.to("cpu")  # Move model back to CPU
+        inputs = inputs.to("cpu")  # Move inputs back to CPU
 
     chain_of_thought = copy.deepcopy(messages)
     chain_of_thought.append(

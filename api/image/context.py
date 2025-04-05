@@ -145,8 +145,13 @@ class ImageContext:
 
         loaded_controlnets = []
         for controlnet in self.controlnets:
-            loaded_controlnets.append(controlnet.loaded_controlnet)
+            loaded_controlnets.append(controlnet.get_loaded_controlnet())
         return loaded_controlnets
+
+    def cleanup(self):
+        if self.controlnets_enabled:
+            for controlnet in self.controlnets:
+                controlnet.cleanup()
 
     def get_ip_adapter_images(self):
         if self.ip_adapters_enabled == False:

@@ -3,6 +3,7 @@ import time
 
 import hou
 from config import MAX_ADDITIONAL_IMAGES
+from generated.api_client.models.control_net_schema import ControlNetSchema
 from generated.api_client.models.ip_adapter_model import IpAdapterModel
 
 
@@ -62,7 +63,6 @@ def extract_and_format_parameters(node):
     }
     for i in range(MAX_ADDITIONAL_IMAGES):
         key_map[f"image_{i}"] = f"image_{i}_path"
-        key_map[f"controlnet_{i}"] = f"controlnet_{i}_path"
 
     for key, param_key in key_map.items():
         if key not in valid_inputs and param_key in params:
@@ -71,20 +71,28 @@ def extract_and_format_parameters(node):
     return params
 
 
-def get_control_nets(params):
-    controlnets = []
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        if f"controlnet_{i}_path" in params:
-            tmp = {
-                "model": params.get(f"controlnet_{i}_model", ""),
-                "image_path": params.get(f"controlnet_{i}_path", ""),
-                "conditioning_scale": params.get(f"controlnet_{i}_conditioning_scale", 0.5),
-                "current": f"controlnet_{i}",
-            }
-            if tmp["model"] != "":
-                controlnets.append(tmp)
+def get_control_nets(node) -> list[ControlNetSchema]:
+    # only the control_net nodes are valid inputs
+    valid_inputs = []
+    for i in node.inputs():
+        if i:
+            if i.type().name() == "deferred_diffusion::control_net":
+                valid_inputs.append(i)
 
-    return controlnets
+    result = []
+    for current in valid_inputs:
+
+        params = get_node_parameters(current)
+        save_all_tmp_images(current)
+
+        tmp = ControlNetSchema(
+            model=params.get("model", ""),
+            image_path=params.get("image_path", ""),
+            conditioning_scale=params.get("conditioning_scale", 0.5),
+        )
+        result.append(tmp)
+
+    return result
 
 
 # Get the parameter template group
@@ -96,7 +104,7 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
             if i.type().name() == "deferred_diffusion::ip_adapter":
                 valid_inputs.append(i)
 
-    ip_adapters = []
+    result = []
     for current in valid_inputs:
 
         params = get_node_parameters(current)
@@ -110,9 +118,9 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
             weight_name=params.get("weight_name", "ip-adapter_sd15.bin"),
             scale=params.get("scale", 0.5),
         )
-        ip_adapters.append(tmp)
+        result.append(tmp)
 
-    return ip_adapters
+    return result
 
 
 def add_call_metadata(node, body, response_content, start_time):
