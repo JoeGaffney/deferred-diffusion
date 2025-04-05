@@ -53,6 +53,4 @@ class ControlNet:
 
     def cleanup(self):
         if self.loaded_controlnet:
-            print("Cleaning up controlnet")
-            # free up the memory
             self.loaded_controlnet.to("cpu")
