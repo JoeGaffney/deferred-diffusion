@@ -28,8 +28,9 @@ def text_to_image_call(pipe, context: ImageContext):
 
     logger.info(f"Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
-    processed_image = context.resize_image_to_orig(processed_image)
+    context.cleanup()
 
+    processed_image = context.resize_image_to_orig(processed_image)
     processed_path = context.save_image(processed_image)
     return processed_path
 
@@ -58,6 +59,7 @@ def image_to_image_call(pipe, context: ImageContext):
 
     logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
+    context.cleanup()
 
     processed_image = context.resize_image_to_orig(processed_image)
     processed_path = context.save_image(processed_image)
@@ -89,6 +91,7 @@ def inpainting_call(pipe, context: ImageContext):
 
     logger.info(f"Inpainting call {args}")
     processed_image = pipe(**args).images[0]
+    context.cleanup()
 
     processed_image = context.resize_image_to_orig(processed_image)
     processed_path = context.save_image(processed_image)

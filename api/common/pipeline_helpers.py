@@ -1,4 +1,3 @@
-import torch
 from transformers import BitsAndBytesConfig, T5EncoderModel
 
 
@@ -34,14 +33,3 @@ def get_t5_quantized(model_id):
 
 def get_t5_8_bit(model_id):
     return T5EncoderModel.from_pretrained(model_id, subfolder="text_encoder_3", load_in_8bit=True, device_map="auto")
-
-
-def free_gpu_memory():
-    print(f"Before: {torch.cuda.memory_allocated()/1e9:.2f} GB allocated")
-    print(f"Before: {torch.cuda.memory_reserved()/1e9:.2f} GB reserved")
-
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
-
-    print(f"After: {torch.cuda.memory_allocated()/1e9:.2f} GB allocated")
-    print(f"After: {torch.cuda.memory_reserved()/1e9:.2f} GB reserved")

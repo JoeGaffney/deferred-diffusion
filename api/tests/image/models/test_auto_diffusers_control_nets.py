@@ -4,7 +4,8 @@ import pytest
 from image.context import ImageContext
 from image.models.auto_diffusion import main
 from image.schemas import ControlNetSchema, ImageRequest
-from utils.utils import get_16_9_resolution
+from utils.logger import logger
+from utils.utils import get_16_9_resolution, get_gpu_memory_usage_pretty
 
 # Define constants
 MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
@@ -65,6 +66,8 @@ def test_models_with_control_nets(model_id, mode):
         ),
         mode=mode,
     )
+
+    logger.info(f"{get_gpu_memory_usage_pretty()}")
 
     # Check if output file exists
     assert os.path.exists(output_name), f"Output file {output_name} was not created."

@@ -11,9 +11,6 @@ from utils.utils import cache_info_decorator, load_image_if_exists
 @lru_cache(maxsize=2)
 def load_controlnet(model, torch_dtype=torch.float16):
     result = ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
-
-    # if not setting cuda here we get clashes with the main model unsure if the controlnet inherits the cpu offload
-    result.to("cuda")
     return result
 
 
@@ -21,8 +18,6 @@ def load_controlnet(model, torch_dtype=torch.float16):
 @lru_cache(maxsize=2)
 def load_sd3_controlnet(model, torch_dtype=torch.float16):
     result = SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
-    # if not setting cuda here we get clashes with the main model unsure if the controlnet inherits the cpu offload
-    result.to("cuda")
     return result
 
 
@@ -49,3 +44,15 @@ class ControlNet:
                 self.loaded_controlnet = load_sd3_controlnet(self.model, torch_dtype=torch_dtype)
             else:
                 self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)
+
+    # we load then offload to match the same behavior as cpu offloading
+    def get_loaded_controlnet(self):
+        if self.loaded_controlnet is None:
+            return None
+        return self.loaded_controlnet.to("cuda")
+
+    def cleanup(self):
+        if self.loaded_controlnet:
+            print("Cleaning up controlnet")
+            # free up the memory
+            self.loaded_controlnet.to("cpu")

@@ -137,4 +137,4 @@ def free_gpu_memory(threshold_percent: float = 80.0):
     torch.cuda.ipc_collect()
 
     after_stats = get_gpu_memory_usage_pretty()
-    logger.warning(f"GPU Memory Clean:\n{after_stats}")
+    logger.warning(f"Clean {after_stats}")
