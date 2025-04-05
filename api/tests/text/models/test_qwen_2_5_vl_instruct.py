@@ -4,6 +4,7 @@ import pytest
 from text.context import TextContext
 from text.models.qwen_2_5_vl_instruct import main
 from text.schemas import TextRequest
+from utils.utils import free_gpu_memory
 
 
 @pytest.fixture
@@ -41,12 +42,12 @@ def test_image_description(input_paths):
             }
         ]
     )
-    result = main(TextContext(data), flush_gpu_memory=True)
+    result = main(TextContext(data))
     validate_result(result)
 
 
 def test_image_prompt_generation(input_paths):
-    time.sleep(2)  # Simulating GPU memory flush delay
+    free_gpu_memory(threshold_percent=10)  # Free up GPU memory if needed
     data = TextRequest(
         messages=[
             {
@@ -58,7 +59,7 @@ def test_image_prompt_generation(input_paths):
             }
         ]
     )
-    result = main(TextContext(data), flush_gpu_memory=False)
+    result = main(TextContext(data))
     validate_result(result)
 
 
@@ -78,5 +79,5 @@ def test_image_video_comparison(input_paths):
             }
         ]
     )
-    result = main(TextContext(data), flush_gpu_memory=False)
+    result = main(TextContext(data))
     validate_result(result)

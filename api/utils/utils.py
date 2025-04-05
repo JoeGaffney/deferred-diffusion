@@ -129,8 +129,8 @@ def should_free_gpu_memory(threshold_percent: float = 80.0):
     return usage_percent > threshold_percent
 
 
-def free_gpu_memory():
-    if (should_free_gpu_memory(threshold_percent=80.0) == False) or (torch.cuda.is_available() == False):
+def free_gpu_memory(threshold_percent: float = 80.0):
+    if (should_free_gpu_memory(threshold_percent=threshold_percent) == False) or (torch.cuda.is_available() == False):
         return
 
     torch.cuda.empty_cache()
