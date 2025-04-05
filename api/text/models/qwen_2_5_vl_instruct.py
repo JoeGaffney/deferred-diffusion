@@ -2,11 +2,11 @@ import copy
 import traceback
 from functools import lru_cache
 
-from common.pipeline_helpers import free_gpu_memory
 from qwen_vl_utils import process_vision_info
 from text.context import TextContext
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from utils.logger import logger
+from utils.utils import free_gpu_memory
 
 
 @lru_cache(maxsize=1)

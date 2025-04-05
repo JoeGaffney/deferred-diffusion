@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from torch import dtype
 
 
-class ControlNet(BaseModel):
+class ControlNetSchema(BaseModel):
     conditioning_scale: float = 0.5
     image_path: str
     model: str
@@ -20,7 +20,7 @@ class IpAdapterModel(BaseModel):
 
 
 class ImageRequest(BaseModel):
-    controlnets: list = [ControlNet]
+    controlnets: list[ControlNetSchema] = []
     disable_text_encoder_3: bool = True
     guidance_scale: float = 5.0
     inpainting_full_image: bool = True

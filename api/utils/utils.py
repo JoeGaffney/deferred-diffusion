@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from typing import Literal, Tuple
 
+import torch
 from diffusers.utils import load_image
 from utils.logger import logger
 
@@ -92,3 +93,48 @@ def cache_info_decorator(func):
         return result
 
     return wrapper
+
+
+def get_gpu_memory_usage():
+    reserved = torch.cuda.memory_reserved() / 1e9
+    allocated = torch.cuda.memory_allocated() / 1e9
+    available, total = torch.cuda.mem_get_info()
+    used = (total - available) / 1e9
+    total = total / 1e9
+    usage_percent = (used / total) * 100
+
+    return (
+        total,
+        used,
+        reserved,
+        allocated,
+        usage_percent,
+    )
+
+
+def get_gpu_memory_usage_pretty():
+    total, used, reserved, allocated, usage_percent = get_gpu_memory_usage()
+
+    return (
+        f"GPU Memory Usage: {used:.2f}GB / {total:.2f}GB,  "
+        f"Reserved: {reserved:.2f}GB, "
+        f"Allocated: {allocated:.2f}GB, "
+        f"Usage: {usage_percent:.2f}%"
+    )
+
+
+def should_free_gpu_memory(threshold_percent: float = 80.0):
+    total, used, reserved, allocated, usage_percent = get_gpu_memory_usage()
+    logger.info(f"{get_gpu_memory_usage_pretty()}")
+    return usage_percent > threshold_percent
+
+
+def free_gpu_memory():
+    if (should_free_gpu_memory(threshold_percent=80.0) == False) or (torch.cuda.is_available() == False):
+        return
+
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
+
+    after_stats = get_gpu_memory_usage_pretty()
+    logger.warning(f"GPU Memory Clean:\n{after_stats}")

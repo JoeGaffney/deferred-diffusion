@@ -1,12 +1,34 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, PlainTextResponse
+from image import router as image
+from text import router as text
 from utils import device_info
+from utils.utils import free_gpu_memory
+from video import router as video
 
 app = FastAPI(title="API")
 
-from image import router as image
-from text import router as text
-from video import router as video
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return PlainTextResponse(str(exc), status_code=400)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500, content={"message": "Internal server error", "detail": str(exc), "path": request.url.path}
+    )
+
+
+@app.middleware("http")
+async def cleanup_gpu_memory(request: Request, call_next):
+    free_gpu_memory()
+    response = await call_next(request)
+    return response
+
 
 app.include_router(image.router, prefix="/api")
 app.include_router(text.router, prefix="/api")

@@ -3,7 +3,7 @@ import os
 import pytest
 from image.context import ImageContext
 from image.models.auto_diffusion import main
-from image.schemas import ImageRequest
+from image.schemas import ControlNetSchema, ImageRequest
 from utils.utils import get_16_9_resolution
 
 # Define constants
@@ -17,25 +17,21 @@ MODELS = [
 
 MODEL_CONTROLNET_MAPPING = {
     "stabilityai/stable-diffusion-xl-base-1.0": [
-        {
-            "model": "diffusers/controlnet-canny-sdxl-1.0",
-            "input_image": "../test_data/canny_v001.png",
-            "conditioning_scale": "0.5",
-        }
+        ControlNetSchema(
+            model="diffusers/controlnet-canny-sdxl-1.0",
+            image_path="../test_data/canny_v001.png",
+            conditioning_scale=0.5,
+        ),
     ],
     "stabilityai/stable-diffusion-3-medium-diffusers": [
-        {
-            "model": "InstantX/SD3-Controlnet-Canny",
-            "input_image": "../test_data/canny_v001.png",
-            "conditioning_scale": "0.5",
-        }
+        ControlNetSchema(
+            model="InstantX/SD3-Controlnet-Canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5
+        )
     ],
     "stabilityai/stable-diffusion-3.5-medium": [
-        {
-            "model": "InstantX/SD3-Controlnet-Canny",
-            "input_image": "../test_data/canny_v001.png",
-            "conditioning_scale": "0.5",
-        }
+        ControlNetSchema(
+            model="InstantX/SD3-Controlnet-Canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5
+        )
     ],
 }
 
