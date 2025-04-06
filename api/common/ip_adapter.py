@@ -8,6 +8,7 @@ class IpAdapter:
         self.model = data.model
         self.image_path = data.image_path
         self.scale = data.scale
+        self.scale_layers = data.scale_layers
         self.subfolder = data.subfolder
         self.weight_name = data.weight_name
         self.image = load_image_if_exists(self.image_path)
@@ -24,3 +25,22 @@ class IpAdapter:
             # self.image = self.image.resize([width, height])
             if self.model is not None and self.subfolder is not None and self.weight_name is not None:
                 self.enabled = True
+
+    def get_scale_layers(self):
+
+        # NOTE see https://huggingface.co/docs/diffusers/en/using-diffusers/ip_adapter#style--layout-control
+        if self.scale_layers == "style":
+            return {
+                "up": {"block_0": [0.0, self.scale, 0.0]},
+            }
+        elif self.scale_layers == "style_and_layout":
+            return {
+                "down": {"block_2": [0.0, self.scale]},
+                "up": {"block_0": [0.0, self.scale, 0.0]},
+            }
+        elif self.scale_layers == "layout":
+            return {
+                "down": {"block_2": [0.0, self.scale]},
+            }
+
+        return self.scale

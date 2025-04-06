@@ -14,6 +14,7 @@ class IpAdapterModel(BaseModel):
     image_path: str
     model: str = Field("h94/IP-Adapter", min_length=1)
     scale: float = 0.5
+    scale_layers: str = "all"
     subfolder: str = Field("models", min_length=1)
     weight_name: str = Field("ip-adapter_sd15.bin", min_length=1)
     image_encoder: bool = False
