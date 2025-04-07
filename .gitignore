@@ -20,6 +20,7 @@ tmp
 nuke/
 hda/backup/
 hda/Python/generated/
+agents-service/generated/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
