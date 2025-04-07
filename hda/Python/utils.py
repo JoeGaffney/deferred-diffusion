@@ -117,6 +117,7 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
             subfolder=params.get("subfolder", "models"),
             weight_name=params.get("weight_name", "ip-adapter_sd15.bin"),
             scale=params.get("scale", 0.5),
+            scale_layers=params.get("scale_layers", "all"),
         )
         result.append(tmp)
 
