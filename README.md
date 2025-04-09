@@ -86,7 +86,6 @@ A main method can be added
 ```
 cd api/
 
-python -m image.models.stable_diffusion_3_5
 python -m video.models.ltx_video
 python -m video.models.stable_video_diffusion
 ```
@@ -95,14 +94,19 @@ python -m video.models.stable_video_diffusion
 
 ## Python Modules
 
-httpx needs to be available to houdini for the api client to work.
+The following need to be available to houdini for the api client and agents to work.
+
+- httpx
+- pydantic-ai
 
 You can install like this to put on roaming path.
 
 ```
-"C:\Program Files\Side Effects Software\Houdini XX.X\bin\hython.exe" -m pip install httpx
-"C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
+"C:\Program Files\Side Effects Software\Houdini XX.X\bin\hython.exe" -m pip install httpx pydantic-ai
+"C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx pydantic-ai
 ```
+
+Or use rez or any other way to get the modules in houdini.
 
 ## Env file
 
@@ -112,5 +116,5 @@ Adjust directories depending on where you have the hda folder.
 HOUDINI_PATH = C:/development/deferred-diffusion/hda;&
 HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/hda;&
 #not strictly required as hda add the Python folder on load
-#PYTHONPATH = C:/development/deferred-diffusion/hda/Python;&
+#PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
 ```

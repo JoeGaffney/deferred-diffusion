@@ -8,11 +8,7 @@
       "name": "API Service"
     },
     {
-      "path": "agents-service",
-      "name": "Agents Service"
-    },
-    {
-      "path": "hda/Python",
+      "path": "hda/python",
       "name": "HDA Python"
     }
   ],

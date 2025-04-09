@@ -13,3 +13,4 @@ sentencepiece
 transformers
 uvicorn
 openapi-python-client
+pydantic-ai
