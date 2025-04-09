@@ -25,11 +25,11 @@ class SceneDescription(BaseModel):
     time_of_day: str = Field(description="Time of day for the scene")
 
 
-class ScriptAgentRequest(BaseModel):
+class SequenceAgentRequest(BaseModel):
     prompt: str = ""
 
 
-class ScriptAgentResponse(BaseModel):
+class SequenceAgentResponse(BaseModel):
     shots: List[ShotDescription] = Field(description="Sequence of shots in the scene")
     mood: str = Field(description="Overall mood and atmosphere of the sequence")
     scene: SceneDescription = Field(description="Description of the scene")

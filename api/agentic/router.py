@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 
-from agentic.agents import script_agent
-from agentic.schemas import ScriptAgentRequest, ScriptAgentResponse
+from agentic.agents import sequence_agent
+from agentic.schemas import SequenceAgentRequest, SequenceAgentResponse
 
 router = APIRouter(prefix="/agentic", tags=["Agentic"])
 
 
-@router.post("/script_agent", response_model=ScriptAgentResponse, operation_id="script_agent")
-def create(request: ScriptAgentRequest):
-    return script_agent.main(request)
+@router.post("/sequence_agent", response_model=SequenceAgentResponse, operation_id="sequence_agent")
+def create(request: SequenceAgentRequest):
+    return sequence_agent.main(request)
