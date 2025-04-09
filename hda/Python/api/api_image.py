@@ -1,7 +1,6 @@
 import time
 
 import hou
-
 from config import client
 from generated.api_client.api.image import create_image
 from generated.api_client.models.image_request import ImageRequest

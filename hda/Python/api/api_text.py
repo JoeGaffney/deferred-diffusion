@@ -2,7 +2,6 @@ import json
 import time
 
 import hou
-
 from config import MAX_ADDITIONAL_IMAGES, client
 from generated.api_client.api.text import create_text
 from generated.api_client.models.text_request import TextRequest

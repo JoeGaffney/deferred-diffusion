@@ -2,6 +2,7 @@ from functools import lru_cache
 
 import torch
 from diffusers import ControlNetModel, SD3ControlNetModel
+
 from image.schemas import ControlNetSchema
 from utils.logger import logger
 from utils.utils import cache_info_decorator, load_image_if_exists

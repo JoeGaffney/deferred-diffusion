@@ -50,6 +50,11 @@ This structure balances **clarity, maintainability, and scalability**, making it
 │ ├── schemas.py
 │ ├── context.py
 │ ├── router.py
+│── /agentic
+│ ├── agents/
+│ ├── schemas.py
+│ ├── context.py
+│ ├── router.py
 │── /common # ✅ Shared components
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
 │── /tests # ✅ Tests mirror the /api structure
