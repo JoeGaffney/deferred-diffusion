@@ -8,7 +8,7 @@ from generated.api_client.api.agentic import sequence_agent
 from generated.api_client.models.sequence_request import SequenceRequest
 from generated.api_client.models.sequence_response import SequenceResponse
 from generated.api_client.models.shot_response import ShotResponse
-from utils import add_call_metadata, extract_and_format_parameters
+from utils import add_call_metadata, add_spare_params, extract_and_format_parameters
 
 
 def split_text(text, max_length=120):
@@ -56,34 +56,25 @@ def main(node):
     # node.parm("chain_of_thought").set(chain_of_thought_str)
     node.parm("response").set(json.dumps(response.parsed.to_dict(), indent=2))
     add_call_metadata(node, body.to_dict(), response.parsed.to_dict(), start_time)
-
+    scene = response.parsed.scene
     for shot in response.parsed.shots:
 
         # Create a new subnet for each shot
-        shot_node = node.parent().createNode("null", node_name=f"shot_{shot.name}")
+        shot_node = node.parent().createNode("deferred_diffusion::image", node_name=f"shot_{shot.name}_image")
 
         # Position it relative to the current node
         shot_node.setPosition(node.position())
 
-        # Create parameters on the shot node
-        parm_group = shot_node.parmTemplateGroup()
-        shot_dict = shot.to_dict()
+        # add all spare usefull params for reference
+        add_spare_params(shot_node, "scene", scene.to_dict())
+        add_spare_params(shot_node, "shot", shot.to_dict())
 
-        for param_name, param_value in shot_dict.items():
-            try:
-                # Create string parameter with proper name and value
-                parm_template = hou.StringParmTemplate(
-                    name=param_name,  # Parameter name
-                    label=param_name,  # .replace("_", " ").title(),  # Nice looking label
-                    num_components=1,
-                    default_value=[str(param_value)],  # Convert value to string
-                )
-                parm_group.addParmTemplate(parm_template)
-            except Exception as e:
-                print(f"Error adding parameter {param_name}: {e}")
-
-        # Apply the parameter template
-        shot_node.setParmTemplateGroup(parm_group)
+        # update the default parameters from the generated
+        shot_node.parm("prompt").set(f"{shot.image_description}, {scene.diffusion_postive_prompt_tags}")
+        shot_node.parm("negative_prompt").set(scene.diffusion_negative_prompt_tags)
+        shot_node.parm("max_width").set(1280)
+        shot_node.parm("max_height").set(768)
+        shot_node.parm("model").set("stabilityai/stable-diffusion-xl-base-1.0")
 
         # Layout the nodes nicely
         shot_node.moveToGoodPosition()

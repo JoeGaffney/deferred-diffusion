@@ -2,6 +2,7 @@ import json
 import time
 
 import hou
+
 from config import MAX_ADDITIONAL_IMAGES
 from generated.api_client.models.control_net_schema import ControlNetSchema
 from generated.api_client.models.ip_adapter_model import IpAdapterModel
@@ -134,3 +135,25 @@ def add_call_metadata(node, body, response_content, start_time):
 
     if node.parm("call_metadata"):
         node.parm("call_metadata").set(call_metadata_str)
+
+
+def add_spare_params(node, prefix, params):
+    parm_group = node.parmTemplateGroup()
+    for param_name, param_value in params.items():
+        # Skip if the parameter already exists
+        unique_name = f"{prefix}_{param_name}"
+
+        try:
+            # Create string parameter with proper name and value
+            parm_template = hou.StringParmTemplate(
+                name=unique_name,
+                label=unique_name,
+                num_components=1,
+                default_value=[str(param_value)],  # Convert value to string
+            )
+            parm_group.addParmTemplate(parm_template)
+        except Exception as e:
+            print(f"Error adding parameter {param_name}: {e}")
+
+    # Apply the parameter template
+    node.setParmTemplateGroup(parm_group)
