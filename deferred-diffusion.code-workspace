@@ -13,7 +13,8 @@
     }
   ],
   "settings": {
-    "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
+    "python.defaultInterpreterPath": "${workspaceFolder:deferred-diffusion}/venv/Scripts/python.exe",
+    "python.analysis.extraPaths": ["./api", "./hda/python"],
     "editor.formatOnSave": true,
     "pylint.enabled": true,
     "pylint.args": [

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from pydantic_ai import Agent, RunContext
 
-from agentic.schemas import SequenceAgentRequest, SequenceAgentResponse
+from agentic.schemas import SequenceRequest, SequenceResponse
 
 
 class SequenceDatabase:
@@ -27,7 +27,7 @@ class SequenceDependencies:
 sequence_agent = Agent(
     "openai:gpt-4o-mini",
     deps_type=SequenceDependencies,
-    result_type=SequenceAgentResponse,
+    result_type=SequenceResponse,
     system_prompt=(
         "You are a professional storyboard artist and script supervisor. "
         "Break down scenes into detailed shot descriptions, including "
@@ -42,7 +42,7 @@ async def add_scene_context(ctx: RunContext[SequenceDependencies]) -> str:
     return f"Scene context: {scene_context}"
 
 
-def main(request: SequenceAgentRequest) -> SequenceAgentResponse:
+def main(request: SequenceRequest) -> SequenceResponse:
     deps = SequenceDependencies(scene_id=2, db=SequenceDatabase())
     result = sequence_agent.run_sync(request.prompt, deps=deps)
     pprint.pprint(result.data.model_dump(), indent=2)
@@ -50,4 +50,4 @@ def main(request: SequenceAgentRequest) -> SequenceAgentResponse:
 
 
 if __name__ == "__main__":
-    main(SequenceAgentRequest(prompt="Create a sequence showing a person floating through a zero gravity corridor"))
+    main(SequenceRequest(prompt="Create a sequence showing a person floating through a zero gravity corridor"))

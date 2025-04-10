@@ -8,6 +8,7 @@
     "--disable=missing-function-docstring"
   ],
   "black-formatter.args": ["--line-length=119"],
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.formatOnSave": true,
