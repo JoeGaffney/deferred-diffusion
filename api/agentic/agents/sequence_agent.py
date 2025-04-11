@@ -32,6 +32,10 @@ sequence_agent = Agent(
         "You are a professional storyboard artist and script supervisor. "
         "Break down scenes into detailed shot descriptions, including "
         "camera movements and dialog where appropriate."
+        # "The data will be used to generate images for each shot, set and character using stable diffusion xl. "
+        # "So please include all relevant information in the image generation prompt. "
+        # "The image generation prompts should be a single sentence, and should not include any new lines. "
+        # "Try to maintain a consistent style and tone throughout the sequence. "
     ),
 )
 
