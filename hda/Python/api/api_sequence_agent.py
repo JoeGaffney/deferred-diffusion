@@ -108,4 +108,4 @@ def main(node):
 
         if shot.antagonist is not None:
             add_spare_params(shot_node, "antagonist", shot.antagonist.to_dict())
-            shot_node.setInput(1, antagonist_node, 0)  # 2 is the "antagonist" input index on shot_node
+            shot_node.setInput(2, antagonist_node, 0)  # 2 is the "antagonist" input index on shot_node
