@@ -34,7 +34,7 @@ class CharacterResponse(BaseModel):
 
 
 class SceneResponse(BaseModel):
-    name: str = Field(description="Name of thes scene eg. castle, forest, interior_kitchen")
+    name: str = Field(description="Name of the scene eg. castle, forest, interior_kitchen")
     mood: str = Field(description="Overall mood and atmosphere of the sequence")
     location: str = Field(description="Location of the scene")
     time_of_day: str = Field(description="Time of day for the theme style")
