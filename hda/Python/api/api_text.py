@@ -1,12 +1,11 @@
 import json
-import os
 import time
 
 import hou
 from config import MAX_ADDITIONAL_IMAGES, client
 from generated.api_client.api.text import create_text
-from generated.api_client.models import TextRequest, TextResponse
-from generated.api_client.types import Response
+from generated.api_client.models.text_request import TextRequest
+from generated.api_client.models.text_response import TextResponse
 from utils import add_call_metadata, extract_and_format_parameters, save_tmp_image
 
 

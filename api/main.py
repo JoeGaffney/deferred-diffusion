@@ -2,6 +2,8 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
+
+from agentic import router as agentic
 from image import router as image
 from text import router as text
 from utils import device_info
@@ -33,6 +35,7 @@ async def cleanup_gpu_memory(request: Request, call_next):
 app.include_router(image.router, prefix="/api")
 app.include_router(text.router, prefix="/api")
 app.include_router(video.router, prefix="/api")
+app.include_router(agentic.router, prefix="/api")
 
 
 @app.get("/")

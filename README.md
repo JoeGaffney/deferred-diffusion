@@ -50,6 +50,11 @@ This structure balances **clarity, maintainability, and scalability**, making it
 │ ├── schemas.py
 │ ├── context.py
 │ ├── router.py
+│── /agentic
+│ ├── agents/
+│ ├── schemas.py
+│ ├── context.py
+│ ├── router.py
 │── /common # ✅ Shared components
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
 │── /tests # ✅ Tests mirror the /api structure
@@ -86,7 +91,6 @@ A main method can be added
 ```
 cd api/
 
-python -m image.models.stable_diffusion_3_5
 python -m video.models.ltx_video
 python -m video.models.stable_video_diffusion
 ```
@@ -95,7 +99,9 @@ python -m video.models.stable_video_diffusion
 
 ## Python Modules
 
-httpx needs to be available to houdini for the api client to work.
+The following need to be available to houdini for the api client and agents to work.
+
+- httpx
 
 You can install like this to put on roaming path.
 
@@ -104,13 +110,14 @@ You can install like this to put on roaming path.
 "C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
 ```
 
+Or use rez or any other way to get the modules in houdini.
+
 ## Env file
 
-Adjust directories depending on where you have the hda folder.
+Adjust directories depending on where you have the hda folder and ensure python module is on the path
 
 ```
 HOUDINI_PATH = C:/development/deferred-diffusion/hda;&
 HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/hda;&
-#not strictly required as hda add the Python folder on load
-#PYTHONPATH = C:/development/deferred-diffusion/hda/Python;&
+PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
 ```

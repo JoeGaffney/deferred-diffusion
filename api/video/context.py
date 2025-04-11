@@ -5,6 +5,7 @@ import os
 import requests
 import torch
 from diffusers.utils import export_to_video, load_image
+
 from utils.logger import logger
 from utils.utils import ensure_path_exists, save_copy_with_timestamp
 from video.schemas import VideoRequest

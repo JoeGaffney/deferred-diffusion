@@ -1,13 +1,16 @@
 from functools import lru_cache
 
-from common.pipeline_helpers import optimize_pipeline
 from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
     AutoPipelineForText2Image,
+    DDIMScheduler,
     DiffusionPipeline,
     StableDiffusion3ControlNetPipeline,
 )
+from transformers import CLIPVisionModelWithProjection
+
+from common.pipeline_helpers import optimize_pipeline
 from image.context import ImageContext
 from image.models.diffusers_helpers import (
     image_to_image_call,
@@ -15,7 +18,6 @@ from image.models.diffusers_helpers import (
     text_to_image_call,
 )
 from image.schemas import PipelineConfig
-from transformers import CLIPVisionModelWithProjection
 from utils.logger import logger
 from utils.utils import cache_info_decorator
 
@@ -53,6 +55,9 @@ def get_pipeline(config: PipelineConfig):
                 torch_dtype=config.torch_dtype,
             )
             pipe.image_encoder = image_encoder
+
+            # Supposed to help with consistency
+            pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
     return optimize_pipeline(pipe)
 

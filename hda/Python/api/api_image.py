@@ -1,9 +1,11 @@
 import time
 
 import hou
+
 from config import client
 from generated.api_client.api.image import create_image
-from generated.api_client.models import ImageRequest, ImageResponse
+from generated.api_client.models.image_request import ImageRequest
+from generated.api_client.models.image_response import ImageResponse
 from utils import (
     add_call_metadata,
     extract_and_format_parameters,
