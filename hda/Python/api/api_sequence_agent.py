@@ -67,7 +67,7 @@ def main(node):
     # set the node parameters
     node.parm("response").set(json.dumps(response.parsed.to_dict(), indent=2))
     add_call_metadata(node, body.to_dict(), response.parsed.to_dict(), start_time)
-    # NOTE issue setting when allready exists
+    # NOTE issue setting when already exists
     # add_spare_params(node, "result", response.parsed.to_dict())
 
     # prep generated nodes
