@@ -6,7 +6,6 @@ from diffusers import (
     AutoPipelineForText2Image,
     DDIMScheduler,
     DiffusionPipeline,
-    StableDiffusion3ControlNetPipeline,
 )
 from transformers import CLIPVisionModelWithProjection
 
@@ -18,7 +17,6 @@ from image.models.diffusers_helpers import (
     text_to_image_call,
 )
 from image.schemas import PipelineConfig
-from utils.logger import logger
 from utils.utils import cache_info_decorator
 
 
@@ -85,38 +83,16 @@ def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
     return AutoPipelineForInpainting.from_pipe(get_pipeline(pipeline_config), requires_safety_checker=False, **args)
 
 
-# need to grab direct as SD3 control nets not full supported by diffusers
-def get_sd3_controlnet_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-    pipe = StableDiffusion3ControlNetPipeline.from_pipe(get_pipeline(pipeline_config), controlnet=controlnets)
-
-    logger.warning(f"Loaded pipeline {pipeline_config.model_id} with controlnets")
-    return pipe
-
-
-# work around as SD3 control nets not full supported by diffusers
-def main_sd3_controlnets(
-    context: ImageContext, model_id="stabilityai/stable-diffusion-3-medium-diffusers", mode="text"
+def main(
+    context: ImageContext,
+    mode="text",
 ):
     controlnets = context.get_loaded_controlnets()
     pipeline_config = context.get_pipeline_config()
 
     # work around as SD3 not full supported by diffusers
-    # there is no dedicated img to img or inpainting control net for SD3 atm
-    return text_to_image_call(
-        get_sd3_controlnet_pipeline(pipeline_config, controlnets=controlnets),
-        context,
-    )
-
-
-def main(
-    context: ImageContext,
-    mode="text",
-):
     if context.sd3_controlnet_mode == True:
-        return main_sd3_controlnets(context, model_id=context.model, mode=mode)
-
-    controlnets = context.get_loaded_controlnets()
-    pipeline_config = context.get_pipeline_config()
+        return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)
 
     if mode == "text_to_image":
         return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)
