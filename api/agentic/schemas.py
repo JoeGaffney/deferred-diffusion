@@ -50,6 +50,9 @@ class SceneResponse(BaseModel):
 
 class SequenceRequest(BaseModel):
     prompt: str = ""
+    scene_reference_image: str | None = Field(description="Reference image for the scene", default=None)
+    protagonist_reference_image: str | None = Field(description="Reference image for the protagonist", default=None)
+    antagonist_reference_image: str | None = Field(description="Reference image for the antagonist", default=None)
 
 
 class SequenceResponse(BaseModel):
