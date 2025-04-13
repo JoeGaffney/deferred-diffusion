@@ -5,6 +5,7 @@ from pydantic_ai import Agent, RunContext
 
 from agentic.schemas import SequenceRequest, SequenceResponse
 from agentic.tools.image_reference import main as image_reference_main
+from utils.logger import log_pretty, logger
 
 
 class SequenceDatabase:
@@ -81,10 +82,7 @@ def main(request: SequenceRequest) -> SequenceResponse:
     deps = SequenceDependencies(scene_id=2, db=SequenceDatabase(), data=request)
     result = sequence_agent.run_sync(request.prompt, deps=deps)
     history = result.all_messages()
-
-    print("\nStage 1\n")
-    print(history)
-    pprint.pprint(result.data.model_dump(), indent=2)
+    log_pretty("History stage 1", history)
 
     result = sequence_agent.run_sync(
         "Thats a good start can it be improved and all shot image_descriptions should be suitable for diffusion image prompts"
@@ -94,9 +92,8 @@ def main(request: SequenceRequest) -> SequenceResponse:
     )
     history = result.all_messages()
 
-    print("\nStage 2\n")
-    print(history)
-    pprint.pprint(result.data.model_dump(), indent=2)
+    log_pretty("History", history)
+    log_pretty("Result", result.data.model_dump())
     return result.data
 
 
