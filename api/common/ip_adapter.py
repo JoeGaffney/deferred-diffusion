@@ -5,6 +5,8 @@ from image.schemas import IpAdapterModel
 from utils.logger import logger
 from utils.utils import load_image_if_exists
 
+processor = IPAdapterMaskProcessor()
+
 
 class IpAdapter:
     def __init__(self, data: IpAdapterModel, width, height):
@@ -56,7 +58,6 @@ class IpAdapter:
         return self.scale
 
     def get_mask(self):
-        processor = IPAdapterMaskProcessor()
         tmp_mask = self.solid_mask
         if self.mask_image is not None:
             tmp_mask = self.mask_image
