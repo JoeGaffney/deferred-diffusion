@@ -7,6 +7,10 @@ from agentic.schemas import SequenceRequest, SequenceResponse
 from agentic.tools.image_reference import main as image_reference_main
 from utils.logger import log_pretty, logger
 
+character_prompt = (
+    "Generate a detailed visual description of the Person in the image. Ignore explaining the background. Focusing more on what the person looks like age, race, hair colour, what they may do for a job, there mood etc. To be used for storyboarding by a script agent. As a Characther description.",
+)
+
 
 class SequenceDatabase:
     """This is a fake database for example purposes.
@@ -37,6 +41,7 @@ sequence_agent = Agent(
         "camera movements and dialog where appropriate."
         "use the add_scene_reference tool to get a reference for the scene. "
         "use the add_protaonist_reference tool to get a reference for the protagonist. "
+        "use the add_antagonist_reference tool to get a reference for the antagonist. "
     ),
 )
 
@@ -65,12 +70,12 @@ async def add_scene_reference(ctx: RunContext[SequenceDependencies]) -> str:
 
 
 @sequence_agent.tool
-def add_protagonist_reference(ctx: RunContext[SequenceDependencies]) -> str:
+async def add_protagonist_reference(ctx: RunContext[SequenceDependencies]) -> str:
     if ctx.deps.data.protagonist_reference_image == None:
         return ""
 
     result = image_reference_main(
-        prompt="Generate a detailed visual description of the protagonist in the image. To be used for storyboarding by a script agent.",
+        prompt=character_prompt,
         image_reference_image=ctx.deps.data.protagonist_reference_image,
     )
     if result == "":
@@ -78,19 +83,28 @@ def add_protagonist_reference(ctx: RunContext[SequenceDependencies]) -> str:
     return f"Protagonist context: {result}"
 
 
+@sequence_agent.tool
+def add_antagonist_reference(ctx: RunContext[SequenceDependencies]) -> str:
+    if ctx.deps.data.antagonist_reference_image == None:
+        return ""
+
+    result = image_reference_main(
+        prompt=character_prompt,
+        image_reference_image=ctx.deps.data.antagonist_reference_image,
+    )
+    if result == "":
+        return ""
+    return f"Antagonist context: {result}"
+
+
 def main(request: SequenceRequest) -> SequenceResponse:
     deps = SequenceDependencies(scene_id=2, db=SequenceDatabase(), data=request)
     result = sequence_agent.run_sync(request.prompt, deps=deps)
     history = result.all_messages()
-    log_pretty("History stage 1", history)
 
-    result = sequence_agent.run_sync(
-        "Thats a good start can it be improved and all shot image_descriptions should be suitable for diffusion image prompts"
-        "and include the set description",
-        deps=deps,
-        message_history=history,
-    )
-    history = result.all_messages()
+    if request.refinement_prompt != "":
+        result = sequence_agent.run_sync(request.refinement_prompt, deps=deps, message_history=history)
+        history = result.all_messages()
 
     log_pretty("History", history)
     log_pretty("Result", result.data.model_dump())
@@ -100,8 +114,9 @@ def main(request: SequenceRequest) -> SequenceResponse:
 if __name__ == "__main__":
     main(
         SequenceRequest(
-            prompt="Create a sequence about a man on an adventure.",
+            prompt="Create a sequence about an adventure.",
             scene_reference_image="../test_data/color_v001.jpeg",
             protagonist_reference_image="../test_data/face_v001.jpeg",
+            antagonist_reference_image="../test_data/face_v002.jpeg",
         )
     )

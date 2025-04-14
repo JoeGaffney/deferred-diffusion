@@ -50,6 +50,10 @@ class SceneResponse(BaseModel):
 
 class SequenceRequest(BaseModel):
     prompt: str = ""
+    refinement_prompt: str = (
+        "Thats a good start can it be improved and all shot image_description feilds should be in a format suitable for diffusion image prompts to generate an image from it and include the set description and be much more detailed."
+    )
+
     scene_reference_image: str | None = Field(description="Reference image for the scene", default=None)
     protagonist_reference_image: str | None = Field(description="Reference image for the protagonist", default=None)
     antagonist_reference_image: str | None = Field(description="Reference image for the antagonist", default=None)
