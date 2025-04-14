@@ -163,6 +163,16 @@ class ImageContext:
             images.append(ip_adapter.image)
         return images
 
+    def get_ip_adapter_masks(self):
+        if self.ip_adapters_enabled == False:
+            return []
+
+        masks = []
+        for ip_adapter in self.ip_adapters:
+            masks.append(ip_adapter.get_mask())
+
+        return masks
+
     def set_ip_adapter_scale(self, pipe):
         if self.ip_adapters_enabled == True:
             scales = []

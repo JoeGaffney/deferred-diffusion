@@ -12,6 +12,7 @@ class ControlNetSchema(BaseModel):
 
 class IpAdapterModel(BaseModel):
     image_path: str
+    mask_path: str = ""
     model: str = Field("h94/IP-Adapter", min_length=1)
     scale: float = 0.5
     scale_layers: str = "all"
