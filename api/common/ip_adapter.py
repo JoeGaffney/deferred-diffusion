@@ -24,10 +24,7 @@ class IpAdapter:
         self.enabled = False
         self.solid_mask = Image.new("L", (width, height), 255)  # Create 512x512 white image in L mode
 
-        if self.model is None or self.image_path is None:
-            self.enabled = False
-
-        if self.image:
+        if self.image and self.scale > 0.01:
             # NOTE should we resize the image to the input size?
             # self.image = self.image.resize([512, 512])
             # self.image = self.image.resize([width, height])
@@ -59,7 +56,8 @@ class IpAdapter:
 
     def get_mask(self):
         tmp_mask = self.solid_mask
-        if self.mask_image is not None:
+        if self.mask_image:
             tmp_mask = self.mask_image
 
+        tmp_mask.save(f"{self.mask_path}_{self.scale}_resized.png")
         return processor.preprocess(tmp_mask)

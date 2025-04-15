@@ -11,14 +11,14 @@ from utils.utils import cache_info_decorator, load_image_if_exists
 @cache_info_decorator
 @lru_cache(maxsize=2)
 def load_controlnet(model, torch_dtype=torch.float16):
-    result = ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
+    result = ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch_dtype, device_map="cpu")
     return result
 
 
 @cache_info_decorator
 @lru_cache(maxsize=2)
 def load_sd3_controlnet(model, torch_dtype=torch.float16):
-    result = SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype)
+    result = SD3ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch_dtype, device_map="cpu")
     return result
 
 
@@ -38,6 +38,9 @@ class ControlNet:
         if self.image:
             self.image = self.image.resize([width, height])
         else:
+            self.enabled = False
+
+        if self.conditioning_scale < 0.01:
             self.enabled = False
 
         if self.enabled:

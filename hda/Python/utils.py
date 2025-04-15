@@ -114,6 +114,7 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
         tmp = IpAdapterModel(
             model=params.get("model", ""),
             image_path=params.get("image_path", ""),
+            mask_path=params.get("mask_path", ""),
             image_encoder=bool(params.get("image_encoder", False)),
             subfolder=params.get("subfolder", "models"),
             weight_name=params.get("weight_name", "ip-adapter_sd15.bin"),

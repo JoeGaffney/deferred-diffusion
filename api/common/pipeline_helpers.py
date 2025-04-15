@@ -1,3 +1,4 @@
+from diffusers.hooks import apply_group_offloading
 from transformers import BitsAndBytesConfig, T5EncoderModel
 
 
@@ -8,6 +9,7 @@ def optimize_pipeline(pipe, disable_safety_checker=True):
 
     # Enable CPU offload to save GPU memory
     pipe.enable_model_cpu_offload()
+    # pipe.enable_sequential_cpu_offload()
     pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
     pipe.vae.enable_slicing()
 
