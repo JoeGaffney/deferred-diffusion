@@ -23,7 +23,7 @@ class IpAdapterModel(BaseModel):
 
 class ImageRequest(BaseModel):
     controlnets: list[ControlNetSchema] = []
-    disable_text_encoder_3: bool = True
+    optimize_low_vram: bool = True
     guidance_scale: float = 5.0
     inpainting_full_image: bool = True
     input_image_path: str = ""
@@ -47,7 +47,7 @@ class ImageResponse(BaseModel):
 class PipelineConfig(BaseModel):
     model_id: str
     torch_dtype: dtype
-    disable_text_encoder_3: bool
+    optimize_low_vram: bool
     use_safetensors: bool
     ip_adapter_models: Tuple[str, ...]
     ip_adapter_subfolders: Tuple[str, ...]
@@ -64,7 +64,7 @@ class PipelineConfig(BaseModel):
             (
                 self.model_id,
                 self.torch_dtype,
-                self.disable_text_encoder_3,
+                self.optimize_low_vram,
                 self.use_safetensors,
                 self.ip_adapter_models,
                 self.ip_adapter_subfolders,

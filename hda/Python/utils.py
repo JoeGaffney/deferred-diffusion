@@ -126,18 +126,6 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
     return result
 
 
-def add_call_metadata(node, body, response_content, start_time):
-    call_metadata = {
-        "body": body,
-        "response": response_content,
-        "time_taken": round(time.time() - start_time, 5),
-    }
-    call_metadata_str = json.dumps(call_metadata, indent=2)
-
-    if node.parm("call_metadata"):
-        node.parm("call_metadata").set(call_metadata_str)
-
-
 def add_spare_params(node, prefix, params):
     parm_group = node.parmTemplateGroup()
     for param_name, param_value in params.items():

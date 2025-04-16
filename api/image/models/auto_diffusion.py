@@ -26,7 +26,7 @@ def get_pipeline(config: PipelineConfig):
     args = {"torch_dtype": config.torch_dtype, "use_safetensors": True}
 
     # this can really eat up the memory
-    if config.disable_text_encoder_3 == True:
+    if config.optimize_low_vram == True:
         args["text_encoder_3"] = None
         args["tokenizer_3"] = None
 
@@ -57,7 +57,7 @@ def get_pipeline(config: PipelineConfig):
             # Supposed to help with consistency
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)
 
 
 def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):

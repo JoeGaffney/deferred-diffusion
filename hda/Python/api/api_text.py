@@ -2,11 +2,12 @@ import json
 import time
 
 import hou
+
 from config import MAX_ADDITIONAL_IMAGES, client
 from generated.api_client.api.text import create_text
 from generated.api_client.models.text_request import TextRequest
 from generated.api_client.models.text_response import TextResponse
-from utils import add_call_metadata, extract_and_format_parameters, save_tmp_image
+from utils import extract_and_format_parameters, save_tmp_image
 
 
 def split_text(text, max_length=120):
@@ -91,4 +92,3 @@ def main(node):
 
     node.parm("chain_of_thought").set(chain_of_thought_str)
     node.parm("response").set(response_str)
-    add_call_metadata(node, body.to_dict(), response.parsed.to_dict(), start_time)

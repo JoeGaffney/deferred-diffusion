@@ -10,7 +10,7 @@ from generated.api_client.models.scene_response import SceneResponse
 from generated.api_client.models.sequence_request import SequenceRequest
 from generated.api_client.models.sequence_response import SequenceResponse
 from generated.api_client.models.shot_response import ShotResponse
-from utils import add_call_metadata, add_spare_params, extract_and_format_parameters
+from utils import add_spare_params, extract_and_format_parameters
 
 
 def create_image_node(node, node_name):
@@ -54,7 +54,6 @@ def main(node):
     body = SequenceRequest(**valid_params)
 
     # make the API call
-    start_time = time.time()
     response = sequence_agent.sync_detailed(client=client, body=body)
     if response.status_code != 200:
         hou.ui.displayMessage(f"API Call Failed: {response}")
@@ -66,7 +65,6 @@ def main(node):
 
     # set the node parameters
     node.parm("response").set(json.dumps(response.parsed.to_dict(), indent=2))
-    add_call_metadata(node, body.to_dict(), response.parsed.to_dict(), start_time)
     # NOTE issue setting when already exists
     # add_spare_params(node, "result", response.parsed.to_dict())
 

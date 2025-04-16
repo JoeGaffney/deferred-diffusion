@@ -3,6 +3,7 @@ from functools import lru_cache
 import torch
 from diffusers import ControlNetModel, SD3ControlNetModel
 
+from common.pipeline_helpers import is_model_sd3
 from image.schemas import ControlNetSchema
 from utils.logger import logger
 from utils.utils import cache_info_decorator, load_image_if_exists
@@ -30,9 +31,7 @@ class ControlNet:
         self.enabled = False
         self.enabled = self.model is not None and self.image_path is not None
         self.loaded_controlnet = None
-        self.control_net_type = "default"
-        if "sd3" in self.model.lower() or "sd-3" in self.model.lower():
-            self.control_net_type = "sd3"
+        self.model_sd3 = is_model_sd3(self.model)
 
         self.image = load_image_if_exists(self.image_path)
         if self.image:
@@ -44,7 +43,7 @@ class ControlNet:
             self.enabled = False
 
         if self.enabled:
-            if self.control_net_type == "sd3":
+            if self.model_sd3:
                 self.loaded_controlnet = load_sd3_controlnet(self.model, torch_dtype=torch_dtype)
             else:
                 self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)

@@ -7,7 +7,6 @@ from generated.api_client.api.image import create_image
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_response import ImageResponse
 from utils import (
-    add_call_metadata,
     extract_and_format_parameters,
     get_control_nets,
     get_ip_adapters,
@@ -25,7 +24,6 @@ def main(node):
     body = ImageRequest(**valid_params, ip_adapters=get_ip_adapters(node), controlnets=get_control_nets(node))
 
     # make the API call
-    start_time = time.time()
     response = create_image.sync_detailed(client=client, body=body)
     if response.status_code != 200:
         hou.ui.displayMessage(f"API Call Failed: {response}")
@@ -36,9 +34,6 @@ def main(node):
         return
 
     reload_outputs(node, "output_read")
-
-    # apply back to the node
-    add_call_metadata(node, body.to_dict(), response.parsed.to_dict(), start_time)
 
 
 def main_frame_range(node):

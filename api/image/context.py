@@ -5,6 +5,7 @@ import torch
 
 from common.control_net import ControlNet
 from common.ip_adapter import IpAdapter
+from common.pipeline_helpers import is_model_sd3
 from image.schemas import ImageRequest, PipelineConfig
 from utils.logger import logger
 from utils.utils import (
@@ -15,10 +16,6 @@ from utils.utils import (
 )
 
 
-def is_model_sd3(model):
-    return "stable-diffusion-3" in model
-
-
 class ImageContext:
     def __init__(self, data: ImageRequest):
         self.data = data
@@ -26,6 +23,7 @@ class ImageContext:
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
+        self.optimize_low_vram = bool(data.optimize_low_vram)
 
         # Round down to nearest multiple of 16
         self.division = 16
@@ -53,8 +51,6 @@ class ImageContext:
         ensure_path_exists(self.data.input_image_path)
 
         # SD3 models disabling the text encoder 3 can reduce vram usage
-        self.model_sd3 = is_model_sd3(data.model)
-        self.disable_text_encoder_3 = bool(data.disable_text_encoder_3)
 
         # add our control nets
         self.controlnets: List[ControlNet] = []
@@ -66,6 +62,7 @@ class ImageContext:
         self.controlnets_enabled = len(self.controlnets) > 0
 
         # requires different path as auto diffusers don't map the control net models for sd3 variants
+        self.model_sd3 = is_model_sd3(data.model)
         self.sd3_controlnet_mode = self.model_sd3 and self.controlnets_enabled
 
         # add our ip adapters
@@ -95,14 +92,10 @@ class ImageContext:
                     image_encoder_model = ip_adapter.model
                     image_encoder_subfolder = ip_adapter.image_encoder_subfolder
 
-        disable_text_encoder_3 = True
-        if self.model_sd3 and self.disable_text_encoder_3 == False:
-            disable_text_encoder_3 = False
-
         return PipelineConfig(
             model_id=self.model,
             torch_dtype=self.torch_dtype,
-            disable_text_encoder_3=disable_text_encoder_3,
+            optimize_low_vram=self.optimize_low_vram,
             use_safetensors=True,
             ip_adapter_models=tuple(models),
             ip_adapter_subfolders=tuple(subfolders),
