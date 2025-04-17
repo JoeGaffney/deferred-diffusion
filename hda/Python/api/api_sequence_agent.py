@@ -9,8 +9,7 @@ from generated.api_client.models.character_response import CharacterResponse
 from generated.api_client.models.scene_response import SceneResponse
 from generated.api_client.models.sequence_request import SequenceRequest
 from generated.api_client.models.sequence_response import SequenceResponse
-from generated.api_client.models.shot_response import ShotResponse
-from utils import add_spare_params, extract_and_format_parameters
+from utils import add_spare_params, extract_and_format_parameters, save_all_tmp_images
 
 
 def create_image_node(node, node_name):
@@ -40,7 +39,6 @@ def create_character_node(node, scene: SceneResponse, character: CharacterRespon
     add_spare_params(result, "scene", scene.to_dict())
     add_spare_params(result, "character", character.to_dict())
     result.parm("prompt").set(f"{character.image_portrait_description}, {scene.diffusion_postive_prompt_tags}")
-    result.parm("negative_prompt").set(scene.diffusion_negative_prompt_tags)
     result.parm("max_width").set(1024)
     result.parm("max_height").set(1024)
     result.parm("model").set("stabilityai/stable-diffusion-xl-base-1.0")
@@ -48,6 +46,8 @@ def create_character_node(node, scene: SceneResponse, character: CharacterRespon
 
 
 def main(node):
+    # Get all ROP image nodes from children
+    save_all_tmp_images(node)
 
     params = extract_and_format_parameters(node)
     valid_params = {k: v for k, v in params.items() if k in SequenceRequest.__annotations__}
@@ -76,7 +76,6 @@ def main(node):
     scene_node = create_image_node(node, node_name=f"{node_name}_scene_{scene.name}")
     add_spare_params(scene_node, "scene", scene.to_dict())
     scene_node.parm("prompt").set(f"{scene.image_description}, {scene.diffusion_postive_prompt_tags}")
-    scene_node.parm("negative_prompt").set(scene.diffusion_negative_prompt_tags)
     scene_node.parm("max_width").set(1280)
     scene_node.parm("max_height").set(768)
     scene_node.parm("model").set("stabilityai/stable-diffusion-xl-base-1.0")
@@ -95,8 +94,9 @@ def main(node):
         shot_node = create_shot_node(node, node_name=f"{node_name}_shot_{shot.name}")
         add_spare_params(shot_node, "scene", scene.to_dict())
         add_spare_params(shot_node, "shot", shot.to_dict())
-        shot_node.parm("prompt").set(f"{shot.image_description}, {scene.diffusion_postive_prompt_tags}")
-        shot_node.parm("negative_prompt").set(scene.diffusion_negative_prompt_tags)
+        shot_node.parm("prompt").set(
+            f"{shot.image_description}, {shot.set_description}, {scene.diffusion_postive_prompt_tags}"
+        )
         shot_node.parm("video_prompt").set(f"{shot.camera_movement}, {shot.image_description}")
         shot_node.setInput(0, scene_node, 0)  # 0 is the "scene" input index on shot_node
 

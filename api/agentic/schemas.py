@@ -10,6 +10,17 @@ class ShotCharacterResponse(BaseModel):
     frame_position: str = Field(description="Position of the character in the frame eg. left, right, center")
 
 
+class SceneResponse(BaseModel):
+    name: str = Field(description="Name of the scene eg. castle, forest, interior_kitchen")
+    mood: str = Field(description="Overall mood and atmosphere of the sequence")
+    location: str = Field(description="Location of the scene")
+    time_of_day: str = Field(description="Time of day for the theme style")
+    image_description: str = Field(description="Detailed description of the scene")
+    diffusion_postive_prompt_tags: str = Field(
+        description="Diffusion positive prompt tags eg. realistic, 4k, DLSR photo etc."
+    )
+
+
 class ShotResponse(BaseModel):
     name: str = Field(description="Unique identifier name for the shot eg 001, 002")
     antagonist: ShotCharacterResponse | None = Field(
@@ -18,14 +29,25 @@ class ShotResponse(BaseModel):
     protagonist: ShotCharacterResponse | None = Field(
         description="Description of the protagonist's action and dialog in this shot"
     )
+    scene: SceneResponse = Field(description="Description of the scene")
     camera_movement: str = Field(description="Description of camera movement and angles")
     duration_seconds: int = Field(description="Estimated duration in seconds", ge=1, le=300)
+    set_description: str = Field(description="Description of the set and props")
     image_description: str = Field(description="Detailed visual description of the shot")
 
 
 class CharacterResponse(BaseModel):
     name: str = Field(description="Name of the character")
     role: str = Field(description="Role of the character in the scene")
+    age: str = Field(description="Age of the character")
+    gender: str = Field(description="Gender of the character")
+    ethnicity: str = Field(description="Ethnicity of the character")
+    height: str = Field(description="Height of the character")
+    build: str = Field(description="Build of the character")
+    eye_color: str = Field(description="Eye color of the character")
+    hair_color: str = Field(description="Hair color of the character")
+    proffession: str = Field(description="Profession or occupation of the character")
+    attire: str = Field(description="Attire or clothing of the character")
     emotion: str = Field(description="Emotion or state of the character")
     image_description: str = Field(description="Visual description of the character")
     image_portrait_description: str = Field(
@@ -33,27 +55,11 @@ class CharacterResponse(BaseModel):
     )
 
 
-class SceneResponse(BaseModel):
-    name: str = Field(description="Name of the scene eg. castle, forest, interior_kitchen")
-    mood: str = Field(description="Overall mood and atmosphere of the sequence")
-    location: str = Field(description="Location of the scene")
-    time_of_day: str = Field(description="Time of day for the theme style")
-    image_description: str = Field(description="Detailed description of the scene")
-    duration_seconds: int = Field(description="Estimated duration in seconds", ge=1, le=300)
-    diffusion_postive_prompt_tags: str = Field(
-        description="Diffusion positive prompt tags eg. realistic, 4k, DLSR photo etc."
-    )
-    diffusion_negative_prompt_tags: str = Field(
-        description="Diffusion negative prompt tags eg. blurry, lowres, bad anatomy etc."
-    )
-
-
 class SequenceRequest(BaseModel):
     prompt: str = ""
     refinement_prompt: str = (
-        "Refine all 'image_description' fields for compatibility with diffusion model prompts. Ensure each description is vivid, specific, and concise. Include key visual elements, mood, style cues, and relevant scene context from the story. Output should be optimized for direct use in image generation."
+        "Refine all 'description' fields for compatibility with SDXL model prompts. Ensure each description should be concise and describe the key things to generate the image, scene, character, camera angle, mood"
     )
-
     scene_reference_image: str | None = Field(description="Reference image for the scene", default=None)
     protagonist_reference_image: str | None = Field(description="Reference image for the protagonist", default=None)
     antagonist_reference_image: str | None = Field(description="Reference image for the antagonist", default=None)
