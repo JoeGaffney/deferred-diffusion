@@ -115,6 +115,7 @@ if __name__ == "__main__":
     main(
         SequenceRequest(
             prompt="Create a sequence about an adventure.",
+            refinement_prompt="Refine all 'description' fields for compatibility with SDXL model prompts. Ensure each description should be concise and describe the key things to generate the image, scene, character, camera angle, mood",
             scene_reference_image="../test_data/color_v001.jpeg",
             protagonist_reference_image="../test_data/face_v001.jpeg",
             antagonist_reference_image="../test_data/face_v002.jpeg",
