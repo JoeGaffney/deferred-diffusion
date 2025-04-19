@@ -15,7 +15,7 @@ def update_device(pipe, device):
 
 @lru_cache(maxsize=1)
 def get_pipeline(model_id):
-    pipe = pipeline(task="depth-estimation", model="depth-anything/Depth-Anything-V2-Large-hf", device="cuda")
+    pipe = pipeline(task="depth-estimation", model=model_id, device="cuda")
     update_device(pipe, "cpu")
     logger.warning(f"Loaded pipeline {model_id}")
     return pipe
@@ -23,6 +23,8 @@ def get_pipeline(model_id):
 
 def main(context: ImageContext, mode="depth"):
     context.model = "depth-anything/Depth-Anything-V2-Large-hf"
+    if context.color_image is None:
+        raise ValueError("No input image provided")
 
     pipe = get_pipeline(context.model)
 

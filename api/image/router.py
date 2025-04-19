@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from image.context import ImageContext
 from image.models.auto_diffusion import main as auto_diffusion
 from image.models.depth_anything import main as depth_anything
+from image.models.segment_anything import main as segment_anything
 from image.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
 from image.schemas import ImageRequest, ImageResponse
 
@@ -20,6 +21,11 @@ def create(request: ImageRequest):
     elif request.model == "depth-anything" or request.model == "depth_anything":
         main = depth_anything
         mode = "depth"
+    elif (
+        request.model == "segment-anything" or request.model == "segment_anything" or request.model == "facebook/sam2"
+    ):
+        main = segment_anything
+        mode = "mask"
     else:
         mode = "img_to_img"
         if context.data.input_mask_path != "":
