@@ -24,10 +24,10 @@ def test_models(mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="../test_data/color_v001.jpeg",
+                input_image_path="../test_data/style_v001.jpeg",
                 input_mask_path="",
                 output_image_path=output_name,
-                prompt="Sky, house, fence, tree, grass, flower, clouds",
+                prompt="Person, house, tree, flowers",
                 strength=0.5,
                 guidance_scale=5,
                 # max_width=width,
