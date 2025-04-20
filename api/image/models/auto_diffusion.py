@@ -1,15 +1,19 @@
 from functools import lru_cache
 
+import torch
 from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
     AutoPipelineForText2Image,
     DDIMScheduler,
     DiffusionPipeline,
+    FluxPipeline,
+    FluxTransformer2DModel,
+    GGUFQuantizationConfig,
 )
 from transformers import CLIPVisionModelWithProjection
 
-from common.pipeline_helpers import optimize_pipeline
+from common.pipeline_helpers import is_model_sd3, optimize_pipeline
 from image.context import ImageContext
 from image.models.diffusers_helpers import (
     image_to_image_call,
@@ -20,13 +24,40 @@ from image.schemas import PipelineConfig
 from utils.utils import cache_info_decorator
 
 
+def get_pipeline_flux(config: PipelineConfig):
+    # NOTE dev need license for comercial use
+    model_type = "schnell"  # "schnell" or "dev"
+    guf_type = "Q5_0"  # "Q2_K", "Q4_0", "Q5_0", "Q8_0"
+    ckpt_path = f"https://huggingface.co/city96/FLUX.1-{model_type}-gguf/blob/main/flux1-{model_type}-{guf_type}.gguf"
+    # https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q2_K.gguf
+
+    model_id = f"black-forest-labs/FLUX.1-{model_type}"
+
+    transformer = FluxTransformer2DModel.from_single_file(
+        ckpt_path,
+        quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
+        torch_dtype=torch.bfloat16,
+    )
+    pipe = FluxPipeline.from_pretrained(
+        model_id,
+        transformer=transformer,
+        torch_dtype=torch.bfloat16,
+        # device_map="cpu",
+    )
+
+    return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)
+
+
 @cache_info_decorator
 @lru_cache(maxsize=4)  # Cache up to 4 different pipelines
 def get_pipeline(config: PipelineConfig):
+    if "black-forest-labs/FLUX" in config.model_id:
+        return get_pipeline_flux(config)
+
     args = {"torch_dtype": config.torch_dtype, "use_safetensors": True}
 
     # this can really eat up the memory
-    if config.optimize_low_vram == True:
+    if is_model_sd3(config.model_id):
         args["text_encoder_3"] = None
         args["tokenizer_3"] = None
 
