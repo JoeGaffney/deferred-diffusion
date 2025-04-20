@@ -5,6 +5,7 @@ import hou
 from config import client
 from generated.api_client.api.image import create_image
 from generated.api_client.models.image_request import ImageRequest
+from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
 from utils import (
     extract_and_format_parameters,
@@ -21,7 +22,14 @@ def main(node):
 
     params = extract_and_format_parameters(node)
     valid_params = {k: v for k, v in params.items() if k in ImageRequest.__annotations__}
-    body = ImageRequest(**valid_params, ip_adapters=get_ip_adapters(node), controlnets=get_control_nets(node))
+    model = ImageRequestModel(valid_params.get("model", "sd1.5"))
+    valid_params["model"] = model
+
+    body = ImageRequest(
+        **valid_params,
+        ip_adapters=get_ip_adapters(node),
+        controlnets=get_control_nets(node),
+    )
 
     # make the API call
     response = create_image.sync_detailed(client=client, body=body)

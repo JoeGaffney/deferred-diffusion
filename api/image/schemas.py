@@ -22,7 +22,19 @@ class IpAdapterModel(BaseModel):
 
 
 class ImageRequest(BaseModel):
-    model: Literal["sd1.5", "sdxl", "sdxl-refiner", "sdxl-realvis", "sd3", "sd3.5", "flux", "depth", "mask", "upscale"]
+    model: Literal[
+        "sd1.5",
+        "sdxl",
+        "sdxl-refiner",
+        "RealVisXL",
+        "Fluently-XL",
+        "sd3",
+        "sd3.5",
+        "flux-schnell",
+        "depth-anything",
+        "segment-anything",
+        "sd-x4-upscaler",
+    ]
     controlnets: list[ControlNetSchema] = []
     optimize_low_vram: bool = False
     guidance_scale: float = 5.0

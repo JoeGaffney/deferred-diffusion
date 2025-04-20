@@ -18,18 +18,23 @@ IMAGE_MODEL_CONFIG = {
     "sd1.5": {"family": "sd1.5", "model_path": "stable-diffusion-v1-5/stable-diffusion-v1-5", "mode": "auto"},
     "sdxl": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-base-1.0", "mode": "auto"},
     "sdxl-refiner": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-refiner-1.0", "mode": "auto"},
-    "sdxl-realvis": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-base-1.0", "mode": "auto"},
+    "RealVisXL": {"family": "sdxl", "model_path": "SG161222/RealVisXL_V4.0", "mode": "auto"},
+    "Fluently-XL": {"family": "sdxl", "model_path": "fluently/Fluently-XL-v4", "mode": "auto"},
     "sd3": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3-medium-diffusers", "mode": "auto"},
     "sd3.5": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3.5-medium", "mode": "auto"},
-    "flux": {
+    "flux-schnell": {
         "family": "flux",
         "model_path": "black-forest-labs/FLUX.1-schnell",
         "guf_path": "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q5_0.gguf",
         "mode": "auto",
     },
-    "depth": {"family": "depth_anything", "model_path": "depth-anything/Depth-Anything-V2-Large-hf", "mode": "depth"},
-    "mask": {"family": "segment_anything", "model_path": "sam2.1_hiera_base_plus", "mode": "mask"},
-    "upscale": {
+    "depth-anything": {
+        "family": "depth_anything",
+        "model_path": "depth-anything/Depth-Anything-V2-Large-hf",
+        "mode": "depth",
+    },
+    "segment-anything": {"family": "segment_anything", "model_path": "sam2.1_hiera_base_plus", "mode": "mask"},
+    "sd-x4-upscaler": {
         "family": "stable-diffusion-x4-upscaler",
         "model_path": "stabilityai/stable-diffusion-x4-upscaler",
         "mode": "upscale",
