@@ -11,7 +11,7 @@ from utils.utils import get_16_9_resolution
 @pytest.mark.parametrize("mode", ["depth"])
 def test_models(mode):
     """Test models."""
-    model_id = "depth-anything/Depth-Anything-V2-Large-hf"
+    model_id = "depth"
 
     output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}.png"
     width, height = get_16_9_resolution("540p")

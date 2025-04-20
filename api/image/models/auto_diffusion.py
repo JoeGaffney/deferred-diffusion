@@ -25,21 +25,14 @@ from utils.utils import cache_info_decorator
 
 
 def get_pipeline_flux(config: PipelineConfig):
-    # NOTE dev need license for comercial use
-    model_type = "schnell"  # "schnell" or "dev"
-    guf_type = "Q5_0"  # "Q2_K", "Q4_0", "Q5_0", "Q8_0"
-    ckpt_path = f"https://huggingface.co/city96/FLUX.1-{model_type}-gguf/blob/main/flux1-{model_type}-{guf_type}.gguf"
-    # https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q2_K.gguf
-
-    model_id = f"black-forest-labs/FLUX.1-{model_type}"
 
     transformer = FluxTransformer2DModel.from_single_file(
-        ckpt_path,
+        config.model_guf_path,
         quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
         torch_dtype=torch.bfloat16,
     )
     pipe = FluxPipeline.from_pretrained(
-        model_id,
+        config.model_id,
         transformer=transformer,
         torch_dtype=torch.bfloat16,
         # device_map="cpu",
@@ -51,13 +44,13 @@ def get_pipeline_flux(config: PipelineConfig):
 @cache_info_decorator
 @lru_cache(maxsize=4)  # Cache up to 4 different pipelines
 def get_pipeline(config: PipelineConfig):
-    if "black-forest-labs/FLUX" in config.model_id:
+    if config.model_family == "flux":
         return get_pipeline_flux(config)
 
     args = {"torch_dtype": config.torch_dtype, "use_safetensors": True}
 
     # this can really eat up the memory
-    if is_model_sd3(config.model_id):
+    if config.model_family == "sd3":
         args["text_encoder_3"] = None
         args["tokenizer_3"] = None
 
@@ -111,6 +104,7 @@ def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
     args = {}
     if controlnets != []:
         args["controlnet"] = controlnets
+
     return AutoPipelineForInpainting.from_pipe(get_pipeline(pipeline_config), requires_safety_checker=False, **args)
 
 
@@ -122,7 +116,7 @@ def main(
     pipeline_config = context.get_pipeline_config()
 
     # work around as SD3 not full supported by diffusers
-    if context.sd3_controlnet_mode == True:
+    if context.controlnets_enabled == True and pipeline_config.model_family == "sd3":
         return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)
 
     if mode == "text_to_image":

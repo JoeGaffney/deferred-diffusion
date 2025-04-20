@@ -2,8 +2,9 @@ import os
 
 import pytest
 import torch
-from common.pipeline_helpers import optimize_pipeline
 from diffusers import AutoPipelineForText2Image
+
+from common.pipeline_helpers import optimize_pipeline
 from image.context import ImageContext
 from image.models.auto_diffusion import main
 from image.schemas import ImageRequest, IpAdapterModel
@@ -13,12 +14,12 @@ from utils.utils import get_16_9_resolution
 MODES = ["text_to_image", "img_to_img"]
 
 MODELS = [
-    "stable-diffusion-v1-5/stable-diffusion-v1-5",
-    "stabilityai/stable-diffusion-xl-base-1.0",
+    "sd1.5",
+    "sdxl",
 ]
 
 MODEL_STYLE_ADAPTERS_MAPPING = {
-    "stable-diffusion-v1-5/stable-diffusion-v1-5": [
+    "sd1.5": [
         IpAdapterModel(
             image_path="../test_data/style_v001.jpeg",
             model="h94/IP-Adapter",
@@ -27,7 +28,7 @@ MODEL_STYLE_ADAPTERS_MAPPING = {
             weight_name="ip-adapter_sd15.bin",
         ),
     ],
-    "stabilityai/stable-diffusion-xl-base-1.0": [
+    "sdxl": [
         IpAdapterModel(
             image_path="../test_data/style_v001.jpeg",
             model="h94/IP-Adapter",
@@ -39,7 +40,7 @@ MODEL_STYLE_ADAPTERS_MAPPING = {
 }
 
 MODEL_FACE_ADAPTERS_MAPPING = {
-    "stabilityai/stable-diffusion-xl-base-1.0": [
+    "sdxl": [
         IpAdapterModel(
             image_path="../test_data/style_v001.jpeg",
             model="h94/IP-Adapter",
@@ -107,7 +108,7 @@ def test_style(model_id, mode):
 
 
 @pytest.mark.parametrize("mode", ["text_to_image"])
-@pytest.mark.parametrize("model_id", ["stabilityai/stable-diffusion-xl-base-1.0"])
+@pytest.mark.parametrize("model_id", ["sdxl"])
 def test_face(model_id, mode):
     """Test models with face adapter."""
     output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}_face_adapter.png"

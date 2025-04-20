@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Literal, Tuple
 
 from pydantic import BaseModel, Field
 from torch import dtype
@@ -22,8 +22,9 @@ class IpAdapterModel(BaseModel):
 
 
 class ImageRequest(BaseModel):
+    model: Literal["sd1.5", "sdxl", "sdxl-refiner", "sdxl-realvis", "sd3", "sd3.5", "flux", "depth", "mask", "upscale"]
     controlnets: list[ControlNetSchema] = []
-    optimize_low_vram: bool = True
+    optimize_low_vram: bool = False
     guidance_scale: float = 5.0
     inpainting_full_image: bool = True
     input_image_path: str = ""
@@ -31,7 +32,6 @@ class ImageRequest(BaseModel):
     ip_adapters: list[IpAdapterModel] = []
     max_height: int = 2048
     max_width: int = 2048
-    model: str
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     num_inference_steps: int = 25
     output_image_path: str = ""
@@ -44,8 +44,17 @@ class ImageResponse(BaseModel):
     data: str
 
 
+class ModelConfig(BaseModel):
+    model_path: str
+    model_family: str
+    guf_path: str
+    mode: str = "auto"
+
+
 class PipelineConfig(BaseModel):
     model_id: str
+    model_family: str
+    model_guf_path: str
     torch_dtype: dtype
     optimize_low_vram: bool
     use_safetensors: bool

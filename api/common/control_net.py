@@ -3,9 +3,7 @@ from functools import lru_cache
 import torch
 from diffusers import ControlNetModel, SD3ControlNetModel
 
-from common.pipeline_helpers import is_model_sd3
-from image.schemas import ControlNetSchema
-from utils.logger import logger
+from image.schemas import ControlNetSchema, ModelConfig
 from utils.utils import cache_info_decorator, load_image_if_exists
 
 
@@ -19,19 +17,18 @@ def load_controlnet(model, torch_dtype=torch.float16):
 @cache_info_decorator
 @lru_cache(maxsize=2)
 def load_sd3_controlnet(model, torch_dtype=torch.float16):
-    result = SD3ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch_dtype, device_map="cpu")
+    result = SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
     return result
 
 
 class ControlNet:
-    def __init__(self, data: ControlNetSchema, width, height, torch_dtype=torch.float16):
+    def __init__(self, data: ControlNetSchema, model_config: ModelConfig, width, height, torch_dtype=torch.float16):
         self.model = data.model
         self.image_path = data.image_path
         self.conditioning_scale = data.conditioning_scale
         self.enabled = False
         self.enabled = self.model is not None and self.image_path is not None
         self.loaded_controlnet = None
-        self.model_sd3 = is_model_sd3(self.model)
 
         self.image = load_image_if_exists(self.image_path)
         if self.image:
@@ -43,7 +40,7 @@ class ControlNet:
             self.enabled = False
 
         if self.enabled:
-            if self.model_sd3:
+            if model_config.model_family == "sd3":
                 self.loaded_controlnet = load_sd3_controlnet(self.model, torch_dtype=torch_dtype)
             else:
                 self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)

@@ -11,7 +11,7 @@ from utils.utils import get_16_9_resolution
 @pytest.mark.parametrize("mode", ["mask"])
 def test_models(mode):
     """Test models."""
-    model_id = "facebook/sam2"
+    model_id = "mask"
 
     output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}.png"
     # width, height = get_16_9_resolution("540p")

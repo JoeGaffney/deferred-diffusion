@@ -5,8 +5,7 @@ import torch
 
 from common.control_net import ControlNet
 from common.ip_adapter import IpAdapter
-from common.pipeline_helpers import is_model_sd3
-from image.schemas import ImageRequest, PipelineConfig
+from image.schemas import ImageRequest, ModelConfig, PipelineConfig
 from utils.logger import logger
 from utils.utils import (
     ensure_path_exists,
@@ -15,11 +14,47 @@ from utils.utils import (
     save_copy_with_timestamp,
 )
 
+IMAGE_MODEL_CONFIG = {
+    "sd1.5": {"family": "sd1.5", "model_path": "stable-diffusion-v1-5/stable-diffusion-v1-5", "mode": "auto"},
+    "sdxl": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-base-1.0", "mode": "auto"},
+    "sdxl-refiner": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-refiner-1.0", "mode": "auto"},
+    "sdxl-realvis": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-base-1.0", "mode": "auto"},
+    "sd3": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3-medium-diffusers", "mode": "auto"},
+    "sd3.5": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3.5-medium", "mode": "auto"},
+    "flux": {
+        "family": "flux",
+        "model_path": "black-forest-labs/FLUX.1-schnell",
+        "guf_path": "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q5_0.gguf",
+        "mode": "auto",
+    },
+    "depth": {"family": "depth_anything", "model_path": "depth-anything/Depth-Anything-V2-Large-hf", "mode": "depth"},
+    "mask": {"family": "segment_anything", "model_path": "sam2.1_hiera_base_plus", "mode": "mask"},
+    "upscale": {
+        "family": "stable-diffusion-x4-upscaler",
+        "model_path": "stabilityai/stable-diffusion-x4-upscaler",
+        "mode": "upscale",
+    },
+}
+
+
+def get_model_config(key: str) -> ModelConfig:
+    config = IMAGE_MODEL_CONFIG.get(key)
+    if not config:
+        raise ValueError(f"Model config for {key} not found")
+
+    return ModelConfig(
+        model_path=config.get("model_path", ""),
+        model_family=config.get("family", ""),
+        guf_path=config.get("guf_path", ""),
+        mode=config["mode"],
+    )
+
 
 class ImageContext:
     def __init__(self, data: ImageRequest):
         self.data = data
         self.model = data.model
+        self.model_config = get_model_config(data.model)
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
@@ -50,20 +85,14 @@ class ImageContext:
         ensure_path_exists(self.data.output_image_path)
         ensure_path_exists(self.data.input_image_path)
 
-        # SD3 models disabling the text encoder 3 can reduce vram usage
-
         # add our control nets
         self.controlnets: List[ControlNet] = []
         for current in data.controlnets:
-            tmp = ControlNet(current, self.width, self.height, torch_dtype=self.torch_dtype)
+            tmp = ControlNet(current, self.model_config, self.width, self.height, torch_dtype=self.torch_dtype)
             if tmp.enabled:
                 self.controlnets.append(tmp)
 
         self.controlnets_enabled = len(self.controlnets) > 0
-
-        # requires different path as auto diffusers don't map the control net models for sd3 variants
-        self.model_sd3 = is_model_sd3(data.model)
-        self.sd3_controlnet_mode = self.model_sd3 and self.controlnets_enabled
 
         # add our ip adapters
         self.ip_adapters: List[IpAdapter] = []
@@ -93,7 +122,9 @@ class ImageContext:
                     image_encoder_subfolder = ip_adapter.image_encoder_subfolder
 
         return PipelineConfig(
-            model_id=self.model,
+            model_id=self.model_config.model_path,
+            model_family=self.model_config.model_family,
+            model_guf_path=self.model_config.guf_path,
             torch_dtype=self.torch_dtype,
             optimize_low_vram=self.optimize_low_vram,
             use_safetensors=True,

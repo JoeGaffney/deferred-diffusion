@@ -1,6 +1,7 @@
 import os
 
 import pytest
+
 from image.context import ImageContext
 from image.models.auto_diffusion import main
 from image.schemas import ImageRequest
@@ -10,9 +11,9 @@ from utils.utils import get_16_9_resolution
 MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
 
 MODELS = [
-    "stabilityai/stable-diffusion-xl-base-1.0",
-    "stabilityai/stable-diffusion-3-medium-diffusers",
-    "stabilityai/stable-diffusion-3.5-medium",
+    "sdxl",
+    "sd3",
+    "sd3.5",
 ]
 
 

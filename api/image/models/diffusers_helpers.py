@@ -16,7 +16,7 @@ def text_to_image_call(pipe, context: ImageContext):
 
     if context.controlnets_enabled:
         # different pattern of arguments
-        if context.sd3_controlnet_mode:
+        if context.model_config.model_family == "sd3":
             args["control_image"] = context.get_controlnet_images()
         else:
             args["image"] = context.get_controlnet_images()
