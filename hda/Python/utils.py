@@ -5,7 +5,9 @@ import hou
 
 from config import MAX_ADDITIONAL_IMAGES
 from generated.api_client.models.control_net_schema import ControlNetSchema
+from generated.api_client.models.control_net_schema_model import ControlNetSchemaModel
 from generated.api_client.models.ip_adapter_model import IpAdapterModel
+from generated.api_client.models.ip_adapter_model_model import IpAdapterModelModel
 
 
 def save_tmp_image(node, node_name):
@@ -87,7 +89,7 @@ def get_control_nets(node) -> list[ControlNetSchema]:
         save_all_tmp_images(current)
 
         tmp = ControlNetSchema(
-            model=params.get("model", ""),
+            model=ControlNetSchemaModel(params.get("model", "")),
             image_path=params.get("image_path", ""),
             conditioning_scale=params.get("conditioning_scale", 0.5),
         )
@@ -112,29 +114,15 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
         save_all_tmp_images(current)
 
         tmp = IpAdapterModel(
-            model=params.get("model", ""),
+            model=IpAdapterModelModel(params.get("model", "")),
             image_path=params.get("image_path", ""),
-            image_encoder=bool(params.get("image_encoder", False)),
-            subfolder=params.get("subfolder", "models"),
-            weight_name=params.get("weight_name", "ip-adapter_sd15.bin"),
+            mask_path=params.get("mask_path", ""),
             scale=params.get("scale", 0.5),
             scale_layers=params.get("scale_layers", "all"),
         )
         result.append(tmp)
 
     return result
-
-
-def add_call_metadata(node, body, response_content, start_time):
-    call_metadata = {
-        "body": body,
-        "response": response_content,
-        "time_taken": round(time.time() - start_time, 5),
-    }
-    call_metadata_str = json.dumps(call_metadata, indent=2)
-
-    if node.parm("call_metadata"):
-        node.parm("call_metadata").set(call_metadata_str)
 
 
 def add_spare_params(node, prefix, params):

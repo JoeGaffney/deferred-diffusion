@@ -3,24 +3,16 @@ import os
 import pytest
 
 from image.context import ImageContext
-from image.models.auto_diffusion import main
+from image.models.depth_anything import main
 from image.schemas import ImageRequest
 from utils.utils import get_16_9_resolution
 
-# Define constants
-MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
 
-MODELS = [
-    "sdxl",
-    "sd3",
-    "sd3.5",
-]
-
-
-@pytest.mark.parametrize("mode", MODES)
-@pytest.mark.parametrize("model_id", MODELS)
-def test_models(model_id, mode):
+@pytest.mark.parametrize("mode", ["depth"])
+def test_models(mode):
     """Test models."""
+    model_id = "depth-anything"
+
     output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}.png"
     width, height = get_16_9_resolution("540p")
 
@@ -32,8 +24,8 @@ def test_models(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="" if mode == "text_to_image" else "../test_data/color_v001.jpeg",
-                input_mask_path="../test_data/mask_v001.png",
+                input_image_path="../test_data/color_v001.jpeg",
+                input_mask_path="",
                 output_image_path=output_name,
                 prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,

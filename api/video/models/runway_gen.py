@@ -4,6 +4,7 @@ from io import BytesIO
 from typing import Literal
 
 from runwayml import RunwayML
+
 from utils.logger import logger
 from utils.utils import get_16_9_resolution
 from video.context import VideoContext
@@ -46,12 +47,15 @@ def create(context: VideoContext):
     image = context.load_image(division=1)
     image = image.resize((width, height))
 
-    ratio: list[Literal["1280:768", "768:1280"]] = ["1280:768", "768:1280"]
-    duration: list[Literal[5, 10]] = [5, 10]
+    model: Literal["gen3a_turbo", "gen4_turbo"] = "gen3a_turbo"
+    ratio: Literal["1280:768", "1280:720", "768:1280"] = "1280:768"
+    duration: Literal[5, 10] = 5
+    if context.model == "runway/gen4_turbo":
+        model = "gen4_turbo"
+        ratio = "1280:720"
 
     # encode image to base64
     base64_image = pill_to_base64(image)
-    model: Literal["gen3a_turbo"] = "gen3a_turbo"
 
     # Create a new image-to-video task using the "gen3a_turbo" model
     logger.info(f"Creating Runway {model} task")
@@ -60,8 +64,8 @@ def create(context: VideoContext):
         model=model,
         prompt_image=f"data:image/png;base64,{base64_image}",
         prompt_text=context.data.prompt,
-        ratio=ratio[0],
-        duration=duration[0],
+        ratio=ratio,
+        duration=duration,
         # seed=context.seed,
     )
     task_id = task.id
@@ -79,7 +83,7 @@ def main(context: VideoContext):
 if __name__ == "__main__":
     context = VideoContext(
         VideoRequest(
-            model="gen3a_turbo",
+            model="runway/gen3a_turbo",
             input_image_path="../tmp/color_v001.jpeg",
             output_video_path="../tmp/output/runway_video.mp4",
             strength=0.2,

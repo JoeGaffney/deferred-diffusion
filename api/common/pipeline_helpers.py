@@ -1,13 +1,17 @@
 from transformers import BitsAndBytesConfig, T5EncoderModel
 
 
-def optimize_pipeline(pipe, disable_safety_checker=True):
+def optimize_pipeline(pipe, disable_safety_checker=True, sequential_cpu_offload=False):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
 
     # Enable CPU offload to save GPU memory
-    pipe.enable_model_cpu_offload()
+    if sequential_cpu_offload:
+        pipe.enable_sequential_cpu_offload()
+    else:
+        pipe.enable_model_cpu_offload()
+
     pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
     pipe.vae.enable_slicing()
 
@@ -20,6 +24,10 @@ def optimize_pipeline(pipe, disable_safety_checker=True):
 
 
 quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
+
+def is_model_sd3(model):
+    return "stable-diffusion-3" in model or "sd3" in model.lower() or "sd-3" in model.lower()
 
 
 def get_t5_quantized(model_id):

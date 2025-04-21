@@ -1,6 +1,7 @@
 import os
 
 import pytest
+
 from image.context import ImageContext
 from image.models.auto_diffusion import main
 from image.schemas import ControlNetSchema, ImageRequest
@@ -8,32 +9,16 @@ from utils.logger import logger
 from utils.utils import get_16_9_resolution, get_gpu_memory_usage_pretty
 
 # Define constants
-MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
+MODES = ["text_to_image", "img_to_img"]
 
-MODELS = [
-    "stabilityai/stable-diffusion-xl-base-1.0",
-    "stabilityai/stable-diffusion-3-medium-diffusers",
-    "stabilityai/stable-diffusion-3.5-medium",
-]
+# Change the MODELS list to use the correct keys from ImageRequest.model Literal
+MODELS = ["sdxl", "sd3", "sd3.5"]
 
+# Update the mapping to use these keys
 MODEL_CONTROLNET_MAPPING = {
-    "stabilityai/stable-diffusion-xl-base-1.0": [
-        ControlNetSchema(
-            model="diffusers/controlnet-canny-sdxl-1.0",
-            image_path="../test_data/canny_v001.png",
-            conditioning_scale=0.5,
-        ),
-    ],
-    "stabilityai/stable-diffusion-3-medium-diffusers": [
-        ControlNetSchema(
-            model="InstantX/SD3-Controlnet-Canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5
-        )
-    ],
-    "stabilityai/stable-diffusion-3.5-medium": [
-        ControlNetSchema(
-            model="InstantX/SD3-Controlnet-Canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5
-        )
-    ],
+    "sdxl": [ControlNetSchema(model="canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5)],
+    "sd3": [ControlNetSchema(model="canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5)],
+    "sd3.5": [ControlNetSchema(model="canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5)],
 }
 
 

@@ -3,9 +3,10 @@ import traceback
 from functools import lru_cache
 
 from qwen_vl_utils import process_vision_info
-from text.context import TextContext
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
-from utils.logger import logger
+
+from text.context import TextContext
+from utils.logger import log_pretty, logger
 from utils.utils import free_gpu_memory
 
 
@@ -87,5 +88,5 @@ def main(context: TextContext):
         "chain_of_thought": chain_of_thought,
     }
 
-    logger.info(result)
+    log_pretty("qwen result", result)
     return result

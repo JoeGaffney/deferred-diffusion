@@ -5,7 +5,7 @@ import torch
 
 from common.control_net import ControlNet
 from common.ip_adapter import IpAdapter
-from image.schemas import ImageRequest, PipelineConfig
+from image.schemas import ImageRequest, ModelConfig, PipelineConfig
 from utils.logger import logger
 from utils.utils import (
     ensure_path_exists,
@@ -14,18 +14,56 @@ from utils.utils import (
     save_copy_with_timestamp,
 )
 
+IMAGE_MODEL_CONFIG = {
+    "sd1.5": {"family": "sd1.5", "model_path": "stable-diffusion-v1-5/stable-diffusion-v1-5", "mode": "auto"},
+    "sdxl": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-base-1.0", "mode": "auto"},
+    "sdxl-refiner": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-refiner-1.0", "mode": "auto"},
+    "RealVisXL": {"family": "sdxl", "model_path": "SG161222/RealVisXL_V4.0", "mode": "auto"},
+    "Fluently-XL": {"family": "sdxl", "model_path": "fluently/Fluently-XL-v4", "mode": "auto"},
+    "sd3": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3-medium-diffusers", "mode": "auto"},
+    "sd3.5": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3.5-medium", "mode": "auto"},
+    "flux-schnell": {
+        "family": "flux",
+        "model_path": "black-forest-labs/FLUX.1-schnell",
+        "guf_path": "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q5_0.gguf",
+        "mode": "auto",
+    },
+    "depth-anything": {
+        "family": "depth_anything",
+        "model_path": "depth-anything/Depth-Anything-V2-Large-hf",
+        "mode": "depth",
+    },
+    "segment-anything": {"family": "segment_anything", "model_path": "sam2.1_hiera_base_plus", "mode": "mask"},
+    "sd-x4-upscaler": {
+        "family": "stable-diffusion-x4-upscaler",
+        "model_path": "stabilityai/stable-diffusion-x4-upscaler",
+        "mode": "upscale",
+    },
+}
 
-def is_model_sd3(model):
-    return "stable-diffusion-3" in model
+
+def get_model_config(key: str) -> ModelConfig:
+    config = IMAGE_MODEL_CONFIG.get(key)
+    if not config:
+        raise ValueError(f"Model config for {key} not found")
+
+    return ModelConfig(
+        model_path=config.get("model_path", ""),
+        model_family=config.get("family", ""),
+        guf_path=config.get("guf_path", ""),
+        mode=config["mode"],
+    )
 
 
 class ImageContext:
     def __init__(self, data: ImageRequest):
         self.data = data
         self.model = data.model
+        self.model_config = get_model_config(data.model)
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
+        self.optimize_low_vram = bool(data.optimize_low_vram)
 
         # Round down to nearest multiple of 16
         self.division = 16
@@ -52,26 +90,19 @@ class ImageContext:
         ensure_path_exists(self.data.output_image_path)
         ensure_path_exists(self.data.input_image_path)
 
-        # SD3 models disabling the text encoder 3 can reduce vram usage
-        self.model_sd3 = is_model_sd3(data.model)
-        self.disable_text_encoder_3 = bool(data.disable_text_encoder_3)
-
         # add our control nets
         self.controlnets: List[ControlNet] = []
         for current in data.controlnets:
-            tmp = ControlNet(current, self.width, self.height, torch_dtype=self.torch_dtype)
+            tmp = ControlNet(current, self.model_config, self.width, self.height, torch_dtype=self.torch_dtype)
             if tmp.enabled:
                 self.controlnets.append(tmp)
 
         self.controlnets_enabled = len(self.controlnets) > 0
 
-        # requires different path as auto diffusers don't map the control net models for sd3 variants
-        self.sd3_controlnet_mode = self.model_sd3 and self.controlnets_enabled
-
         # add our ip adapters
         self.ip_adapters: List[IpAdapter] = []
         for current in data.ip_adapters:
-            tmp = IpAdapter(current, self.width, self.height)
+            tmp = IpAdapter(current, self.model_config, self.width, self.height)
             if tmp.enabled:
                 self.ip_adapters.append(tmp)
 
@@ -88,21 +119,19 @@ class ImageContext:
         if self.ip_adapters_enabled == True:
             # NOTE do we validate against clashes here? Or allow passing through the natural errors?
             for ip_adapter in self.ip_adapters:
-                models.append(ip_adapter.model)
-                subfolders.append(ip_adapter.subfolder)
-                weights.append(ip_adapter.weight_name)
-                if ip_adapter.image_encoder:
-                    image_encoder_model = ip_adapter.model
-                    image_encoder_subfolder = ip_adapter.image_encoder_subfolder
-
-        disable_text_encoder_3 = True
-        if self.model_sd3 and self.disable_text_encoder_3 == False:
-            disable_text_encoder_3 = False
+                models.append(ip_adapter.config.model)
+                subfolders.append(ip_adapter.config.subfolder)
+                weights.append(ip_adapter.config.weight_name)
+                if ip_adapter.config.image_encoder:
+                    image_encoder_model = ip_adapter.config.model
+                    image_encoder_subfolder = ip_adapter.config.image_encoder_subfolder
 
         return PipelineConfig(
-            model_id=self.model,
+            model_id=self.model_config.model_path,
+            model_family=self.model_config.model_family,
+            model_guf_path=self.model_config.guf_path,
             torch_dtype=self.torch_dtype,
-            disable_text_encoder_3=disable_text_encoder_3,
+            optimize_low_vram=self.optimize_low_vram,
             use_safetensors=True,
             ip_adapter_models=tuple(models),
             ip_adapter_subfolders=tuple(subfolders),
@@ -162,6 +191,16 @@ class ImageContext:
         for ip_adapter in self.ip_adapters:
             images.append(ip_adapter.image)
         return images
+
+    def get_ip_adapter_masks(self):
+        if self.ip_adapters_enabled == False:
+            return []
+
+        masks = []
+        for ip_adapter in self.ip_adapters:
+            masks.append(ip_adapter.get_mask())
+
+        return masks
 
     def set_ip_adapter_scale(self, pipe):
         if self.ip_adapters_enabled == True:

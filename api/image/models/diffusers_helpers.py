@@ -16,7 +16,7 @@ def text_to_image_call(pipe, context: ImageContext):
 
     if context.controlnets_enabled:
         # different pattern of arguments
-        if context.sd3_controlnet_mode:
+        if context.model_config.model_family == "sd3":
             args["control_image"] = context.get_controlnet_images()
         else:
             args["image"] = context.get_controlnet_images()
@@ -24,6 +24,7 @@ def text_to_image_call(pipe, context: ImageContext):
 
     if context.ip_adapters_enabled:
         args["ip_adapter_image"] = context.get_ip_adapter_images()
+        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
         pipe = context.set_ip_adapter_scale(pipe)
 
     logger.info(f"Text to image call {args}")
@@ -55,6 +56,7 @@ def image_to_image_call(pipe, context: ImageContext):
 
     if context.ip_adapters_enabled:
         args["ip_adapter_image"] = context.get_ip_adapter_images()
+        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
         pipe = context.set_ip_adapter_scale(pipe)
 
     logger.info(f"Image to image call {args}")
@@ -87,6 +89,7 @@ def inpainting_call(pipe, context: ImageContext):
 
     if context.ip_adapters_enabled:
         args["ip_adapter_image"] = context.get_ip_adapter_images()
+        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
         pipe = context.set_ip_adapter_scale(pipe)
 
     logger.info(f"Inpainting call {args}")

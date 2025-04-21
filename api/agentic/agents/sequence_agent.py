@@ -4,6 +4,12 @@ from dataclasses import dataclass
 from pydantic_ai import Agent, RunContext
 
 from agentic.schemas import SequenceRequest, SequenceResponse
+from agentic.tools.image_reference import main as image_reference_main
+from utils.logger import log_pretty, logger
+
+character_prompt = (
+    "Generate a detailed visual description of the Person in the image. Ignore explaining the background. Focusing more on what the person looks like age, race, hair colour, what they may do for a job, there mood etc. To be used for storyboarding by a script agent. As a Characther description.",
+)
 
 
 class SequenceDatabase:
@@ -22,6 +28,7 @@ class SequenceDatabase:
 class SequenceDependencies:
     scene_id: int
     db: SequenceDatabase
+    data: SequenceRequest
 
 
 sequence_agent = Agent(
@@ -32,10 +39,9 @@ sequence_agent = Agent(
         "You are a professional storyboard artist and script supervisor. "
         "Break down scenes into detailed shot descriptions, including "
         "camera movements and dialog where appropriate."
-        # "The data will be used to generate images for each shot, set and character using stable diffusion xl. "
-        # "So please include all relevant information in the image generation prompt. "
-        # "The image generation prompts should be a single sentence, and should not include any new lines. "
-        # "Try to maintain a consistent style and tone throughout the sequence. "
+        "use the add_scene_reference tool to get a reference for the scene. "
+        "use the add_protaonist_reference tool to get a reference for the protagonist. "
+        "use the add_antagonist_reference tool to get a reference for the antagonist. "
     ),
 )
 
@@ -43,15 +49,75 @@ sequence_agent = Agent(
 @sequence_agent.system_prompt
 async def add_scene_context(ctx: RunContext[SequenceDependencies]) -> str:
     scene_context = await ctx.deps.db.get_scene_context(scene_id=ctx.deps.scene_id)
+    if scene_context == None:
+        return ""
+
     return f"Scene context: {scene_context}"
 
 
+@sequence_agent.tool
+async def add_scene_reference(ctx: RunContext[SequenceDependencies]) -> str:
+    if ctx.deps.data.scene_reference_image == None:
+        return ""
+
+    result = image_reference_main(
+        prompt="Generate a detailed visual description of the scene in the image. To be used for storyboarding by a script agent.",
+        image_reference_image=ctx.deps.data.scene_reference_image,
+    )
+    if result == "":
+        return ""
+    return f"Scene context: {result}"
+
+
+@sequence_agent.tool
+async def add_protagonist_reference(ctx: RunContext[SequenceDependencies]) -> str:
+    if ctx.deps.data.protagonist_reference_image == None:
+        return ""
+
+    result = image_reference_main(
+        prompt=character_prompt,
+        image_reference_image=ctx.deps.data.protagonist_reference_image,
+    )
+    if result == "":
+        return ""
+    return f"Protagonist context: {result}"
+
+
+@sequence_agent.tool
+def add_antagonist_reference(ctx: RunContext[SequenceDependencies]) -> str:
+    if ctx.deps.data.antagonist_reference_image == None:
+        return ""
+
+    result = image_reference_main(
+        prompt=character_prompt,
+        image_reference_image=ctx.deps.data.antagonist_reference_image,
+    )
+    if result == "":
+        return ""
+    return f"Antagonist context: {result}"
+
+
 def main(request: SequenceRequest) -> SequenceResponse:
-    deps = SequenceDependencies(scene_id=2, db=SequenceDatabase())
+    deps = SequenceDependencies(scene_id=2, db=SequenceDatabase(), data=request)
     result = sequence_agent.run_sync(request.prompt, deps=deps)
-    pprint.pprint(result.data.model_dump(), indent=2)
+    history = result.all_messages()
+
+    if request.refinement_prompt != "":
+        result = sequence_agent.run_sync(request.refinement_prompt, deps=deps, message_history=history)
+        history = result.all_messages()
+
+    log_pretty("History", history)
+    log_pretty("Result", result.data.model_dump())
     return result.data
 
 
 if __name__ == "__main__":
-    main(SequenceRequest(prompt="Create a sequence showing a person floating through a zero gravity corridor"))
+    main(
+        SequenceRequest(
+            prompt="Create a sequence about an adventure.",
+            refinement_prompt="Refine all 'description' fields for compatibility with SDXL model prompts. Ensure each description should be concise and describe the key things to generate the image, scene, character, camera angle, mood",
+            scene_reference_image="../test_data/color_v001.jpeg",
+            protagonist_reference_image="../test_data/face_v001.jpeg",
+            antagonist_reference_image="../test_data/face_v002.jpeg",
+        )
+    )

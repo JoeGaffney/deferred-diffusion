@@ -1,16 +1,19 @@
 from functools import lru_cache
 
+import torch
 from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
     AutoPipelineForText2Image,
     DDIMScheduler,
     DiffusionPipeline,
-    StableDiffusion3ControlNetPipeline,
+    FluxPipeline,
+    FluxTransformer2DModel,
+    GGUFQuantizationConfig,
 )
 from transformers import CLIPVisionModelWithProjection
 
-from common.pipeline_helpers import optimize_pipeline
+from common.pipeline_helpers import is_model_sd3, optimize_pipeline
 from image.context import ImageContext
 from image.models.diffusers_helpers import (
     image_to_image_call,
@@ -18,17 +21,36 @@ from image.models.diffusers_helpers import (
     text_to_image_call,
 )
 from image.schemas import PipelineConfig
-from utils.logger import logger
 from utils.utils import cache_info_decorator
+
+
+def get_pipeline_flux(config: PipelineConfig):
+
+    transformer = FluxTransformer2DModel.from_single_file(
+        config.model_guf_path,
+        quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
+        torch_dtype=torch.bfloat16,
+    )
+    pipe = FluxPipeline.from_pretrained(
+        config.model_id,
+        transformer=transformer,
+        torch_dtype=torch.bfloat16,
+        # device_map="cpu",
+    )
+
+    return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)
 
 
 @cache_info_decorator
 @lru_cache(maxsize=4)  # Cache up to 4 different pipelines
 def get_pipeline(config: PipelineConfig):
+    if config.model_family == "flux":
+        return get_pipeline_flux(config)
+
     args = {"torch_dtype": config.torch_dtype, "use_safetensors": True}
 
     # this can really eat up the memory
-    if config.disable_text_encoder_3 == True:
+    if config.model_family == "sd3":
         args["text_encoder_3"] = None
         args["tokenizer_3"] = None
 
@@ -59,7 +81,7 @@ def get_pipeline(config: PipelineConfig):
             # Supposed to help with consistency
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)
 
 
 def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
@@ -82,41 +104,20 @@ def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
     args = {}
     if controlnets != []:
         args["controlnet"] = controlnets
+
     return AutoPipelineForInpainting.from_pipe(get_pipeline(pipeline_config), requires_safety_checker=False, **args)
-
-
-# need to grab direct as SD3 control nets not full supported by diffusers
-def get_sd3_controlnet_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-    pipe = StableDiffusion3ControlNetPipeline.from_pipe(get_pipeline(pipeline_config), controlnet=controlnets)
-
-    logger.warning(f"Loaded pipeline {pipeline_config.model_id} with controlnets")
-    return pipe
-
-
-# work around as SD3 control nets not full supported by diffusers
-def main_sd3_controlnets(
-    context: ImageContext, model_id="stabilityai/stable-diffusion-3-medium-diffusers", mode="text"
-):
-    controlnets = context.get_loaded_controlnets()
-    pipeline_config = context.get_pipeline_config()
-
-    # work around as SD3 not full supported by diffusers
-    # there is no dedicated img to img or inpainting control net for SD3 atm
-    return text_to_image_call(
-        get_sd3_controlnet_pipeline(pipeline_config, controlnets=controlnets),
-        context,
-    )
 
 
 def main(
     context: ImageContext,
     mode="text",
 ):
-    if context.sd3_controlnet_mode == True:
-        return main_sd3_controlnets(context, model_id=context.model, mode=mode)
-
     controlnets = context.get_loaded_controlnets()
     pipeline_config = context.get_pipeline_config()
+
+    # work around as SD3 not full supported by diffusers
+    if context.controlnets_enabled == True and pipeline_config.model_family == "sd3":
+        return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)
 
     if mode == "text_to_image":
         return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)

@@ -2,8 +2,9 @@ import os
 
 import pytest
 import torch
-from common.pipeline_helpers import optimize_pipeline
 from diffusers import AutoPipelineForText2Image
+
+from common.pipeline_helpers import optimize_pipeline
 from image.context import ImageContext
 from image.models.auto_diffusion import main
 from image.schemas import ImageRequest, IpAdapterModel
@@ -13,51 +14,9 @@ from utils.utils import get_16_9_resolution
 MODES = ["text_to_image", "img_to_img"]
 
 MODELS = [
-    "stable-diffusion-v1-5/stable-diffusion-v1-5",
-    "stabilityai/stable-diffusion-xl-base-1.0",
+    "sd1.5",
+    "sdxl",
 ]
-
-MODEL_STYLE_ADAPTERS_MAPPING = {
-    "stable-diffusion-v1-5/stable-diffusion-v1-5": [
-        IpAdapterModel(
-            image_path="../test_data/style_v001.jpeg",
-            model="h94/IP-Adapter",
-            scale=0.5,
-            subfolder="models",
-            weight_name="ip-adapter_sd15.bin",
-        ),
-    ],
-    "stabilityai/stable-diffusion-xl-base-1.0": [
-        IpAdapterModel(
-            image_path="../test_data/style_v001.jpeg",
-            model="h94/IP-Adapter",
-            scale=0.5,
-            subfolder="sdxl_models",
-            weight_name="ip-adapter_sdxl.bin",
-        ),
-    ],
-}
-
-MODEL_FACE_ADAPTERS_MAPPING = {
-    "stabilityai/stable-diffusion-xl-base-1.0": [
-        IpAdapterModel(
-            image_path="../test_data/style_v001.jpeg",
-            model="h94/IP-Adapter",
-            scale=0.5,
-            subfolder="sdxl_models",
-            weight_name="ip-adapter_sdxl_vit-h.bin",
-            image_encoder=True,
-        ),
-        IpAdapterModel(
-            image_path="../test_data/face_v001.jpeg",
-            model="h94/IP-Adapter",
-            scale=0.5,
-            subfolder="sdxl_models",
-            weight_name="ip-adapter-plus-face_sdxl_vit-h.bin",
-            image_encoder=True,
-        ),
-    ],
-}
 
 
 @pytest.mark.skip(reason="debug only")
@@ -76,7 +35,6 @@ def test_style(model_id, mode):
     """Test models with style adapter."""
     output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}_style_adapter.png"
     width, height = get_16_9_resolution("540p")
-    ip_adapters = MODEL_STYLE_ADAPTERS_MAPPING[model_id]
 
     # Delete existing file if it exists
     if os.path.exists(output_name):
@@ -96,7 +54,7 @@ def test_style(model_id, mode):
                 max_width=width,
                 max_height=height,
                 controlnets=[],
-                ip_adapters=ip_adapters,
+                ip_adapters=[IpAdapterModel(image_path="../test_data/style_v001.jpeg", model="style", scale=0.5)],
             )
         ),
         mode=mode,
@@ -107,12 +65,11 @@ def test_style(model_id, mode):
 
 
 @pytest.mark.parametrize("mode", ["text_to_image"])
-@pytest.mark.parametrize("model_id", ["stabilityai/stable-diffusion-xl-base-1.0"])
+@pytest.mark.parametrize("model_id", MODELS)
 def test_face(model_id, mode):
     """Test models with face adapter."""
     output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}_face_adapter.png"
     width, height = get_16_9_resolution("540p")
-    ip_adapters = MODEL_FACE_ADAPTERS_MAPPING[model_id]
 
     # Delete existing file if it exists
     if os.path.exists(output_name):
@@ -132,7 +89,10 @@ def test_face(model_id, mode):
                 max_width=width,
                 max_height=height,
                 controlnets=[],
-                ip_adapters=ip_adapters,
+                ip_adapters=[
+                    IpAdapterModel(image_path="../test_data/style_v001.jpeg", model="style", scale=0.5),
+                    IpAdapterModel(image_path="../test_data/face_v001.jpeg", model="face", scale=0.5),
+                ],
             )
         ),
         mode=mode,
