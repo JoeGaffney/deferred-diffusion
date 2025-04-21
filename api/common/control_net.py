@@ -21,9 +21,44 @@ def load_sd3_controlnet(model, torch_dtype=torch.float16):
     return result
 
 
+CONTROL_NET_MODEL_CONFIG = {
+    "sd1.5": {
+        "depth": "lllyasviel/sd-controlnet-depth",
+        "canny": "lllyasviel/sd-controlnet-canny",
+        "pose": "lllyasviel/sd-controlnet-openpose",
+    },
+    "sdxl": {
+        "depth": "diffusers/controlnet-depth-sdxl-1.0-small",
+        "canny": "diffusers/controlnet-canny-sdxl-1.0-small",
+        "pose": "xinsir/controlnet-openpose-sdxl-1.0",
+    },
+    "sd3": {
+        "depth": "InstantX/SD3-Controlnet-Depth",
+        "canny": "InstantX/SD3-Controlnet-Canny",
+    },
+    "flux": {
+        "depth": "XLabs-AI/flux-controlnet-depth-v3",
+        "canny": "XLabs-AI/flux-controlnet-canny-v3",
+    },
+}
+
+
+def get_controlnet_model(model_family: str, controlnet_model: str) -> str:
+    model_config = CONTROL_NET_MODEL_CONFIG.get(model_family)
+    if not model_config:
+        raise ValueError(f"ControlNet model config for {model_family} not found")
+
+    controlnet_model_path = model_config.get(controlnet_model)
+    if not controlnet_model_path:
+        raise ValueError(f"ControlNet model path for {controlnet_model} not found in {model_family}")
+
+    return controlnet_model_path
+
+
 class ControlNet:
     def __init__(self, data: ControlNetSchema, model_config: ModelConfig, width, height, torch_dtype=torch.float16):
-        self.model = data.model
+        self.model = get_controlnet_model(model_config.model_family, data.model)
+
         self.image_path = data.image_path
         self.conditioning_scale = data.conditioning_scale
         self.enabled = False

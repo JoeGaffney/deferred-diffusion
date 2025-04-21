@@ -102,7 +102,7 @@ class ImageContext:
         # add our ip adapters
         self.ip_adapters: List[IpAdapter] = []
         for current in data.ip_adapters:
-            tmp = IpAdapter(current, self.width, self.height)
+            tmp = IpAdapter(current, self.model_config, self.width, self.height)
             if tmp.enabled:
                 self.ip_adapters.append(tmp)
 
@@ -119,12 +119,12 @@ class ImageContext:
         if self.ip_adapters_enabled == True:
             # NOTE do we validate against clashes here? Or allow passing through the natural errors?
             for ip_adapter in self.ip_adapters:
-                models.append(ip_adapter.model)
-                subfolders.append(ip_adapter.subfolder)
-                weights.append(ip_adapter.weight_name)
-                if ip_adapter.image_encoder:
-                    image_encoder_model = ip_adapter.model
-                    image_encoder_subfolder = ip_adapter.image_encoder_subfolder
+                models.append(ip_adapter.config.model)
+                subfolders.append(ip_adapter.config.subfolder)
+                weights.append(ip_adapter.config.weight_name)
+                if ip_adapter.config.image_encoder:
+                    image_encoder_model = ip_adapter.config.model
+                    image_encoder_subfolder = ip_adapter.config.image_encoder_subfolder
 
         return PipelineConfig(
             model_id=self.model_config.model_path,

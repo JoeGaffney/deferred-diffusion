@@ -5,20 +5,39 @@ from torch import dtype
 
 
 class ControlNetSchema(BaseModel):
+    model: Literal[
+        "pose",
+        "depth",
+        "canny",
+    ]
     conditioning_scale: float = 0.5
     image_path: str
-    model: str
+
+
+class IpAapterModelConfig(BaseModel):
+    model: str = Field(
+        description="The model name for the IP adapter.",
+    )
+    subfolder: str = Field(
+        description="The subfolder where the IP adapter model is stored.",
+    )
+    weight_name: str = Field(
+        description="The weight name for the IP adapter model.",
+    )
+    image_encoder: bool = Field(description="Whether to use the image encoder for the IP adapter model.")
+    image_encoder_subfolder: str = Field(description="The subfolder where the image encoder model is stored.")
 
 
 class IpAdapterModel(BaseModel):
+    model: Literal[
+        "style",
+        "style-plus",
+        "face",
+    ]
     image_path: str
     mask_path: str = ""
-    model: str = Field("h94/IP-Adapter", min_length=1)
     scale: float = 0.5
     scale_layers: str = "all"
-    subfolder: str = Field("models", min_length=1)
-    weight_name: str = Field("ip-adapter_sd15.bin", min_length=1)
-    image_encoder: bool = False
 
 
 class ImageRequest(BaseModel):
