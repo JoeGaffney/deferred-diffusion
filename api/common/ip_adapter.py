@@ -1,7 +1,7 @@
 from diffusers.image_processor import IPAdapterMaskProcessor
 from PIL import Image
 
-from image.schemas import IpAapterModelConfig, IpAdapterModel, ModelConfig
+from image.schemas import IpAdapterModel, IpAdapterModelConfig, ModelConfig
 from utils.logger import logger
 from utils.utils import load_image_if_exists
 
@@ -10,21 +10,21 @@ processor = IPAdapterMaskProcessor()
 
 IP_ADAPTER_MODEL_CONFIG = {
     "sd1.5": {
-        "style": IpAapterModelConfig(
+        "style": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="models",
             weight_name="ip-adapter_sd15.bin",
             image_encoder=True,
             image_encoder_subfolder="models/image_encoder",
         ),
-        "style-plus": IpAapterModelConfig(
+        "style-plus": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="models",
             weight_name="ip-adapter-plus_sd15.bin",
             image_encoder=True,
             image_encoder_subfolder="models/image_encoder",
         ),
-        "face": IpAapterModelConfig(
+        "face": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="models",
             weight_name="ip-adapter-plus-face_sd15.bin",
@@ -33,21 +33,21 @@ IP_ADAPTER_MODEL_CONFIG = {
         ),
     },
     "sdxl": {
-        "style": IpAapterModelConfig(
+        "style": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="sdxl_models",
             weight_name="ip-adapter_sdxl_vit-h.bin",
             image_encoder=True,
             image_encoder_subfolder="models/image_encoder",
         ),
-        "style-plus": IpAapterModelConfig(
+        "style-plus": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="sdxl_models",
             weight_name="ip-adapter-plus_sdxl_vit-h.bin",
             image_encoder=True,
             image_encoder_subfolder="models/image_encoder",
         ),
-        "face": IpAapterModelConfig(
+        "face": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="sdxl_models",
             weight_name="ip-adapter-plus-face_sdxl_vit-h.bin",
@@ -58,7 +58,7 @@ IP_ADAPTER_MODEL_CONFIG = {
 }
 
 
-def get_ip_adapter_config(model_family: str, adapter_type: str) -> IpAapterModelConfig:
+def get_ip_adapter_config(model_family: str, adapter_type: str) -> IpAdapterModelConfig:
     model_config = IP_ADAPTER_MODEL_CONFIG.get(model_family)
     if not model_config:
         raise ValueError(f"IP-Adapter model config for {model_family} not found")

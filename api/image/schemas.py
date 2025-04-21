@@ -14,7 +14,7 @@ class ControlNetSchema(BaseModel):
     image_path: str
 
 
-class IpAapterModelConfig(BaseModel):
+class IpAdapterModelConfig(BaseModel):
     model: str = Field(
         description="The model name for the IP adapter.",
     )
