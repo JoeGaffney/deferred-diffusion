@@ -2,7 +2,8 @@ from functools import lru_cache
 
 import torch
 from diffusers import StableVideoDiffusionPipeline
-from utils.logger import logger
+
+from common.logger import logger
 from utils.utils import get_16_9_resolution
 from video.context import VideoContext
 from video.schemas import VideoRequest

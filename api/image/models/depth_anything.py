@@ -2,8 +2,8 @@ from functools import lru_cache
 
 from transformers import pipeline
 
+from common.logger import logger
 from image.context import ImageContext
-from utils.logger import logger
 
 
 # some other parts need switching to cpu, but this is the main one

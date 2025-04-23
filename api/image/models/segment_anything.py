@@ -2,8 +2,8 @@ import numpy as np
 from lang_sam import LangSAM
 from PIL import Image, ImageChops
 
+from common.logger import log_pretty, logger
 from image.context import ImageContext
-from utils.logger import log_pretty, logger
 
 
 def draw_image(image_rgb, masks, xyxy, probs, labels):

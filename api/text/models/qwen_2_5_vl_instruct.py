@@ -5,8 +5,8 @@ from functools import lru_cache
 from qwen_vl_utils import process_vision_info
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
+from common.logger import log_pretty, logger
 from text.context import TextContext
-from utils.logger import log_pretty, logger
 from utils.utils import free_gpu_memory
 
 

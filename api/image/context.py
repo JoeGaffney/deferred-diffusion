@@ -3,11 +3,11 @@ from typing import List
 
 import torch
 
-from common.control_net import ControlNet
-from common.exeptions import ControlNetConfigError, IPAdapterConfigError
-from common.ip_adapter import IpAdapter
+from common.exceptions import ControlNetConfigError, IPAdapterConfigError
+from common.logger import logger
+from image.control_net import ControlNet
+from image.ip_adapter import IpAdapter
 from image.schemas import ImageRequest, ModelConfig, PipelineConfig
-from utils.logger import logger
 from utils.utils import (
     ensure_path_exists,
     load_image_if_exists,

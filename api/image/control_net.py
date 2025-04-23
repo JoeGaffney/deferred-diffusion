@@ -3,7 +3,7 @@ from functools import lru_cache
 import torch
 from diffusers import ControlNetModel, SD3ControlNetModel
 
-from common.exeptions import ControlNetConfigError
+from common.exceptions import ControlNetConfigError
 from image.schemas import ControlNetSchema, ModelConfig
 from utils.utils import cache_info_decorator, load_image_if_exists
 

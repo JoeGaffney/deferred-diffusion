@@ -1,11 +1,12 @@
 from functools import lru_cache
 
 import torch
-from common.pipeline_helpers import optimize_pipeline
 from diffusers import StableDiffusionUpscalePipeline
+
+from common.logger import logger
+from common.pipeline_helpers import optimize_pipeline
 from image.context import ImageContext
 from image.models.diffusers_helpers import upscale_call
-from utils.logger import logger
 
 
 @lru_cache(maxsize=1)

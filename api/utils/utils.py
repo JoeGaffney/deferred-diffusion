@@ -7,7 +7,8 @@ from typing import Literal, Tuple
 
 import torch
 from diffusers.utils import load_image
-from utils.logger import logger
+
+from common.logger import logger
 
 Resolutions = Literal["1080p", "900p", "720p", "576p", "540p", "480p", "432p", "360p"]
 resolutions_16_9 = {

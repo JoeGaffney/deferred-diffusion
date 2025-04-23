@@ -1,9 +1,9 @@
 from diffusers.image_processor import IPAdapterMaskProcessor
 from PIL import Image
 
-from common.exeptions import IPAdapterConfigError
+from common.exceptions import IPAdapterConfigError
+from common.logger import logger
 from image.schemas import IpAdapterModel, IpAdapterModelConfig, ModelConfig
-from utils.logger import logger
 from utils.utils import load_image_if_exists
 
 processor = IPAdapterMaskProcessor()

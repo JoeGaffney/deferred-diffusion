@@ -1,5 +1,5 @@
+from common.logger import logger
 from image.context import ImageContext
-from utils.logger import logger
 
 
 def text_to_image_call(pipe, context: ImageContext):

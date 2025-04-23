@@ -2,10 +2,10 @@ import os
 
 import pytest
 
+from common.logger import logger
 from image.context import ImageContext
 from image.models.auto_diffusion import main
 from image.schemas import ControlNetSchema, ImageRequest
-from utils.logger import logger
 from utils.utils import get_16_9_resolution, get_gpu_memory_usage_pretty
 
 # Define constants
