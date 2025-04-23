@@ -11,9 +11,14 @@ from diffusers import (
     FluxTransformer2DModel,
     GGUFQuantizationConfig,
 )
-from transformers import CLIPVisionModelWithProjection
+from transformers import (
+    BitsAndBytesConfig,
+    CLIPVisionModelWithProjection,
+    QuantoConfig,
+    T5EncoderModel,
+)
 
-from common.pipeline_helpers import is_model_sd3, optimize_pipeline
+from common.pipeline_helpers import optimize_pipeline
 from image.context import ImageContext
 from image.models.diffusers_helpers import (
     image_to_image_call,
@@ -23,19 +28,28 @@ from image.models.diffusers_helpers import (
 from image.schemas import PipelineConfig
 from utils.utils import cache_info_decorator
 
+quant_config = QuantoConfig(weights="int8")
+
 
 def get_pipeline_flux(config: PipelineConfig):
 
     transformer = FluxTransformer2DModel.from_single_file(
-        config.model_guf_path,
+        config.model_transformer_guf_path,
         quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
         torch_dtype=torch.bfloat16,
     )
+
+    # NOTE invesigate quantization config
     pipe = FluxPipeline.from_pretrained(
         config.model_id,
         transformer=transformer,
+        # text_encoder_2=T5EncoderModel.from_pretrained(
+        #     config.model_id,
+        #     subfolder="text_encoder_2",
+        #     quantization_config=quant_config,
+        #     torch_dtype=torch.bfloat16,
+        # ),
         torch_dtype=torch.bfloat16,
-        # device_map="cpu",
     )
 
     return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)

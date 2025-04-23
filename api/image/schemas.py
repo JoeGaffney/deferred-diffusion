@@ -78,14 +78,14 @@ class ImageResponse(BaseModel):
 class ModelConfig(BaseModel):
     model_path: str
     model_family: str
-    guf_path: str
+    transformer_guf_path: str
     mode: str = "auto"
 
 
 class PipelineConfig(BaseModel):
     model_id: str
     model_family: str
-    model_guf_path: str
+    model_transformer_guf_path: str
     torch_dtype: dtype
     optimize_low_vram: bool
     use_safetensors: bool

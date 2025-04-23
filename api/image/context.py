@@ -25,7 +25,7 @@ IMAGE_MODEL_CONFIG = {
     "flux-schnell": {
         "family": "flux",
         "model_path": "black-forest-labs/FLUX.1-schnell",
-        "guf_path": "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q5_0.gguf",
+        "transformer_guf_path": "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q5_0.gguf",
         "mode": "auto",
     },
     "depth-anything": {
@@ -50,7 +50,7 @@ def get_model_config(key: str) -> ModelConfig:
     return ModelConfig(
         model_path=config.get("model_path", ""),
         model_family=config.get("family", ""),
-        guf_path=config.get("guf_path", ""),
+        transformer_guf_path=config.get("transformer_guf_path", ""),
         mode=config["mode"],
     )
 
@@ -129,7 +129,7 @@ class ImageContext:
         return PipelineConfig(
             model_id=self.model_config.model_path,
             model_family=self.model_config.model_family,
-            model_guf_path=self.model_config.guf_path,
+            model_transformer_guf_path=self.model_config.transformer_guf_path,
             torch_dtype=self.torch_dtype,
             optimize_low_vram=self.optimize_low_vram,
             use_safetensors=True,
