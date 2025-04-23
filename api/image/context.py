@@ -4,6 +4,7 @@ from typing import List
 import torch
 
 from common.control_net import ControlNet
+from common.exeptions import ControlNetConfigError, IPAdapterConfigError
 from common.ip_adapter import IpAdapter
 from image.schemas import ImageRequest, ModelConfig, PipelineConfig
 from utils.logger import logger
@@ -93,18 +94,24 @@ class ImageContext:
         # add our control nets
         self.controlnets: List[ControlNet] = []
         for current in data.controlnets:
-            tmp = ControlNet(current, self.model_config, self.width, self.height, torch_dtype=self.torch_dtype)
-            if tmp.enabled:
+            try:
+                tmp = ControlNet(current, self.model_config, self.width, self.height, torch_dtype=self.torch_dtype)
                 self.controlnets.append(tmp)
+            except ControlNetConfigError as e:
+                logger.error(e)
+                continue
 
         self.controlnets_enabled = len(self.controlnets) > 0
 
         # add our ip adapters
         self.ip_adapters: List[IpAdapter] = []
         for current in data.ip_adapters:
-            tmp = IpAdapter(current, self.model_config, self.width, self.height)
-            if tmp.enabled:
+            try:
+                tmp = IpAdapter(current, self.model_config, self.width, self.height)
                 self.ip_adapters.append(tmp)
+            except IPAdapterConfigError as e:
+                logger.error(e)
+                continue
 
         self.ip_adapters_enabled = len(self.ip_adapters) > 0
 

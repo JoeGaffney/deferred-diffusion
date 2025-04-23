@@ -3,6 +3,7 @@ from functools import lru_cache
 import torch
 from diffusers import ControlNetModel, SD3ControlNetModel
 
+from common.exeptions import ControlNetConfigError
 from image.schemas import ControlNetSchema, ModelConfig
 from utils.utils import cache_info_decorator, load_image_if_exists
 
@@ -46,11 +47,11 @@ CONTROL_NET_MODEL_CONFIG = {
 def get_controlnet_model(model_family: str, controlnet_model: str) -> str:
     model_config = CONTROL_NET_MODEL_CONFIG.get(model_family)
     if not model_config:
-        raise ValueError(f"ControlNet model config for {model_family} not found")
+        raise ControlNetConfigError(f"ControlNet model config for {model_family} not found")
 
     controlnet_model_path = model_config.get(controlnet_model)
     if not controlnet_model_path:
-        raise ValueError(f"ControlNet model path for {controlnet_model} not found in {model_family}")
+        raise ControlNetConfigError(f"ControlNet model path for {controlnet_model} not found in {model_family}")
 
     return controlnet_model_path
 
@@ -58,34 +59,26 @@ def get_controlnet_model(model_family: str, controlnet_model: str) -> str:
 class ControlNet:
     def __init__(self, data: ControlNetSchema, model_config: ModelConfig, width, height, torch_dtype=torch.float16):
         self.model = get_controlnet_model(model_config.model_family, data.model)
-
         self.image_path = data.image_path
         self.conditioning_scale = data.conditioning_scale
-        self.enabled = False
-        self.enabled = self.model is not None and self.image_path is not None
-        self.loaded_controlnet = None
-
         self.image = load_image_if_exists(self.image_path)
-        if self.image:
-            self.image = self.image.resize([width, height])
-        else:
-            self.enabled = False
 
         if self.conditioning_scale < 0.01:
-            self.enabled = False
+            raise ControlNetConfigError("ControlNet conditioning scale must be >= 0.01")
 
-        if self.enabled:
-            if model_config.model_family == "sd3":
-                self.loaded_controlnet = load_sd3_controlnet(self.model, torch_dtype=torch_dtype)
-            else:
-                self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)
+        if not self.image:
+            raise ControlNetConfigError(f"Could not load ControlNet image from {self.image_path}")
+
+        self.image = self.image.resize([width, height])
+
+        if model_config.model_family == "sd3":
+            self.loaded_controlnet = load_sd3_controlnet(self.model, torch_dtype=torch_dtype)
+
+        self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)
 
     # we load then offload to match the same behavior as cpu offloading
     def get_loaded_controlnet(self):
-        if self.loaded_controlnet is None:
-            return None
         return self.loaded_controlnet.to("cuda")
 
     def cleanup(self):
-        if self.loaded_controlnet:
-            self.loaded_controlnet.to("cpu")
+        self.loaded_controlnet.to("cpu")

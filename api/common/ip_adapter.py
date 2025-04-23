@@ -1,6 +1,7 @@
 from diffusers.image_processor import IPAdapterMaskProcessor
 from PIL import Image
 
+from common.exeptions import IPAdapterConfigError
 from image.schemas import IpAdapterModel, IpAdapterModelConfig, ModelConfig
 from utils.logger import logger
 from utils.utils import load_image_if_exists
@@ -61,11 +62,11 @@ IP_ADAPTER_MODEL_CONFIG = {
 def get_ip_adapter_config(model_family: str, adapter_type: str) -> IpAdapterModelConfig:
     model_config = IP_ADAPTER_MODEL_CONFIG.get(model_family)
     if not model_config:
-        raise ValueError(f"IP-Adapter model config for {model_family} not found")
+        raise IPAdapterConfigError(f"IP-Adapter model config for {model_family} not found")
 
     ip_adapter_config = model_config.get(adapter_type)
     if not ip_adapter_config:
-        raise ValueError(f"IP-Adapter model path for {adapter_type} not found in {model_family}")
+        raise IPAdapterConfigError(f"IP-Adapter model path for {adapter_type} not found in {model_family}")
 
     return ip_adapter_config
 
@@ -78,16 +79,19 @@ class IpAdapter:
         self.scale = data.scale
         self.scale_layers = data.scale_layers
         self.image = load_image_if_exists(self.image_path)
-        self.mask_image = load_image_if_exists(self.mask_path)
-        self.solid_mask = Image.new("L", (width, height), 255)  # Create 512x512 white image in L mode
 
-        self.enabled = False
-        if self.image and self.scale > 0.01:
-            self.enabled = True
+        if not self.image:
+            raise IPAdapterConfigError(f"Could not load IP-Adapter image from {self.image_path}")
 
-            if self.mask_image is not None:
-                self.mask_image = self.mask_image.resize([width, height])
-                self.mask_image = self.mask_image.convert("L")
+        if self.scale < 0.01:
+            raise IPAdapterConfigError("IP-Adapter scale must be >= 0.01")
+
+        # we allways need a full mask if some use a mask
+        self.mask_image = Image.new("L", (width, height), 255)  # Create 512x512 white image in L mode
+        tmp_mask_image = load_image_if_exists(self.mask_path)
+        if tmp_mask_image:
+            self.mask_image = tmp_mask_image.resize([width, height])
+            self.mask_image = self.mask_image.convert("L")
 
     def get_scale_layers(self):
 
@@ -109,9 +113,4 @@ class IpAdapter:
         return self.scale
 
     def get_mask(self):
-        tmp_mask = self.solid_mask
-        if self.mask_image:
-            tmp_mask = self.mask_image
-
-        tmp_mask.save(f"{self.mask_path}_{self.scale}_resized.png")
-        return processor.preprocess(tmp_mask)
+        return processor.preprocess(self.mask_image)
