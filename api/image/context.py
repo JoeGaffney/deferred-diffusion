@@ -1,5 +1,5 @@
 import copy
-from typing import List
+from typing import List, Literal
 
 import torch
 
@@ -40,6 +40,11 @@ IMAGE_MODEL_CONFIG = {
         "model_path": "stabilityai/stable-diffusion-x4-upscaler",
         "mode": "upscale",
     },
+    "gpt-image-1": {
+        "family": "openai",
+        "model_path": "gpt-image-1",
+        "mode": "auto",
+    },
 }
 
 
@@ -61,17 +66,23 @@ class ImageContext:
         self.data = data
         self.model = data.model
         self.model_config = get_model_config(data.model)
+        self.torch_dtype = torch.float16  # just keep float 16 for now
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
         self.optimize_low_vram = bool(data.optimize_low_vram)
 
+        # generalised quality based on number of steps
+        self.quality: Literal["low", "medium", "high"] = "medium"
+        if self.data.num_inference_steps < 20:
+            self.quality = "low"
+        elif self.data.num_inference_steps > 40:
+            self.quality = "high"
+
         # Round down to nearest multiple of 16
         self.division = 16
         self.width = (copy.copy(data.max_width) // self.division) * self.division
         self.height = (copy.copy(data.max_height) // self.division) * self.division
-
-        self.torch_dtype = torch.float16  # just keep float 16 for now
 
         self.color_image = load_image_if_exists(data.input_image_path)
         if self.color_image:
@@ -83,13 +94,18 @@ class ImageContext:
             # NOTE base width and height now become the color image size masks and contolnet images are resized to this
             self.width, self.height = self.color_image.size
 
+        # figure out dimensions type as some models have fixed sizes
+        self.dimension_type: Literal["square", "landscape", "portrait"] = "square"
+        if self.width > self.height:
+            self.dimension_type = "landscape"
+        elif self.width < self.height:
+            self.dimension_type = "portrait"
+
+        # add our input mask image
         self.mask_image = load_image_if_exists(data.input_mask_path)
         if self.mask_image:
             self.mask_image = self.mask_image.convert("L")
             self.mask_image = self.mask_image.resize([self.width, self.height])
-
-        ensure_path_exists(self.data.output_image_path)
-        ensure_path_exists(self.data.input_image_path)
 
         # add our control nets
         self.controlnets: List[ControlNet] = []
@@ -148,6 +164,7 @@ class ImageContext:
         )
 
     def save_image(self, image):
+        ensure_path_exists(self.data.output_image_path)
         path = self.data.output_image_path
         image.save(path)
         logger.info(f"Image saved at {path} size: {image.size}")

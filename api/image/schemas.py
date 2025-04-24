@@ -53,6 +53,7 @@ class ImageRequest(BaseModel):
         "depth-anything",
         "segment-anything",
         "sd-x4-upscaler",
+        "gpt-image-1",
     ]
     controlnets: list[ControlNetSchema] = []
     optimize_low_vram: bool = False

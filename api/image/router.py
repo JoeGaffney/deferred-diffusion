@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from image.context import ImageContext
 from image.models.auto_diffusion import main as auto_diffusion
+from image.models.auto_openai import main as auto_openai
 from image.models.depth_anything import main as depth_anything
 from image.models.segment_anything import main as segment_anything
 from image.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/image", tags=["Image"])
 def create(request: ImageRequest):
     context = ImageContext(request)
     mode = context.model_config.mode
+    family = context.model_config.model_family
 
     if mode == "upscale":
         result = stable_diffusion_upscaler(context, mode=mode)
@@ -31,6 +33,9 @@ def create(request: ImageRequest):
         if context.data.input_image_path == "":
             auto_mode = "text_to_image"
 
-        result = auto_diffusion(context, mode=auto_mode)
+        if family == "openai":
+            result = auto_openai(context, mode=auto_mode)
+        else:
+            result = auto_diffusion(context, mode=auto_mode)
 
     return ImageResponse(data=result)
