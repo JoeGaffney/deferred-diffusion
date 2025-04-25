@@ -56,6 +56,30 @@ IP_ADAPTER_MODEL_CONFIG = {
             image_encoder_subfolder="models/image_encoder",
         ),
     },
+    # openai is a special case, it uses just the images and not the model - but we still use the same ipdapter flow for parity
+    "openai": {
+        "style": IpAdapterModelConfig(
+            model="default",
+            subfolder="default",
+            weight_name="default",
+            image_encoder=False,
+            image_encoder_subfolder="default",
+        ),
+        "style-plus": IpAdapterModelConfig(
+            model="default",
+            subfolder="default",
+            weight_name="default",
+            image_encoder=False,
+            image_encoder_subfolder="default",
+        ),
+        "face": IpAdapterModelConfig(
+            model="default",
+            subfolder="default",
+            weight_name="default",
+            image_encoder=False,
+            image_encoder_subfolder="default",
+        ),
+    },
 }
 
 

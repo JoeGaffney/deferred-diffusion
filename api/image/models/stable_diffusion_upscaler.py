@@ -6,7 +6,6 @@ from diffusers import StableDiffusionUpscalePipeline
 from common.logger import logger
 from common.pipeline_helpers import optimize_pipeline
 from image.context import ImageContext
-from image.models.diffusers_helpers import upscale_call
 
 
 @lru_cache(maxsize=1)
@@ -18,6 +17,21 @@ def get_pipeline(model_id):
 
     logger.warning(f"Loaded pipeline {model_id}")
     return optimize_pipeline(pipe, disable_safety_checker=False)
+
+
+def upscale_call(pipe, context: ImageContext, scale=4):
+    processed_image = pipe(
+        prompt=context.data.prompt,
+        negative_prompt=context.data.negative_prompt,
+        image=context.color_image,
+        num_inference_steps=context.data.num_inference_steps,
+        generator=context.generator,
+        guidance_scale=context.data.guidance_scale,
+    ).images[0]
+
+    processed_image = context.resize_image_to_orig(processed_image, scale=scale)
+    processed_path = context.save_image(processed_image)
+    return processed_path
 
 
 def main(context: ImageContext, mode="upscaler"):

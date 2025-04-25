@@ -72,13 +72,6 @@ class ImageContext:
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
         self.optimize_low_vram = bool(data.optimize_low_vram)
 
-        # generalised quality based on number of steps
-        self.quality: Literal["low", "medium", "high"] = "medium"
-        if self.data.num_inference_steps < 20:
-            self.quality = "low"
-        elif self.data.num_inference_steps > 40:
-            self.quality = "high"
-
         # Round down to nearest multiple of 16
         self.division = 16
         self.width = (copy.copy(data.max_width) // self.division) * self.division
@@ -93,13 +86,6 @@ class ImageContext:
 
             # NOTE base width and height now become the color image size masks and contolnet images are resized to this
             self.width, self.height = self.color_image.size
-
-        # figure out dimensions type as some models have fixed sizes
-        self.dimension_type: Literal["square", "landscape", "portrait"] = "square"
-        if self.width > self.height:
-            self.dimension_type = "landscape"
-        elif self.width < self.height:
-            self.dimension_type = "portrait"
 
         # add our input mask image
         self.mask_image = load_image_if_exists(data.input_mask_path)
@@ -162,6 +148,22 @@ class ImageContext:
             ip_adapter_image_encoder_model=image_encoder_model,
             ip_adapter_image_encoder_subfolder=image_encoder_subfolder,
         )
+
+    def get_quality(self) -> Literal["low", "medium", "high"]:
+        """Get quality setting based on number of inference steps."""
+        if self.data.num_inference_steps < 20:
+            return "low"
+        elif self.data.num_inference_steps > 40:
+            return "high"
+        return "medium"
+
+    def get_dimension_type(self) -> Literal["square", "landscape", "portrait"]:
+        """Determine the image dimension type based on width and height ratio."""
+        if self.width > self.height:
+            return "landscape"
+        elif self.width < self.height:
+            return "portrait"
+        return "square"
 
     def save_image(self, image):
         ensure_path_exists(self.data.output_image_path)
