@@ -11,7 +11,7 @@ router = APIRouter(prefix="/videos", tags=["Videos"])
 
 
 @router.post("", response_model=VideoResponse, operation_id="videos_create")
-def create(request: VideoRequest):
+async def create(request: VideoRequest):
     context = VideoContext(request)
 
     main = None

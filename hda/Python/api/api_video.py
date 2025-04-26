@@ -1,9 +1,7 @@
-import time
-
 import hou
 
 from config import client
-from generated.api_client.api.video import create_video
+from generated.api_client.api.videos import videos_create
 from generated.api_client.models import VideoRequest, VideoResponse
 from utils import extract_and_format_parameters, reload_outputs, save_tmp_image
 
@@ -17,7 +15,7 @@ def main(node):
     body = VideoRequest(**valid_params)
 
     # make the API call
-    response = create_video.sync_detailed(client=client, body=body)
+    response = videos_create.sync_detailed(client=client, body=body)
     if response.status_code != 200:
         hou.ui.displayMessage(f"API Call Failed: {response}")
         return

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/images", tags=["Images"])
 
 
 @router.post("", response_model=ImageResponse, operation_id="images_create")
-def create(request: ImageRequest):
+async def create(request: ImageRequest):
     context = ImageContext(request)
     mode = context.model_config.mode
     family = context.model_config.model_family

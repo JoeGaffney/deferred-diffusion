@@ -8,7 +8,7 @@ router = APIRouter(prefix="/texts", tags=["Texts"])
 
 
 @router.post("", response_model=TextResponse, operation_id="tests_create")
-def create(request: TextRequest):
+async def create(request: TextRequest):
     context = TextContext(request)
 
     main = None

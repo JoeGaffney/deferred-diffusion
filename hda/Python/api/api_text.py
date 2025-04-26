@@ -1,10 +1,9 @@
 import json
-import time
 
 import hou
 
 from config import MAX_ADDITIONAL_IMAGES, client
-from generated.api_client.api.text import create_text
+from generated.api_client.api.texts import texts_create
 from generated.api_client.models.text_request import TextRequest
 from generated.api_client.models.text_response import TextResponse
 from utils import extract_and_format_parameters, save_tmp_image
@@ -76,8 +75,7 @@ def main(node):
     body = TextRequest(**valid_params)
 
     # make the API call
-    start_time = time.time()
-    response = create_text.sync_detailed(client=client, body=body)
+    response = texts_create.sync_detailed(client=client, body=body)
     if response.status_code != 200:
         hou.ui.displayMessage(f"API Call Failed: {response}")
         return

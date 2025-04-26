@@ -4,7 +4,7 @@ import time
 import hou
 
 from config import client
-from generated.api_client.api.agentic import sequence_agent
+from generated.api_client.api.agentic import agentic_sequence_create
 from generated.api_client.models.character_response import CharacterResponse
 from generated.api_client.models.scene_response import SceneResponse
 from generated.api_client.models.sequence_request import SequenceRequest
@@ -54,7 +54,7 @@ def main(node):
     body = SequenceRequest(**valid_params)
 
     # make the API call
-    response = sequence_agent.sync_detailed(client=client, body=body)
+    response = agentic_sequence_create.sync_detailed(client=client, body=body)
     if response.status_code != 200:
         hou.ui.displayMessage(f"API Call Failed: {response}")
         return

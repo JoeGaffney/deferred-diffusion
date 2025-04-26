@@ -4,11 +4,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from agentic import router as agentic
-from image import router as image
-from text import router as text
+from images import router as images
+from texts import router as texts
 from utils import device_info
 from utils.utils import free_gpu_memory
-from video import router as video
+from videos import router as videos
 
 app = FastAPI(title="API")
 
@@ -32,9 +32,9 @@ async def cleanup_gpu_memory(request: Request, call_next):
     return response
 
 
-app.include_router(image.router, prefix="/api")
-app.include_router(text.router, prefix="/api")
-app.include_router(video.router, prefix="/api")
+app.include_router(images.router, prefix="/api")
+app.include_router(texts.router, prefix="/api")
+app.include_router(videos.router, prefix="/api")
 app.include_router(agentic.router, prefix="/api")
 
 
@@ -45,5 +45,7 @@ def root():
 
 # Run Uvicorn programmatically for convenience
 if __name__ == "__main__":
-    # NOTE need to run single-threaded so we don't run out of Vram with multiple requests
-    uvicorn.run("main:app", host="127.0.0.1", port=5000, reload=True)
+    # NOTE: Running single-threaded since GPU operations require high VRAM.
+    # Our async routes without await statements naturally serialize GPU operations,
+    # preventing concurrent GPU usage that could cause out-of-memory errors.
+    uvicorn.run("main:app", host="127.0.0.1", port=5000, reload=True, reload_dirs=["api"], workers=1)
