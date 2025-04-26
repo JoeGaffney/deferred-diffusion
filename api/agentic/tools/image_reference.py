@@ -1,8 +1,8 @@
 import os
 
-from text.context import TextContext
-from text.models.qwen_2_5_vl_instruct import main as qwen_main
-from text.schemas import TextRequest
+from texts.context import TextContext
+from texts.models.qwen_2_5_vl_instruct import main as qwen_main
+from texts.schemas import TextRequest
 
 
 def main(prompt, image_reference_image: str) -> str:
