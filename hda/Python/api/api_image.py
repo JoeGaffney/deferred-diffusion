@@ -5,10 +5,12 @@ from generated.api_client.api.images import images_create
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
+from generated.api_client.types import Unset
 from utils import (
     extract_and_format_parameters,
     get_control_nets,
     get_ip_adapters,
+    image_to_base64,
     reload_outputs,
     save_all_tmp_images,
 )
@@ -19,14 +21,25 @@ def main(node):
     save_all_tmp_images(node)
 
     params = extract_and_format_parameters(node)
-    valid_params = {k: v for k, v in params.items() if k in ImageRequest.__annotations__}
-    model = ImageRequestModel(valid_params.get("model", "sd1.5"))
-    valid_params["model"] = model
+    model = ImageRequestModel(params.get("model", "sd1.5"))
 
     body = ImageRequest(
-        **valid_params,
-        ip_adapters=get_ip_adapters(node),
+        model=model,
         controlnets=get_control_nets(node),
+        guidance_scale=params.get("guidance_scale", Unset),
+        image=image_to_base64(params.get("input_image_path", "")),
+        inpainting_full_image=params.get("inpainting_full_image", False),
+        ip_adapters=get_ip_adapters(node),
+        mask=image_to_base64(params.get("input_mask_path", "")),
+        max_height=params.get("max_height", Unset),
+        max_width=params.get("max_width", Unset),
+        negative_prompt=params.get("negative_prompt", Unset),
+        num_inference_steps=params.get("num_inference_steps", Unset),
+        optimize_low_vram=params.get("optimize_low_vram", Unset),
+        output_image_path=params.get("output_image_path", Unset),
+        prompt=params.get("prompt", Unset),
+        seed=params.get("seed", Unset),
+        strength=params.get("strength", Unset),
     )
 
     # make the API call

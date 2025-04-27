@@ -59,15 +59,14 @@ def get_controlnet_model(model_family: str, controlnet_model: str) -> str:
 class ControlNet:
     def __init__(self, data: ControlNetSchema, model_config: ModelConfig, width, height, torch_dtype=torch.float16):
         self.model = get_controlnet_model(model_config.model_family, data.model)
-        self.image_path = data.image_path
         self.conditioning_scale = data.conditioning_scale
-        self.image = load_image_if_exists(self.image_path)
+        self.image = load_image_if_exists(data.image)
 
         if self.conditioning_scale < 0.01:
             raise ControlNetConfigError("ControlNet conditioning scale must be >= 0.01")
 
         if not self.image:
-            raise ControlNetConfigError(f"Could not load ControlNet image from {self.image_path}")
+            raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")
 
         self.image = self.image.resize([width, height])
 

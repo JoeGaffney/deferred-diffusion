@@ -1,14 +1,17 @@
+import base64
+import gc
 import io
 import math
 import os
 import shutil
 import time
 from datetime import datetime
-from typing import Literal, Tuple
+from typing import Literal, Optional, Tuple
 
 import torch
 from diffusers.utils import load_image
 from PIL import Image
+from pydantic import Base64Bytes
 
 from common.logger import logger
 
@@ -65,17 +68,47 @@ def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048)
     return image.resize((width, height))
 
 
-def load_image_if_exists(image_path):
-    if (image_path is None) or (image_path == ""):
+def load_image_from_base64(base64_bytes: Base64Bytes) -> Image.Image:
+    try:
+        # The Base64Bytes type already ensures the data is decoded into bytes, no need to manually decode.
+
+        # Convert bytes to a PIL image
+        image = Image.open(io.BytesIO(base64_bytes))
+        image = image.convert("RGB")  # Ensure the image is in RGB mode
+        logger.info(f"Image loaded from Base64 bytes, size: {image.size}")
+        return image
+    except Exception as e:
+        raise ValueError(f"Invalid Base64 data: {e}") from e
+
+
+def image_to_base64(image_path: str) -> Optional[Base64Bytes]:
+    """Convert an image file to a base64 string (binary data encoded in base64)."""
+    if not image_path:
         return None
 
-    if not os.path.exists(image_path):
+    try:
+        with open(image_path, "rb") as image_file:
+            # Read the file as binary data (bytes)
+            image_bytes = image_file.read()
+            # Convert the bytes to Base64 encoding (standard base64 encoding)
+            base64_bytes = base64.b64encode(image_bytes)  # Return as bytes directly
+            print(f"Base64: {base64_bytes[:100]}...")  # Preview the first 100 bytes of the base64 string
+            return base64_bytes
+            # base64_str = base64_bytes.decode("utf-8")  # Convert to a string
+            # print(f"Base64 string: {base64_str[:100]}...")  # Preview the first 100 characters
+            # return base64_str
+
+    except Exception as e:
+        print(f"Error encoding image {image_path}: {str(e)}")
         return None
 
-    image = load_image(image_path)
 
-    logger.info(f"Image loaded from {image_path} size: {image.size}")
-    return image
+def load_image_if_exists(base64_bytes: Optional[Base64Bytes]) -> Optional[Image.Image]:
+    """Load image from Base64 string if it exists."""
+    if (base64_bytes is None) or (base64_bytes == ""):
+        return None
+
+    return load_image_from_base64(base64_bytes)
 
 
 def convert_pil_to_bytes(image: Image.Image) -> io.BytesIO:
@@ -157,6 +190,7 @@ def free_gpu_memory(threshold_percent: float = 50.0):
     if (should_free_gpu_memory(threshold_percent=threshold_percent) == False) or (torch.cuda.is_available() == False):
         return
 
+    gc.collect()
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
 

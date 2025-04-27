@@ -28,9 +28,9 @@ async def create(request: ImageRequest):
     else:
         # auto_diffusion
         auto_mode = "img_to_img"
-        if context.data.input_mask_path != "":
+        if context.data.mask:
             auto_mode = "img_to_img_inpainting"
-        if context.data.input_image_path == "":
+        if context.data.image is None:
             auto_mode = "text_to_image"
 
         if family == "openai":

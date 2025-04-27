@@ -77,7 +77,7 @@ class ImageContext:
         self.width = (copy.copy(data.max_width) // self.division) * self.division
         self.height = (copy.copy(data.max_height) // self.division) * self.division
 
-        self.color_image = load_image_if_exists(data.input_image_path)
+        self.color_image = load_image_if_exists(data.image)
         if self.color_image:
             self.color_image = resize_image(
                 self.color_image, self.division, 1.0, self.data.max_width, self.data.max_height
@@ -88,7 +88,7 @@ class ImageContext:
             self.width, self.height = self.color_image.size
 
         # add our input mask image
-        self.mask_image = load_image_if_exists(data.input_mask_path)
+        self.mask_image = load_image_if_exists(data.mask)
         if self.mask_image:
             self.mask_image = self.mask_image.convert("L")
             self.mask_image = self.mask_image.resize([self.width, self.height])

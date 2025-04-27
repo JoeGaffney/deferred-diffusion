@@ -1,6 +1,6 @@
-from typing import Literal, Tuple
+from typing import Literal, Optional, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import Base64Bytes, BaseModel, Field
 from torch import dtype
 
 
@@ -11,7 +11,7 @@ class ControlNetSchema(BaseModel):
         "canny",
     ]
     conditioning_scale: float = 0.5
-    image_path: str
+    image: Base64Bytes  #  Base64 image string
 
 
 class IpAdapterModelConfig(BaseModel):
@@ -34,8 +34,8 @@ class IpAdapterModel(BaseModel):
         "style-plus",
         "face",
     ]
-    image_path: str
-    mask_path: str = ""
+    image: Base64Bytes  #  Base64 image string
+    mask: Optional[Base64Bytes] = None  # Optional Base64 mask string
     scale: float = 0.5
     scale_layers: str = "all"
 
@@ -56,16 +56,16 @@ class ImageRequest(BaseModel):
         "gpt-image-1",
     ]
     controlnets: list[ControlNetSchema] = []
-    optimize_low_vram: bool = False
     guidance_scale: float = 5.0
+    image: Optional[Base64Bytes] = None  # Optional Base64 image string
     inpainting_full_image: bool = True
-    input_image_path: str = ""
-    input_mask_path: str = ""
     ip_adapters: list[IpAdapterModel] = []
+    mask: Optional[Base64Bytes] = None  # Optional Base64 mask string
     max_height: int = 2048
     max_width: int = 2048
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     num_inference_steps: int = 25
+    optimize_low_vram: bool = False
     output_image_path: str = ""
     prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
@@ -74,6 +74,7 @@ class ImageRequest(BaseModel):
 
 class ImageResponse(BaseModel):
     data: str
+    image: Optional[Base64Bytes] = None  # Optional Base64 image string
 
 
 class ModelConfig(BaseModel):
