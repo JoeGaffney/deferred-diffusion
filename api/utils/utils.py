@@ -147,13 +147,13 @@ def get_gpu_memory_usage_pretty():
     )
 
 
-def should_free_gpu_memory(threshold_percent: float = 80.0):
+def should_free_gpu_memory(threshold_percent: float = 50.0):
     total, used, reserved, allocated, usage_percent = get_gpu_memory_usage()
     logger.info(f"{get_gpu_memory_usage_pretty()}")
     return usage_percent > threshold_percent
 
 
-def free_gpu_memory(threshold_percent: float = 80.0):
+def free_gpu_memory(threshold_percent: float = 50.0):
     if (should_free_gpu_memory(threshold_percent=threshold_percent) == False) or (torch.cuda.is_available() == False):
         return
 
