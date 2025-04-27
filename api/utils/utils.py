@@ -1,3 +1,4 @@
+import io
 import math
 import os
 import shutil
@@ -7,7 +8,9 @@ from typing import Literal, Tuple
 
 import torch
 from diffusers.utils import load_image
-from utils.logger import logger
+from PIL import Image
+
+from common.logger import logger
 
 Resolutions = Literal["1080p", "900p", "720p", "576p", "540p", "480p", "432p", "360p"]
 resolutions_16_9 = {
@@ -50,8 +53,7 @@ def save_copy_with_timestamp(path):
 
 
 def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048):
-
-    # Ensure the new dimensions do not exceed max_width and max_height
+    """Ensure the new dimensions do not exceed max_width and max_height"""
     width = min(image.size[0] * scale, max_width)
     height = min(image.size[1] * scale, max_height)
 
@@ -74,6 +76,28 @@ def load_image_if_exists(image_path):
 
     logger.info(f"Image loaded from {image_path} size: {image.size}")
     return image
+
+
+def convert_pil_to_bytes(image: Image.Image) -> io.BytesIO:
+    """Convert PIL Image to bytes for OpenAI API."""
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format="PNG")
+    img_byte_arr.seek(0)
+    img_byte_arr.name = "image.png"  # Crucial: tells OpenAI the correct MIME type
+
+    return img_byte_arr
+
+
+def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
+    """Convert mask image to RGBA format for OpenAI inpainting API.
+    White areas will become transparent (edited), black areas will be preserved."""
+    if mask.mode != "L":
+        mask = mask.convert("L")
+
+    # Create RGBA where black is opaque (preserved) and white is transparent (edited)
+    rgba = Image.new("RGBA", mask.size, (0, 0, 0, 255))
+    rgba.putalpha(Image.eval(mask, lambda x: 255 - x))
+    return rgba
 
 
 def cache_info_decorator(func):
@@ -123,13 +147,13 @@ def get_gpu_memory_usage_pretty():
     )
 
 
-def should_free_gpu_memory(threshold_percent: float = 80.0):
+def should_free_gpu_memory(threshold_percent: float = 50.0):
     total, used, reserved, allocated, usage_percent = get_gpu_memory_usage()
     logger.info(f"{get_gpu_memory_usage_pretty()}")
     return usage_percent > threshold_percent
 
 
-def free_gpu_memory(threshold_percent: float = 80.0):
+def free_gpu_memory(threshold_percent: float = 50.0):
     if (should_free_gpu_memory(threshold_percent=threshold_percent) == False) or (torch.cuda.is_available() == False):
         return
 

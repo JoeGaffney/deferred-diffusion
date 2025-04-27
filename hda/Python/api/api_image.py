@@ -1,9 +1,7 @@
-import time
-
 import hou
 
 from config import client
-from generated.api_client.api.image import create_image
+from generated.api_client.api.images import images_create
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
@@ -32,7 +30,7 @@ def main(node):
     )
 
     # make the API call
-    response = create_image.sync_detailed(client=client, body=body)
+    response = images_create.sync_detailed(client=client, body=body)
     if response.status_code != 200:
         hou.ui.displayMessage(f"API Call Failed: {response}")
         return

@@ -26,10 +26,6 @@ def optimize_pipeline(pipe, disable_safety_checker=True, sequential_cpu_offload=
 quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
 
-def is_model_sd3(model):
-    return "stable-diffusion-3" in model or "sd3" in model.lower() or "sd-3" in model.lower()
-
-
 def get_t5_quantized(model_id):
 
     return T5EncoderModel.from_pretrained(

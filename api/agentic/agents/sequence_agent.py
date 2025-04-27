@@ -5,7 +5,7 @@ from pydantic_ai import Agent, RunContext
 
 from agentic.schemas import SequenceRequest, SequenceResponse
 from agentic.tools.image_reference import main as image_reference_main
-from utils.logger import log_pretty, logger
+from common.logger import log_pretty, logger
 
 character_prompt = (
     "Generate a detailed visual description of the Person in the image. Ignore explaining the background. Focusing more on what the person looks like age, race, hair colour, what they may do for a job, there mood etc. To be used for storyboarding by a script agent. As a Characther description.",
