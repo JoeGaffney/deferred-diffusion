@@ -15,7 +15,7 @@ We try to use plural to adhere to REST best practices.
 ### ✅ **Cohesion & Readability**
 
 - All components related to a specific AI task (`images`, `texts`, `videos`) are grouped together.
-- They are grouped in a sense of what main data type they return but can have multi model inputs.
+- They are grouped in a sense of what main data type they return, but can have multi model inputs.
   - eg. images can accept image and text inputs but always returns image based data.
 - Eliminates the need to navigate across multiple directories to understand a feature.
 - New developers can quickly locate relevant code without confusion.
