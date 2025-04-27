@@ -68,8 +68,7 @@ This structure balances **clarity, maintainability, and scalability**, making it
 
 # Agentic
 
-Agentic area is a bit experimental the the agents can call on other modules for example calling the "texts" or "images" models for vision processing.
-
+Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing.
 # Setup windows
 
 ```sh
