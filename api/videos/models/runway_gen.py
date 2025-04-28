@@ -11,16 +11,22 @@ from videos.context import VideoContext
 from videos.schemas import VideoRequest
 
 
-def poll_result(context: VideoContext, task_id, wait=10):
+def poll_result(context: VideoContext, task_id, wait=10, max_attempts=30):
     client = RunwayML()
 
     # Poll the task until it's complete
     time.sleep(wait)  # Wait for a second before polling
     task = client.tasks.retrieve(task_id)
+    attempts = 0
+
     while task.status not in ["SUCCEEDED", "FAILED"]:
+        if attempts >= max_attempts:
+            raise Exception(f"Task polling exceeded maximum attempts ({max_attempts})")
+
         time.sleep(wait)  # Wait for ten seconds before polling
         task = client.tasks.retrieve(task_id)
         logger.info(f"Checking Task: {task}")
+        attempts += 1
 
     if task.status == "SUCCEEDED" and task.output:
         return context.save_video_url(task.output[0])

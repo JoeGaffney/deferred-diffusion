@@ -38,12 +38,12 @@ def get_pipeline_flux(config: PipelineConfig):
     pipe = FluxPipeline.from_pretrained(
         config.model_id,
         transformer=transformer,
-        # text_encoder_2=T5EncoderModel.from_pretrained(
-        #     config.model_id,
-        #     subfolder="text_encoder_2",
-        #     quantization_config=quant_config,
-        #     torch_dtype=torch.bfloat16,
-        # ),
+        text_encoder_2=T5EncoderModel.from_pretrained(
+            config.model_id,
+            subfolder="text_encoder_2",
+            quantization_config=quant_config,
+            torch_dtype=torch.bfloat16,
+        ),
         torch_dtype=torch.bfloat16,
     )
 
