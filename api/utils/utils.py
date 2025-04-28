@@ -81,28 +81,6 @@ def load_image_from_base64(base64_bytes: Base64Bytes) -> Image.Image:
         raise ValueError(f"Invalid Base64 data: {e}") from e
 
 
-def image_to_base64(image_path: str) -> Optional[Base64Bytes]:
-    """Convert an image file to a base64 string (binary data encoded in base64)."""
-    if not image_path:
-        return None
-
-    try:
-        with open(image_path, "rb") as image_file:
-            # Read the file as binary data (bytes)
-            image_bytes = image_file.read()
-            # Convert the bytes to Base64 encoding (standard base64 encoding)
-            base64_bytes = base64.b64encode(image_bytes)  # Return as bytes directly
-            print(f"Base64: {base64_bytes[:100]}...")  # Preview the first 100 bytes of the base64 string
-            return base64_bytes
-            # base64_str = base64_bytes.decode("utf-8")  # Convert to a string
-            # print(f"Base64 string: {base64_str[:100]}...")  # Preview the first 100 characters
-            # return base64_str
-
-    except Exception as e:
-        print(f"Error encoding image {image_path}: {str(e)}")
-        return None
-
-
 def load_image_if_exists(base64_bytes: Optional[Base64Bytes]) -> Optional[Image.Image]:
     """Load image from Base64 string if it exists."""
     if (base64_bytes is None) or (base64_bytes == ""):

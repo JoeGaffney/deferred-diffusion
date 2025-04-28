@@ -6,6 +6,7 @@ from common.logger import logger
 from images.context import ImageContext
 from images.models.auto_diffusion import main
 from images.schemas import ControlNetSchema, ImageRequest
+from tests.utils import image_to_base64, optional_image_to_base64
 from utils.utils import get_16_9_resolution, get_gpu_memory_usage_pretty
 
 # Define constants
@@ -16,9 +17,15 @@ MODELS = ["sdxl", "sd3", "sd3.5"]
 
 # Update the mapping to use these keys
 MODEL_CONTROLNET_MAPPING = {
-    "sdxl": [ControlNetSchema(model="canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5)],
-    "sd3": [ControlNetSchema(model="canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5)],
-    "sd3.5": [ControlNetSchema(model="canny", image_path="../test_data/canny_v001.png", conditioning_scale=0.5)],
+    "sdxl": [
+        ControlNetSchema(model="canny", image=image_to_base64("../test_data/canny_v001.png"), conditioning_scale=0.5)
+    ],
+    "sd3": [
+        ControlNetSchema(model="canny", image=image_to_base64("../test_data/canny_v001.png"), conditioning_scale=0.5)
+    ],
+    "sd3.5": [
+        ControlNetSchema(model="canny", image=image_to_base64("../test_data/canny_v001.png"), conditioning_scale=0.5)
+    ],
 }
 
 
@@ -38,8 +45,8 @@ def test_models_with_control_nets(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="" if mode == "text_to_image" else "../test_data/color_v001.jpeg",
-                input_mask_path="../test_data/mask_v001.png",
+                image=None if mode == "text_to_image" else image_to_base64("../test_data/color_v001.jpeg"),
+                mask=image_to_base64("../test_data/mask_v001.png"),
                 output_image_path=output_name,
                 prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
                 strength=0.5,

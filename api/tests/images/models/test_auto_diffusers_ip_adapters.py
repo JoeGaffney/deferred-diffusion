@@ -8,6 +8,7 @@ from common.pipeline_helpers import optimize_pipeline
 from images.context import ImageContext
 from images.models.auto_diffusion import main
 from images.schemas import ImageRequest, IpAdapterModel
+from tests.utils import image_to_base64, optional_image_to_base64
 from utils.utils import get_16_9_resolution
 
 # Define constants
@@ -44,8 +45,7 @@ def test_style(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="" if mode == "text_to_image" else "../test_data/color_v001.jpeg",
-                input_mask_path="../test_data/mask_v001.png",
+                image=None if mode == "text_to_image" else image_to_base64("../test_data/color_v001.jpeg"),
                 output_image_path=output_name,
                 prompt="a cat, masterpiece, best quality, high quality",
                 negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
@@ -54,7 +54,9 @@ def test_style(model_id, mode):
                 max_width=width,
                 max_height=height,
                 controlnets=[],
-                ip_adapters=[IpAdapterModel(image_path="../test_data/style_v001.jpeg", model="style", scale=0.5)],
+                ip_adapters=[
+                    IpAdapterModel(image=image_to_base64("../test_data/style_v001.jpeg"), model="style", scale=0.5)
+                ],
             )
         ),
         mode=mode,
@@ -79,8 +81,6 @@ def test_face(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="" if mode == "text_to_image" else "../test_data/color_v001.jpeg",
-                input_mask_path="../test_data/mask_v001.png",
                 output_image_path=output_name,
                 prompt="a man walking, masterpiece, best quality, high quality",
                 negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
@@ -90,8 +90,8 @@ def test_face(model_id, mode):
                 max_height=height,
                 controlnets=[],
                 ip_adapters=[
-                    IpAdapterModel(image_path="../test_data/style_v001.jpeg", model="style", scale=0.5),
-                    IpAdapterModel(image_path="../test_data/face_v001.jpeg", model="face", scale=0.5),
+                    IpAdapterModel(image=image_to_base64("../test_data/style_v001.jpeg"), model="style", scale=0.5),
+                    IpAdapterModel(image=image_to_base64("../test_data/face_v001.jpeg"), model="face", scale=0.5),
                 ],
             )
         ),

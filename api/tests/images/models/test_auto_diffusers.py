@@ -5,7 +5,8 @@ import pytest
 from images.context import ImageContext
 from images.models.auto_diffusion import main
 from images.schemas import ImageRequest
-from utils.utils import get_16_9_resolution, image_to_base64
+from tests.utils import image_to_base64, optional_image_to_base64
+from utils.utils import get_16_9_resolution
 
 # Define constants
 MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]

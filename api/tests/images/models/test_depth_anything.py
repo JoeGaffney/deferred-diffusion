@@ -5,6 +5,7 @@ import pytest
 from images.context import ImageContext
 from images.models.depth_anything import main
 from images.schemas import ImageRequest
+from tests.utils import image_to_base64, optional_image_to_base64
 from utils.utils import get_16_9_resolution
 
 
@@ -24,8 +25,7 @@ def test_models(mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="../test_data/color_v001.jpeg",
-                input_mask_path="",
+                image=image_to_base64("../test_data/color_v001.jpeg"),
                 output_image_path=output_name,
                 prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,
