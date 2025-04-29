@@ -55,6 +55,10 @@ def save_copy_with_timestamp(path):
         shutil.copy(path, timestamp_path)
 
 
+def ensure_divisible(value: int, divisor=16) -> int:
+    return (value // divisor) * divisor
+
+
 def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048):
     """Ensure the new dimensions do not exceed max_width and max_height"""
     width = min(image.size[0] * scale, max_width)

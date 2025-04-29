@@ -51,23 +51,23 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         # quantization_config=quant_config,
     )
 
-    onload_device = torch.device("cuda")
-    offload_device = torch.device("cpu")
+    # onload_device = torch.device("cuda")
+    # offload_device = torch.device("cpu")
 
-    apply_group_offloading(
-        text_encoder,
-        onload_device=onload_device,
-        offload_device=offload_device,
-        offload_type="block_level",
-        num_blocks_per_group=4,
-    )
+    # apply_group_offloading(
+    #     text_encoder,
+    #     onload_device=onload_device,
+    #     offload_device=offload_device,
+    #     offload_type="block_level",
+    #     num_blocks_per_group=4,
+    # )
 
-    transformer.enable_group_offload(
-        onload_device=onload_device,
-        offload_device=offload_device,
-        offload_type="block_level",
-        num_blocks_per_group=4,
-    )
+    # transformer.enable_group_offload(
+    #     onload_device=onload_device,
+    #     offload_device=offload_device,
+    #     offload_type="block_level",
+    #     num_blocks_per_group=4,
+    # )
 
     pipe = WanImageToVideoPipeline.from_pretrained(
         model_id,
@@ -77,9 +77,9 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         text_encoder=text_encoder,
         torch_dtype=torch_dtype,
     )
-    # pipe.enable_model_cpu_offload()
+    pipe.enable_model_cpu_offload()
     # Since we've offloaded the larger models alrady, we can move the rest of the model components to GPU
-    pipe.to("cuda")
+    # pipe.to("cuda")
 
     logger.warning(f"Loaded pipeline {model_id}")
     return pipe
@@ -111,9 +111,9 @@ def main(context: VideoContext):
         negative_prompt=negative_prompt,
         height=height,
         width=width,
-        num_frames=2,
+        num_frames=48,
         guidance_scale=2.0,
-        num_inference_steps=2,
+        num_inference_steps=15,
     ).frames[0]
 
     processed_path = context.save_video(output, fps=16)
