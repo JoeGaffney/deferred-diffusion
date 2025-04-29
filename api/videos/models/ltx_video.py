@@ -1,7 +1,10 @@
 from functools import lru_cache
 
 import torch
-from diffusers import LTXImageToVideoPipeline, LTXPipeline
+from diffusers.pipelines.ltx.pipeline_ltx_condition import (
+    LTXConditionPipeline,
+    LTXVideoCondition,
+)
 
 from common.logger import logger
 from utils.utils import ensure_divisible, get_16_9_resolution
@@ -10,19 +13,8 @@ from videos.schemas import VideoRequest
 
 
 @lru_cache(maxsize=1)
-def get_pipeline_image_to_video(model_id):
-    pipe = LTXImageToVideoPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
-    # pipe.vae.enable_tiling()
-    # pipe.vae.enable_slicing()
-    pipe.enable_model_cpu_offload()
-
-    logger.warning(f"Loaded pipeline {model_id}")
-    return pipe
-
-
-@lru_cache(maxsize=1)
 def get_pipeline(model_id):
-    pipe = LTXPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
+    pipe = LTXConditionPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
     # pipe.vae.enable_tiling()
     # pipe.vae.enable_slicing()
     pipe.enable_model_cpu_offload()
@@ -32,15 +24,21 @@ def get_pipeline(model_id):
 
 
 def image_to_video(context: VideoContext):
-    context.model = "Lightricks/LTX-Video"
-    pipe = get_pipeline_image_to_video(context.model)
+    context.model = "Lightricks/LTX-Video-0.9.5"
+    pipe = get_pipeline(context.model)
     image = context.load_image(division=32)
     generator = torch.Generator(device="cuda").manual_seed(context.data.seed)
     negative_prompt = "worst quality, inconsistent motion, blurry, jittery, distorted"
 
+    condition1 = LTXVideoCondition(
+        image=image,
+        frame_index=0,
+    )
+
     video = pipe.__call__(
         width=image.size[0],
         height=image.size[1],
+        conditions=[condition1],
         prompt=context.data.prompt,
         negative_prompt=negative_prompt,
         image=image,
@@ -55,16 +53,14 @@ def image_to_video(context: VideoContext):
 
 
 def text_to_video(context: VideoContext):
-    context.model = "Lightricks/LTX-Video"
+    context.model = "Lightricks/LTX-Video-0.9.5"
     pipe = get_pipeline(context.model)
     generator = torch.Generator(device="cuda").manual_seed(context.data.seed)
     negative_prompt = "worst quality, inconsistent motion, blurry, jittery, distorted"
 
     # Ensure dimensions are divisible by 32
-    width, height = get_16_9_resolution("540p")
     width = ensure_divisible(context.data.max_width, divisor=32)
     height = ensure_divisible(context.data.max_height, divisor=32)
-    print(f"Adjusted dimensions: width={width}, height={height}")
 
     video = pipe.__call__(
         width=width,
@@ -72,9 +68,9 @@ def text_to_video(context: VideoContext):
         prompt=context.data.prompt,
         negative_prompt=negative_prompt,
         num_frames=context.data.num_frames,
-        # num_inference_steps=context.data.num_inference_steps,
-        # generator=generator,
-        # guidance_scale=context.data.guidance_scale,
+        num_inference_steps=context.data.num_inference_steps,
+        generator=generator,
+        guidance_scale=context.data.guidance_scale,
     ).frames[0]
 
     processed_path = context.save_video(video)
@@ -82,7 +78,6 @@ def text_to_video(context: VideoContext):
 
 
 def main(context: VideoContext):
-    print("context.data.input_image_path", context.data.input_image_path)
     if context.data.input_image_path != "":
         return image_to_video(context)
 

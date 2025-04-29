@@ -1,4 +1,5 @@
 import base64
+import io
 import os
 from typing import Optional
 
@@ -28,6 +29,49 @@ def save_all_tmp_images(node):
     rop_nodes = [child for child in node.children() if child.type().name() == "rop_image"]
     for rop_node in rop_nodes:
         save_tmp_image(node, rop_node.name())
+
+
+def get_input_cop_data_in_base64(node, input_name, fmt="PNG"):
+    """
+    Converts the image from a specified input of the node to a Base64-encoded string.
+    """
+
+    # Validate the input name
+    valid_inputs = [i.outputLabel() for i in node.inputConnections()]
+    if input_name not in valid_inputs:
+        hou.ui.displayMessage(f"Input '{input_name}' does not exist on node {node.path()}.")
+        return None
+
+    # Find the connected COP node
+    cop_node = None
+    for i in node.inputConnections():
+        if i.outputLabel() == input_name:
+            cop_node = i.output()
+            break
+
+    if cop_node is None:
+        hou.ui.displayMessage(f"No COP node connected to input '{input_name}' on node {node.path()}.")
+        return None
+
+    # Cook the COP node and get the image data
+    try:
+        cop_node.cook(force=True)
+        img = cop_node.image()
+        if img is None:
+            raise ValueError("Image data is empty or failed to load.")
+    except Exception as e:
+        hou.ui.displayMessage(f"Failed to cook COP node or retrieve image: {str(e)}")
+        return None
+
+    # Convert the image to Base64
+    try:
+        buf = io.BytesIO()
+        img.save(buf, fmt)
+        buf.seek(0)  # Move to the beginning of the buffer to prepare for reading
+        return base64.b64encode(buf.read()).decode("ascii")
+    except Exception as e:
+        hou.ui.displayMessage(f"Failed to convert image to Base64: {str(e)}")
+        return None
 
 
 def image_to_base64(image_path: str, debug=False) -> Optional[str]:
