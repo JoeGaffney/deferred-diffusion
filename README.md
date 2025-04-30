@@ -69,6 +69,7 @@ This structure balances **clarity, maintainability, and scalability**, making it
 # Agentic
 
 Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing.
+
 # Setup windows
 
 ```sh
@@ -128,3 +129,7 @@ HOUDINI_PATH = C:/development/deferred-diffusion/hda;&
 HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/hda;&
 PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
 ```
+
+# Docker
+
+docker-compose up --build
