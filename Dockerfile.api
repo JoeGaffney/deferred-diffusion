@@ -18,10 +18,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install additional dependencies
 RUN pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git --no-deps --ignore-requires-python
 RUN pip install sam2
+
+# should be included in the base image pytorch/pytorch:latest
 #, torchvision, torchaudio
 
-# Copy the rest of the application
-COPY . .
+# Copy only specific directories instead of everything
+COPY api/ ./api/
+COPY test_data/ ./test_data/
+COPY tmp/ ./tmp/
 
 # Set the working directory to the api folder
 WORKDIR /app/api

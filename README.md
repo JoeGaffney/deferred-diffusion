@@ -132,4 +132,25 @@ PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
 
 # Docker
 
+docker-compose --build
 docker-compose up --build
+
+## WSL mounting hfcache drive windows
+
+Mount the Y: Drive Inside Ubuntu
+
+- wsl --install
+
+Once you have Ubuntu running, do the following inside the Ubuntu terminal:
+
+Create a directory for mounting:
+
+- sudo mkdir -p /data/hf_cache
+
+Mount your Y: drive:
+
+- sudo mount -t drvfs Y: /data/hf_cache -o metadata
+
+ls /data/hf_cache/HF_HOME
+
+You should now see the contents of your Y: drive (if the HF_HOME folder exists there).
