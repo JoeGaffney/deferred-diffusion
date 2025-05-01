@@ -1,4 +1,6 @@
+import base64
 import copy
+import os
 
 from fastapi import APIRouter, HTTPException
 
@@ -38,4 +40,11 @@ async def create(request: ImageRequest):
         else:
             result = auto_diffusion(context, mode=auto_mode)
 
-    return ImageResponse(data=result)
+    # NOTE we could allways keep in bytes or convert from the pil image to base64
+    if isinstance(result, str) and os.path.isfile(result):
+        with open(result, "rb") as image_file:
+            base64_data = base64.b64encode(image_file.read())
+
+        return ImageResponse(data=result, base64_data=base64_data)
+
+    raise HTTPException(status_code=500, detail="Image generation failed")

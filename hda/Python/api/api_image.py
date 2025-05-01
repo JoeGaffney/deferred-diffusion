@@ -7,6 +7,7 @@ from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import Unset
 from utils import (
+    base64_to_image,
     extract_and_format_parameters,
     get_control_nets,
     get_ip_adapters,
@@ -22,6 +23,9 @@ def main(node):
 
     params = extract_and_format_parameters(node)
     model = ImageRequestModel(params.get("model", "sd1.5"))
+    output_image_path = params.get("output_image_path", Unset)
+    if not output_image_path:
+        raise ValueError("Output image path is required.")
 
     body = ImageRequest(
         model=model,
@@ -52,6 +56,8 @@ def main(node):
         hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
         return
 
+    # Save the image to the specified path before reloading the outputs
+    base64_to_image(response.parsed.base64_data, output_image_path)
     reload_outputs(node, "output_read")
 
 

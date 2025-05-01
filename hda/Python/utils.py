@@ -99,6 +99,35 @@ def image_to_base64(image_path: str, debug=False) -> Optional[str]:
         raise ValueError(f"Error encoding image {image_path}: {str(e)}") from e
 
 
+def base64_to_image(base64_str: str, output_path: str, create_dir: bool = True):
+    """Convert a base64 string to an image and save it to the specified path."""
+    try:
+        # Handle both string and bytes input
+        if isinstance(base64_str, str):
+            # Remove data URI prefix if present (e.g., "data:image/jpeg;base64,")
+            if "," in base64_str and ";base64," in base64_str:
+                base64_str = base64_str.split(",", 1)[1]
+            # Convert string to bytes if needed
+            base64_bytes = base64_str.encode("utf-8")
+        else:
+            base64_bytes = base64_str
+
+        # Decode the base64 to binary
+        image_bytes = base64.b64decode(base64_bytes)
+
+        # Create directory if it doesn't exist and create_dir is True
+        dir_path = os.path.dirname(output_path)
+        if create_dir and dir_path and not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        # Write the bytes to the specified file path
+        with open(output_path, "wb") as image_file:
+            image_file.write(image_bytes)
+
+    except Exception as e:
+        raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
+
+
 def reload_outputs(node, node_name):
     tmp_image_node = node.node(node_name)
     if tmp_image_node is None:

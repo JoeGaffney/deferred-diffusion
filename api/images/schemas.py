@@ -74,7 +74,7 @@ class ImageRequest(BaseModel):
 
 class ImageResponse(BaseModel):
     data: str
-    image: Optional[Base64Bytes] = None  # Optional Base64 image string
+    base64_data: Base64Bytes
 
 
 class ModelConfig(BaseModel):
