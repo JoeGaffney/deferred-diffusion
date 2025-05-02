@@ -66,14 +66,12 @@ class ImageRequest(BaseModel):
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     num_inference_steps: int = 25
     optimize_low_vram: bool = False
-    output_image_path: str = ""
     prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
     strength: float = 0.5
 
 
 class ImageResponse(BaseModel):
-    data: str
     base64_data: Base64Bytes
 
 

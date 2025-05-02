@@ -1,8 +1,5 @@
-import base64
-import copy
-import os
-
 from fastapi import APIRouter, HTTPException
+from PIL import Image
 
 from images.context import ImageContext
 from images.models.auto_diffusion import main as auto_diffusion
@@ -11,6 +8,7 @@ from images.models.depth_anything import main as depth_anything
 from images.models.segment_anything import main as segment_anything
 from images.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
 from images.schemas import ImageRequest, ImageResponse
+from utils.utils import pil_to_base64
 
 router = APIRouter(prefix="/images", tags=["Images"])
 
@@ -40,11 +38,9 @@ async def create(request: ImageRequest):
         else:
             result = auto_diffusion(context, mode=auto_mode)
 
-    # NOTE we could allways keep in bytes or convert from the pil image to base64
-    if isinstance(result, str) and os.path.isfile(result):
-        with open(result, "rb") as image_file:
-            base64_data = base64.b64encode(image_file.read())
-
-        return ImageResponse(data=result, base64_data=base64_data)
+    if isinstance(result, Image.Image):
+        # save a temp file for now
+        context.save_image(result)
+        return ImageResponse(base64_data=pil_to_base64(result))
 
     raise HTTPException(status_code=500, detail="Image generation failed")

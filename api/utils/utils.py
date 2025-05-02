@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import Literal, Optional, Tuple
 
 import torch
-from diffusers.utils import load_image
 from PIL import Image
 from pydantic import Base64Bytes
 
@@ -94,13 +93,19 @@ def load_image_if_exists(base64_bytes: Optional[Base64Bytes]) -> Optional[Image.
 
 
 def convert_pil_to_bytes(image: Image.Image) -> io.BytesIO:
-    """Convert PIL Image to bytes for OpenAI API."""
+    """Convert PIL Image to bytes."""
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format="PNG")
     img_byte_arr.seek(0)
-    img_byte_arr.name = "image.png"  # Crucial: tells OpenAI the correct MIME type
+    img_byte_arr.name = "image.png"  # Crucial: tells the correct MIME type
 
     return img_byte_arr
+
+
+def pil_to_base64(image: Image.Image) -> bytes:
+    """Convert PIL Image to base64 encoded bytes."""
+    img_byte_arr = convert_pil_to_bytes(image)
+    return base64.b64encode(img_byte_arr.getvalue())
 
 
 def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:

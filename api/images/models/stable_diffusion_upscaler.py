@@ -30,8 +30,7 @@ def upscale_call(pipe, context: ImageContext, scale=4):
     ).images[0]
 
     processed_image = context.resize_image_to_orig(processed_image, scale=scale)
-    processed_path = context.save_image(processed_image)
-    return processed_path
+    return processed_image
 
 
 def main(context: ImageContext, mode="upscaler"):

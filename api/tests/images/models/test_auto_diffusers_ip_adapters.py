@@ -3,13 +3,14 @@ import os
 import pytest
 import torch
 from diffusers import AutoPipelineForText2Image
+from PIL import Image
 
 from common.pipeline_helpers import optimize_pipeline
 from images.context import ImageContext
 from images.models.auto_diffusion import main
 from images.schemas import ImageRequest, IpAdapterModel
 from tests.utils import image_to_base64, optional_image_to_base64
-from utils.utils import get_16_9_resolution
+from utils.utils import ensure_path_exists, get_16_9_resolution
 
 # Define constants
 MODES = ["text_to_image", "img_to_img"]
@@ -41,12 +42,11 @@ def test_style(model_id, mode):
     if os.path.exists(output_name):
         os.remove(output_name)
 
-    main(
+    result = main(
         ImageContext(
             ImageRequest(
                 model=model_id,
                 image=None if mode == "text_to_image" else image_to_base64("../test_data/color_v001.jpeg"),
-                output_image_path=output_name,
                 prompt="a cat, masterpiece, best quality, high quality",
                 negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
                 strength=0.75,
@@ -61,6 +61,10 @@ def test_style(model_id, mode):
         ),
         mode=mode,
     )
+
+    if isinstance(result, Image.Image):
+        ensure_path_exists(output_name)
+        result.save(output_name)
 
     # Check if output file exists
     assert os.path.exists(output_name), f"Output file {output_name} was not created."
@@ -77,11 +81,10 @@ def test_face(model_id, mode):
     if os.path.exists(output_name):
         os.remove(output_name)
 
-    main(
+    result = main(
         ImageContext(
             ImageRequest(
                 model=model_id,
-                output_image_path=output_name,
                 prompt="a man walking, masterpiece, best quality, high quality",
                 negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
                 strength=0.75,
@@ -97,6 +100,10 @@ def test_face(model_id, mode):
         ),
         mode=mode,
     )
+
+    if isinstance(result, Image.Image):
+        ensure_path_exists(output_name)
+        result.save(output_name)
 
     # Check if output file exists
     assert os.path.exists(output_name), f"Output file {output_name} was not created."

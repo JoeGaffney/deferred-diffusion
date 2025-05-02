@@ -40,11 +40,7 @@ def text_to_image_call(client: OpenAI, context: ImageContext):
 
     image_bytes = base64.b64decode(image_base64)
     processed_image = Image.open(io.BytesIO(image_bytes))
-
-    # not sure if we should resize the image again??
-    # processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image)
-    return processed_path
+    return processed_image
 
 
 def image_to_image_call(client: OpenAI, context: ImageContext):
@@ -80,11 +76,7 @@ def image_to_image_call(client: OpenAI, context: ImageContext):
 
     image_bytes = base64.b64decode(image_base64)
     processed_image = Image.open(io.BytesIO(image_bytes))
-
-    # not sure if we should resize the image again??
-    # processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image)
-    return processed_path
+    return processed_image
 
 
 def inpainting_call(client: OpenAI, context: ImageContext):
@@ -115,17 +107,14 @@ def inpainting_call(client: OpenAI, context: ImageContext):
 
     image_bytes = base64.b64decode(image_base64)
     processed_image = Image.open(io.BytesIO(image_bytes))
-
-    # not sure if we should resize the image again??
-    # processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image)
-    return processed_path
+    return processed_image
 
 
 def main(
     context: ImageContext,
-    mode="text",
-):
+    mode="text_to_image",
+) -> Image.Image:
+
     client = OpenAI()
 
     if mode == "text_to_image":
@@ -138,4 +127,4 @@ def main(
     elif mode == "img_to_img_inpainting":
         return inpainting_call(client, context)
 
-    return "invalid mode"
+    raise ValueError(f"Invalid mode {mode} for OpenAI API")

@@ -55,7 +55,5 @@ def main(context: ImageContext, mode="depth"):
     depth_map_8bit = (depth_map_normalized * 255).astype("uint8")
     processed_image = Image.fromarray(depth_map_8bit)
 
-    processed_path = context.save_image(processed_image)
-
     update_device(pipe, "cpu")
-    return processed_path
+    return processed_image
