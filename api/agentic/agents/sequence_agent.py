@@ -64,6 +64,7 @@ def get_agent():
             prompt="Generate a detailed visual description of the scene in the image. To be used for storyboarding by a script agent.",
             image_reference_image=ctx.deps.data.scene_reference_image,
         )
+
         if result == "":
             return ""
         return f"Scene context: {result}"
@@ -113,15 +114,3 @@ def main(request: SequenceRequest) -> SequenceResponse:
     log_pretty("History", history)
     log_pretty("Result", result.data.model_dump())
     return result.data
-
-
-if __name__ == "__main__":
-    main(
-        SequenceRequest(
-            prompt="Create a sequence about an adventure.",
-            refinement_prompt="Refine all 'description' fields for compatibility with SDXL model prompts. Ensure each description should be concise and describe the key things to generate the image, scene, character, camera angle, mood",
-            scene_reference_image="../test_data/color_v001.jpeg",
-            protagonist_reference_image="../test_data/face_v001.jpeg",
-            antagonist_reference_image="../test_data/face_v002.jpeg",
-        )
-    )

@@ -2,15 +2,14 @@ import time
 
 import pytest
 
+from tests.utils import image_to_base64
 from texts.context import TextContext
 from texts.models.qwen_2_5_vl_instruct import main
 from texts.schemas import TextRequest
-from utils.utils import free_gpu_memory
 
-
-@pytest.fixture
-def input_paths():
-    return {"image": "../test_data/color_v001.jpeg", "video": "../test_data/video_v001.mp4"}
+image_a = image_to_base64("../test_data/color_v001.jpeg")
+image_b = image_to_base64("../test_data/style_v001.jpeg")
+video_a = image_to_base64("../test_data/video_v001.mp4")
 
 
 def validate_result(result, expected_keyword=None):
@@ -31,54 +30,52 @@ def validate_result(result, expected_keyword=None):
         assert expected_keyword.lower() in result["response"].lower(), f"Expected '{expected_keyword}' in response"
 
 
-def test_image_description(input_paths):
+def test_image_description():
     data = TextRequest(
         messages=[
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": input_paths["image"]},
                     {"type": "text", "text": "Describe this image."},
                 ],
             }
-        ]
+        ],
+        images=[image_a],
     )
     result = main(TextContext(data))
     validate_result(result)
 
 
-def test_image_prompt_generation(input_paths):
-    free_gpu_memory(threshold_percent=10)  # Free up GPU memory if needed
+def test_image_prompt_generation():
     data = TextRequest(
         messages=[
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": input_paths["image"]},
                     {"type": "text", "text": "Give me a prompt for SD image generation to generate similar images."},
                 ],
             }
-        ]
+        ],
+        images=[image_a],
     )
     result = main(TextContext(data))
     validate_result(result)
 
 
-def test_image_video_comparison(input_paths):
+def test_image_video_comparison():
     data = TextRequest(
         messages=[
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": input_paths["image"]},
-                    {"type": "video", "video": input_paths["video"]},
                     {
                         "type": "text",
-                        "text": "Tell me the differences between the image and video. I want to know the differences not the content of each.",
+                        "text": "Tell me the differences between the images and videos. I want to know the differences not the content of each.",
                     },
                 ],
             }
-        ]
+        ],
+        images=[image_a, image_b],
     )
     result = main(TextContext(data))
     validate_result(result)

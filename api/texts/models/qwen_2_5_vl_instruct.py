@@ -7,7 +7,7 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 from common.logger import log_pretty, logger
 from texts.context import TextContext
-from utils.utils import free_gpu_memory
+from utils.utils import free_gpu_memory, load_image_from_base64
 
 
 @lru_cache(maxsize=1)
@@ -31,12 +31,25 @@ def main(context: TextContext):
     model = "Qwen/Qwen2.5-VL-3B-Instruct"
     model, processor = get_pipeline(context.data.model)
     messages = context.data.messages
+    original_messages = copy.deepcopy(messages)
+
+    # apply image and video to last message
+    last_message = messages[-1]
+    for image in context.data.images:
+        last_message_content = last_message.get("content", [])
+        pil_image = load_image_from_base64(image)
+        last_message_content.append(
+            {
+                "type": "image",
+                "image": pil_image,
+            }
+        )
+    logger.warning(f"Running qwen with {len(context.data.images)} images and {len(context.data.videos)} videos")
 
     # Preparation for inference
     text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
     # only reprocess the images and videos in the last message
-    last_message = messages[-1]
     try:
         image_inputs, video_inputs = process_vision_info([last_message])
     except Exception as e:
@@ -71,7 +84,8 @@ def main(context: TextContext):
         model = model.to("cpu")  # Move model back to CPU
         inputs = inputs.to("cpu")  # Move inputs back to CPU
 
-    chain_of_thought = copy.deepcopy(messages)
+    # we keep only the original as we may have altered adding video and image to the last message
+    chain_of_thought = original_messages
     chain_of_thought.append(
         {
             "role": "assistant",
