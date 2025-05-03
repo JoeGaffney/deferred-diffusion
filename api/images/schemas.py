@@ -11,7 +11,13 @@ class ControlNetSchema(BaseModel):
         "canny",
     ]
     conditioning_scale: float = 0.5
-    image: str  #  Base64 image string
+    image: str = Field(
+        description="Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/png, image/jpg, image/jpeg",  # Or "image/*" if you accept multiple formats
+        },
+    )
 
 
 class IpAdapterModelConfig(BaseModel):
@@ -34,8 +40,21 @@ class IpAdapterModel(BaseModel):
         "style-plus",
         "face",
     ]
-    image: str  #  Base64 image string
-    mask: Optional[str] = None  # Optional Base64 mask string
+    image: str = Field(
+        description="Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
+    mask: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
     scale: float = 0.5
     scale_layers: str = "all"
 
@@ -57,10 +76,24 @@ class ImageRequest(BaseModel):
     ]
     controlnets: list[ControlNetSchema] = []
     guidance_scale: float = 5.0
-    image: Optional[str] = None  # Optional Base64 image string
+    image: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
     inpainting_full_image: bool = True
     ip_adapters: list[IpAdapterModel] = []
-    mask: Optional[str] = None  # Optional Base64 mask string
+    mask: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
     max_height: int = 2048
     max_width: int = 2048
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
@@ -72,7 +105,7 @@ class ImageRequest(BaseModel):
 
 
 class ImageResponse(BaseModel):
-    base64_data: str
+    base64_data: Base64Bytes
 
 
 class ModelConfig(BaseModel):

@@ -40,7 +40,6 @@ def main(node):
         negative_prompt=params.get("negative_prompt", Unset),
         num_inference_steps=params.get("num_inference_steps", Unset),
         optimize_low_vram=params.get("optimize_low_vram", Unset),
-        output_image_path=params.get("output_image_path", Unset),
         prompt=params.get("prompt", Unset),
         seed=params.get("seed", Unset),
         strength=params.get("strength", Unset),
