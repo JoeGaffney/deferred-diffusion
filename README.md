@@ -88,8 +88,26 @@ Pytest is used for integration tests confirming the models run.
 
 ```
 cd api
-pytest -v
-pytest .\tests\texts\models\test_qwen_2_5_vl_instruct.py
+```
+
+To run all
+
+```
+pytest -vs
+```
+
+Images and texts
+
+```
+pytest -vs .\tests\images\models\
+pytest -vs .\tests\texts\models\
+```
+
+Video and agent tests can be slow and may have a cost when running.
+
+```
+pytest -vs .\tests\texts\videos\
+pytest -vs .\tests\agentic\agents\
 ```
 
 ## To test running models directly
@@ -118,7 +136,7 @@ You can install like this to put on roaming path.
 "C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
 ```
 
-Or use rez or any other way to get the modules in houdini.
+Or use rez or any other way preferred way to get the modules in houdini.
 
 ## Env file
 
@@ -132,25 +150,9 @@ PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
 
 # Docker
 
-docker-compose --build
-docker-compose up --build
+- docker-compose --build
+- docker-compose up
 
-## WSL mounting hfcache drive windows
+Combined
 
-Mount the Y: Drive Inside Ubuntu
-
-- wsl --install
-
-Once you have Ubuntu running, do the following inside the Ubuntu terminal:
-
-Create a directory for mounting:
-
-- sudo mkdir -p /data/hf_cache
-
-Mount your Y: drive:
-
-- sudo mount -t drvfs Y: /data/hf_cache -o metadata
-
-ls /data/hf_cache/HF_HOME
-
-You should now see the contents of your Y: drive (if the HF_HOME folder exists there).
+- docker-compose up --build
