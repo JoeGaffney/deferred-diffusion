@@ -1,20 +1,30 @@
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import Base64Bytes, BaseModel, Field
 
 
 class VideoRequest(BaseModel):
-    guidance_scale: float = 10.0
-    input_image_path: str = "../tmp/input.png"
-    max_height: int = 2048
-    max_width: int = 2048
-    model: str
+    model: Literal[
+        "LTX-Video",
+        "HunyuanVideo",
+        "Wan2.1",
+        "runway/gen3a_turbo",
+        "runway/gen4_turbo",
+    ]
+    image: str = Field(
+        description="Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
+    prompt: str = "Slow camera zoom in, 4k, high quality, cinematic, realistic"
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
+    guidance_scale: float = 5.0
     num_frames: int = 48
     num_inference_steps: int = 25
-    output_video_path: str = "../tmp/outputs/processed.mp4"
-    prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
-    strength: float = 0.5
 
 
 class VideoResponse(BaseModel):
-    data: str
+    base64_data: Base64Bytes

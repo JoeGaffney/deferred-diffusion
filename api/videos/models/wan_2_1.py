@@ -22,7 +22,7 @@ from transformers import (
     UMT5EncoderModel,
 )
 
-from utils.utils import get_16_9_resolution
+from utils.utils import get_16_9_resolution, resize_image
 from videos.context import VideoContext
 from videos.schemas import VideoRequest
 
@@ -86,56 +86,25 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
 
 
 def main(context: VideoContext):
-    pipe = get_pipeline(context.model)
-    # pipe.to("cuda")
+    pipe = get_pipeline()
+    image = context.image
+    if image is None:
+        raise ValueError("Image not found. Please provide a valid image path.")
 
-    image_orig = context.load_image(division=16)
-    image = load_image(
-        "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/astronaut.jpg"
-    )
-    # Ensure dimensions are divisible by 16
-    width = (image_orig.width // 16) * 16
-    height = (image_orig.height // 16) * 16
-    print(f"Adjusted dimensions: width={width}, height={height}")
-
-    image = image.resize((width, height))
-    prompt = (
-        "An astronaut hatching from an egg, on the surface of the moon, the darkness and depth of space realised in "
-        "the background. High quality, ultrarealistic detail and breath-taking movie-like camera shot."
-    )
-    negative_prompt = "Bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards"
+    width, height = get_16_9_resolution("540p")
+    image = resize_image(image, 16, 1.0, width, height)
 
     output = pipe(
+        width=image.size[0],
+        height=image.size[1],
         image=image,
-        prompt=prompt,
-        negative_prompt=negative_prompt,
-        height=height,
-        width=width,
-        num_frames=48,
-        guidance_scale=2.0,
-        num_inference_steps=15,
+        prompt=context.data.prompt,
+        negative_prompt=context.data.negative_prompt,
+        num_inference_steps=context.data.num_inference_steps,
+        num_frames=context.data.num_frames,
+        guidance_scale=context.data.guidance_scale,
+        generator=context.get_generator(),
     ).frames[0]
 
     processed_path = context.save_video(output, fps=16)
     return processed_path
-
-
-# NOTE this is still wip as invesigating the performance
-if __name__ == "__main__":
-    width, height = get_16_9_resolution("480p")
-    # Available models: Wan-AI/Wan2.1-I2V-14B-480P-Diffusers, Wan-AI/Wan2.1-I2V-14B-720P-Diffusers
-    model_id = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
-    main(
-        VideoContext(
-            VideoRequest(
-                model=model_id,
-                input_image_path="../tmp/tornado_v001.jpg",
-                output_video_path="../tmp/output/wan_2_1.mp4",
-                strength=0.2,
-                prompt="Detailed, 8k, photorealistic, tornado, enchance keep original elements",
-                num_inference_steps=50,
-                max_width=864,
-                max_height=480,
-            )
-        )
-    )
