@@ -71,27 +71,20 @@ def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048)
     return image.resize((width, height))
 
 
-def load_image_from_base64(base64_bytes: Base64Bytes) -> Image.Image:
-
-    # ensure decoded bytes as some times passing through mutliple pydantic models
-    # can cause the base64 to be a string instead of bytes
-    tmp_bytes = base64_bytes
-    try:
-        tmp_bytes = base64.b64decode(base64_bytes)
-    except:
-        pass
+def load_image_from_base64(base64_bytes: str) -> Image.Image:
 
     try:
         # Convert bytes to a PIL image
+        tmp_bytes = base64.b64decode(base64_bytes)
         image = Image.open(io.BytesIO(tmp_bytes))
         image = image.convert("RGB")  # Ensure the image is in RGB mode
         logger.info(f"Image loaded from Base64 bytes, size: {image.size}")
         return image
     except Exception as e:
-        raise ValueError(f"Invalid Base64 data: {type(base64_bytes)} {e} {base64_bytes}") from e
+        raise ValueError(f"Invalid Base64 data: {type(base64_bytes)} {e}") from e
 
 
-def load_image_if_exists(base64_bytes: Optional[Base64Bytes]) -> Optional[Image.Image]:
+def load_image_if_exists(base64_bytes: Optional[str]) -> Optional[Image.Image]:
     """Load image from Base64 string if it exists."""
     if (base64_bytes is None) or (base64_bytes == ""):
         return None
