@@ -4,12 +4,12 @@ import shutil
 from tests.utils import image_to_base64
 from utils.utils import ensure_path_exists
 from videos.context import VideoContext
-from videos.models.ltx_video import main
+from videos.models.wan_2_1 import main
 from videos.schemas import VideoRequest
 
 
 def test_image_to_video():
-    output_name = f"../tmp/output/videos/LtxVideo.mp4"
+    output_name = f"../tmp/output/videos/Wan2_1.mp4"
     ensure_path_exists(output_name)
 
     # Delete existing file if it exists
@@ -19,12 +19,12 @@ def test_image_to_video():
     result = main(
         VideoContext(
             VideoRequest(
-                model="LTX-Video",
+                model="Wan2.1",
                 image=image_to_base64("../test_data/color_v002.png"),
                 prompt="A man with short gray hair plays a red electric guitar.",
-                num_inference_steps=20,
+                num_inference_steps=5,
                 guidance_scale=4,
-                num_frames=24,
+                num_frames=8,
             )
         )
     )

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from utils.utils import mp4_to_base64
 from videos.context import VideoContext
 from videos.models.hunyuan_video import main as hunyuan_video_main
 from videos.models.ltx_video import main as ltx_video_main
@@ -28,4 +29,4 @@ async def create(request: VideoRequest):
         raise HTTPException(status_code=400, detail=f"Invalid model {request.model}")
 
     result = main(context)
-    return VideoResponse(data=result)
+    return VideoResponse(base64_data=mp4_to_base64(result))
