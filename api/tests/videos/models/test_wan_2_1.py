@@ -22,9 +22,9 @@ def test_image_to_video():
                 model="Wan2.1",
                 image=image_to_base64("../test_data/color_v002.png"),
                 prompt="A man with short gray hair plays a red electric guitar.",
-                num_inference_steps=5,
+                num_inference_steps=10,
                 guidance_scale=4,
-                num_frames=8,
+                num_frames=12,
             )
         )
     )

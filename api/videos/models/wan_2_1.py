@@ -22,27 +22,35 @@ from transformers import (
     UMT5EncoderModel,
 )
 
-from utils.utils import get_16_9_resolution, resize_image
+from utils.utils import cache_info_decorator, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 from videos.schemas import VideoRequest
 
-quant_config = QuantoConfig(weights="int8")
+# quant_config = QuantoConfig(weights="int8")
 
 
-# @lru_cache(maxsize=1)
+@cache_info_decorator
+@lru_cache(maxsize=1)
 def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=torch.float16):
+    quant_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch_dtype)
 
     image_encoder = CLIPVisionModel.from_pretrained(model_id, subfolder="image_encoder", torch_dtype=torch_dtype)
     vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch_dtype)
 
     gguf_transformer_path = hf_hub_download(
-        repo_id="city96/Wan2.1-I2V-14B-480P-gguf", filename="wan2.1-i2v-14b-480p-Q3_K_S.gguf"
+        repo_id="city96/Wan2.1-I2V-14B-480P-gguf", filename="wan2.1-i2v-14b-480p-Q4_0.gguf"
     )
     transformer = WanTransformer3DModel.from_single_file(
         gguf_transformer_path,
-        quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16),
+        quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
         torch_dtype=torch_dtype,
     )
+    # transformer = WanTransformer3DModel.from_pretrained(
+    #     model_id,
+    #     subfolder="transformer",
+    #     quantization_config=quant_config,
+    #     torch_dtype=torch_dtype,
+    # )
 
     text_encoder = UMT5EncoderModel.from_pretrained(
         model_id,
@@ -50,24 +58,6 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         torch_dtype=torch_dtype,
         # quantization_config=quant_config,
     )
-
-    # onload_device = torch.device("cuda")
-    # offload_device = torch.device("cpu")
-
-    # apply_group_offloading(
-    #     text_encoder,
-    #     onload_device=onload_device,
-    #     offload_device=offload_device,
-    #     offload_type="block_level",
-    #     num_blocks_per_group=4,
-    # )
-
-    # transformer.enable_group_offload(
-    #     onload_device=onload_device,
-    #     offload_device=offload_device,
-    #     offload_type="block_level",
-    #     num_blocks_per_group=4,
-    # )
 
     pipe = WanImageToVideoPipeline.from_pretrained(
         model_id,
@@ -78,8 +68,6 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         torch_dtype=torch_dtype,
     )
     pipe.enable_model_cpu_offload()
-    # Since we've offloaded the larger models alrady, we can move the rest of the model components to GPU
-    # pipe.to("cuda")
 
     logger.warning(f"Loaded pipeline {model_id}")
     return pipe

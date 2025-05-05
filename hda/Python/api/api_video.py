@@ -3,7 +3,15 @@ import hou
 from config import client
 from generated.api_client.api.videos import videos_create
 from generated.api_client.models import VideoRequest, VideoResponse
-from utils import extract_and_format_parameters, reload_outputs, save_tmp_image
+from generated.api_client.models.video_request_model import VideoRequestModel
+from generated.api_client.types import Unset
+from utils import (
+    base64_to_image,
+    extract_and_format_parameters,
+    image_to_base64,
+    reload_outputs,
+    save_tmp_image,
+)
 
 
 def main(node):
@@ -11,8 +19,24 @@ def main(node):
     save_tmp_image(node, "tmp_input_image")
 
     params = extract_and_format_parameters(node)
-    valid_params = {k: v for k, v in params.items() if k in VideoRequest.__annotations__}
-    body = VideoRequest(**valid_params)
+    output_video_path = params.get("output_video_path", Unset)
+    if not output_video_path:
+        raise ValueError("Output image path is required.")
+
+    image = image_to_base64(params.get("input_image_path", ""))
+    if not image:
+        raise ValueError("Input image is required.")
+
+    body = VideoRequest(
+        model=VideoRequestModel(params.get("model", "LTX-Video")),
+        image=image,
+        prompt=params.get("prompt", ""),
+        seed=params.get("seed", 0),
+        negative_prompt=params.get("negative_prompt", Unset),
+        num_frames=params.get("num_frames", Unset),
+        num_inference_steps=params.get("num_inference_steps", Unset),
+        guidance_scale=params.get("guidance_scale", Unset),
+    )
 
     # make the API call
     response = videos_create.sync_detailed(client=client, body=body)
@@ -24,4 +48,6 @@ def main(node):
         hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
         return
 
+    # Save the image to the specified path before reloading the outputs
+    base64_to_image(response.parsed.base64_data, output_video_path)
     reload_outputs(node, "output_read_video")
