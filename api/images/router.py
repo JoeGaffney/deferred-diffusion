@@ -1,6 +1,5 @@
-import copy
-
 from fastapi import APIRouter, HTTPException
+from PIL import Image
 
 from images.context import ImageContext
 from images.models.auto_diffusion import main as auto_diffusion
@@ -9,6 +8,7 @@ from images.models.depth_anything import main as depth_anything
 from images.models.segment_anything import main as segment_anything
 from images.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
 from images.schemas import ImageRequest, ImageResponse
+from utils.utils import pil_to_base64
 
 router = APIRouter(prefix="/images", tags=["Images"])
 
@@ -28,9 +28,9 @@ async def create(request: ImageRequest):
     else:
         # auto_diffusion
         auto_mode = "img_to_img"
-        if context.data.input_mask_path != "":
+        if context.data.mask:
             auto_mode = "img_to_img_inpainting"
-        if context.data.input_image_path == "":
+        if context.data.image is None:
             auto_mode = "text_to_image"
 
         if family == "openai":
@@ -38,4 +38,9 @@ async def create(request: ImageRequest):
         else:
             result = auto_diffusion(context, mode=auto_mode)
 
-    return ImageResponse(data=result)
+    if isinstance(result, Image.Image):
+        # save a temp file for now
+        context.save_image(result)
+        return ImageResponse(base64_data=pil_to_base64(result))
+
+    raise HTTPException(status_code=500, detail="Image generation failed")

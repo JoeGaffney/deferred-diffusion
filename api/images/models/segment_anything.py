@@ -101,5 +101,4 @@ def main(context: ImageContext, mode="mask"):
         # Add the masked color with clamping (scale=1.0 ensures no overflow beyond 255)
         combined_clown_mask = ImageChops.add(combined_clown_mask, masked_color, scale=1.0, offset=0)
 
-    processed_path = context.save_image(combined_clown_mask)
-    return processed_path
+    return combined_clown_mask

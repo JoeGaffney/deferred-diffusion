@@ -6,7 +6,8 @@ from config import MAX_ADDITIONAL_IMAGES, client
 from generated.api_client.api.texts import texts_create
 from generated.api_client.models.text_request import TextRequest
 from generated.api_client.models.text_response import TextResponse
-from utils import extract_and_format_parameters, save_tmp_image
+from generated.api_client.types import Unset
+from utils import extract_and_format_parameters, image_to_base64, save_tmp_image
 
 
 def split_text(text, max_length=120):
@@ -30,24 +31,24 @@ def split_text(text, max_length=120):
     return "\n".join(lines)
 
 
+def get_images(params):
+    images = []
+    for i in range(MAX_ADDITIONAL_IMAGES):
+        if f"image_{i}_path" in params:
+            image = image_to_base64(params.get(f"image_{i}_path", ""))
+            if image:
+                images.append(image)
+
+    return images
+
+
 def get_messages(params):
 
     # get the current message
-    message_content = []
-
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        if f"image_{i}_path" in params:
-            message_content.append(
-                {
-                    "type": "image",
-                    "image": params[f"image_{i}_path"],
-                }
-            )
-    message_content.append({"type": "text", "text": params.get("prompt", "")})
     message = [
         {
             "role": "user",
-            "content": message_content,
+            "content": {"type": "text", "text": params.get("prompt", "")},
         }
     ]
 
@@ -71,8 +72,7 @@ def main(node):
 
     params = extract_and_format_parameters(node)
     params["messages"] = get_messages(params)
-    valid_params = {k: v for k, v in params.items() if k in TextRequest.__annotations__}
-    body = TextRequest(**valid_params)
+    body = TextRequest(messages=get_messages(params), images=get_images(params), model=params.get("model", Unset))
 
     # make the API call
     response = texts_create.sync_detailed(client=client, body=body)

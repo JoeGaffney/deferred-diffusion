@@ -98,21 +98,19 @@ def get_ip_adapter_config(model_family: str, adapter_type: str) -> IpAdapterMode
 class IpAdapter:
     def __init__(self, data: IpAdapterModel, model_config: ModelConfig, width, height):
         self.config = get_ip_adapter_config(model_config.model_family, data.model)
-        self.image_path = data.image_path
-        self.mask_path = data.mask_path
         self.scale = data.scale
         self.scale_layers = data.scale_layers
-        self.image = load_image_if_exists(self.image_path)
+        self.image = load_image_if_exists(data.image)
 
         if not self.image:
-            raise IPAdapterConfigError(f"Could not load IP-Adapter image from {self.image_path}")
+            raise IPAdapterConfigError(f"Could not load IP-Adapter image from {data.image}")
 
         if self.scale < 0.01:
             raise IPAdapterConfigError("IP-Adapter scale must be >= 0.01")
 
         # we allways need a full mask if some use a mask
         self.mask_image = Image.new("L", (width, height), 255)  # Create 512x512 white image in L mode
-        tmp_mask_image = load_image_if_exists(self.mask_path)
+        tmp_mask_image = load_image_if_exists(data.mask)
         if tmp_mask_image:
             self.mask_image = tmp_mask_image.resize([width, height])
             self.mask_image = self.mask_image.convert("L")

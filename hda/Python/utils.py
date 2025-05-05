@@ -1,5 +1,7 @@
-import json
-import time
+import base64
+import io
+import os
+from typing import Optional
 
 import hou
 
@@ -27,6 +29,103 @@ def save_all_tmp_images(node):
     rop_nodes = [child for child in node.children() if child.type().name() == "rop_image"]
     for rop_node in rop_nodes:
         save_tmp_image(node, rop_node.name())
+
+
+def get_input_cop_data_in_base64(node, input_name, fmt="PNG"):
+    """
+    Converts the image from a specified input of the node to a Base64-encoded string.
+    """
+
+    # Validate the input name
+    valid_inputs = [i.outputLabel() for i in node.inputConnections()]
+    if input_name not in valid_inputs:
+        hou.ui.displayMessage(f"Input '{input_name}' does not exist on node {node.path()}.")
+        return None
+
+    # Find the connected COP node
+    cop_node = None
+    for i in node.inputConnections():
+        if i.outputLabel() == input_name:
+            cop_node = i.output()
+            break
+
+    if cop_node is None:
+        hou.ui.displayMessage(f"No COP node connected to input '{input_name}' on node {node.path()}.")
+        return None
+
+    # Cook the COP node and get the image data
+    try:
+        cop_node.cook(force=True)
+        img = cop_node.image()
+        if img is None:
+            raise ValueError("Image data is empty or failed to load.")
+    except Exception as e:
+        hou.ui.displayMessage(f"Failed to cook COP node or retrieve image: {str(e)}")
+        return None
+
+    # Convert the image to Base64
+    try:
+        buf = io.BytesIO()
+        img.save(buf, fmt)
+        buf.seek(0)  # Move to the beginning of the buffer to prepare for reading
+        return base64.b64encode(buf.read()).decode("ascii")
+    except Exception as e:
+        hou.ui.displayMessage(f"Failed to convert image to Base64: {str(e)}")
+        return None
+
+
+def image_to_base64(image_path: str, debug=False) -> Optional[str]:
+    """Convert an image file to a base64 string (binary data encoded in base64)."""
+    if not image_path:
+        return None
+
+    if not os.path.exists(image_path):
+        return None
+
+    try:
+        with open(image_path, "rb") as image_file:
+            image_bytes = image_file.read()
+
+            # Convert the bytes to Base64 encoding (standard base64 encoding)
+            base64_bytes = base64.b64encode(image_bytes)  # Get base64 as bytes
+            base64_str = base64_bytes.decode("utf-8")  # Convert to a string
+
+            # NOTE to debug: print the first 100 characters of the base64 string
+            if debug:
+                print(f"Base64 string: {base64_str[:100]}...")
+
+            return base64_str
+    except Exception as e:
+        raise ValueError(f"Error encoding image {image_path}: {str(e)}") from e
+
+
+def base64_to_image(base64_str: str, output_path: str, create_dir: bool = True):
+    """Convert a base64 string to an image and save it to the specified path."""
+    try:
+        # Handle both string and bytes input
+        if isinstance(base64_str, str):
+            # Remove data URI prefix if present (e.g., "data:image/jpeg;base64,")
+            if "," in base64_str and ";base64," in base64_str:
+                base64_str = base64_str.split(",", 1)[1]
+            # Convert string to bytes if needed
+            base64_bytes = base64_str.encode("utf-8")
+        else:
+            base64_bytes = base64_str
+
+        # Decode the base64 to binary
+        image_bytes = base64.b64decode(base64_bytes)
+
+        # Create directory if it doesn't exist and create_dir is True
+        dir_path = os.path.dirname(output_path)
+        if create_dir and dir_path and not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        # Write the bytes to the specified file path
+        with open(output_path, "wb") as image_file:
+            image_file.write(image_bytes)
+
+    except Exception as e:
+        raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
 
 
 def reload_outputs(node, node_name):
@@ -87,10 +186,13 @@ def get_control_nets(node) -> list[ControlNetSchema]:
 
         params = get_node_parameters(current)
         save_all_tmp_images(current)
+        image = image_to_base64(params.get("image_path", ""))
+        if image is None:
+            continue
 
         tmp = ControlNetSchema(
             model=ControlNetSchemaModel(params.get("model", "")),
-            image_path=params.get("image_path", ""),
+            image=image,
             conditioning_scale=params.get("conditioning_scale", 0.5),
         )
         result.append(tmp)
@@ -112,11 +214,14 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
 
         params = get_node_parameters(current)
         save_all_tmp_images(current)
+        image = image_to_base64(params.get("image_path", ""))
+        if image is None:
+            continue
 
         tmp = IpAdapterModel(
             model=IpAdapterModelModel(params.get("model", "")),
-            image_path=params.get("image_path", ""),
-            mask_path=params.get("mask_path", ""),
+            image=image,
+            mask=image_to_base64(params.get("mask_path", "")),
             scale=params.get("scale", 0.5),
             scale_layers=params.get("scale_layers", "all"),
         )

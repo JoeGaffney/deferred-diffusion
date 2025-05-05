@@ -1,14 +1,16 @@
+import base64
+import gc
 import io
 import math
 import os
 import shutil
 import time
 from datetime import datetime
-from typing import Literal, Tuple
+from typing import Literal, Optional, Tuple
 
 import torch
-from diffusers.utils import load_image
 from PIL import Image
+from pydantic import Base64Bytes
 
 from common.logger import logger
 
@@ -52,6 +54,10 @@ def save_copy_with_timestamp(path):
         shutil.copy(path, timestamp_path)
 
 
+def ensure_divisible(value: int, divisor=16) -> int:
+    return (value // divisor) * divisor
+
+
 def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048):
     """Ensure the new dimensions do not exceed max_width and max_height"""
     width = min(image.size[0] * scale, max_width)
@@ -65,27 +71,47 @@ def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048)
     return image.resize((width, height))
 
 
-def load_image_if_exists(image_path):
-    if (image_path is None) or (image_path == ""):
+def load_image_from_base64(base64_bytes: str) -> Image.Image:
+
+    try:
+        # Convert bytes to a PIL image
+        tmp_bytes = base64.b64decode(base64_bytes)
+        image = Image.open(io.BytesIO(tmp_bytes))
+        image = image.convert("RGB")  # Ensure the image is in RGB mode
+        logger.info(f"Image loaded from Base64 bytes, size: {image.size}")
+        return image
+    except Exception as e:
+        raise ValueError(f"Invalid Base64 data: {type(base64_bytes)} {e}") from e
+
+
+def load_image_if_exists(base64_bytes: Optional[str]) -> Optional[Image.Image]:
+    """Load image from Base64 string if it exists."""
+    if (base64_bytes is None) or (base64_bytes == ""):
         return None
 
-    if not os.path.exists(image_path):
-        return None
-
-    image = load_image(image_path)
-
-    logger.info(f"Image loaded from {image_path} size: {image.size}")
-    return image
+    return load_image_from_base64(base64_bytes)
 
 
 def convert_pil_to_bytes(image: Image.Image) -> io.BytesIO:
-    """Convert PIL Image to bytes for OpenAI API."""
+    """Convert PIL Image to bytes."""
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format="PNG")
     img_byte_arr.seek(0)
-    img_byte_arr.name = "image.png"  # Crucial: tells OpenAI the correct MIME type
+    img_byte_arr.name = "image.png"  # Crucial: tells the correct MIME type
 
     return img_byte_arr
+
+
+def pil_to_base64(image: Image.Image) -> bytes:
+    """Convert PIL Image to base64 encoded bytes."""
+    img_byte_arr = convert_pil_to_bytes(image)
+    return base64.b64encode(img_byte_arr.getvalue())
+
+
+def mp4_to_base64(file_path: str) -> bytes:
+    """Convert an MP4 file to base64 encoded bytes."""
+    with open(file_path, "rb") as video_file:
+        return base64.b64encode(video_file.read())
 
 
 def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
@@ -157,6 +183,7 @@ def free_gpu_memory(threshold_percent: float = 50.0):
     if (should_free_gpu_memory(threshold_percent=threshold_percent) == False) or (torch.cuda.is_available() == False):
         return
 
+    gc.collect()
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
 

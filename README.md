@@ -69,6 +69,7 @@ This structure balances **clarity, maintainability, and scalability**, making it
 # Agentic
 
 Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing.
+
 # Setup windows
 
 ```sh
@@ -87,8 +88,26 @@ Pytest is used for integration tests confirming the models run.
 
 ```
 cd api
-pytest -v
-pytest .\tests\texts\models\test_qwen_2_5_vl_instruct.py
+```
+
+To run all
+
+```
+pytest -vs
+```
+
+Images and texts
+
+```
+pytest -vs .\tests\images\models\
+pytest -vs .\tests\texts\models\
+```
+
+Video and agent tests can be slow and may have a cost when running.
+
+```
+pytest -vs .\tests\texts\videos\
+pytest -vs .\tests\agentic\agents\
 ```
 
 ## To test running models directly
@@ -117,7 +136,7 @@ You can install like this to put on roaming path.
 "C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
 ```
 
-Or use rez or any other way to get the modules in houdini.
+Or use rez or any other way preferred way to get the modules in houdini.
 
 ## Env file
 
@@ -128,3 +147,12 @@ HOUDINI_PATH = C:/development/deferred-diffusion/hda;&
 HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/hda;&
 PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
 ```
+
+# Docker
+
+- docker-compose --build
+- docker-compose up
+
+Combined
+
+- docker-compose up --build

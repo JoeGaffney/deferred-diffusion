@@ -1,0 +1,39 @@
+version: "1"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "5000:5000"
+    volumes:
+      # - ./:/app
+      - hf_cache:/HF_HOME # Using Docker named volume
+      # - /data/hf_cache/HF_HOME:/HF_HOME #dmin@G-WORK-UK02-001:~$ ls /data/hf_cache/HF_HOME
+      # # - /mnt/y/HF_HOME:/HF_HOME # Direct bind from mounted Y: drive
+      # - ${HF_HOME}:/HF_HOME
+      # - hf_cache:/HF_HOME # Using Docker named volume
+      # - /mnt/c/development/deferred-diffusion:/app           # Your Windows code
+      # - /data/hf_cache/HF_HOME:/HF_HOME                      # Fast Hugging Face cache
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_HOME=/HF_HOME
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+# Volume definitions go at the root level, not nested inside the service
+volumes:
+  hf_cache:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: Y:/HF_HOME # Adjust this path to your local HF_HOME directory

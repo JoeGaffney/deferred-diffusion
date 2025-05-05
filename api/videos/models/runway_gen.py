@@ -6,26 +6,8 @@ from typing import Literal
 from runwayml import RunwayML
 
 from common.logger import logger
-from utils.utils import get_16_9_resolution
+from utils.utils import get_16_9_resolution, resize_image
 from videos.context import VideoContext
-from videos.schemas import VideoRequest
-
-
-def poll_result(context: VideoContext, task_id, wait=10):
-    client = RunwayML()
-
-    # Poll the task until it's complete
-    time.sleep(wait)  # Wait for a second before polling
-    task = client.tasks.retrieve(task_id)
-    while task.status not in ["SUCCEEDED", "FAILED"]:
-        time.sleep(wait)  # Wait for ten seconds before polling
-        task = client.tasks.retrieve(task_id)
-        logger.info(f"Checking Task: {task}")
-
-    if task.status == "SUCCEEDED" and task.output:
-        return context.save_video_url(task.output[0])
-
-    raise Exception(f"Task failed: {task}")
 
 
 def pill_to_base64(image):
@@ -36,16 +18,40 @@ def pill_to_base64(image):
     return base64_image
 
 
+def poll_result(context: VideoContext, task_id, wait=10, max_attempts=30):
+    client = RunwayML()
+
+    # Poll the task until it's complete
+    time.sleep(wait)  # Wait for a second before polling
+    task = client.tasks.retrieve(task_id)
+    attempts = 0
+
+    while task.status not in ["SUCCEEDED", "FAILED"]:
+        if attempts >= max_attempts:
+            raise Exception(f"Task polling exceeded maximum attempts ({max_attempts})")
+
+        time.sleep(wait)  # Wait for ten seconds before polling
+        task = client.tasks.retrieve(task_id)
+        logger.info(f"Checking Task: {task}")
+        attempts += 1
+
+    if task.status == "SUCCEEDED" and task.output:
+        return context.save_video_url(task.output[0])
+
+    raise Exception(f"Task failed: {task}")
+
+
 def create(context: VideoContext):
     client = RunwayML()
 
     # atm only these 16 by 9 or 9 by 16 supported
     # TODO switch to closest resolution as per the aspect ratio
     width, height = get_16_9_resolution("1080p")
-    context.data.max_height = 10000
-    context.data.max_width = 10000
-    image = context.load_image(division=1)
-    image = image.resize((width, height))
+    image = context.image
+    if image is None:
+        raise ValueError("Input image is None. Please provide a valid image.")
+
+    image = resize_image(image, 1, 1.0, width, height)
 
     model: Literal["gen3a_turbo", "gen4_turbo"] = "gen3a_turbo"
     ratio: Literal["1280:768", "1280:720", "768:1280"] = "1280:768"
@@ -66,7 +72,7 @@ def create(context: VideoContext):
         prompt_text=context.data.prompt,
         ratio=ratio,
         duration=duration,
-        # seed=context.seed,
+        seed=context.data.seed,
     )
     task_id = task.id
 
@@ -78,18 +84,3 @@ def create(context: VideoContext):
 def main(context: VideoContext):
     task_id = create(context)
     return poll_result(context, task_id)
-
-
-if __name__ == "__main__":
-    context = VideoContext(
-        VideoRequest(
-            model="runway/gen3a_turbo",
-            input_image_path="../tmp/color_v001.jpeg",
-            output_video_path="../tmp/output/runway_video.mp4",
-            strength=0.2,
-            prompt="A farm landscape with a tornado destroying houses and ripping up land,Fire and lighting",
-            num_inference_steps=50,
-        )
-    )
-
-    main(context)

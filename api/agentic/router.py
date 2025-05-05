@@ -7,5 +7,5 @@ router = APIRouter(prefix="/agentic", tags=["Agentic"])
 
 
 @router.post("/sequence", response_model=SequenceResponse, operation_id="agentic_sequence_create")
-async def create(request: SequenceRequest):
+def create(request: SequenceRequest):
     return sequence_agent.main(request)

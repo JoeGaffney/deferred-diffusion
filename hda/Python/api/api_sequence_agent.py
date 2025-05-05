@@ -1,5 +1,4 @@
 import json
-import time
 
 import hou
 
@@ -9,7 +8,12 @@ from generated.api_client.models.character_response import CharacterResponse
 from generated.api_client.models.scene_response import SceneResponse
 from generated.api_client.models.sequence_request import SequenceRequest
 from generated.api_client.models.sequence_response import SequenceResponse
-from utils import add_spare_params, extract_and_format_parameters, save_all_tmp_images
+from utils import (
+    add_spare_params,
+    extract_and_format_parameters,
+    image_to_base64,
+    save_all_tmp_images,
+)
 
 
 def create_image_node(node, node_name):
@@ -41,7 +45,6 @@ def create_character_node(node, scene: SceneResponse, character: CharacterRespon
     result.parm("prompt").set(f"{character.image_prompt}, {scene.diffusion_positive_prompt_tags}")
     result.parm("max_width").set(1024)
     result.parm("max_height").set(1024)
-    result.parm("model").set("stabilityai/stable-diffusion-xl-base-1.0")
     return result
 
 
@@ -50,8 +53,13 @@ def main(node):
     save_all_tmp_images(node)
 
     params = extract_and_format_parameters(node)
-    valid_params = {k: v for k, v in params.items() if k in SequenceRequest.__annotations__}
-    body = SequenceRequest(**valid_params)
+    body = SequenceRequest(
+        prompt=params.get("prompt", ""),
+        refinement_prompt=params.get("refinement_prompt", ""),
+        scene_reference_image=image_to_base64(params.get("scene_reference_image", "")),
+        protagonist_reference_image=image_to_base64(params.get("protagonist_reference_image", "")),
+        antagonist_reference_image=image_to_base64(params.get("antagonist_reference_image", "")),
+    )
 
     # make the API call
     response = agentic_sequence_create.sync_detailed(client=client, body=body)
@@ -65,8 +73,6 @@ def main(node):
 
     # set the node parameters
     node.parm("response").set(json.dumps(response.parsed.to_dict(), indent=2))
-    # NOTE issue setting when already exists
-    # add_spare_params(node, "result", response.parsed.to_dict())
 
     # prep generated nodes
     node_name = node.name()
@@ -78,7 +84,6 @@ def main(node):
     scene_node.parm("prompt").set(f"{scene.image_prompt}, {scene.diffusion_positive_prompt_tags}")
     scene_node.parm("max_width").set(1280)
     scene_node.parm("max_height").set(768)
-    scene_node.parm("model").set("stabilityai/stable-diffusion-xl-base-1.0")
 
     # build the character nodes
     protagonist_node = None

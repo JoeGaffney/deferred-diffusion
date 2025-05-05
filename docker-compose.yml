@@ -1,0 +1,27 @@
+version: "1"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "5000:5000"
+    volumes:
+      - hf_cache:/HF_HOME # Using Docker named volume
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_HOME=/HF_HOME
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+# Volume definitions go at the root level, not nested inside the service
+volumes:
+  hf_cache: {}

@@ -1,19 +1,17 @@
 import copy
+import os
+import tempfile
 from typing import List, Literal
 
 import torch
+from PIL import Image
 
 from common.exceptions import ControlNetConfigError, IPAdapterConfigError
 from common.logger import logger
 from images.control_net import ControlNet
 from images.ip_adapter import IpAdapter
 from images.schemas import ImageRequest, ModelConfig, PipelineConfig
-from utils.utils import (
-    ensure_path_exists,
-    load_image_if_exists,
-    resize_image,
-    save_copy_with_timestamp,
-)
+from utils.utils import load_image_if_exists, resize_image, save_copy_with_timestamp
 
 IMAGE_MODEL_CONFIG = {
     "sd1.5": {"family": "sd1.5", "model_path": "stable-diffusion-v1-5/stable-diffusion-v1-5", "mode": "auto"},
@@ -77,7 +75,7 @@ class ImageContext:
         self.width = (copy.copy(data.max_width) // self.division) * self.division
         self.height = (copy.copy(data.max_height) // self.division) * self.division
 
-        self.color_image = load_image_if_exists(data.input_image_path)
+        self.color_image = load_image_if_exists(data.image)
         if self.color_image:
             self.color_image = resize_image(
                 self.color_image, self.division, 1.0, self.data.max_width, self.data.max_height
@@ -88,7 +86,7 @@ class ImageContext:
             self.width, self.height = self.color_image.size
 
         # add our input mask image
-        self.mask_image = load_image_if_exists(data.input_mask_path)
+        self.mask_image = load_image_if_exists(data.mask)
         if self.mask_image:
             self.mask_image = self.mask_image.convert("L")
             self.mask_image = self.mask_image.resize([self.width, self.height])
@@ -165,16 +163,7 @@ class ImageContext:
             return "portrait"
         return "square"
 
-    def save_image(self, image):
-        ensure_path_exists(self.data.output_image_path)
-        path = self.data.output_image_path
-        image.save(path)
-        logger.info(f"Image saved at {path} size: {image.size}")
-
-        save_copy_with_timestamp(path)
-        return path
-
-    def resize_image_to_orig(self, image, scale=1):
+    def resize_image_to_orig(self, image: Image.Image, scale=1) -> Image.Image:
         return image.resize((self.orig_width * scale, self.orig_height * scale))
 
     def get_controlnet_images(self):
@@ -235,3 +224,17 @@ class ImageContext:
                 scales.append(ip_adapter.get_scale_layers())
             pipe.set_ip_adapter_scale(scales)
         return pipe
+
+    # NOTE could be moved to utils
+    def save_image(self, image):
+        # Create a temporary file with .png extension
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
+            # tmp_file will be closed automatically when exiting the with block
+            image.save(tmp_file, format="PNG")
+            path = tmp_file.name
+
+        # Save the image to the temporary file
+        logger.info(f"Image saved to temporary file: {path} size: {image.size}")
+        save_copy_with_timestamp(path)
+
+        return path

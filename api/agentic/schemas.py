@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel, Field, computed_field, field_serializer
+from pydantic import Base64Bytes, BaseModel, Field, computed_field, field_serializer
 
 
 class ShotCharacterResponse(BaseModel):

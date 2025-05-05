@@ -11,6 +11,7 @@ from diffusers import (
     FluxTransformer2DModel,
     GGUFQuantizationConfig,
 )
+from PIL import Image
 from transformers import (
     BitsAndBytesConfig,
     CLIPVisionModelWithProjection,
@@ -146,8 +147,7 @@ def text_to_image_call(pipe, context: ImageContext):
     context.cleanup()
 
     processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image)
-    return processed_path
+    return processed_image
 
 
 def image_to_image_call(pipe, context: ImageContext):
@@ -177,8 +177,7 @@ def image_to_image_call(pipe, context: ImageContext):
     context.cleanup()
 
     processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image)
-    return processed_path
+    return processed_image
 
 
 def inpainting_call(pipe, context: ImageContext):
@@ -210,11 +209,10 @@ def inpainting_call(pipe, context: ImageContext):
     context.cleanup()
 
     processed_image = context.resize_image_to_orig(processed_image)
-    processed_path = context.save_image(processed_image)
-    return processed_path
+    return processed_image
 
 
-def main(context: ImageContext, mode="text"):
+def main(context: ImageContext, mode="text") -> Image.Image:
     controlnets = context.get_loaded_controlnets()
     pipeline_config = context.get_pipeline_config()
 
@@ -229,4 +227,4 @@ def main(context: ImageContext, mode="text"):
     elif mode == "img_to_img_inpainting":
         return inpainting_call(get_inpainting_pipeline(pipeline_config, controlnets=controlnets), context)
 
-    return "invalid mode"
+    raise ValueError(f"Unknown mode: {mode}")

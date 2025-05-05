@@ -1,11 +1,13 @@
 import os
 
 import pytest
+from PIL import Image
 
 from images.context import ImageContext
 from images.models.depth_anything import main
 from images.schemas import ImageRequest
-from utils.utils import get_16_9_resolution
+from tests.utils import image_to_base64, optional_image_to_base64
+from utils.utils import ensure_path_exists, get_16_9_resolution
 
 
 @pytest.mark.parametrize("mode", ["depth"])
@@ -20,13 +22,11 @@ def test_models(mode):
     if os.path.exists(output_name):
         os.remove(output_name)
 
-    main(
+    result = main(
         ImageContext(
             ImageRequest(
                 model=model_id,
-                input_image_path="../test_data/color_v001.jpeg",
-                input_mask_path="",
-                output_image_path=output_name,
+                image=image_to_base64("../test_data/color_v001.jpeg"),
                 prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,
                 guidance_scale=5,
@@ -37,6 +37,10 @@ def test_models(mode):
         ),
         mode=mode,
     )
+
+    if isinstance(result, Image.Image):
+        ensure_path_exists(output_name)
+        result.save(output_name)
 
     # Check if output file exists
     assert os.path.exists(output_name), f"Output file {output_name} was not created."

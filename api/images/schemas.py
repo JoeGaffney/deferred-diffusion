@@ -1,6 +1,6 @@
-from typing import Literal, Tuple
+from typing import Literal, Optional, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import Base64Bytes, BaseModel, Field
 from torch import dtype
 
 
@@ -11,7 +11,13 @@ class ControlNetSchema(BaseModel):
         "canny",
     ]
     conditioning_scale: float = 0.5
-    image_path: str
+    image: str = Field(
+        description="Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/png, image/jpg, image/jpeg",  # Or "image/*" if you accept multiple formats
+        },
+    )
 
 
 class IpAdapterModelConfig(BaseModel):
@@ -34,8 +40,21 @@ class IpAdapterModel(BaseModel):
         "style-plus",
         "face",
     ]
-    image_path: str
-    mask_path: str = ""
+    image: str = Field(
+        description="Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
+    mask: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
     scale: float = 0.5
     scale_layers: str = "all"
 
@@ -56,24 +75,37 @@ class ImageRequest(BaseModel):
         "gpt-image-1",
     ]
     controlnets: list[ControlNetSchema] = []
-    optimize_low_vram: bool = False
     guidance_scale: float = 5.0
+    image: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
     inpainting_full_image: bool = True
-    input_image_path: str = ""
-    input_mask_path: str = ""
     ip_adapters: list[IpAdapterModel] = []
+    mask: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
     max_height: int = 2048
     max_width: int = 2048
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     num_inference_steps: int = 25
-    output_image_path: str = ""
+    optimize_low_vram: bool = False
     prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
     strength: float = 0.5
 
 
 class ImageResponse(BaseModel):
-    data: str
+    base64_data: Base64Bytes
 
 
 class ModelConfig(BaseModel):
