@@ -1,0 +1,62 @@
+#! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
+version 14.0 v3
+Gizmo {
+ inputs 2
+ addUserKnob {20 User}
+ addUserKnob {22 generate T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" +STARTLINE}
+ addUserKnob {20 paths l "" +STARTLINE n 1}
+ addUserKnob {1 path_root}
+ path_root "\[file dirname \[value root.name]]/processed/\[value \[topnode].name]"
+ addUserKnob {41 tmp_image T image_write.file}
+ addUserKnob {41 tmp_mask T mask_write.file}
+ addUserKnob {41 file l output_read T output_read.file}
+ addUserKnob {20 endGroup n -1}
+}
+ Read {
+  inputs 0
+  file_type png
+  file "\[value parent.path_root]/\[value \[topnode].name]/output.png"
+  origset true
+  name output_read
+  xpos 323
+  ypos -88
+ }
+ Output {
+  name Output1
+  xpos 323
+  ypos 23
+ }
+ Input {
+  inputs 0
+  name mask
+  xpos 193
+  ypos -113
+  number 1
+ }
+ Write {
+  file "\[value parent.path_root]/\[value \[topnode].name]/mask.png"
+  file_type png
+  create_directories true
+  checkHashOnRead false
+  name mask_write
+  xpos 193
+  ypos -49
+ }
+ Input {
+  inputs 0
+  name image
+  xpos 58
+  ypos -112
+ }
+ Write {
+  file "\[value parent.path_root]/\[value \[topnode].name]/image.png"
+  file_type png
+  create_directories true
+  checkHashOnRead false
+  version 1
+  name image_write
+  selected true
+  xpos 58
+  ypos -49
+ }
+end_group
