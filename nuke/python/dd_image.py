@@ -6,7 +6,7 @@ from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import UNSET, Unset
-from utils import base64_to_image, get_node_value, image_to_base64
+from utils import base64_to_image, get_node_value, image_to_base64, node_to_base64
 
 
 def create_dd_image_node():
@@ -21,13 +21,8 @@ def create_dd_image_node():
 
 def process_image(node):
     # This function is defined to process the node
-    nuke.message("Processing image...")
-    nuke.tprint(node)
-
-    # Example of manipulating the node's properties
-    print(f"Processing image for node: {node.name()}")
-    start_frame = nuke.frame()
-    end_frame = nuke.frame()
+    # nuke.message("Processing image...")
+    # nuke.tprint(node)
 
     output_image_path = get_node_value(node, "file", mode="evaluate")
     if not output_image_path:
@@ -37,31 +32,26 @@ def process_image(node):
     if not output_read:
         raise ValueError("Output read node not found.")
 
+    current_frame = nuke.frame()
     image_node = node.input(0)
     mask_node = node.input(1)
+    image = node_to_base64(image_node, current_frame)
+    mask = node_to_base64(mask_node, current_frame)
 
-    print(f"Image node: {image_node}")
-    tmp_image = ""
-    if image_node:
-        nuke.render("image_write", start_frame, end_frame)
-        tmp_image = get_node_value(node, "tmp_image", default="", mode="evaluate")
-
-    print(f"Mask node: {mask_node}")
-    tmp_mask = ""
-    if mask_node:
-        nuke.render("mask_write", start_frame, end_frame)
-        tmp_mask = get_node_value(node, "tmp_mask", default="", mode="evaluate")
-        if tmp_mask:
-            tmp_image = tmp_mask
+    # Example of direct rendering to a file
+    # tmp_image = ""
+    # if image_node:
+    #     nuke.render("image_write", current_frame, current_frame)
+    #     tmp_image = get_node_value(node, "tmp_image", default="", mode="evaluate")
 
     body = ImageRequest(
         model=ImageRequestModel(get_node_value(node, "model", "sd1.5", mode="value")),
         # controlnets=get_control_nets(node),
         # guidance_scale=params.get("guidance_scale", Unset),
-        image=image_to_base64(tmp_image),
+        image=image,
         # inpainting_full_image=params.get("inpainting_full_image", False),
         # ip_adapters=get_ip_adapters(node),
-        mask=image_to_base64(tmp_mask),
+        mask=mask,
         # max_height=params.get("max_height", Unset),
         # max_width=params.get("max_width", Unset),
         # negative_prompt=params.get("negative_prompt", Unset),
@@ -69,7 +59,7 @@ def process_image(node):
         # optimize_low_vram=params.get("optimize_low_vram", Unset),
         prompt=get_node_value(node, "prompt", UNSET, mode="get"),
         # seed=params.get("seed", Unset),
-        # strength=params.get("strength", Unset),
+        strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),
         max_height=1024,
         max_width=1024,
     )
@@ -86,7 +76,5 @@ def process_image(node):
 
     base64_to_image(response.parsed.base64_data, output_image_path)
     if output_read:
-        nuke.message(f"Refreshing output read node: {output_read.name()}")
+        # nuke.message(f"Refreshing output read node: {output_read.name()}")
         output_read["reload"].execute()
-
-    # Example of manipulating the node's properties

@@ -1,7 +1,10 @@
 import base64
 import io
 import os
-from typing import Literal, Optional
+import tempfile
+from typing import Literal, Optional, Union
+
+import nuke
 
 from config import MAX_ADDITIONAL_IMAGES
 from generated.api_client.models.control_net_schema import ControlNetSchema
@@ -82,8 +85,40 @@ def base64_to_image(base64_str: str, output_path: str, create_dir: bool = True):
         raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
 
 
+def node_to_base64(input_node, current_frame):
+    """Convert a Nuke node's output directly to base64 without saving to disk"""
+    if not input_node:
+        return None
+
+    # Create a temporary Write node
+    temp_write = nuke.nodes.Write(name="temp_write_to_base64")
+    temp_write.setInput(0, input_node)
+    temp_write["file_type"].setValue("png")
+
+    temp_path = tempfile.NamedTemporaryFile(prefix="nuke_dd_tmp_", suffix=".png", delete=False).name
+    temp_path = temp_path.replace("\\", "/")  # Convert backslashes to forward slashes
+    temp_write["file"].setValue(temp_path)
+
+    nuke.render(temp_write.name(), current_frame, current_frame)
+    # Render the current frame
+    # nuke.execute(temp_write.name(), current_frame, current_frame)
+
+    print(f"Temporary image saved to: {temp_path}")
+    result = image_to_base64(temp_path)
+
+    # Clean up
+    nuke.delete(temp_write)
+    # os.remove(temp_path)
+
+    return result
+
+
 def get_node_value(
-    node, knob_name: str, default=None, return_type=str, mode: Literal["get", "value", "evaluate"] = "get"
+    node,
+    knob_name: str,
+    default=None,
+    return_type: type = str,
+    mode: Literal["get", "value", "evaluate"] = "get",
 ):
     """Get the value of a knob from a node."""
     knob = node.knob(knob_name)

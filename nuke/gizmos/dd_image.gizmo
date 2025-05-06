@@ -3,36 +3,26 @@ version 14.0 v3
 Gizmo {
  inputs 2
  addUserKnob {20 User}
+ addUserKnob {4 model M {sd1.5 sdxl ""}}
+ model sdxl
  addUserKnob {1 prompt}
  prompt "a lion standing on a hill"
  addUserKnob {14 width_height l "" +STARTLINE R 0 100}
  width_height {1024 1024}
- addUserKnob {4 model M {sd1.5 sdxl ""}}
- model sdxl
- addUserKnob {22 generate T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" +STARTLINE}
+ addUserKnob {7 strength t "controls stength of manipluation on the image"}
+ strength 0.61
  addUserKnob {20 paths l "" +STARTLINE n 1}
  addUserKnob {1 path_root}
  path_root "\[file dirname \[value root.name]]/processed/\[value this.name]"
- addUserKnob {41 tmp_image T image_write.file}
- addUserKnob {41 tmp_mask T mask_write.file}
  addUserKnob {41 file l output_read T output_read.file}
  addUserKnob {20 endGroup n -1}
+ addUserKnob {22 generate T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" +STARTLINE}
 }
  Input {
   inputs 0
   name image
   xpos 58
   ypos -112
- }
- Write {
-  file "\[value parent.path_root]/\[value this.name]/image.png"
-  file_type png
-  create_directories true
-  checkHashOnRead false
-  version 4
-  name image_write
-  xpos 58
-  ypos -49
  }
  Input {
   inputs 0
@@ -41,21 +31,12 @@ Gizmo {
   ypos -113
   number 1
  }
- Write {
-  file "\[value parent.path_root]/\[value this.name]/mask.png"
-  file_type png
-  create_directories true
-  checkHashOnRead false
-  name mask_write
-  xpos 193
-  ypos -49
- }
  Read {
   inputs 0
   file_type png
   file "\[value parent.path_root]/\[value this.name]/output.png"
   origset true
-  version 10
+  version 18
   name output_read
   xpos 323
   ypos -88
