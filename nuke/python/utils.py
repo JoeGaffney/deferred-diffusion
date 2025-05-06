@@ -1,7 +1,7 @@
 import base64
 import io
 import os
-from typing import Optional
+from typing import Literal, Optional
 
 from config import MAX_ADDITIONAL_IMAGES
 from generated.api_client.models.control_net_schema import ControlNetSchema
@@ -82,12 +82,30 @@ def base64_to_image(base64_str: str, output_path: str, create_dir: bool = True):
         raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
 
 
-# def reload_outputs(node, node_name):
-#     tmp_image_node = node.node(node_name)
-#     if tmp_image_node is None:
-#         return
+def get_node_value(
+    node, knob_name: str, default=None, return_type=str, mode: Literal["get", "value", "evaluate"] = "get"
+):
+    """Get the value of a knob from a node."""
+    knob = node.knob(knob_name)
+    if knob is None:
+        return default
 
-#     try:
-#         tmp_image_node.parm("reload").pressButton()  # Trigger execution
-#     except Exception as e:
-#         hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
+    if hasattr(knob, "value") is False:
+        return default
+
+    value = default
+    if mode == "get":
+        value = knob.getValue()
+    elif mode == "value":
+        value = knob.value()
+    elif mode == "evaluate":
+        value = knob.evaluate()
+    else:
+        raise ValueError(f"Invalid mode: {mode}")
+
+    print(f"Knob value: {knob} - {value}")
+
+    if isinstance(value, return_type):
+        return value
+
+    return default
