@@ -6,7 +6,7 @@ from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import UNSET, Unset
-from utils import base64_to_image, get_node_value
+from utils import base64_to_image, get_node_value, image_to_base64
 
 
 def create_dd_image_node():
@@ -26,6 +26,8 @@ def process_image(node):
 
     # Example of manipulating the node's properties
     print(f"Processing image for node: {node.name()}")
+    start_frame = nuke.frame()
+    end_frame = nuke.frame()
 
     output_image_path = get_node_value(node, "file", mode="evaluate")
     if not output_image_path:
@@ -35,19 +37,31 @@ def process_image(node):
     if not output_read:
         raise ValueError("Output read node not found.")
 
-    # model = ImageRequestModel(params.get("model", "sd1.5"))
-    # output_image_path = params.get("output_image_path", Unset)
-    # if not output_image_path:
-    #     raise ValueError("Output image path is required.")
+    image_node = node.input(0)
+    mask_node = node.input(1)
+
+    print(f"Image node: {image_node}")
+    tmp_image = ""
+    if image_node:
+        nuke.render("image_write", start_frame, end_frame)
+        tmp_image = get_node_value(node, "tmp_image", default="", mode="evaluate")
+
+    print(f"Mask node: {mask_node}")
+    tmp_mask = ""
+    if mask_node:
+        nuke.render("mask_write", start_frame, end_frame)
+        tmp_mask = get_node_value(node, "tmp_mask", default="", mode="evaluate")
+        if tmp_mask:
+            tmp_image = tmp_mask
 
     body = ImageRequest(
         model=ImageRequestModel(get_node_value(node, "model", "sd1.5", mode="value")),
         # controlnets=get_control_nets(node),
         # guidance_scale=params.get("guidance_scale", Unset),
-        # image=image_to_base64(params.get("input_image_path", "")),
+        image=image_to_base64(tmp_image),
         # inpainting_full_image=params.get("inpainting_full_image", False),
         # ip_adapters=get_ip_adapters(node),
-        # mask=image_to_base64(params.get("input_mask_path", "")),
+        mask=image_to_base64(tmp_mask),
         # max_height=params.get("max_height", Unset),
         # max_width=params.get("max_width", Unset),
         # negative_prompt=params.get("negative_prompt", Unset),

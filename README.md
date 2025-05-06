@@ -165,11 +165,12 @@ PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
 The following need to be available to nuke for the api client and agents to work.
 
 - httpx
+- attrs
 
 You can install like this.
 
 ```
-"C:\Program Files\Nuke14.0\python.exe" -m pip install httpx
+"C:\Program Files\Nuke14.0\python.exe" -m pip install httpx attrs
 ```
 
 ### Adding to the path
