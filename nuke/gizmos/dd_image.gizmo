@@ -1,7 +1,7 @@
 #! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
 version 14.0 v3
 Gizmo {
- inputs 2
+ inputs 4
  addUserKnob {20 User}
  addUserKnob {4 model M {sd1.5 sdxl ""}}
  model sdxl
@@ -21,29 +21,44 @@ Gizmo {
  Input {
   inputs 0
   name image
-  xpos 58
-  ypos -112
- }
- Input {
-  inputs 0
-  name mask
-  xpos 193
-  ypos -113
-  number 1
+  xpos 70
+  ypos -129
  }
  Read {
   inputs 0
   file_type png
   file "\[value parent.path_root]/\[value this.name]/output.png"
   origset true
-  version 18
+  on_error black
+  version 19
   name output_read
-  xpos 323
-  ypos -88
+  xpos 643
+  ypos -178
  }
  Output {
   name Output1
-  xpos 323
-  ypos 42
+  xpos 643
+  ypos -94
+ }
+ Input {
+  inputs 0
+  name mask
+  xpos 290
+  ypos -129
+  number 1
+ }
+ Input {
+  inputs 0
+  name adapters
+  xpos 400
+  ypos -129
+  number 3
+ }
+ Input {
+  inputs 0
+  name controlnets
+  xpos 510
+  ypos -129
+  number 2
  }
 end_group

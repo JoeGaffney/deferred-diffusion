@@ -46,7 +46,7 @@ def process_image(node):
 
     body = ImageRequest(
         model=ImageRequestModel(get_node_value(node, "model", "sd1.5", mode="value")),
-        # controlnets=get_control_nets(node),
+        controlnets=get_control_nets(node),
         # guidance_scale=params.get("guidance_scale", Unset),
         image=image,
         # inpainting_full_image=params.get("inpainting_full_image", False),
