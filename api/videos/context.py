@@ -6,7 +6,7 @@ import torch
 from diffusers.utils import export_to_video
 
 from common.logger import logger
-from utils.utils import load_image_if_exists
+from utils.utils import get_tmp_dir, load_image_if_exists
 from videos.schemas import VideoRequest
 
 
@@ -29,13 +29,13 @@ class VideoContext:
         return "square"
 
     def save_video(self, video, fps=24):
-        path = tempfile.NamedTemporaryFile(suffix=".mp4").name
+        path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
         path = export_to_video(video, output_video_path=path, fps=fps)
         logger.info(f"Video saved at {path}")
         return path
 
     def save_video_url(self, url):
-        path = tempfile.NamedTemporaryFile(suffix=".mp4").name
+        path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
 
         response = requests.get(url, stream=True)
         if response.status_code == 200:

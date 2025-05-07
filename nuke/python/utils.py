@@ -13,6 +13,12 @@ from generated.api_client.models.ip_adapter_model_model import IpAdapterModelMod
 from generated.api_client.types import UNSET
 
 
+def get_tmp_dir() -> str:
+    subdir = os.path.join(tempfile.gettempdir(), "deffered-diffusion")
+    os.makedirs(subdir, exist_ok=True)
+    return subdir
+
+
 def get_node_value(
     node,
     knob_name: str,
@@ -110,7 +116,7 @@ def node_to_base64(input_node, current_frame):
     temp_write.setInput(0, input_node)
     temp_write["file_type"].setValue("png")
 
-    temp_path = tempfile.NamedTemporaryFile(prefix="nuke_dd_tmp_", suffix=".png", delete=False).name
+    temp_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".png", delete=False).name
     temp_path = temp_path.replace("\\", "/")  # Convert backslashes to forward slashes
     temp_write["file"].setValue(temp_path)
 

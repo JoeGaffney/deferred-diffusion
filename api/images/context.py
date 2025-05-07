@@ -11,7 +11,12 @@ from common.logger import logger
 from images.control_net import ControlNet
 from images.ip_adapter import IpAdapter
 from images.schemas import ImageRequest, ModelConfig, PipelineConfig
-from utils.utils import load_image_if_exists, resize_image, save_copy_with_timestamp
+from utils.utils import (
+    get_tmp_dir,
+    load_image_if_exists,
+    resize_image,
+    save_copy_with_timestamp,
+)
 
 IMAGE_MODEL_CONFIG = {
     "sd1.5": {"family": "sd1.5", "model_path": "stable-diffusion-v1-5/stable-diffusion-v1-5", "mode": "auto"},
@@ -228,7 +233,7 @@ class ImageContext:
     # NOTE could be moved to utils
     def save_image(self, image):
         # Create a temporary file with .png extension
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".png", delete=False) as tmp_file:
             # tmp_file will be closed automatically when exiting the with block
             image.save(tmp_file, format="PNG")
             path = tmp_file.name

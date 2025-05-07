@@ -4,13 +4,13 @@ import io
 import math
 import os
 import shutil
+import tempfile
 import time
 from datetime import datetime
 from typing import Literal, Optional, Tuple
 
 import torch
 from PIL import Image
-from pydantic import Base64Bytes
 
 from common.logger import logger
 
@@ -29,6 +29,12 @@ resolutions_16_9 = {
 
 def get_16_9_resolution(resolution: Resolutions) -> Tuple[int, int]:
     return resolutions_16_9.get(resolution, (960, 540))
+
+
+def get_tmp_dir() -> str:
+    subdir = os.path.join(tempfile.gettempdir(), "deffered-diffusion")
+    os.makedirs(subdir, exist_ok=True)
+    return subdir
 
 
 def ensure_path_exists(path):
