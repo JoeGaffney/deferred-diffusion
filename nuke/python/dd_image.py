@@ -6,7 +6,14 @@ from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import UNSET, Unset
-from utils import base64_to_image, get_node_value, image_to_base64, node_to_base64
+from utils import (
+    base64_to_image,
+    get_control_nets,
+    get_ip_adapters,
+    get_node_value,
+    image_to_base64,
+    node_to_base64,
+)
 
 
 def create_dd_image_node():
@@ -35,6 +42,9 @@ def process_image(node):
     current_frame = nuke.frame()
     image_node = node.input(0)
     mask_node = node.input(1)
+    controlnets_node = node.input(2)
+    apdapter_node = node.input(3)
+
     image = node_to_base64(image_node, current_frame)
     mask = node_to_base64(mask_node, current_frame)
 
@@ -46,11 +56,11 @@ def process_image(node):
 
     body = ImageRequest(
         model=ImageRequestModel(get_node_value(node, "model", "sd1.5", mode="value")),
-        controlnets=get_control_nets(node),
+        controlnets=get_control_nets(controlnets_node),
         # guidance_scale=params.get("guidance_scale", Unset),
         image=image,
         # inpainting_full_image=params.get("inpainting_full_image", False),
-        # ip_adapters=get_ip_adapters(node),
+        ip_adapters=get_ip_adapters(apdapter_node),
         mask=mask,
         # max_height=params.get("max_height", Unset),
         # max_width=params.get("max_width", Unset),

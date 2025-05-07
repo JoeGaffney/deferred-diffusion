@@ -6,29 +6,44 @@ from typing import Literal, Optional, Union
 
 import nuke
 
-from config import MAX_ADDITIONAL_IMAGES
 from generated.api_client.models.control_net_schema import ControlNetSchema
 from generated.api_client.models.control_net_schema_model import ControlNetSchemaModel
 from generated.api_client.models.ip_adapter_model import IpAdapterModel
 from generated.api_client.models.ip_adapter_model_model import IpAdapterModelModel
-
-# def save_tmp_image(node, node_name):
-#     tmp_image_node = node.node(node_name)
-#     if tmp_image_node is None:
-#         return
-
-#     print(f"Saving temporary image for node: {tmp_image_node.name()}")
-#     try:
-#         tmp_image_node.parm("execute").pressButton()  # Trigger execution
-#     except Exception as e:
-#         hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
+from generated.api_client.types import UNSET
 
 
-# def save_all_tmp_images(node):
-#     # Get all ROP image nodes from children
-#     rop_nodes = [child for child in node.children() if child.type().name() == "rop_image"]
-#     for rop_node in rop_nodes:
-#         save_tmp_image(node, rop_node.name())
+def get_node_value(
+    node,
+    knob_name: str,
+    default=None,
+    return_type: type = str,
+    mode: Literal["get", "value", "evaluate"] = "get",
+):
+    """Get the value of a knob from a node."""
+    knob = node.knob(knob_name)
+    if knob is None:
+        return default
+
+    if hasattr(knob, "value") is False:
+        return default
+
+    value = default
+    if mode == "get":
+        value = knob.getValue()
+    elif mode == "value":
+        value = knob.value()
+    elif mode == "evaluate":
+        value = knob.evaluate()
+    else:
+        raise ValueError(f"Invalid mode: {mode}")
+
+    print(f"Knob value: {knob} - {value}")
+
+    if isinstance(value, return_type):
+        return value
+
+    return default
 
 
 def image_to_base64(image_path: str, debug=False) -> Optional[str]:
@@ -113,34 +128,71 @@ def node_to_base64(input_node, current_frame):
     return result
 
 
-def get_node_value(
-    node,
-    knob_name: str,
-    default=None,
-    return_type: type = str,
-    mode: Literal["get", "value", "evaluate"] = "get",
-):
-    """Get the value of a knob from a node."""
-    knob = node.knob(knob_name)
-    if knob is None:
-        return default
+def get_control_nets(node) -> list[ControlNetSchema]:
+    if node is None:
+        return []
 
-    if hasattr(knob, "value") is False:
-        return default
+    current_frame = nuke.frame()
 
-    value = default
-    if mode == "get":
-        value = knob.getValue()
-    elif mode == "value":
-        value = knob.value()
-    elif mode == "evaluate":
-        value = knob.evaluate()
+    # only the control_net nodes are valid inputs
+    valid_inputs = []
+    if node.Class() == "dd_controlnet":
+        valid_inputs.append(node)
     else:
-        raise ValueError(f"Invalid mode: {mode}")
+        print(f"Invalid node type. Expected 'dd_controlnet'. {node.Class()}")
 
-    print(f"Knob value: {knob} - {value}")
+    result = []
+    for current in valid_inputs:
 
-    if isinstance(value, return_type):
-        return value
+        image_node = current.input(0)
+        image = node_to_base64(image_node, current_frame)
+        if image is None:
+            continue
 
-    return default
+        tmp = ControlNetSchema(
+            model=ControlNetSchemaModel(get_node_value(current, "model", "depth", mode="value")),
+            image=image,
+            conditioning_scale=get_node_value(node, "conditioning_scale", UNSET, return_type=float, mode="value"),
+        )
+        result.append(tmp)
+
+    return result
+
+
+# Get the parameter template group
+def get_ip_adapters(node) -> list[IpAdapterModel]:
+    if node is None:
+        return []
+
+    current_frame = nuke.frame()
+
+    # only the dd_adapter nodes are valid inputs
+    valid_inputs = []
+    if node.Class() == "dd_adapter":
+        valid_inputs.append(node)
+    else:
+        print(f"Invalid node type. Expected 'dd_adapter'. {node.Class()}")
+
+    result = []
+    for current in valid_inputs:
+
+        image_node = current.input(0)
+        image = node_to_base64(image_node, current_frame)
+        if image is None:
+            print("Image is None")
+            continue
+
+        mask_node = current.input(1)
+        mask = node_to_base64(mask_node, current_frame)
+
+        tmp = IpAdapterModel(
+            model=IpAdapterModelModel(get_node_value(current, "model", "style", mode="value")),
+            image=image,
+            mask=mask,
+            scale=get_node_value(node, "scale", UNSET, return_type=float, mode="value"),
+            scale_layers=get_node_value(current, "scale_layers", "all", mode="value"),
+        )
+
+        result.append(tmp)
+
+    return result
