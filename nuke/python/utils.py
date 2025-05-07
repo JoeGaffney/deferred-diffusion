@@ -1,8 +1,8 @@
 import base64
-import io
 import os
 import tempfile
-from typing import Literal, Optional, Union
+from enum import Enum
+from typing import Literal, Optional
 
 import nuke
 
@@ -12,6 +12,17 @@ from generated.api_client.models.ip_adapter_model import IpAdapterModel
 from generated.api_client.models.ip_adapter_model_model import IpAdapterModelModel
 from generated.api_client.types import UNSET
 
+NODE_CONTROLNET = "dd_controlnet"
+NODE_ADAPTER = "dd_adapter"
+
+# Access mode constants
+MODE_GET = "get"
+MODE_VALUE = "value"
+MODE_EVALUATE = "evaluate"
+
+# Define the type for access mode
+KnobAccessMode = Literal["get", "value", "evaluate"]
+
 
 def get_tmp_dir() -> str:
     subdir = os.path.join(tempfile.gettempdir(), "deffered-diffusion")
@@ -19,12 +30,50 @@ def get_tmp_dir() -> str:
     return subdir
 
 
+def get_all_parent_nodes(node, visited=None) -> list:
+    """Recursively get all upstream/parent nodes of the given node"""
+    if visited is None:
+        visited = set()
+
+    if node is None or node in visited:
+        return []
+
+    visited.add(node)
+    parent_nodes = []
+
+    # Check all inputs
+    for i in range(node.inputs()):
+        input_node = node.input(i)
+        if input_node is not None:
+            parent_nodes.append(input_node)
+            # Recursively get the parents of this input
+            parent_nodes.extend(get_all_parent_nodes(input_node, visited))
+
+    return parent_nodes
+
+
+def find_nodes_of_type(node, target_class_type: str) -> list:
+    """Find all nodes of a specific type in the current node and its parents."""
+    if node is None:
+        return []
+
+    matching_nodes = []
+    all_nodes = [node] + get_all_parent_nodes(node)
+
+    # Filter only the nodes of the desired type
+    for current in all_nodes:
+        if current.Class() == target_class_type:
+            matching_nodes.append(current)
+
+    return matching_nodes
+
+
 def get_node_value(
     node,
     knob_name: str,
     default=None,
     return_type: type = str,
-    mode: Literal["get", "value", "evaluate"] = "get",
+    mode: KnobAccessMode = MODE_GET,
 ):
     """Get the value of a knob from a node."""
     knob = node.knob(knob_name)
@@ -35,21 +84,23 @@ def get_node_value(
         return default
 
     value = default
-    if mode == "get":
+    if mode == MODE_GET:
         value = knob.getValue()
-    elif mode == "value":
+    elif mode == MODE_VALUE:
         value = knob.value()
-    elif mode == "evaluate":
+    elif mode == MODE_EVALUATE:
         value = knob.evaluate()
     else:
         raise ValueError(f"Invalid mode: {mode}")
 
     print(f"Knob value: {knob} - {value}")
-
     if isinstance(value, return_type):
         return value
 
-    return default
+    try:
+        return return_type(value)  # General casting approach
+    except (ValueError, TypeError):
+        return default
 
 
 def image_to_base64(image_path: str, debug=False) -> Optional[str]:
@@ -85,6 +136,7 @@ def base64_to_image(base64_str: str, output_path: str, create_dir: bool = True):
             # Remove data URI prefix if present (e.g., "data:image/jpeg;base64,")
             if "," in base64_str and ";base64," in base64_str:
                 base64_str = base64_str.split(",", 1)[1]
+
             # Convert string to bytes if needed
             base64_bytes = base64_str.encode("utf-8")
         else:
@@ -120,15 +172,17 @@ def node_to_base64(input_node, current_frame):
     temp_path = temp_path.replace("\\", "/")  # Convert backslashes to forward slashes
     temp_write["file"].setValue(temp_path)
 
-    nuke.render(temp_write.name(), current_frame, current_frame)
-    # Render the current frame
+    # NOTE test excute Render the current frame
     # nuke.execute(temp_write.name(), current_frame, current_frame)
-
+    nuke.render(temp_write.name(), current_frame, current_frame)
     print(f"Temporary image saved to: {temp_path}")
+
     result = image_to_base64(temp_path)
 
     # Clean up
     nuke.delete(temp_write)
+
+    # NOTE: keep the file for debugging
     # os.remove(temp_path)
 
     return result
@@ -139,13 +193,7 @@ def get_control_nets(node) -> list[ControlNetSchema]:
         return []
 
     current_frame = nuke.frame()
-
-    # only the control_net nodes are valid inputs
-    valid_inputs = []
-    if node.Class() == "dd_controlnet":
-        valid_inputs.append(node)
-    else:
-        print(f"Invalid node type. Expected 'dd_controlnet'. {node.Class()}")
+    valid_inputs = find_nodes_of_type(node, "dd_controlnet")
 
     result = []
     for current in valid_inputs:
@@ -165,19 +213,12 @@ def get_control_nets(node) -> list[ControlNetSchema]:
     return result
 
 
-# Get the parameter template group
 def get_ip_adapters(node) -> list[IpAdapterModel]:
     if node is None:
         return []
 
     current_frame = nuke.frame()
-
-    # only the dd_adapter nodes are valid inputs
-    valid_inputs = []
-    if node.Class() == "dd_adapter":
-        valid_inputs.append(node)
-    else:
-        print(f"Invalid node type. Expected 'dd_adapter'. {node.Class()}")
+    valid_inputs = find_nodes_of_type(node, "dd_adapter")
 
     result = []
     for current in valid_inputs:
@@ -185,7 +226,6 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
         image_node = current.input(0)
         image = node_to_base64(image_node, current_frame)
         if image is None:
-            print("Image is None")
             continue
 
         mask_node = current.input(1)

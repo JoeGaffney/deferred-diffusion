@@ -11,7 +11,6 @@ from utils import (
     get_control_nets,
     get_ip_adapters,
     get_node_value,
-    image_to_base64,
     node_to_base64,
 )
 
@@ -47,31 +46,22 @@ def process_image(node):
 
     image = node_to_base64(image_node, current_frame)
     mask = node_to_base64(mask_node, current_frame)
-
-    # Example of direct rendering to a file
-    # tmp_image = ""
-    # if image_node:
-    #     nuke.render("image_write", current_frame, current_frame)
-    #     tmp_image = get_node_value(node, "tmp_image", default="", mode="evaluate")
+    width_height = get_node_value(node, "width_height", [1024, 1024], return_type=list, mode="value")
 
     body = ImageRequest(
         model=ImageRequestModel(get_node_value(node, "model", "sd1.5", mode="value")),
         controlnets=get_control_nets(controlnets_node),
-        # guidance_scale=params.get("guidance_scale", Unset),
+        guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
         image=image,
-        # inpainting_full_image=params.get("inpainting_full_image", False),
         ip_adapters=get_ip_adapters(apdapter_node),
         mask=mask,
-        # max_height=params.get("max_height", Unset),
-        # max_width=params.get("max_width", Unset),
-        # negative_prompt=params.get("negative_prompt", Unset),
-        # num_inference_steps=params.get("num_inference_steps", Unset),
-        # optimize_low_vram=params.get("optimize_low_vram", Unset),
+        negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
+        num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
         prompt=get_node_value(node, "prompt", UNSET, mode="get"),
-        # seed=params.get("seed", Unset),
+        seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
         strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),
-        max_height=1024,
-        max_width=1024,
+        max_height=int(width_height[0]),
+        max_width=int(width_height[1]),
     )
 
     # make the API call
@@ -85,6 +75,4 @@ def process_image(node):
         return
 
     base64_to_image(response.parsed.base64_data, output_image_path)
-    if output_read:
-        # nuke.message(f"Refreshing output read node: {output_read.name()}")
-        output_read["reload"].execute()
+    output_read["reload"].execute()
