@@ -2,7 +2,7 @@ import base64
 import os
 import tempfile
 from enum import Enum
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 import nuke
 
@@ -14,6 +14,7 @@ from generated.api_client.types import UNSET
 
 NODE_CONTROLNET = "dd_controlnet"
 NODE_ADAPTER = "dd_adapter"
+NODE_IMAGE = "dd_image"
 
 # Access mode constants
 MODE_GET = "get"
@@ -30,7 +31,7 @@ def get_tmp_dir() -> str:
     return subdir
 
 
-def get_all_parent_nodes(node, visited=None) -> list:
+def get_all_parent_nodes(node, stop_at_types: List, visited=None) -> list:
     """Recursively get all upstream/parent nodes of the given node"""
     if visited is None:
         visited = set()
@@ -45,20 +46,26 @@ def get_all_parent_nodes(node, visited=None) -> list:
     for i in range(node.inputs()):
         input_node = node.input(i)
         if input_node is not None:
+            # Stop recursion if this node type is in stop_at_types
+            if input_node.Class() in stop_at_types:
+                continue
+
             parent_nodes.append(input_node)
+
             # Recursively get the parents of this input
-            parent_nodes.extend(get_all_parent_nodes(input_node, visited))
+            parent_nodes.extend(get_all_parent_nodes(input_node, stop_at_types, visited))
 
     return parent_nodes
 
 
-def find_nodes_of_type(node, target_class_type: str) -> list:
+# pylint: disable=dangerous-default-value
+def find_nodes_of_type(node, target_class_type: str, stop_at_types=[NODE_IMAGE]) -> list:
     """Find all nodes of a specific type in the current node and its parents."""
     if node is None:
         return []
 
     matching_nodes = []
-    all_nodes = [node] + get_all_parent_nodes(node)
+    all_nodes = [node] + get_all_parent_nodes(node, stop_at_types, visited=None)
 
     # Filter only the nodes of the desired type
     for current in all_nodes:
