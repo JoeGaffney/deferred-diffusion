@@ -38,7 +38,7 @@ def threaded(fn):
 
 
 def get_tmp_dir() -> str:
-    subdir = os.path.join(tempfile.gettempdir(), "deffered-diffusion")
+    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion")
     os.makedirs(subdir, exist_ok=True)
     return subdir
 

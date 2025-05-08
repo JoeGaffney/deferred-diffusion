@@ -59,7 +59,7 @@ def main(context: ImageContext, mode="mask"):
             output_image = Image.fromarray(np.uint8(output_image)).convert("RGB")
             debug_path = context.save_image(output_image)
         except Exception as e:
-            logger.warning(f"Error drawing anotated image: {e}")
+            logger.warning(f"Error drawing annotated image: {e}")
 
     image_masks = []
     for mask in results["masks"]:
