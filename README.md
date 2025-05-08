@@ -121,7 +121,22 @@ python -m videos.models.ltx_video
 python -m videos.models.stable_video_diffusion
 ```
 
-# HDA's houdini setup
+# Docker
+
+- docker-compose --build
+- docker-compose up
+
+Combined
+
+- docker-compose up --build
+
+# Toolsets
+
+These are examples on how to simply get things on the path you could use rez or any other way preferred way to get the modules and plugins loaded.
+
+Adjust directories depending on where you have the toolset folders and the versions of your application. Examples are given for a windows environment.
+
+## HDA's houdini setup
 
 ## Python Modules
 
@@ -132,15 +147,10 @@ The following need to be available to houdini for the api client and agents to w
 You can install like this to put on roaming path.
 
 ```
-"C:\Program Files\Side Effects Software\Houdini XX.X\bin\hython.exe" -m pip install httpx
 "C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
 ```
 
-Or use rez or any other way preferred way to get the modules in houdini.
-
 ## Env file
-
-Adjust directories depending on where you have the hda folder and ensure python module is on the path
 
 ```
 HOUDINI_PATH = C:/development/deferred-diffusion/hda;&
@@ -148,11 +158,38 @@ HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/hda;&
 PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
 ```
 
-# Docker
+## Nuke plug-in setup
 
-- docker-compose --build
-- docker-compose up
+### Python modules
 
-Combined
+The following need to be available to nuke for the api client and agents to work.
 
-- docker-compose up --build
+- httpx
+- attrs
+
+You can install like this.
+
+```
+"C:\Program Files\Nuke14.0\python.exe" -m pip install httpx attrs
+```
+
+### Adding to the path
+
+Update your
+
+- C:\Users\USERNAME\.nuke\init.py
+
+```
+import nuke
+
+nuke.message("Nuke initialized!")
+
+# Centralized Nuke plugin path (your custom directory)
+custom_plugin_path = r"C:\development\deferred-diffusion\nuke"
+# Add your custom plugin paths
+nuke.pluginAddPath(custom_plugin_path)
+
+
+# Test message (useful for debugging)
+print(f"Custom plugin paths from {custom_plugin_path} have been added.")
+```

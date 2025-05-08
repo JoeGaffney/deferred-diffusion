@@ -17,3 +17,4 @@ runwayml
 sentencepiece
 transformers
 uvicorn
+hf_xet

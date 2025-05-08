@@ -14,6 +14,7 @@ services:
       - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/HF_HOME
+      - TORCH_HOME=/HF_HOME
     deploy:
       resources:
         reservations:

@@ -9,7 +9,11 @@
     },
     {
       "path": "hda/python",
-      "name": "HDA Python"
+      "name": "Houdini"
+    },
+    {
+      "path": "nuke/python",
+      "name": "Nuke"
     }
   ],
   "settings": {

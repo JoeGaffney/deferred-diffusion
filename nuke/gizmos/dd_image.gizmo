@@ -1,0 +1,74 @@
+#! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
+version 14.0 v3
+Gizmo {
+ inputs 4
+ addUserKnob {20 Settings}
+ addUserKnob {4 model M {sd1.5 sdxl RealVisXL Fluently-XL sd3 sd3.5 flux-schnell gpt-image-1 sd-x4-upscaler segment-anything depth-anything ""}}
+ model sdxl
+ addUserKnob {14 width_height l "" +STARTLINE R 0 100}
+ width_height {1280 720}
+ addUserKnob {1 prompt}
+ prompt "Detailed, 8k, photorealistic"
+ addUserKnob {1 negative_prompt}
+ negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
+ addUserKnob {26 "" +STARTLINE}
+ addUserKnob {7 num_inference_steps t quality R 1 50}
+ num_inference_steps 25
+ addUserKnob {7 strength}
+ strength 0.5
+ addUserKnob {7 guidance_scale t cfg R 1 10}
+ guidance_scale 5
+ addUserKnob {7 seed t seed R 1 1000}
+ seed 42
+ addUserKnob {26 "" +STARTLINE}
+ addUserKnob {22 generate T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" +STARTLINE}
+ addUserKnob {20 Paths}
+ addUserKnob {1 path_root}
+ path_root "\[file dirname \[value root.name]]/processed/\[value this.name]"
+ addUserKnob {41 file l output_read T output_read.file}
+ addUserKnob {20 endGroup n -1}
+}
+ Input {
+  inputs 0
+  name image
+  xpos 70
+  ypos -129
+ }
+ Read {
+  inputs 0
+  file_type png
+  file "\[value parent.path_root]/\[value this.name]/output.png"
+  origset true
+  on_error black
+  version 19
+  name output_read
+  xpos 643
+  ypos -178
+ }
+ Output {
+  name Output1
+  xpos 643
+  ypos -94
+ }
+ Input {
+  inputs 0
+  name mask
+  xpos 290
+  ypos -129
+  number 1
+ }
+ Input {
+  inputs 0
+  name adapters
+  xpos 400
+  ypos -129
+  number 3
+ }
+ Input {
+  inputs 0
+  name controlnets
+  xpos 510
+  ypos -129
+  number 2
+ }
+end_group

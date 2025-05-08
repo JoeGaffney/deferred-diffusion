@@ -1,0 +1,32 @@
+#! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
+version 14.0 v3
+Gizmo {
+ inputs 2
+ addUserKnob {20 User}
+ addUserKnob {4 model M {style style-plus face ""}}
+ addUserKnob {7 scale t "scale strength"}
+ addUserKnob {4 scale_layers M {all style style_and_layout layout}}
+}
+ Input {
+  inputs 0
+  name image
+  xpos -10
+  ypos 77
+  addUserKnob {20 User}
+  addUserKnob {4 model M {style face face-plus}}
+  addUserKnob {7 conditioning_scale t "conditioning_scale strength of control net"}
+  conditioning_scale 0.5
+ }
+ Output {
+  name Output1
+  xpos 0
+  ypos 300
+ }
+ Input {
+  inputs 0
+  name mask
+  xpos 110
+  ypos 77
+  number 1
+ }
+end_group

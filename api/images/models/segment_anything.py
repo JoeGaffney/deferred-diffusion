@@ -47,16 +47,19 @@ def main(context: ImageContext, mode="mask"):
     # Draw results on the image
     debug = True
     if debug == True:
-        image_array = np.asarray(image_pil)
-        output_image = draw_image(
-            image_array,
-            results["masks"],
-            results["boxes"],
-            results["scores"],
-            results["labels"],
-        )
-        output_image = Image.fromarray(np.uint8(output_image)).convert("RGB")
-        debug_path = context.save_image(output_image)
+        try:
+            image_array = np.asarray(image_pil)
+            output_image = draw_image(
+                image_array,
+                results["masks"],
+                results["boxes"],
+                results["scores"],
+                results["labels"],
+            )
+            output_image = Image.fromarray(np.uint8(output_image)).convert("RGB")
+            debug_path = context.save_image(output_image)
+        except Exception as e:
+            logger.warning(f"Error drawing annotated image: {e}")
 
     image_masks = []
     for mask in results["masks"]:
