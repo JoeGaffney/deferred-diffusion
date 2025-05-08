@@ -5,11 +5,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.api
+    tty: true
+    stdin_open: true  
     ports:
       - "5000:5000"
     volumes:
       - hf_cache:/HF_HOME # Using Docker named volume
     environment:
+      - PYTHONUNBUFFERED=1
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
       - HF_TOKEN=${HF_TOKEN}

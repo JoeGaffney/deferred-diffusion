@@ -123,12 +123,17 @@ python -m videos.models.stable_video_diffusion
 
 # Docker
 
-- docker-compose --build
+- docker-compose build
 - docker-compose up
 
 Combined
 
 - docker-compose up --build
+
+Tag & push
+
+- docker tag deferred-diffusion-api:latest joegaffney/deferred-diffusion:latest
+- docker push joegaffney/deferred-diffusion:latest
 
 # Toolsets
 
