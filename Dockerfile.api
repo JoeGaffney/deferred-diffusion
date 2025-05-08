@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install additional dependencies
 RUN pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git --no-deps --ignore-requires-python
 RUN pip install sam2
-
+RUN pip install supervision
 # should be included in the base image pytorch/pytorch:latest
 #, torchvision, torchaudio
 
@@ -34,5 +34,6 @@ WORKDIR /app/api
 EXPOSE 5000
 
 # Command to run the application from api directory
-CMD ["python", "main.py"]
+# CMD ["python", "main.py"]
 # CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000", "--reload", "--reload-dirs", "api", "--workers", "1"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "1"]

@@ -1,6 +1,7 @@
 import base64
 import os
 import tempfile
+import threading
 from enum import Enum
 from typing import List, Literal, Optional
 
@@ -23,6 +24,17 @@ MODE_EVALUATE = "evaluate"
 
 # Define the type for access mode
 KnobAccessMode = Literal["get", "value", "evaluate"]
+
+
+# Decorators
+def threaded(fn):
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=fn, args=args, kwargs=kwargs)
+        thread.daemon = True
+        thread.start()
+        return thread
+
+    return wrapper
 
 
 def get_tmp_dir() -> str:

@@ -3,10 +3,10 @@ version 14.0 v3
 Gizmo {
  inputs 4
  addUserKnob {20 Settings}
- addUserKnob {4 model M {sd1.5 sdxl ""}}
+ addUserKnob {4 model M {sd1.5 sdxl RealVisXL Fluently-XL sd3 sd3.5 flux-schnell gpt-image-1 sd-x4-upscaler segment-anything depth-anything ""}}
  model sdxl
  addUserKnob {14 width_height l "" +STARTLINE R 0 100}
- width_height {512 512}
+ width_height {1280 720}
  addUserKnob {1 prompt}
  prompt "Detailed, 8k, photorealistic"
  addUserKnob {1 negative_prompt}
