@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile.api
     tty: true
-    stdin_open: true  
+    stdin_open: true
     ports:
       - "5000:5000"
     volumes:
@@ -18,7 +18,44 @@ services:
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/HF_HOME
       - TORCH_HOME=/HF_HOME
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Redis service as message broker
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  # Celery worker service
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.api # Using same dockerfile as API
+    command: celery -A worker worker --loglevel=info --concurrency=2
+    volumes:
+      - hf_cache:/HF_HOME
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_HOME=/HF_HOME
+      - TORCH_HOME=/HF_HOME
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - api
+    deploy:
+      # replicas: 3  # Number of container
       resources:
         reservations:
           devices:

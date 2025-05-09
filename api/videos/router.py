@@ -1,4 +1,8 @@
+import asyncio
+
+from celery.result import AsyncResult
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 
 from utils.utils import mp4_to_base64
 from videos.context import VideoContext
@@ -9,6 +13,8 @@ from videos.models.wan_2_1 import main as wan_2_1_main
 from videos.schemas import VideoRequest, VideoResponse
 
 router = APIRouter(prefix="/videos", tags=["Videos"])
+
+from worker import celery_app  # Import from worker.py
 
 
 @router.post("", response_model=VideoResponse, operation_id="videos_create")
@@ -30,3 +36,19 @@ async def create(request: VideoRequest):
 
     result = main(context)
     return VideoResponse(base64_data=mp4_to_base64(result))
+
+
+@router.post("/celery_test", operation_id="videos_celery_test")
+async def celery_test():
+    celery_task = celery_app.send_task("create_task", args=[int(10)])
+    # celery_task_2 = celery_app.send_task("process_video", args=[request])
+    print(celery_task)
+    # Return only the serializable parts of the task
+    return {"task_id": celery_task.id, "status": celery_task.status, "state": celery_task.state}
+
+
+@router.get("/tasks/{task_id}")
+def get_status(task_id):
+    task_result = AsyncResult(task_id)
+    result = {"task_id": task_id, "task_status": task_result.status, "task_result": task_result.result}
+    return JSONResponse(result)
