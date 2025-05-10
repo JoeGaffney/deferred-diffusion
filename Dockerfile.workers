@@ -1,0 +1,32 @@
+FROM pytorch/pytorch:2.7.0-cuda12.6-cudnn9-runtime 
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install additional dependencies
+RUN pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git --no-deps --ignore-requires-python
+RUN pip install --no-cache-dir --no-deps sam2 --ignore-requires-python
+RUN pip install --no-cache-dir supervision hydra-core iopath
+RUN pip install --no-cache-dir celery redis
+
+# Copy only specific directories instead of everything
+COPY workers/ ./workers/
+COPY test_data/ ./test_data/
+
+# Set the working directory to the api folder
+WORKDIR /app/workers
+
+# Command to run Celery worker
+# CMD ["celery", "-A", "worker", "worker", "--loglevel=info", "--concurrency=2"]
+# CUDA issues with concurrency
+CMD ["celery", "-A", "worker", "worker", "--loglevel=info", "--pool=solo"]

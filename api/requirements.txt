@@ -1,0 +1,9 @@
+fastapi
+openai
+openapi-python-client
+pydantic
+pydantic-ai
+uvicorn
+celery
+redis
+pillow

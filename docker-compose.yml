@@ -1,4 +1,3 @@
-version: "1"
 
 services:
   api:
@@ -13,20 +12,10 @@ services:
       - hf_cache:/HF_HOME # Using Docker named volume
     environment:
       - PYTHONUNBUFFERED=1
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
-      - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/HF_HOME
       - TORCH_HOME=/HF_HOME
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
 
   # Redis service as message broker
   redis:
@@ -38,8 +27,7 @@ services:
   celery_worker:
     build:
       context: .
-      dockerfile: Dockerfile.api # Using same dockerfile as API
-    command: celery -A worker worker --loglevel=info --concurrency=2
+      dockerfile: Dockerfile.workers # Using same dockerfile as API
     volumes:
       - hf_cache:/HF_HOME
     environment:
