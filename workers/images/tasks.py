@@ -15,6 +15,7 @@ def process_image(request_dict):
 
     # Convert dictionary back to proper object
     request = ImageRequest.model_validate(request_dict)
+    # raise ValueError("testing if raise is passed through")
 
     context = ImageContext(request)
     mode = context.model_config.mode

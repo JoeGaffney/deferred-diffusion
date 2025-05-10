@@ -109,6 +109,25 @@ class ImageResponse(BaseModel):
     base64_data: Base64Bytes
 
 
+class GetImageResponse(BaseModel):
+    task_id: str
+    task_status: str
+    task_result: Optional[ImageResponse] = None
+    error_message: Optional[str] = None
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "task_id": "1234567890",
+                "task_status": "SUCCESS",
+                "task_result": {
+                    "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
+                },
+                "error_message": None,
+            }
+        }
+
+
 class ModelConfig(BaseModel):
     model_path: str
     model_family: str

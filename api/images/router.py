@@ -2,7 +2,7 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
-from images.schemas import ImageRequest, ImageResponse
+from images.schemas import GetImageResponse, ImageRequest, ImageResponse
 from utils.utils import poll_task_until_complete
 from worker import celery_app
 
@@ -23,7 +23,7 @@ async def create(request: ImageRequest):
         raise HTTPException(status_code=500, detail=f"Error creating response: {str(e)}")
 
 
-@router.get("/{task_id}", operation_id="images_get")
+@router.get("/{task_id}", response_model=GetImageResponse, operation_id="images_get")
 async def get(task_id, wait: bool = Query(True, description="Whether to wait for task completion")):
     if wait:
         # Wait for the task to complete
@@ -32,5 +32,24 @@ async def get(task_id, wait: bool = Query(True, description="Whether to wait for
         # Just get the current status without waiting
         task_result = AsyncResult(task_id)
 
-    result = {"task_id": task_id, "task_status": task_result.status, "task_result": task_result.result}
-    return JSONResponse(result)
+    # Initialize response with common fields
+    response = GetImageResponse(
+        task_id=task_id,
+        task_status=task_result.status,
+    )
+
+    # Add appropriate fields based on status
+    if task_result.successful():
+        try:
+            # Parse the result into your ImageResponse model
+            image_response = ImageResponse.model_validate(task_result.result)
+            response.task_result = image_response
+        except Exception as e:
+            # Handle validation errors
+            response.task_status = "ERROR"
+            response.error_message = f"Error parsing result: {str(e)}"
+    elif task_result.failed():
+        # Include error details
+        response.error_message = str(task_result.result)
+
+    return response

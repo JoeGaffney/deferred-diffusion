@@ -230,35 +230,49 @@ from worker import celery_app
 #         await asyncio.sleep(polling_interval)
 
 
-async def poll_task_until_complete(task_id, max_polling_time=300, polling_interval=1) -> AsyncResult:
+async def poll_task_until_complete(task_id, max_attempts=30, polling_interval=3) -> AsyncResult:
     """
-    Poll a Celery task until it's complete or until timeout.
-    """
+    Poll a Celery task until it's complete, max attempts reached, or timeout.
 
+    Args:
+        task_id: The ID of the Celery task to poll
+        max_attempts: Maximum number of polling attempts (default: 30)
+        polling_interval: How often to check task status in seconds (default: 1)
+
+    Returns:
+        AsyncResult object with task result/status
+    """
     # Ensure task_id is a string
     if not isinstance(task_id, str):
         logger.warning(f"task_id is not a string, converting from {type(task_id)}")
         task_id = str(task_id)
 
-    logger.debug(f"Polling task with ID: {task_id}")
+    logger.debug(f"Polling task with ID: {task_id}, max attempts: {max_attempts}")
 
-    start_time = asyncio.get_event_loop().time()
-
-    while True:
-        # Correctly initialize AsyncResult with the app
+    # Use iteration count instead of time-based approach
+    for attempt in range(max_attempts):
+        # Get task result
         task_result = celery_app.AsyncResult(task_id)
+
+        # Add attempt number to the result object for debugging
+        task_result._attempt = attempt + 1
 
         if task_result.ready():
             if task_result.failed():
                 error_msg = str(task_result.result)
                 logger.error(f"Task {task_id} failed: {error_msg}")
-                raise HTTPException(status_code=500, detail=f"Task processing failed: {error_msg}")
-            return task_result
-
-        # Check if we've exceeded max polling time
-        elapsed = asyncio.get_event_loop().time() - start_time
-        if elapsed > max_polling_time:
-            raise HTTPException(status_code=408, detail=f"Task processing timeout after {max_polling_time} seconds")
+                return task_result
+            elif task_result.successful():
+                logger.info(f"Task {task_id} completed successfully after {attempt + 1} attempts")
+                return task_result
 
         # Wait before polling again
         await asyncio.sleep(polling_interval)
+
+    # If we get here, we've exceeded max attempts
+    logger.warning(f"Task {task_id} polling max attempts ({max_attempts}) reached")
+
+    # Get final status before returning
+    task_result = celery_app.AsyncResult(task_id)
+    task_result._max_attempts_reached = True
+    return task_result
