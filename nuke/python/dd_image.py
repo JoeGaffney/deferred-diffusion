@@ -1,7 +1,8 @@
 import nuke
 
 from config import client
-from generated.api_client.api.images import images_create
+from generated.api_client.api.images import images_create, images_get
+from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
@@ -26,10 +27,9 @@ def create_dd_image_node():
 
 
 @threaded
-def api_call(body: ImageRequest, output_image_path: str, output_read):
-    # make the API call
-    nuke.tprint("Calling API...")
-    response = images_create.sync_detailed(client=client, body=body)
+def api_get_call(id, output_image_path: str, output_read):
+    nuke.tprint("Calling API get...")
+    response = images_get.sync_detailed(id, client=client)
 
     def update_ui():
         if response.status_code != 200:
@@ -40,12 +40,40 @@ def api_call(body: ImageRequest, output_image_path: str, output_read):
             nuke.message(f"Invalid response type: {type(response.parsed)} {response}")
             return
 
-        base64_to_image(response.parsed.base64_data, output_image_path)
+        if not response.parsed.result:
+            nuke.message("No result found in the response.")
+            return
+
+        if not response.parsed.status == "SUCCEEDED":
+            nuke.message(f"Task failed with error: {response.parsed.error_message}")
+            return
+
+        base64_to_image(response.parsed.result.base64_data, output_image_path)
 
         output_read["reload"].execute()
 
     nuke.executeInMainThread(update_ui)
     nuke.tprint("API call completed successfully.")
+
+
+def api_call(body: ImageRequest, output_image_path: str, output_read):
+    nuke.tprint("Calling API...")
+    response = images_create.sync_detailed(client=client, body=body)
+
+    if response.status_code != 200:
+        nuke.message(f"API Call Failed: {response}")
+        return
+
+    if not isinstance(response.parsed, ImageCreateResponse):
+        nuke.message(f"Invalid response type: {type(response.parsed)} {response}")
+        return
+
+    id = response.parsed.id
+    if not id:
+        nuke.message("No ID found in the response.")
+        return
+
+    api_get_call(id, output_image_path, output_read)
 
 
 def process_image(node):
