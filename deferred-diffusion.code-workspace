@@ -8,6 +8,10 @@
       "name": "api"
     },
     {
+      "path": "workers",
+      "name": "workers"
+    },
+    {
       "path": "hda/python",
       "name": "Houdini"
     },
@@ -18,7 +22,7 @@
   ],
   "settings": {
     "python.defaultInterpreterPath": "${workspaceFolder:deferred-diffusion}/venv/Scripts/python.exe",
-    "python.analysis.extraPaths": ["./api", "./hda/python"],
+    "python.analysis.extraPaths": ["./api", "./hda/python", "./workers"],
     "editor.formatOnSave": true,
     "pylint.enabled": true,
     "pylint.args": [

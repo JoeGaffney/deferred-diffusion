@@ -3,9 +3,8 @@ import time
 from io import BytesIO
 from typing import Literal
 
-from runwayml import RunwayML
-
 from common.logger import logger
+from runwayml import RunwayML
 from utils.utils import get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
@@ -18,12 +17,12 @@ def pill_to_base64(image):
     return base64_image
 
 
-def poll_result(context: VideoContext, task_id, wait=10, max_attempts=30):
+def poll_result(context: VideoContext, id, wait=10, max_attempts=30):
     client = RunwayML()
 
     # Poll the task until it's complete
     time.sleep(wait)  # Wait for a second before polling
-    task = client.tasks.retrieve(task_id)
+    task = client.tasks.retrieve(id)
     attempts = 0
 
     while task.status not in ["SUCCEEDED", "FAILED"]:
@@ -31,7 +30,7 @@ def poll_result(context: VideoContext, task_id, wait=10, max_attempts=30):
             raise Exception(f"Task polling exceeded maximum attempts ({max_attempts})")
 
         time.sleep(wait)  # Wait for ten seconds before polling
-        task = client.tasks.retrieve(task_id)
+        task = client.tasks.retrieve(id)
         logger.info(f"Checking Task: {task}")
         attempts += 1
 
@@ -74,13 +73,12 @@ def create(context: VideoContext):
         duration=duration,
         seed=context.data.seed,
     )
-    task_id = task.id
+    id = task.id
 
-    # context.task_id = task_id
-    logger.info(f"Task ID: {task_id}")
-    return task_id
+    logger.info(f"Task ID: {id}")
+    return id
 
 
 def main(context: VideoContext):
-    task_id = create(context)
-    return poll_result(context, task_id)
+    id = create(context)
+    return poll_result(context, id)

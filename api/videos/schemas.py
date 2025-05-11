@@ -1,4 +1,5 @@
-from typing import Literal
+from typing import Literal, Optional
+from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
 
@@ -26,5 +27,37 @@ class VideoRequest(BaseModel):
     seed: int = 42
 
 
-class VideoResponse(BaseModel):
+class VideoWorkerResponse(BaseModel):
     base64_data: Base64Bytes
+
+
+class VideoResponse(BaseModel):
+    id: UUID
+    status: str
+    result: Optional[VideoWorkerResponse] = None
+    error_message: Optional[str] = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
+                "status": "SUCCESS",
+                "result": {
+                    "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
+                },
+                "error_message": None,
+            }
+        }
+
+
+class VideoCreateResponse(BaseModel):
+    id: UUID
+    status: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
+                "status": "PENDING",
+            }
+        }

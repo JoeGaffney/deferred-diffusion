@@ -1,22 +1,55 @@
-from fastapi import APIRouter, HTTPException
+from uuid import UUID
 
-from texts.context import TextContext
-from texts.models.qwen_2_5_vl_instruct import main as qwen_2_5_vl_instruct_main
-from texts.schemas import TextRequest, TextResponse
+from celery.result import AsyncResult
+from fastapi import APIRouter, HTTPException, Query, Response
+
+from texts.schemas import (
+    TextCreateResponse,
+    TextRequest,
+    TextResponse,
+    TextWorkerResponse,
+)
+from utils.utils import poll_until_complete
+from worker import celery_app
 
 router = APIRouter(prefix="/texts", tags=["Texts"])
 
 
-@router.post("", response_model=TextResponse, operation_id="texts_create")
-async def create(request: TextRequest):
-    context = TextContext(request)
+@router.post("", response_model=TextCreateResponse, operation_id="texts_create")
+async def create(request: TextRequest, response: Response):
+    try:
+        result = celery_app.send_task("process_text", args=[request.model_dump()])
+        response.headers["Location"] = f"/texts/{result.id}"
+        return TextCreateResponse(id=result.id, status=result.status)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
-    main = None
-    if request.model == "Qwen/Qwen2.5-VL-3B-Instruct":
-        main = qwen_2_5_vl_instruct_main
 
-    if not main:
-        raise HTTPException(status_code=400, detail=f"Invalid model {request.model}")
+@router.get("/{id}", response_model=TextResponse, operation_id="texts_get")
+async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
+    if wait:
+        result = await poll_until_complete(id)
+    else:
+        result = AsyncResult(id, app=celery_app)
 
-    result = main(context)
-    return TextResponse(response=result.get("response", ""), chain_of_thought=result.get("chain_of_thought", []))
+    # Initialize response with common fields
+    response = TextResponse(
+        id=id,
+        status=result.status,
+    )
+
+    # Add appropriate fields based on status
+    if result.successful():
+        try:
+            worker_result = TextWorkerResponse(
+                response=result.result.get("response", ""),
+                chain_of_thought=result.result.get("chain_of_thought", []),
+            )
+            response.result = worker_result
+        except Exception as e:
+            response.status = "ERROR"
+            response.error_message = f"Error parsing result: {str(e)}"
+    elif result.failed():
+        response.error_message = f"Task failed with error: {str(result.result)}"
+
+    return response

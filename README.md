@@ -40,19 +40,13 @@ This structure balances **clarity, maintainability, and scalability**, making it
 ```
 /api
 │── /images # Grouped by results type
-│ ├── models/ # ✅ AI models (ML/DL models, weights, configs)
 │ ├── schemas.py # ✅ Pydantic schemas (data validation)
-│ ├── context.py # ✅ Business logic layer
-│ ├── router.py # ✅ API routes (FastAPI)
+│ ├── router.py # ✅ API routes (FastAPI) Calls worker tasks
 │── /texts
-│ ├── models/
 │ ├── schemas.py
-│ ├── context.py
 │ ├── router.py
 │── /videos
-│ ├── models/
 │ ├── schemas.py
-│ ├── context.py
 │ ├── router.py
 │── /agentic
 │ ├── agents/
@@ -63,12 +57,40 @@ This structure balances **clarity, maintainability, and scalability**, making it
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
 │── /tests # ✅ Tests mirror the /api structure
 │── main.py # ✅ FastAPI entry point
+│── worker.py # ✅ Celery
+│── pytest.ini # ✅ Test configuration
+```
+
+The api will push tasks to worker broker and workers will pick this up. Some endpoints will async wait for tasks some extra long ones will require end client to re-poll and check progress.
+
+```
+/workers
+│── /images # Grouped by results type
+│ ├── models/ # ✅ AI models (ML/DL models, weights, configs)
+| |── api_schemas.py # symlink ?
+│ ├── schemas.py # ✅ Pydantic schemas (data validation)
+│ ├── context.py # ✅ Business logic layer
+│ ├── tasks.py # ✅ Celery task
+│── /texts
+│ ├── models/
+│ ├── schemas.py
+│ ├── context.py
+│ ├── tasks.py
+│── /videos
+│ ├── models/
+│ ├── schemas.py
+│ ├── context.py
+│ ├── tasks.py
+│── /common # ✅ Shared components
+│── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
+│── /tests # ✅ Tests mirror the /workers structure
+│── worker.py # ✅ Celery
 │── pytest.ini # ✅ Test configuration
 ```
 
 # Agentic
 
-Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing.
+Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
 
 # Setup windows
 
@@ -123,12 +145,17 @@ python -m videos.models.stable_video_diffusion
 
 # Docker
 
-- docker-compose --build
+- docker-compose build
 - docker-compose up
 
 Combined
 
 - docker-compose up --build
+
+Tag & push
+
+- docker tag deferred-diffusion-api:latest joegaffney/deferred-diffusion:latest
+- docker push joegaffney/deferred-diffusion:latest
 
 # Toolsets
 

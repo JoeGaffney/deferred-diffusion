@@ -6,8 +6,6 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from agentic import router as agentic
 from images import router as images
 from texts import router as texts
-from utils import device_info
-from utils.utils import free_gpu_memory
 from videos import router as videos
 
 app = FastAPI(title="API")
@@ -23,13 +21,6 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500, content={"message": "Internal server error", "detail": str(exc), "path": request.url.path}
     )
-
-
-@app.middleware("http")
-async def cleanup_gpu_memory(request: Request, call_next):
-    free_gpu_memory()
-    response = await call_next(request)
-    return response
 
 
 app.include_router(images.router, prefix="/api")

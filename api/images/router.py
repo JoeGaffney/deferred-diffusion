@@ -1,46 +1,52 @@
-from fastapi import APIRouter, HTTPException
-from PIL import Image
+from uuid import UUID
 
-from images.context import ImageContext
-from images.models.auto_diffusion import main as auto_diffusion
-from images.models.auto_openai import main as auto_openai
-from images.models.depth_anything import main as depth_anything
-from images.models.segment_anything import main as segment_anything
-from images.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
-from images.schemas import ImageRequest, ImageResponse
-from utils.utils import pil_to_base64
+from celery.result import AsyncResult
+from fastapi import APIRouter, HTTPException, Query, Response
+
+from images.schemas import (
+    ImageCreateResponse,
+    ImageRequest,
+    ImageResponse,
+    ImageWorkerResponse,
+)
+from utils.utils import poll_until_complete
+from worker import celery_app
 
 router = APIRouter(prefix="/images", tags=["Images"])
 
 
-@router.post("", response_model=ImageResponse, operation_id="images_create")
-async def create(request: ImageRequest):
-    context = ImageContext(request)
-    mode = context.model_config.mode
-    family = context.model_config.model_family
+@router.post("", response_model=ImageCreateResponse, operation_id="images_create")
+async def create(request: ImageRequest, response: Response):
+    try:
+        result = celery_app.send_task("process_image", args=[request.model_dump()])
+        response.headers["Location"] = f"/images/{result.id}"
+        return ImageCreateResponse(id=result.id, status=result.status)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
-    if mode == "upscale":
-        result = stable_diffusion_upscaler(context, mode=mode)
-    elif mode == "depth":
-        result = depth_anything(context, mode=mode)
-    elif mode == "mask":
-        result = segment_anything(context, mode=mode)
+
+@router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
+async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
+    if wait:
+        result = await poll_until_complete(id)
     else:
-        # auto_diffusion
-        auto_mode = "img_to_img"
-        if context.data.mask:
-            auto_mode = "img_to_img_inpainting"
-        if context.data.image is None:
-            auto_mode = "text_to_image"
+        result = AsyncResult(id, app=celery_app)
 
-        if family == "openai":
-            result = auto_openai(context, mode=auto_mode)
-        else:
-            result = auto_diffusion(context, mode=auto_mode)
+    # Initialize response with common fields
+    response = ImageResponse(
+        id=id,
+        status=result.status,
+    )
 
-    if isinstance(result, Image.Image):
-        # save a temp file for now
-        context.save_image(result)
-        return ImageResponse(base64_data=pil_to_base64(result))
+    # Add appropriate fields based on status
+    if result.successful():
+        try:
+            result = ImageWorkerResponse.model_validate(result.result)
+            response.result = result
+        except Exception as e:
+            response.status = "ERROR"
+            response.error_message = f"Error parsing result: {str(e)}"
+    elif result.failed():
+        response.error_message = f"Task failed with error: {str(result.result)}"
 
-    raise HTTPException(status_code=500, detail="Image generation failed")
+    return response
