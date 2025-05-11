@@ -225,10 +225,7 @@ async def poll_until_complete(id, max_attempts=30, polling_interval=3) -> AsyncR
     # Use iteration count instead of time-based approach
     for attempt in range(max_attempts):
         # Get task result
-        result = celery_app.AsyncResult(id)
-
-        # Add attempt number to the result object for debugging
-        result._attempt = attempt + 1
+        result = AsyncResult(id, app=celery_app)
 
         if result.ready():
             if result.failed():
@@ -246,6 +243,5 @@ async def poll_until_complete(id, max_attempts=30, polling_interval=3) -> AsyncR
     logger.warning(f"Task {id} polling max attempts ({max_attempts}) reached")
 
     # Get final status before returning
-    result = celery_app.AsyncResult(id)
-    result._max_attempts_reached = True
+    result = AsyncResult(id, app=celery_app)
     return result

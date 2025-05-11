@@ -30,7 +30,7 @@ async def get(id: UUID, wait: bool = Query(True, description="Whether to wait fo
     if wait:
         result = await poll_until_complete(id)
     else:
-        result = AsyncResult(id)
+        result = AsyncResult(id, app=celery_app)
 
     # Initialize response with common fields
     response = ImageResponse(

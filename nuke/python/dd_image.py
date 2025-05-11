@@ -44,7 +44,7 @@ def api_get_call(id, output_image_path: str, output_read):
             nuke.message("No result found in the response.")
             return
 
-        if not response.parsed.status == "SUCCEEDED":
+        if not response.parsed.status == "SUCCESS":
             nuke.message(f"Task failed with error: {response.parsed.error_message}")
             return
 

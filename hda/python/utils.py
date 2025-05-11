@@ -12,6 +12,19 @@ from generated.api_client.models.ip_adapter_model import IpAdapterModel
 from generated.api_client.models.ip_adapter_model_model import IpAdapterModelModel
 
 
+def handle_api_response(response, expected_type, error_prefix="API Call Failed"):
+    """Validates API response and returns parsed data or None if validation fails."""
+    if response.status_code != 200:
+        hou.ui.displayMessage(f"{response.status_code} {error_prefix}: {response}")
+        return None
+
+    if not isinstance(response.parsed, expected_type):
+        hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
+        return None
+
+    return response.parsed
+
+
 def save_tmp_image(node, node_name):
     tmp_image_node = node.node(node_name)
     if tmp_image_node is None:

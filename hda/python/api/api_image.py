@@ -1,7 +1,8 @@
 import hou
 
 from config import client
-from generated.api_client.api.images import images_create
+from generated.api_client.api.images import images_create, images_get
+from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
@@ -11,10 +12,30 @@ from utils import (
     extract_and_format_parameters,
     get_control_nets,
     get_ip_adapters,
+    handle_api_response,
     image_to_base64,
     reload_outputs,
     save_all_tmp_images,
 )
+
+
+def api_get_image(id, output_image_path, node):
+    response = images_get.sync_detailed(id=id, client=client)
+    parsed = handle_api_response(response, ImageResponse, "API Get Call Failed")
+    if not parsed:
+        return
+
+    if not parsed.status == "SUCCESS":
+        hou.ui.displayMessage(f"Task {parsed.status} with error: {parsed.error_message}")
+        return
+
+    if not parsed.result:
+        hou.ui.displayMessage("No result found in the response.")
+        return
+
+    # Save the image to the specified path before reloading the outputs
+    base64_to_image(parsed.result.base64_data, output_image_path)
+    reload_outputs(node, "output_read")
 
 
 def main(node):
@@ -22,13 +43,12 @@ def main(node):
     save_all_tmp_images(node)
 
     params = extract_and_format_parameters(node)
-    model = ImageRequestModel(params.get("model", "sd1.5"))
     output_image_path = params.get("output_image_path", Unset)
     if not output_image_path:
         raise ValueError("Output image path is required.")
 
     body = ImageRequest(
-        model=model,
+        model=ImageRequestModel(params.get("model", "sd1.5")),
         controlnets=get_control_nets(node),
         guidance_scale=params.get("guidance_scale", Unset),
         image=image_to_base64(params.get("input_image_path", "")),
@@ -45,26 +65,23 @@ def main(node):
         strength=params.get("strength", Unset),
     )
 
-    # make the API call
+    # make the initial API call to create the image task
     response = images_create.sync_detailed(client=client, body=body)
-    if response.status_code != 200:
-        hou.ui.displayMessage(f"API Call Failed: {response}")
+    parsed = handle_api_response(response, ImageCreateResponse)
+    if not parsed:
         return
 
-    if not isinstance(response.parsed, ImageResponse):
-        hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
+    id = parsed.id
+    if not id:
+        hou.ui.displayMessage("No ID found in the response.")
         return
 
-    # Save the image to the specified path before reloading the outputs
-    base64_to_image(response.parsed.base64_data, output_image_path)
-    reload_outputs(node, "output_read")
+    api_get_image(id, output_image_path, node)
 
 
 def main_frame_range(node):
     start_frame = int(hou.playbar.frameRange().x())
     end_frame = int(hou.playbar.frameRange().y())
-    print(f"Frame Range: {start_frame} - {end_frame}")
-
     for frame in range(start_frame, end_frame + 1):
         hou.setFrame(frame)
         main(node)
