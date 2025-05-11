@@ -111,17 +111,17 @@ class ImageWorkerResponse(BaseModel):
 
 
 class ImageResponse(BaseModel):
-    task_id: UUID
-    task_status: str
-    task_result: Optional[ImageWorkerResponse] = None
+    id: UUID
+    status: str
+    result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
 
     class Config:
         json_schema_extra = {
             "example": {
-                "task_id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
-                "task_status": "SUCCESS",
-                "task_result": {
+                "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
+                "status": "SUCCESS",
+                "result": {
                     "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
                 },
                 "error_message": None,
@@ -130,14 +130,14 @@ class ImageResponse(BaseModel):
 
 
 class ImageCreateResponse(BaseModel):
-    task_id: UUID
-    task_status: str
+    id: UUID
+    status: str
 
     class Config:
         json_schema_extra = {
             "example": {
-                "task_id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
-                "task_status": "PENDING",
+                "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
+                "status": "PENDING",
             }
         }
 

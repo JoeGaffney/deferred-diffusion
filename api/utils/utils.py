@@ -203,49 +203,49 @@ def load_image_from_base64(base64_bytes: str) -> Image.Image:
 from worker import celery_app
 
 
-async def poll_task_until_complete(task_id, max_attempts=30, polling_interval=3) -> AsyncResult:
+async def poll_until_complete(id, max_attempts=30, polling_interval=3) -> AsyncResult:
     """
     Poll a Celery task until it's complete, max attempts reached, or timeout.
 
     Args:
-        task_id: The ID of the Celery task to poll
+        id: The ID of the Celery task to poll
         max_attempts: Maximum number of polling attempts (default: 30)
         polling_interval: How often to check task status in seconds (default: 1)
 
     Returns:
         AsyncResult object with task result/status
     """
-    # Ensure task_id is a string
-    if not isinstance(task_id, str):
-        logger.warning(f"task_id is not a string, converting from {type(task_id)}")
-        task_id = str(task_id)
+    # Ensure id is a string
+    if not isinstance(id, str):
+        logger.warning(f"id is not a string, converting from {type(id)}")
+        id = str(id)
 
-    logger.debug(f"Polling task with ID: {task_id}, max attempts: {max_attempts}")
+    logger.debug(f"Polling task with ID: {id}, max attempts: {max_attempts}")
 
     # Use iteration count instead of time-based approach
     for attempt in range(max_attempts):
         # Get task result
-        task_result = celery_app.AsyncResult(task_id)
+        result = celery_app.AsyncResult(id)
 
         # Add attempt number to the result object for debugging
-        task_result._attempt = attempt + 1
+        result._attempt = attempt + 1
 
-        if task_result.ready():
-            if task_result.failed():
-                error_msg = str(task_result.result)
-                logger.error(f"Task {task_id} failed: {error_msg}")
-                return task_result
-            elif task_result.successful():
-                logger.info(f"Task {task_id} completed successfully after {attempt + 1} attempts")
-                return task_result
+        if result.ready():
+            if result.failed():
+                error_msg = str(result.result)
+                logger.error(f"Task {id} failed: {error_msg}")
+                return result
+            elif result.successful():
+                logger.info(f"Task {id} completed successfully after {attempt + 1} attempts")
+                return result
 
         # Wait before polling again
         await asyncio.sleep(polling_interval)
 
     # If we get here, we've exceeded max attempts
-    logger.warning(f"Task {task_id} polling max attempts ({max_attempts}) reached")
+    logger.warning(f"Task {id} polling max attempts ({max_attempts}) reached")
 
     # Get final status before returning
-    task_result = celery_app.AsyncResult(task_id)
-    task_result._max_attempts_reached = True
-    return task_result
+    result = celery_app.AsyncResult(id)
+    result._max_attempts_reached = True
+    return result
