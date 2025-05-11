@@ -202,33 +202,6 @@ def load_image_from_base64(base64_bytes: str) -> Image.Image:
 # from celery import current_app
 from worker import celery_app
 
-# async def poll_task_until_complete(task_id, max_polling_time=300, polling_interval=1) -> AsyncResult:
-#     """
-#     Poll a Celery task until it's complete or until timeout.
-
-#     Args:
-#         task_id: The ID of the Celery task to poll
-#         max_polling_time: Maximum time to poll in seconds (default: 5 minutes)
-#         polling_interval: How often to check task status in seconds
-#     """
-#     start_time = asyncio.get_event_loop().time()
-
-#     while True:
-#         task_result = AsyncResult(task_id)
-
-#         if task_result.ready():
-#             if task_result.failed():
-#                 raise HTTPException(status_code=500, detail=f"Task processing failed: {task_result.result}")
-#             return task_result
-
-#         # Check if we've exceeded max polling time
-#         elapsed = asyncio.get_event_loop().time() - start_time
-#         if elapsed > max_polling_time:
-#             raise HTTPException(status_code=408, detail=f"Task processing timeout after {max_polling_time} seconds")
-
-#         # Wait before polling again
-#         await asyncio.sleep(polling_interval)
-
 
 async def poll_task_until_complete(task_id, max_attempts=30, polling_interval=3) -> AsyncResult:
     """

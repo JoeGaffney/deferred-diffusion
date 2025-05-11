@@ -1,4 +1,5 @@
 from typing import Literal, Optional, Tuple
+from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
 
@@ -105,25 +106,38 @@ class ImageRequest(BaseModel):
     strength: float = 0.5
 
 
-class ImageResponse(BaseModel):
+class ImageWorkerResponse(BaseModel):
     base64_data: Base64Bytes
 
 
-class GetImageResponse(BaseModel):
-    task_id: str
+class ImageResponse(BaseModel):
+    task_id: UUID
     task_status: str
-    task_result: Optional[ImageResponse] = None
+    task_result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
-                "task_id": "1234567890",
+                "task_id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "task_status": "SUCCESS",
                 "task_result": {
                     "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
                 },
                 "error_message": None,
+            }
+        }
+
+
+class ImageCreateResponse(BaseModel):
+    task_id: UUID
+    task_status: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "task_id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
+                "task_status": "PENDING",
             }
         }
 

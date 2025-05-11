@@ -104,7 +104,7 @@ class ImageRequest(BaseModel):
     strength: float = 0.5
 
 
-class ImageResponse(BaseModel):
+class ImageWorkerResponse(BaseModel):
     base64_data: Base64Bytes
 
 
