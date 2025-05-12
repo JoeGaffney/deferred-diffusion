@@ -6,7 +6,7 @@ from generated.api_client.models.image_create_response import ImageCreateRespons
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
-from generated.api_client.types import Unset
+from generated.api_client.types import UNSET
 from utils import (
     base64_to_image,
     extract_and_format_parameters,
@@ -49,26 +49,26 @@ def main(node):
     save_all_tmp_images(node)
 
     params = extract_and_format_parameters(node)
-    output_image_path = params.get("output_image_path", Unset)
+    output_image_path = params.get("output_image_path", UNSET)
     if not output_image_path:
         raise ValueError("Output image path is required.")
 
     body = ImageRequest(
         model=ImageRequestModel(params.get("model", "sd1.5")),
         controlnets=get_control_nets(node),
-        guidance_scale=params.get("guidance_scale", Unset),
+        guidance_scale=params.get("guidance_scale", UNSET),
         image=image_to_base64(params.get("input_image_path", "")),
         inpainting_full_image=params.get("inpainting_full_image", False),
         ip_adapters=get_ip_adapters(node),
         mask=image_to_base64(params.get("input_mask_path", "")),
-        max_height=params.get("max_height", Unset),
-        max_width=params.get("max_width", Unset),
-        negative_prompt=params.get("negative_prompt", Unset),
-        num_inference_steps=params.get("num_inference_steps", Unset),
-        optimize_low_vram=params.get("optimize_low_vram", Unset),
-        prompt=params.get("prompt", Unset),
-        seed=params.get("seed", Unset),
-        strength=params.get("strength", Unset),
+        max_height=params.get("max_height", UNSET),
+        max_width=params.get("max_width", UNSET),
+        negative_prompt=params.get("negative_prompt", UNSET),
+        num_inference_steps=params.get("num_inference_steps", UNSET),
+        optimize_low_vram=params.get("optimize_low_vram", UNSET),
+        prompt=params.get("prompt", UNSET),
+        seed=params.get("seed", UNSET),
+        strength=params.get("strength", UNSET),
     )
 
     # make the initial API call to create the image task

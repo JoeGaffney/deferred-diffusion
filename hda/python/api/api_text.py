@@ -3,11 +3,18 @@ import json
 import hou
 
 from config import MAX_ADDITIONAL_IMAGES, client
-from generated.api_client.api.texts import texts_create
+from generated.api_client.api.texts import texts_create, texts_get
+from generated.api_client.models.text_create_response import TextCreateResponse
 from generated.api_client.models.text_request import TextRequest
 from generated.api_client.models.text_response import TextResponse
-from generated.api_client.types import Unset
-from utils import extract_and_format_parameters, image_to_base64, save_tmp_image
+from generated.api_client.types import UNSET, Unset
+from utils import (
+    extract_and_format_parameters,
+    handle_api_response,
+    image_to_base64,
+    save_tmp_image,
+    threaded,
+)
 
 
 def split_text(text, max_length=120):
@@ -43,7 +50,6 @@ def get_images(params):
 
 
 def get_messages(params):
-
     # get the current message
     message = [
         {
@@ -65,6 +71,33 @@ def get_messages(params):
     return messages
 
 
+@threaded
+def api_get_call(id, node):
+    response = texts_get.sync_detailed(id, client=client)
+
+    def update_ui():
+        parsed = handle_api_response(response, TextResponse, "API Get Call Failed")
+        if not parsed:
+            return
+
+        if not parsed.status == "SUCCESS":
+            hou.ui.displayMessage(f"Task {parsed.status} with error: {parsed.error_message}")
+            return
+
+        if not parsed.result:
+            hou.ui.displayMessage("No result found in the response.")
+            return
+
+        # apply back to the node
+        chain_of_thought_str = json.dumps(parsed.result.chain_of_thought, indent=2)
+        response_str = split_text(str(parsed.result.response))
+
+        node.parm("chain_of_thought").set(chain_of_thought_str)
+        node.parm("response").set(response_str)
+
+    hou.ui.postEventCallback(update_ui)
+
+
 def main(node):
     # gather our parameters and save any temporary images
     for i in range(MAX_ADDITIONAL_IMAGES):
@@ -72,21 +105,18 @@ def main(node):
 
     params = extract_and_format_parameters(node)
     params["messages"] = get_messages(params)
-    body = TextRequest(messages=get_messages(params), images=get_images(params), model=params.get("model", Unset))
+    body = TextRequest(messages=get_messages(params), images=get_images(params), model=params.get("model", UNSET))
 
-    # make the API call
+    print(f"Request body: {body.messages} {body.model}")
+    # make the initial API call to create the text task
     response = texts_create.sync_detailed(client=client, body=body)
-    if response.status_code != 200:
-        hou.ui.displayMessage(f"API Call Failed: {response}")
+    parsed = handle_api_response(response, TextCreateResponse)
+    if not parsed:
         return
 
-    if not isinstance(response.parsed, TextResponse):
-        hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
+    id = parsed.id
+    if not id:
+        hou.ui.displayMessage("No ID found in the response.")
         return
 
-    # apply back to the node
-    chain_of_thought_str = json.dumps(response.parsed.chain_of_thought, indent=2)
-    response_str = split_text(str(response.parsed.response))
-
-    node.parm("chain_of_thought").set(chain_of_thought_str)
-    node.parm("response").set(response_str)
+    api_get_call(id, node)

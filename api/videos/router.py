@@ -42,7 +42,7 @@ async def get(id: UUID, wait: bool = Query(True, description="Whether to wait fo
     # Add appropriate fields based on status
     if result.successful():
         try:
-            result_data = VideoWorkerResponse(base64_data=result.result)
+            result_data = VideoWorkerResponse.model_validate(result.result)
             response.result = result_data
         except Exception as e:
             response.status = "ERROR"

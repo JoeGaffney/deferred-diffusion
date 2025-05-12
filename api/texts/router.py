@@ -41,11 +41,8 @@ async def get(id: UUID, wait: bool = Query(True, description="Whether to wait fo
     # Add appropriate fields based on status
     if result.successful():
         try:
-            worker_result = TextWorkerResponse(
-                response=result.result.get("response", ""),
-                chain_of_thought=result.result.get("chain_of_thought", []),
-            )
-            response.result = worker_result
+            result_data = TextWorkerResponse.model_validate(result.result)
+            response.result = result_data
         except Exception as e:
             response.status = "ERROR"
             response.error_message = f"Error parsing result: {str(e)}"
