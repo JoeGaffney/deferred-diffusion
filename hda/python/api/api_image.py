@@ -8,6 +8,7 @@ from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import UNSET
 from utils import (
+    ApiResponseError,
     base64_to_image,
     extract_and_format_parameters,
     get_control_nets,
@@ -16,30 +17,39 @@ from utils import (
     image_to_base64,
     reload_outputs,
     save_all_tmp_images,
+    set_node_info,
     threaded,
 )
 
 
 @threaded
 def api_get_call(id, output_image_path: str, node):
-    response = images_get.sync_detailed(id, client=client)
+    try:
+        response = images_get.sync_detailed(id, client=client)
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        # NOTE possibly requited
+        # hou.ui.postEventCallback(lambda e=e: set_node_info(node, "ERROR", str(e)))
+        hou.ui.displayMessage(str(e))
+        return
 
     def update_ui():
-        parsed = handle_api_response(response, ImageResponse, "API Get Call Failed")
-        if not parsed:
-            return
+        try:
+            parsed = handle_api_response(response, ImageResponse, "API Get Call Failed")
 
-        if not parsed.status == "SUCCESS":
-            hou.ui.displayMessage(f"Task {parsed.status} with error: {parsed.error_message}")
-            return
-
-        if not parsed.result:
-            hou.ui.displayMessage("No result found in the response.")
+            if not parsed.status == "SUCCESS" or not parsed.result:
+                raise ApiResponseError(
+                    f"Task {parsed.status} with error: {parsed.error_message}", status=parsed.status
+                )
+        except ApiResponseError as e:
+            set_node_info(node, e.status, str(e))  # Use status from exception
+            hou.ui.displayMessage(str(e))
             return
 
         # Save the image to the specified path before reloading the outputs
         base64_to_image(parsed.result.base64_data, output_image_path)
         reload_outputs(node, "output_read")
+        set_node_info(node, "COMPLETE", output_image_path)
 
     hou.ui.postEventCallback(update_ui)
 
@@ -47,6 +57,7 @@ def api_get_call(id, output_image_path: str, node):
 def main(node):
     # Get all ROP image nodes from children
     save_all_tmp_images(node)
+    set_node_info(node, "", "")
 
     params = extract_and_format_parameters(node)
     output_image_path = params.get("output_image_path", UNSET)
@@ -72,16 +83,24 @@ def main(node):
     )
 
     # make the initial API call to create the image task
-    response = images_create.sync_detailed(client=client, body=body)
-    parsed = handle_api_response(response, ImageCreateResponse)
-    if not parsed:
-        return
+    id = None
+    try:
+        response = images_create.sync_detailed(client=client, body=body)
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        raise
 
-    id = parsed.id
-    if not id:
-        hou.ui.displayMessage("No ID found in the response.")
-        return
+    try:
+        parsed = handle_api_response(response, ImageCreateResponse)
 
+        id = parsed.id
+        if not id:
+            raise ApiResponseError("No ID found in the response.")
+    except ApiResponseError as e:
+        set_node_info(node, e.status, str(e))  # Use status from exception
+        raise
+
+    set_node_info(node, "PENDING", "", str(id))
     api_get_call(id, output_image_path, node)
 
 

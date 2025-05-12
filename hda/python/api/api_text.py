@@ -107,7 +107,6 @@ def main(node):
     params["messages"] = get_messages(params)
     body = TextRequest(messages=get_messages(params), images=get_images(params), model=params.get("model", UNSET))
 
-    print(f"Request body: {body.messages} {body.model}")
     # make the initial API call to create the text task
     response = texts_create.sync_detailed(client=client, body=body)
     parsed = handle_api_response(response, TextCreateResponse)

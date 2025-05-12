@@ -11,6 +11,7 @@ from generated.api_client.models.control_net_schema import ControlNetSchema
 from generated.api_client.models.control_net_schema_model import ControlNetSchemaModel
 from generated.api_client.models.ip_adapter_model import IpAdapterModel
 from generated.api_client.models.ip_adapter_model_model import IpAdapterModelModel
+from generated.api_client.types import Response
 
 
 # Decorators
@@ -24,17 +25,45 @@ def threaded(fn):
     return wrapper
 
 
-def handle_api_response(response, expected_type, error_prefix="API Call Failed"):
+def handle_api_response(response: Response, expected_type, error_prefix="API Call Failed"):
     """Validates API response and returns parsed data or None if validation fails."""
     if response.status_code != 200:
-        hou.ui.displayMessage(f"{response.status_code} {error_prefix}: {response}")
-        return None
+        raise ApiResponseError(f"{error_prefix}: {response}", status_code=response.status_code, response=response)
 
     if not isinstance(response.parsed, expected_type):
-        hou.ui.displayMessage(f"Invalid response type {type(expected_type)}: {type(response.parsed)}")
-        return None
+        raise ApiResponseError(
+            f"Invalid response type {type(expected_type)}: {type(response.parsed)}", response=response
+        )
 
     return response.parsed
+
+
+class ApiResponseError(Exception):
+    """Exception raised for API response errors."""
+
+    def __init__(self, message, status="FAILED", status_code=None, response=None):
+        self.message = message
+        self.status = status
+        self.status_code = status_code
+        self.response = response
+        super().__init__(self.message)
+
+
+def set_node_info(node, status, message, id=None):
+    if id:
+        node.setUserData("nodeinfo_api_id", str(id))
+
+    node.setUserData("nodeinfo_api_status", str(status))
+    node.setUserData("nodeinfo_api_message", str(message))
+
+    if status == "COMPLETE":
+        node.setColor(hou.Color((0.0, 0.8, 0.0)))
+    elif status == "PENDING":
+        node.setColor(hou.Color((0.5, 0.5, 0.0)))
+    elif status == "FAILED" or status == "ERROR":
+        node.setColor(hou.Color((0.8, 0.0, 0.0)))
+    else:
+        node.setColor(hou.Color((0.5, 0.5, 0.5)))
 
 
 def save_tmp_image(node, node_name):

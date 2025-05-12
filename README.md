@@ -61,6 +61,8 @@ This structure balances **clarity, maintainability, and scalability**, making it
 │── pytest.ini # ✅ Test configuration
 ```
 
+Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
+
 The api will push tasks to worker broker and workers will pick this up. Some endpoints will async wait for tasks some extra long ones will require end client to re-poll and check progress.
 
 ```
@@ -88,9 +90,20 @@ The api will push tasks to worker broker and workers will pick this up. Some end
 │── pytest.ini # ✅ Test configuration
 ```
 
-# Agentic
+### Toolsets (example)
 
-Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
+```
+/hda
+│── /python # Grouped by results type
+│ ├── /generated # generated api client
+│ ├── /api/
+│ ├── ├── api_image_node.py # node and api calling logic
+│ ├── utils.py
+│ ├── config.py
+│── cop_image_node.hda
+│── cop_text_node.hda
+│── cop_video.hda
+```
 
 # Setup windows
 
