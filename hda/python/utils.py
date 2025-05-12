@@ -60,7 +60,7 @@ def set_node_info(node, status, message, id=None):
         node.setColor(hou.Color((0.0, 0.8, 0.0)))
     elif status == "PENDING":
         node.setColor(hou.Color((0.5, 0.5, 0.0)))
-    elif status == "FAILED" or status == "ERROR":
+    elif status == "FAILED" or status == "ERROR" or status == "FAILURE":
         node.setColor(hou.Color((0.8, 0.0, 0.0)))
     else:
         node.setColor(hou.Color((0.5, 0.5, 0.5)))

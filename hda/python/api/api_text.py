@@ -9,10 +9,12 @@ from generated.api_client.models.text_request import TextRequest
 from generated.api_client.models.text_response import TextResponse
 from generated.api_client.types import UNSET, Unset
 from utils import (
+    ApiResponseError,
     extract_and_format_parameters,
     handle_api_response,
     image_to_base64,
     save_tmp_image,
+    set_node_info,
     threaded,
 )
 
@@ -54,7 +56,7 @@ def get_messages(params):
     message = [
         {
             "role": "user",
-            "content": {"type": "text", "text": params.get("prompt", "")},
+            "content": [{"type": "text", "text": params.get("prompt", "")}],
         }
     ]
 
@@ -73,19 +75,24 @@ def get_messages(params):
 
 @threaded
 def api_get_call(id, node):
-    response = texts_get.sync_detailed(id, client=client)
+    try:
+        response = texts_get.sync_detailed(id, client=client)
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        hou.ui.displayMessage(str(e))
+        return
 
     def update_ui():
-        parsed = handle_api_response(response, TextResponse, "API Get Call Failed")
-        if not parsed:
-            return
+        try:
+            parsed = handle_api_response(response, TextResponse, "API Get Call Failed")
 
-        if not parsed.status == "SUCCESS":
-            hou.ui.displayMessage(f"Task {parsed.status} with error: {parsed.error_message}")
-            return
-
-        if not parsed.result:
-            hou.ui.displayMessage("No result found in the response.")
+            if not parsed.status == "SUCCESS" or not parsed.result:
+                raise ApiResponseError(
+                    f"Task {parsed.status} with error: {parsed.error_message}", status=parsed.status
+                )
+        except ApiResponseError as e:
+            set_node_info(node, e.status, str(e))
+            hou.ui.displayMessage(str(e))
             return
 
         # apply back to the node
@@ -94,6 +101,7 @@ def api_get_call(id, node):
 
         node.parm("chain_of_thought").set(chain_of_thought_str)
         node.parm("response").set(response_str)
+        set_node_info(node, "COMPLETE", "")
 
     hou.ui.postEventCallback(update_ui)
 
@@ -103,19 +111,29 @@ def main(node):
     for i in range(MAX_ADDITIONAL_IMAGES):
         save_tmp_image(node, f"tmp_image_{i}")
 
+    set_node_info(node, "", "")
+
     params = extract_and_format_parameters(node)
     params["messages"] = get_messages(params)
     body = TextRequest(messages=get_messages(params), images=get_images(params), model=params.get("model", UNSET))
 
     # make the initial API call to create the text task
-    response = texts_create.sync_detailed(client=client, body=body)
-    parsed = handle_api_response(response, TextCreateResponse)
-    if not parsed:
-        return
+    id = None
+    try:
+        response = texts_create.sync_detailed(client=client, body=body)
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        raise
 
-    id = parsed.id
-    if not id:
-        hou.ui.displayMessage("No ID found in the response.")
-        return
+    try:
+        parsed = handle_api_response(response, TextCreateResponse)
 
+        id = parsed.id
+        if not id:
+            raise ApiResponseError("No ID found in the response.")
+    except ApiResponseError as e:
+        set_node_info(node, e.status, str(e))
+        raise
+
+    set_node_info(node, "PENDING", "", str(id))
     api_get_call(id, node)
