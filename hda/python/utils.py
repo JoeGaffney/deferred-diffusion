@@ -1,6 +1,7 @@
 import base64
 import io
 import os
+import threading
 from typing import Optional
 
 import hou
@@ -12,6 +13,17 @@ from generated.api_client.models.ip_adapter_model import IpAdapterModel
 from generated.api_client.models.ip_adapter_model_model import IpAdapterModelModel
 
 
+# Decorators
+def threaded(fn):
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=fn, args=args, kwargs=kwargs)
+        thread.daemon = True
+        thread.start()
+        return thread
+
+    return wrapper
+
+
 def handle_api_response(response, expected_type, error_prefix="API Call Failed"):
     """Validates API response and returns parsed data or None if validation fails."""
     if response.status_code != 200:
@@ -19,7 +31,7 @@ def handle_api_response(response, expected_type, error_prefix="API Call Failed")
         return None
 
     if not isinstance(response.parsed, expected_type):
-        hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
+        hou.ui.displayMessage(f"Invalid response type {type(expected_type)}: {type(response.parsed)}")
         return None
 
     return response.parsed

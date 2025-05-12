@@ -16,26 +16,32 @@ from utils import (
     image_to_base64,
     reload_outputs,
     save_all_tmp_images,
+    threaded,
 )
 
 
-def api_get_image(id, output_image_path, node):
-    response = images_get.sync_detailed(id=id, client=client)
-    parsed = handle_api_response(response, ImageResponse, "API Get Call Failed")
-    if not parsed:
-        return
+@threaded
+def api_get_call(id, output_image_path: str, node):
+    response = images_get.sync_detailed(id, client=client)
 
-    if not parsed.status == "SUCCESS":
-        hou.ui.displayMessage(f"Task {parsed.status} with error: {parsed.error_message}")
-        return
+    def update_ui():
+        parsed = handle_api_response(response, ImageResponse, "API Get Call Failed")
+        if not parsed:
+            return
 
-    if not parsed.result:
-        hou.ui.displayMessage("No result found in the response.")
-        return
+        if not parsed.status == "SUCCESS":
+            hou.ui.displayMessage(f"Task {parsed.status} with error: {parsed.error_message}")
+            return
 
-    # Save the image to the specified path before reloading the outputs
-    base64_to_image(parsed.result.base64_data, output_image_path)
-    reload_outputs(node, "output_read")
+        if not parsed.result:
+            hou.ui.displayMessage("No result found in the response.")
+            return
+
+        # Save the image to the specified path before reloading the outputs
+        base64_to_image(parsed.result.base64_data, output_image_path)
+        reload_outputs(node, "output_read")
+
+    hou.ui.postEventCallback(update_ui)
 
 
 def main(node):
@@ -76,7 +82,7 @@ def main(node):
         hou.ui.displayMessage("No ID found in the response.")
         return
 
-    api_get_image(id, output_image_path, node)
+    api_get_call(id, output_image_path, node)
 
 
 def main_frame_range(node):
