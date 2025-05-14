@@ -8,18 +8,18 @@ from generated.api_client.types import UNSET
 from utils import (
     ApiResponseError,
     base64_to_image,
-    extract_and_format_parameters,
+    get_node_parameters,
+    get_output_path,
     handle_api_response,
-    image_to_base64,
+    input_to_base64,
     reload_outputs,
-    save_tmp_image,
     set_node_info,
     threaded,
 )
 
 
 @threaded
-def api_get_call(id, output_video_path: str, node):
+def api_get_call(id, output_path: str, node):
     try:
         response = videos_get.sync_detailed(id, client=client)
     except Exception as e:
@@ -41,24 +41,22 @@ def api_get_call(id, output_video_path: str, node):
             return
 
         # Save the video to the specified path before reloading the outputs
-        base64_to_image(parsed.result.base64_data, output_video_path)
+        resolved_output_path = hou.expandString(output_path)
+        base64_to_image(parsed.result.base64_data, resolved_output_path, save_copy=True)
+
+        node.parm("output_video_path").set(output_path)
         reload_outputs(node, "output_read_video")
-        set_node_info(node, "COMPLETE", output_video_path)
+        set_node_info(node, "COMPLETE", output_path)
 
     hou.ui.postEventCallback(update_ui)
 
 
 def main(node):
-    # gather our parameters and save any temporary images
-    save_tmp_image(node, "tmp_input_image")
     set_node_info(node, "", "")
 
-    params = extract_and_format_parameters(node)
-    output_video_path = params.get("output_video_path", UNSET)
-    if not output_video_path:
-        raise ValueError("Output video path is required.")
-
-    image = image_to_base64(params.get("input_image_path", ""))
+    params = get_node_parameters(node)
+    output_video_path = get_output_path(node, movie=True)
+    image = input_to_base64(node, "src")
     if not image:
         raise ValueError("Input image is required.")
 

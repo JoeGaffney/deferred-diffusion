@@ -1,7 +1,10 @@
 import base64
 import io
 import os
+import shutil
+import tempfile
 import threading
+from datetime import datetime
 from typing import Optional
 
 import hou
@@ -23,6 +26,24 @@ def threaded(fn):
         return thread
 
     return wrapper
+
+
+def get_tmp_dir() -> str:
+    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion")
+    os.makedirs(subdir, exist_ok=True)
+    return subdir
+
+
+def get_output_path(node, movie=False) -> str:
+    node_name = node.name()
+    time_stamp = str(node.sessionId())
+    # time_stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    extension = "`padzero(5, $F)`.png"
+    if movie:
+        extension = "mp4"
+
+    output_image_path = f"$HIP/deferred-diffusion/{node_name}/{time_stamp}.{extension}"
+    return output_image_path
 
 
 def handle_api_response(response: Response, expected_type, error_prefix="API Call Failed"):
@@ -78,56 +99,6 @@ def save_tmp_image(node, node_name):
         hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
 
 
-def save_all_tmp_images(node):
-    # Get all ROP image nodes from children
-    rop_nodes = [child for child in node.children() if child.type().name() == "rop_image"]
-    for rop_node in rop_nodes:
-        save_tmp_image(node, rop_node.name())
-
-
-def get_input_cop_data_in_base64(node, input_name, fmt="PNG"):
-    """
-    Converts the image from a specified input of the node to a Base64-encoded string.
-    """
-
-    # Validate the input name
-    valid_inputs = [i.outputLabel() for i in node.inputConnections()]
-    if input_name not in valid_inputs:
-        hou.ui.displayMessage(f"Input '{input_name}' does not exist on node {node.path()}.")
-        return None
-
-    # Find the connected COP node
-    cop_node = None
-    for i in node.inputConnections():
-        if i.outputLabel() == input_name:
-            cop_node = i.output()
-            break
-
-    if cop_node is None:
-        hou.ui.displayMessage(f"No COP node connected to input '{input_name}' on node {node.path()}.")
-        return None
-
-    # Cook the COP node and get the image data
-    try:
-        cop_node.cook(force=True)
-        img = cop_node.image()
-        if img is None:
-            raise ValueError("Image data is empty or failed to load.")
-    except Exception as e:
-        hou.ui.displayMessage(f"Failed to cook COP node or retrieve image: {str(e)}")
-        return None
-
-    # Convert the image to Base64
-    try:
-        buf = io.BytesIO()
-        img.save(buf, fmt)
-        buf.seek(0)  # Move to the beginning of the buffer to prepare for reading
-        return base64.b64encode(buf.read()).decode("ascii")
-    except Exception as e:
-        hou.ui.displayMessage(f"Failed to convert image to Base64: {str(e)}")
-        return None
-
-
 def image_to_base64(image_path: str, debug=False) -> Optional[str]:
     """Convert an image file to a base64 string (binary data encoded in base64)."""
     if not image_path:
@@ -153,8 +124,22 @@ def image_to_base64(image_path: str, debug=False) -> Optional[str]:
         raise ValueError(f"Error encoding image {image_path}: {str(e)}") from e
 
 
-def base64_to_image(base64_str: str, output_path: str, create_dir: bool = True):
+def base64_to_image(base64_str: str, output_path: str, save_copy: bool = False):
     """Convert a base64 string to an image and save it to the specified path."""
+
+    def save_copy_with_timestamp(path):
+        if os.path.exists(path) and save_copy:
+            directory, filename = os.path.split(path)
+
+            # Create the timestamped path
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]  # Keep only 3 digits of milliseconds
+            timestamp_path = os.path.join(directory, timestamp, filename)
+            dir_path = os.path.dirname(timestamp_path)
+            if dir_path and not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            shutil.copy(path, timestamp_path)
+
     try:
         # Handle both string and bytes input
         if isinstance(base64_str, str):
@@ -171,15 +156,50 @@ def base64_to_image(base64_str: str, output_path: str, create_dir: bool = True):
 
         # Create directory if it doesn't exist and create_dir is True
         dir_path = os.path.dirname(output_path)
-        if create_dir and dir_path and not os.path.exists(dir_path):
+        if dir_path and not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
         # Write the bytes to the specified file path
         with open(output_path, "wb") as image_file:
             image_file.write(image_bytes)
 
+        save_copy_with_timestamp(output_path)
     except Exception as e:
         raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
+
+
+def input_to_base64(node, input_name):
+    """Converts the image from a specified input of the node to a Base64-encoded string."""
+    cop_node = None
+    for i in node.inputConnections():
+        if i.outputLabel() == input_name:
+            cop_node = i.inputNode()
+            break
+
+    if cop_node is None:
+        return None
+
+    # Cook the COP node and get the image data
+    cop_node.cook(force=True)
+
+    # Create a temporary ROP to write the image
+    temp_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".png", delete=False).name
+    rop = cop_node.parent().createNode("rop_image", "temp_write_to_base64")
+    rop.setPosition(cop_node.position())
+    rop.moveToGoodPosition()
+
+    rop.parm("coppath").set(cop_node.path())
+    rop.parm("copoutput").set(temp_path)
+    rop.parm("execute").pressButton()
+
+    # Convert the saved file to base64
+    result = image_to_base64(temp_path)
+
+    # NOTE: keep the file for debugging
+    # Clean up
+    # rop.destroy()
+    # os.remove(temp_path)
+    return result
 
 
 def reload_outputs(node, node_name):
@@ -190,7 +210,7 @@ def reload_outputs(node, node_name):
     try:
         tmp_image_node.parm("reload").pressButton()  # Trigger execution
     except Exception as e:
-        hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
+        hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}: {str(e)}")
 
 
 def get_node_parameters(node):
@@ -202,28 +222,6 @@ def get_node_parameters(node):
     for parm_tuple in node.parmTuples():
         values = [parm.eval() for parm in parm_tuple]
         params[parm_tuple.name()] = values[0] if len(values) == 1 else values
-    return params
-
-
-def extract_and_format_parameters(node):
-    params = get_node_parameters(node)
-
-    # Remove 'images' if not in valid_inputs
-    valid_inputs = []
-    for i in node.inputConnections():
-        valid_inputs.append(i.outputLabel())
-
-    key_map = {
-        "mask": "input_mask_path",
-        "src": "input_image_path",
-    }
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        key_map[f"image_{i}"] = f"image_{i}_path"
-
-    for key, param_key in key_map.items():
-        if key not in valid_inputs and param_key in params:
-            params.pop(param_key)
-
     return params
 
 
@@ -239,8 +237,7 @@ def get_control_nets(node) -> list[ControlNetSchema]:
     for current in valid_inputs:
 
         params = get_node_parameters(current)
-        save_all_tmp_images(current)
-        image = image_to_base64(params.get("image_path", ""))
+        image = input_to_base64(current, "src")
         if image is None:
             continue
 
@@ -267,15 +264,16 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
     for current in valid_inputs:
 
         params = get_node_parameters(current)
-        save_all_tmp_images(current)
-        image = image_to_base64(params.get("image_path", ""))
+        image = input_to_base64(current, "src")
+        mask = input_to_base64(current, "mask")
+
         if image is None:
             continue
 
         tmp = IpAdapterModel(
             model=IpAdapterModelModel(params.get("model", "")),
             image=image,
-            mask=image_to_base64(params.get("mask_path", "")),
+            mask=mask,
             scale=params.get("scale", 0.5),
             scale_layers=params.get("scale_layers", "all"),
         )

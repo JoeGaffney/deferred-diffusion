@@ -7,13 +7,12 @@ from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.models.text_create_response import TextCreateResponse
 from generated.api_client.models.text_request import TextRequest
 from generated.api_client.models.text_response import TextResponse
-from generated.api_client.types import UNSET, Unset
+from generated.api_client.types import UNSET
 from utils import (
     ApiResponseError,
-    extract_and_format_parameters,
+    get_node_parameters,
     handle_api_response,
-    image_to_base64,
-    save_tmp_image,
+    input_to_base64,
     set_node_info,
     threaded,
 )
@@ -38,17 +37,6 @@ def split_text(text, max_length=120):
         lines.append(current_line)
 
     return "\n".join(lines)
-
-
-def get_images(params):
-    images = []
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        if f"image_{i}_path" in params:
-            image = image_to_base64(params.get(f"image_{i}_path", ""))
-            if image:
-                images.append(image)
-
-    return images
 
 
 def get_messages(params):
@@ -107,15 +95,16 @@ def api_get_call(id, node):
 
 
 def main(node):
-    # gather our parameters and save any temporary images
-    for i in range(MAX_ADDITIONAL_IMAGES):
-        save_tmp_image(node, f"tmp_image_{i}")
-
     set_node_info(node, "", "")
 
-    params = extract_and_format_parameters(node)
-    params["messages"] = get_messages(params)
-    body = TextRequest(messages=get_messages(params), images=get_images(params), model=params.get("model", UNSET))
+    params = get_node_parameters(node)
+    images = []
+    for current_image in range(MAX_ADDITIONAL_IMAGES):
+        image = input_to_base64(node, f"image_{current_image}")
+        if image:
+            images.append(image)
+
+    body = TextRequest(messages=get_messages(params), images=images, model=params.get("model", UNSET))
 
     # make the initial API call to create the text task
     id = None
