@@ -47,6 +47,6 @@ class TextRequest(BaseModel):
     temperature: float = 0.7
     seed: int = 42
     model: str = "Qwen/Qwen2.5-VL-3B-Instruct"
-    messages: list
+    messages: list[dict] = Field(description="List of messages", default=[])
     images: List[str] = Field(description="Image references", default=[])
     videos: List[str] = Field(description="Video references", default=[])

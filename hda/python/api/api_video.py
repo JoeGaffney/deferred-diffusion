@@ -1,29 +1,62 @@
 import hou
 
 from config import client
-from generated.api_client.api.videos import videos_create
-from generated.api_client.models import VideoRequest, VideoResponse
+from generated.api_client.api.videos import videos_create, videos_get
+from generated.api_client.models import VideoCreateResponse, VideoRequest, VideoResponse
 from generated.api_client.models.video_request_model import VideoRequestModel
-from generated.api_client.types import Unset
+from generated.api_client.types import UNSET
 from utils import (
+    ApiResponseError,
     base64_to_image,
-    extract_and_format_parameters,
-    image_to_base64,
+    get_node_parameters,
+    get_output_path,
+    handle_api_response,
+    input_to_base64,
     reload_outputs,
-    save_tmp_image,
+    set_node_info,
+    threaded,
 )
 
 
+@threaded
+def api_get_call(id, output_path: str, node):
+    try:
+        response = videos_get.sync_detailed(id, client=client)
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        hou.ui.displayMessage(str(e))
+        return
+
+    def update_ui():
+        try:
+            parsed = handle_api_response(response, VideoResponse, "API Get Call Failed")
+
+            if not parsed.status == "SUCCESS" or not parsed.result:
+                raise ApiResponseError(
+                    f"Task {parsed.status} with error: {parsed.error_message}", status=parsed.status
+                )
+        except ApiResponseError as e:
+            set_node_info(node, e.status, str(e))
+            hou.ui.displayMessage(str(e))
+            return
+
+        # Save the video to the specified path before reloading the outputs
+        resolved_output_path = hou.expandString(output_path)
+        base64_to_image(parsed.result.base64_data, resolved_output_path, save_copy=True)
+
+        node.parm("output_video_path").set(output_path)
+        reload_outputs(node, "output_read_video")
+        set_node_info(node, "COMPLETE", output_path)
+
+    hou.ui.postEventCallback(update_ui)
+
+
 def main(node):
-    # gather our parameters and save any temporary images
-    save_tmp_image(node, "tmp_input_image")
+    set_node_info(node, "", "")
 
-    params = extract_and_format_parameters(node)
-    output_video_path = params.get("output_video_path", Unset)
-    if not output_video_path:
-        raise ValueError("Output image path is required.")
-
-    image = image_to_base64(params.get("input_image_path", ""))
+    params = get_node_parameters(node)
+    output_video_path = get_output_path(node, movie=True)
+    image = input_to_base64(node, "src")
     if not image:
         raise ValueError("Input image is required.")
 
@@ -32,22 +65,29 @@ def main(node):
         image=image,
         prompt=params.get("prompt", ""),
         seed=params.get("seed", 0),
-        negative_prompt=params.get("negative_prompt", Unset),
-        num_frames=params.get("num_frames", Unset),
-        num_inference_steps=params.get("num_inference_steps", Unset),
-        guidance_scale=params.get("guidance_scale", Unset),
+        negative_prompt=params.get("negative_prompt", UNSET),
+        num_frames=params.get("num_frames", UNSET),
+        num_inference_steps=params.get("num_inference_steps", UNSET),
+        guidance_scale=params.get("guidance_scale", UNSET),
     )
 
-    # make the API call
-    response = videos_create.sync_detailed(client=client, body=body)
-    if response.status_code != 200:
-        hou.ui.displayMessage(f"API Call Failed: {response}")
-        return
+    # make the initial API call to create the video task
+    id = None
+    try:
+        response = videos_create.sync_detailed(client=client, body=body)
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        raise
 
-    if not isinstance(response.parsed, VideoResponse):
-        hou.ui.displayMessage(f"Invalid response type: {type(response.parsed)} {response}")
-        return
+    try:
+        parsed = handle_api_response(response, VideoCreateResponse)
 
-    # Save the image to the specified path before reloading the outputs
-    base64_to_image(response.parsed.base64_data, output_video_path)
-    reload_outputs(node, "output_read_video")
+        id = parsed.id
+        if not id:
+            raise ApiResponseError("No ID found in the response.")
+    except ApiResponseError as e:
+        set_node_info(node, e.status, str(e))
+        raise
+
+    set_node_info(node, "PENDING", "", str(id))
+    api_get_call(id, output_video_path, node)

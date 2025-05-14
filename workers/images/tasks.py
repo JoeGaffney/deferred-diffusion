@@ -1,3 +1,5 @@
+from PIL import Image
+
 from images.context import ImageContext
 from images.models.auto_diffusion import main as auto_diffusion
 from images.models.auto_openai import main as auto_openai
@@ -5,14 +7,12 @@ from images.models.depth_anything import main as depth_anything
 from images.models.segment_anything import main as segment_anything
 from images.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
 from images.schemas import ImageRequest, ImageWorkerResponse
-from PIL import Image
 from utils.utils import pil_to_base64
-from worker import celery_app  # Import from worker.py
+from worker import celery_app
 
 
 @celery_app.task(name="process_image")
 def process_image(request_dict):
-
     # Convert dictionary back to proper object
     request = ImageRequest.model_validate(request_dict)
 

@@ -8,12 +8,7 @@ from generated.api_client.models.character_response import CharacterResponse
 from generated.api_client.models.scene_response import SceneResponse
 from generated.api_client.models.sequence_request import SequenceRequest
 from generated.api_client.models.sequence_response import SequenceResponse
-from utils import (
-    add_spare_params,
-    extract_and_format_parameters,
-    image_to_base64,
-    save_all_tmp_images,
-)
+from utils import add_spare_params, get_node_parameters, input_to_base64
 
 
 def create_image_node(node, node_name):
@@ -49,16 +44,13 @@ def create_character_node(node, scene: SceneResponse, character: CharacterRespon
 
 
 def main(node):
-    # Get all ROP image nodes from children
-    save_all_tmp_images(node)
-
-    params = extract_and_format_parameters(node)
+    params = get_node_parameters(node)
     body = SequenceRequest(
         prompt=params.get("prompt", ""),
         refinement_prompt=params.get("refinement_prompt", ""),
-        scene_reference_image=image_to_base64(params.get("scene_reference_image", "")),
-        protagonist_reference_image=image_to_base64(params.get("protagonist_reference_image", "")),
-        antagonist_reference_image=image_to_base64(params.get("antagonist_reference_image", "")),
+        scene_reference_image=input_to_base64(node, "src"),
+        protagonist_reference_image=input_to_base64(node, "src"),
+        antagonist_reference_image=input_to_base64(node, "src"),
     )
 
     # make the API call

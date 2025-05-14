@@ -1,7 +1,6 @@
 import time
 
-from celery import Celery, shared_task
-
+from images.schemas import ImageWorkerResponse
 from utils.utils import mp4_to_base64
 from videos.context import VideoContext
 from videos.models.hunyuan_video import main as hunyuan_video_main
@@ -13,8 +12,10 @@ from worker import celery_app  # Import from worker.py
 
 
 @celery_app.task(name="process_video")
-def process_video(request: VideoRequest):
-    """Process video generation asynchronously"""
+def process_video(request_dict):
+    # Convert dictionary back to proper object
+    request = VideoRequest.model_validate(request_dict)
+
     # Recreate context from dict
     context = VideoContext(request)
 
@@ -33,8 +34,7 @@ def process_video(request: VideoRequest):
 
     # Process video
     result = main(context)
-    # Return base64 encoded result
-    return mp4_to_base64(result)
+    return ImageWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()
 
 
 @celery_app.task(name="create_task")

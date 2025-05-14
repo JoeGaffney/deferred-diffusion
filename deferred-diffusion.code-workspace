@@ -12,6 +12,10 @@
       "name": "workers"
     },
     {
+      "path": "it_tests",
+      "name": "it_tests"
+    },
+    {
       "path": "hda/python",
       "name": "Houdini"
     },
@@ -22,7 +26,7 @@
   ],
   "settings": {
     "python.defaultInterpreterPath": "${workspaceFolder:deferred-diffusion}/venv/Scripts/python.exe",
-    "python.analysis.extraPaths": ["./api", "./hda/python", "./workers"],
+    "python.analysis.extraPaths": ["./api", "./workers", "./it_tests", "./hda/python", "./nuke/python"],
     "editor.formatOnSave": true,
     "pylint.enabled": true,
     "pylint.args": [
