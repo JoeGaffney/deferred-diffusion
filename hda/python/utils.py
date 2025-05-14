@@ -107,6 +107,9 @@ def image_to_base64(image_path: str, debug=False) -> Optional[str]:
     if not os.path.exists(image_path):
         return None
 
+    if os.stat(image_path).st_size < 1000:  # 1000 bytes is still tiny for a real image
+        return None
+
     try:
         with open(image_path, "rb") as image_file:
             image_bytes = image_file.read()
@@ -179,14 +182,23 @@ def input_to_base64(node, input_name):
     if cop_node is None:
         return None
 
+    def find_top_copnet():
+        node = hou.pwd()
+        while node and node.type().name() != "copnet":
+            node = node.parent()
+        return node
+
     # Cook the COP node and get the image data
-    cop_node.cook(force=True)
+    try:
+        cop_node.cook(force=True)
+    except Exception as e:
+        print(f"Failed to cook COP node: {cop_node.name()} {e}")
+        return None
 
     # Create a temporary ROP to write the image
-    temp_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".png", delete=False).name
-    rop = cop_node.parent().createNode("rop_image", "temp_write_to_base64")
-    rop.setPosition(cop_node.position())
-    rop.moveToGoodPosition()
+    tmp_name = f"tmp_{node.name()}_{input_name}_{cop_node.name()}"
+    temp_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), prefix=tmp_name, suffix=".png", delete=False).name
+    rop = find_top_copnet().createNode("rop_image", tmp_name)
 
     rop.parm("coppath").set(cop_node.path())
     rop.parm("copoutput").set(temp_path)
@@ -197,7 +209,7 @@ def input_to_base64(node, input_name):
 
     # NOTE: keep the file for debugging
     # Clean up
-    # rop.destroy()
+    rop.destroy()
     # os.remove(temp_path)
     return result
 
@@ -262,6 +274,8 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
 
     result = []
     for current in valid_inputs:
+
+        print("get_ip_adapters", current, current.name())
 
         params = get_node_parameters(current)
         image = input_to_base64(current, "src")
