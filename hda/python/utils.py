@@ -222,7 +222,7 @@ def reload_outputs(node, node_name):
     try:
         tmp_image_node.parm("reload").pressButton()  # Trigger execution
     except Exception as e:
-        hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}: {str(e)}")
+        hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
 
 
 def get_node_parameters(node):
