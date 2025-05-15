@@ -26,5 +26,5 @@ class VideoRequest(BaseModel):
     seed: int = 42
 
 
-class VideoResponse(BaseModel):
+class VideoWorkerResponse(BaseModel):
     base64_data: Base64Bytes

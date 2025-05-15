@@ -6,6 +6,7 @@ from config import MAX_ADDITIONAL_IMAGES, client
 from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.models.text_create_response import TextCreateResponse
 from generated.api_client.models.text_request import TextRequest
+from generated.api_client.models.text_request_model import TextRequestModel
 from generated.api_client.models.text_response import TextResponse
 from generated.api_client.types import UNSET
 from utils import (
@@ -104,8 +105,9 @@ def main(node):
         if image:
             images.append(image)
 
-    body = TextRequest(messages=get_messages(params), images=images, model=params.get("model", UNSET))
-
+    model = TextRequestModel(params.get("model", UNSET))
+    body = TextRequest(messages=get_messages(params), images=images, model=model)
+    print(f"TextRequest: {body.messages}")
     # make the initial API call to create the text task
     id = None
     try:

@@ -1,8 +1,34 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 from uuid import UUID
 
 from celery.states import ALL_STATES
-from pydantic import Base64Bytes, BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
+
+
+class TextContent(BaseModel):
+    type: str = "text"
+    text: str
+
+
+class MessageContent(BaseModel):
+    type: str
+    text: str = ""
+
+
+class MessageItem(BaseModel):
+    role: str
+    content: List[MessageContent]
+
+
+class TextRequest(BaseModel):
+    temperature: float = 0.7
+    seed: int = 42
+    model: Literal["Qwen/Qwen2.5-VL-3B-Instruct", "gpt-4o-mini", "gpt-4.1-mini"] = Field(
+        description="model", default="Qwen/Qwen2.5-VL-3B-Instruct"
+    )
+    messages: list[MessageItem] = Field(description="List of messages", default=[])
+    images: List[str] = Field(description="Image references", default=[])
+    videos: List[str] = Field(description="Video references", default=[])
 
 
 class TextWorkerResponse(BaseModel):
@@ -41,12 +67,3 @@ class TextCreateResponse(BaseModel):
                 "status": "PENDING",
             }
         }
-
-
-class TextRequest(BaseModel):
-    temperature: float = 0.7
-    seed: int = 42
-    model: str = "Qwen/Qwen2.5-VL-3B-Instruct"
-    messages: list[dict] = Field(description="List of messages", default=[])
-    images: List[str] = Field(description="Image references", default=[])
-    videos: List[str] = Field(description="Video references", default=[])

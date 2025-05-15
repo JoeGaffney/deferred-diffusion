@@ -5,7 +5,7 @@ import pytest
 from tests.utils import image_to_base64
 from texts.context import TextContext
 from texts.models.qwen_2_5_vl_instruct import main
-from texts.schemas import TextRequest
+from texts.schemas import MessageContent, MessageItem, TextRequest
 
 image_a = image_to_base64("../test_data/color_v001.jpeg")
 image_b = image_to_base64("../test_data/style_v001.jpeg")
@@ -33,12 +33,7 @@ def validate_result(result, expected_keyword=None):
 def test_image_description():
     data = TextRequest(
         messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Describe this image."},
-                ],
-            }
+            MessageItem(role="user", content=[MessageContent(type="text", text="Describe this image.")]),
         ],
         images=[image_a],
     )
@@ -49,12 +44,14 @@ def test_image_description():
 def test_image_prompt_generation():
     data = TextRequest(
         messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Give me a prompt for SD image generation to generate similar images."},
+            MessageItem(
+                role="user",
+                content=[
+                    MessageContent(
+                        type="text", text="Generate a prompt for SD image generation to generate similar images."
+                    ),
                 ],
-            }
+            ),
         ],
         images=[image_a],
     )
@@ -65,15 +62,15 @@ def test_image_prompt_generation():
 def test_image_video_comparison():
     data = TextRequest(
         messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Tell me the differences between the images and videos. I want to know the differences not the content of each.",
-                    },
+            MessageItem(
+                role="user",
+                content=[
+                    MessageContent(
+                        type="text",
+                        text="Tell me the differences between the images and videos. I want to know the differences not the content of each.",
+                    ),
                 ],
-            }
+            ),
         ],
         images=[image_a, image_b],
     )

@@ -18,6 +18,7 @@ RUN pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.gi
 RUN pip install --no-cache-dir --no-deps sam2 --ignore-requires-python
 RUN pip install --no-cache-dir supervision hydra-core iopath
 RUN pip install --no-cache-dir celery redis
+RUN pip install --no-cache-dir pytest
 
 # Copy only specific directories instead of everything
 COPY workers/ ./workers/
