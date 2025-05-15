@@ -1,4 +1,4 @@
-.PHONY: all build down up generate-clients test-texts test-images
+.PHONY: all build down up generate-clients test-texts test-images tag-and-push
 
 # Default target
 all: generate-clients
@@ -30,4 +30,19 @@ test-images: generate-clients
 	cd it_tests && pytest images -vs
 	cd ..
 	docker-compose exec workers pytest tests/images
+
+# Tag and push Docker images to GitHub Container Registry
+tag-and-push:
+# Define variables
+	$(eval USERNAME=joegaffney)
+	$(eval REPO=deferred-diffusion)
+	$(eval VERSION=latest)
+# Login to Docker Hub
+	docker login
+# Tag images with different tags in the same repository
+	docker tag deferred-diffusion-api:latest $(USERNAME)/$(REPO):api-$(VERSION)
+	docker tag deferred-diffusion-workers:latest $(USERNAME)/$(REPO):worker-$(VERSION)
+# Push images
+	docker push $(USERNAME)/$(REPO):api-$(VERSION)
+	docker push $(USERNAME)/$(REPO):worker-$(VERSION)
 
