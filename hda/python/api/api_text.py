@@ -4,6 +4,8 @@ import hou
 
 from config import MAX_ADDITIONAL_IMAGES, client
 from generated.api_client.api.texts import texts_create, texts_get
+from generated.api_client.models.message_content import MessageContent
+from generated.api_client.models.message_item import MessageItem
 from generated.api_client.models.text_create_response import TextCreateResponse
 from generated.api_client.models.text_request import TextRequest
 from generated.api_client.models.text_request_model import TextRequestModel
@@ -40,20 +42,30 @@ def split_text(text, max_length=120):
     return "\n".join(lines)
 
 
-def get_messages(params):
-    # get the current message
+def get_messages(params) -> list[MessageItem]:
+    # get the current message using the imported classes
     message = [
-        {
-            "role": "user",
-            "content": [{"type": "text", "text": params.get("prompt", "")}],
-        }
+        MessageItem(
+            role="user",
+            content=[
+                MessageContent(type_="input_text", text=params.get("prompt", "")),
+            ],
+        )
     ]
 
     # factor previous chain of thought
     previous_messages = []
     previous_messages_str = params.get("previous_messages", "[]")
     try:
-        previous_messages = json.loads(previous_messages_str)
+        # Need to convert dictionary objects to MessageItem objects
+        raw_previous = json.loads(previous_messages_str)
+        for msg in raw_previous:
+            contents = []
+            for content_item in msg.get("content", []):
+                contents.append(
+                    MessageContent(type_=content_item.get("type", "input_text"), text=content_item.get("text", ""))
+                )
+            previous_messages.append(MessageItem(role=msg.get("role", "user"), content=contents))
     except json.JSONDecodeError as e:
         print(f"JSON decode error: {e}")
         previous_messages = []
