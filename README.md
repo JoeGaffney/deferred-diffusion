@@ -111,38 +111,55 @@ The api will push tasks to worker broker and workers will pick this up. Some end
 ./start_venv_setup.bat
 ```
 
-# To run main
+# Building
 
-```sh
-./start_dev.bat
-```
+Run primarly in the docker containers because of the multi service worflows.
+
+Make all
 
 # Testing
 
 Pytest is used for integration tests confirming the models run.
 
+You can call from the make file.
+
 ```
+Make test-images
+Make test-tests
+``
+
+Or locally
+
+```
+
 cd api
+
 ```
 
 To run all
 
 ```
+
 pytest -vs
+
 ```
 
 Images and texts
 
 ```
+
 pytest -vs .\tests\images\models\
 pytest -vs .\tests\texts\models\
+
 ```
 
 Video and agent tests can be slow and may have a cost when running.
 
 ```
+
 pytest -vs .\tests\texts\videos\
 pytest -vs .\tests\agentic\agents\
+
 ```
 
 ## To test running models directly
@@ -150,10 +167,12 @@ pytest -vs .\tests\agentic\agents\
 A main method can be added
 
 ```
+
 cd api/
 
 python -m videos.models.ltx_video
 python -m videos.models.stable_video_diffusion
+
 ```
 
 # Docker
@@ -187,15 +206,19 @@ The following need to be available to houdini for the api client and agents to w
 You can install like this to put on roaming path.
 
 ```
+
 "C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
+
 ```
 
 ## Env file
 
 ```
+
 HOUDINI_PATH = C:/development/deferred-diffusion/hda;&
 HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/hda;&
 PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
+
 ```
 
 ## Nuke plug-in setup
@@ -210,7 +233,9 @@ The following need to be available to nuke for the api client and agents to work
 You can install like this.
 
 ```
+
 "C:\Program Files\Nuke14.0\python.exe" -m pip install httpx attrs
+
 ```
 
 ### Adding to the path
@@ -220,16 +245,23 @@ Update your
 - C:\Users\USERNAME\.nuke\init.py
 
 ```
+
 import nuke
 
 nuke.message("Nuke initialized!")
 
 # Centralized Nuke plugin path (your custom directory)
+
 custom_plugin_path = r"C:\development\deferred-diffusion\nuke"
+
 # Add your custom plugin paths
+
 nuke.pluginAddPath(custom_plugin_path)
 
-
 # Test message (useful for debugging)
+
 print(f"Custom plugin paths from {custom_plugin_path} have been added.")
+
+```
+
 ```

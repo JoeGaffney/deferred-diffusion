@@ -1,13 +1,12 @@
 import time
 
-from images.schemas import ImageWorkerResponse
 from utils.utils import mp4_to_base64
 from videos.context import VideoContext
 from videos.models.hunyuan_video import main as hunyuan_video_main
 from videos.models.ltx_video import main as ltx_video_main
 from videos.models.runway_gen import main as runway_gen_main
 from videos.models.wan_2_1 import main as wan_2_1_main
-from videos.schemas import VideoRequest
+from videos.schemas import VideoRequest, VideoWorkerResponse
 from worker import celery_app  # Import from worker.py
 
 
@@ -34,10 +33,4 @@ def process_video(request_dict):
 
     # Process video
     result = main(context)
-    return ImageWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()
-
-
-@celery_app.task(name="create_task")
-def create_task(task_type):
-    time.sleep(int(task_type) * 10)
-    return True
+    return VideoWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()

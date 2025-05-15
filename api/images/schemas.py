@@ -3,8 +3,6 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
 
-# from torch import dtype
-
 
 class ControlNetSchema(BaseModel):
     model: Literal[
@@ -147,36 +145,3 @@ class ModelConfig(BaseModel):
     model_family: str
     transformer_guf_path: str
     mode: str = "auto"
-
-
-# class PipelineConfig(BaseModel):
-#     model_id: str
-#     model_family: str
-#     model_transformer_guf_path: str
-#     torch_dtype: dtype
-#     optimize_low_vram: bool
-#     use_safetensors: bool
-#     ip_adapter_models: Tuple[str, ...]
-#     ip_adapter_subfolders: Tuple[str, ...]
-#     ip_adapter_weights: Tuple[str, ...]
-#     ip_adapter_image_encoder_model: str
-#     ip_adapter_image_encoder_subfolder: str
-
-#     class Config:
-#         frozen = True  # Makes the model immutable/hashable
-#         arbitrary_types_allowed = True  # Needed for torch.dtype
-
-#     def __hash__(self):
-#         return hash(
-#             (
-#                 self.model_id,
-#                 self.torch_dtype,
-#                 self.optimize_low_vram,
-#                 self.use_safetensors,
-#                 self.ip_adapter_models,
-#                 self.ip_adapter_subfolders,
-#                 self.ip_adapter_weights,
-#                 self.ip_adapter_image_encoder_model,
-#                 self.ip_adapter_image_encoder_subfolder,
-#             )
-#         )
