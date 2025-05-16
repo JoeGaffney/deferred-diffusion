@@ -5,6 +5,7 @@ from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_efs as efs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_secretsmanager as secretsmanager  # Add this import
+from aws_cdk import aws_servicediscovery as servicediscovery
 from constructs import Construct
 
 
@@ -35,6 +36,15 @@ class InfraStack(Stack):
 
         # ECS Cluster
         cluster = ecs.Cluster(self, "Cluster", vpc=vpc)
+
+        # Add this after creating the cluster
+        namespace = servicediscovery.PrivateDnsNamespace(
+            self,
+            "ServiceDiscovery",
+            name="deferred-diffusion.local",
+            vpc=vpc,
+            description="Private DNS namespace for service discovery",
+        )
 
         # EFS
         file_system = efs.FileSystem(
@@ -71,13 +81,13 @@ class InfraStack(Stack):
                 "PYTHONUNBUFFERED": "1",
                 "HF_HOME": "/WORKSPACE",
                 "TORCH_HOME": "/WORKSPACE",
-                "CELERY_BROKER_URL": "redis://redis:6379/0",
-                "CELERY_RESULT_BACKEND": "redis://redis:6379/1",
+                "CELERY_BROKER_URL": "redis://redis.deferred-diffusion.local:6379/0",
+                "CELERY_RESULT_BACKEND": "redis://redis.deferred-diffusion.local:6379/1",
             },
         )
         api_container.add_port_mappings(ecs.PortMapping(container_port=5000))
 
-        ecs.FargateService(
+        api_service = ecs.FargateService(
             self,
             "ApiService",
             cluster=cluster,
@@ -98,7 +108,7 @@ class InfraStack(Stack):
             port_mappings=[ecs.PortMapping(container_port=6379)],
         )
 
-        ecs.FargateService(
+        redis_service = ecs.FargateService(
             self,
             "RedisService",
             cluster=cluster,
@@ -107,6 +117,11 @@ class InfraStack(Stack):
             assign_public_ip=True,
             security_groups=[sg],
             vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
+            cloud_map_options=ecs.CloudMapOptions(
+                name="redis",  # This creates redis.deferred-diffusion.local
+                cloud_map_namespace=namespace,
+                dns_record_type=servicediscovery.DnsRecordType.A,
+            ),
         )
 
         enable_workers = False
@@ -131,8 +146,8 @@ class InfraStack(Stack):
                     "HF_TOKEN": "dummy-token",
                     "HF_HOME": "/WORKSPACE",
                     "TORCH_HOME": "/WORKSPACE",
-                    "CELERY_BROKER_URL": "redis://redis:6379/0",
-                    "CELERY_RESULT_BACKEND": "redis://redis:6379/1",
+                    "CELERY_BROKER_URL": "redis://redis.deferred-diffusion.local:6379/0",
+                    "CELERY_RESULT_BACKEND": "redis://redis.deferred-diffusion.local:6379/1",
                 },
                 # mount_points=[ecs.MountPoint(container_path="/WORKSPACE", source_volume=volume_name, read_only=False)],
             )
