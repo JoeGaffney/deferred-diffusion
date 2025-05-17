@@ -1,20 +1,43 @@
 import aws_cdk as cdk
 from aws_cdk import Stack
+from aws_cdk import aws_autoscaling as autoscaling
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_efs as efs
+from aws_cdk import aws_events as events
+from aws_cdk import aws_events_targets as targets
 from aws_cdk import aws_iam as iam
+from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_secretsmanager as secretsmanager  # Add this import
 from aws_cdk import aws_servicediscovery as servicediscovery
 from constructs import Construct
+
+"""
+# GPU cost notes
+Instance Size	GPU (GB)  	vCPUs	Memory(GiB)	Storage (GB)  	EUR  				USA
+g6e.xlarge		48			4	    32		    250		        2.327 USD 	        1.861 USD per Hour
+g6e.2xlarge		48			8	    64		    450		        2.8035 USD 	        2.24208 USD per Hour
+g5.4xlarge		24			16	    64		    1x600						        $1.624	
+
+
+Ireland viable
+g5.2xlarge
+g5.4xlarge
+
+Need to swich to Sweaden to g6e instances or USA
+"""
 
 
 class InfraStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
+        # PORTS
+        redis_port = 6379
+
         # Reference the existing secret
         dockerhub_secret = secretsmanager.Secret.from_secret_name_v2(self, "DockerHubSecret", "dockerhub-credentials")
+        hf_token_secret = secretsmanager.Secret.from_secret_name_v2(self, "HfTokenSecret", "hf-token")
 
         # VPC (2 AZs, public subnets only)
         vpc = ec2.Vpc(
@@ -81,8 +104,8 @@ class InfraStack(Stack):
                 "PYTHONUNBUFFERED": "1",
                 "HF_HOME": "/WORKSPACE",
                 "TORCH_HOME": "/WORKSPACE",
-                "CELERY_BROKER_URL": "redis://redis.deferred-diffusion.local:6379/0",
-                "CELERY_RESULT_BACKEND": "redis://redis.deferred-diffusion.local:6379/1",
+                "CELERY_BROKER_URL": f"redis://redis.deferred-diffusion.local:{redis_port}/0",
+                "CELERY_RESULT_BACKEND": f"redis://redis.deferred-diffusion.local:{redis_port}/1",
             },
         )
         api_container.add_port_mappings(ecs.PortMapping(container_port=5000))
@@ -105,7 +128,7 @@ class InfraStack(Stack):
         redis_task.add_container(
             "redis",
             image=ecs.ContainerImage.from_registry("redis:latest"),
-            port_mappings=[ecs.PortMapping(container_port=6379)],
+            port_mappings=[ecs.PortMapping(container_port=redis_port)],
         )
 
         redis_service = ecs.FargateService(
@@ -124,9 +147,7 @@ class InfraStack(Stack):
             ),
         )
 
-        enable_workers = False
-        if enable_workers:
-            # EC2 Task for Worker (to support GPU if needed later)
+        def worker_task():
             worker_task = ecs.Ec2TaskDefinition(self, "WorkerTaskDef", network_mode=ecs.NetworkMode.AWS_VPC)
             volume_name = "hf_cache"
             worker_task.add_volume(
@@ -136,20 +157,23 @@ class InfraStack(Stack):
 
             worker_container = worker_task.add_container(
                 "worker",
-                image=ecs.ContainerImage.from_registry("joegaffney/deferred-diffusion:worker-latest"),
-                memory_limit_mib=2048,
-                cpu=1024,
+                image=ecs.ContainerImage.from_registry(
+                    "joegaffney/deferred-diffusion:worker-latest", credentials=dockerhub_secret
+                ),
+                memory_limit_mib=57344,  # ~56GB (out of 64GB total on g5.4xlarge)
+                cpu=15360,  # ~15 vCPUs (out of 16 total on g5.4xlarge)
                 environment={
                     "PYTHONUNBUFFERED": "1",
                     "OPENAI_API_KEY": "dummy-key",
                     "RUNWAYML_API_SECRET": "dummy-secret",
-                    "HF_TOKEN": "dummy-token",
                     "HF_HOME": "/WORKSPACE",
                     "TORCH_HOME": "/WORKSPACE",
-                    "CELERY_BROKER_URL": "redis://redis.deferred-diffusion.local:6379/0",
-                    "CELERY_RESULT_BACKEND": "redis://redis.deferred-diffusion.local:6379/1",
+                    "CELERY_BROKER_URL": f"redis://redis.deferred-diffusion.local:{redis_port}/0",
+                    "CELERY_RESULT_BACKEND": f"redis://redis.deferred-diffusion.local:{redis_port}/1",
                 },
-                # mount_points=[ecs.MountPoint(container_path="/WORKSPACE", source_volume=volume_name, read_only=False)],
+                secrets={
+                    "HF_TOKEN": ecs.Secret.from_secrets_manager(hf_token_secret),
+                },
             )
 
             # Add mount points to the container after creation
@@ -160,7 +184,7 @@ class InfraStack(Stack):
             # EC2 Capacity
             cluster.add_capacity(
                 "DefaultAutoScalingGroup",
-                instance_type=ec2.InstanceType("t3.large"),
+                instance_type=ec2.InstanceType("g5.4xlarge"),
                 desired_capacity=1,
                 vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
             )
@@ -175,3 +199,59 @@ class InfraStack(Stack):
                 security_groups=[sg],
                 vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
             )
+
+        worker_task()
+
+        def queue_monitor_task():
+            # Create the Lambda function from a file instead of inline code
+            queue_monitor_role = iam.Role(
+                self,
+                "QueueMonitorRole",
+                assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+                managed_policies=[
+                    iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole"),
+                    iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchFullAccess"),
+                ],
+            )
+
+            # Add ECS and EC2 permissions
+            queue_monitor_role.add_to_policy(
+                iam.PolicyStatement(
+                    actions=[
+                        "ecs:UpdateService",
+                        "ecs:DescribeServices",
+                        "ec2:CreateNetworkInterface",
+                        "ec2:DescribeNetworkInterfaces",
+                        "ec2:DeleteNetworkInterface",
+                    ],
+                    resources=["*"],
+                )
+            )
+
+            # Create Lambda from a separate file
+            queue_monitor = lambda_.Function(
+                self,
+                "QueueMonitorFunction",
+                runtime=lambda_.Runtime.PYTHON_3_9,
+                handler="queue_monitor.handler",
+                code=lambda_.Code.from_asset("lambda"),  # Put your Lambda code in a 'lambda' directory
+                # code=lambda_.Code.from_asset("../lambda"),
+                vpc=vpc,
+                security_groups=[sg],
+                timeout=cdk.Duration.seconds(30),
+                environment={
+                    "REDIS_HOST": "redis.deferred-diffusion.local",
+                    "REDIS_PORT": str(redis_port),
+                    "CLUSTER_NAME": cluster.cluster_name,
+                    "SERVICE_NAME": "WorkerService",
+                    "MIN_TASKS_THRESHOLD": "1",  # Minimum task threshold to scale up from 0
+                    "MAX_QUEUE_AGE_SECONDS": "600",  # How long a task can sit in queue before scaling
+                },
+                # Pass the role as ARN instead of directly
+                role=iam.Role.from_role_arn(self, "ImportedQueueMonitorRole", role_arn=queue_monitor_role.role_arn),
+                # role=queue_monitor_role,
+            )
+
+            # Schedule Lambda to run every minute
+            rule = events.Rule(self, "ScheduleRule", schedule=events.Schedule.rate(cdk.Duration.minutes(1)))
+            rule.add_target(targets.LambdaFunction(queue_monitor))  # type: ignore
