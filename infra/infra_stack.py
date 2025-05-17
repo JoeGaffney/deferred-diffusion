@@ -51,7 +51,7 @@ class InfraStack(Stack):
         # Create services
         self.create_api_service()
         self.create_redis_service()
-        # self.create_worker_service()
+        self.create_worker_service()
         # self.create_queue_monitor()
 
     def setup_vpc_and_security(self):
@@ -74,6 +74,8 @@ class InfraStack(Stack):
 
         # Only allow public access to the API port
         self.sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(self.api_port), "Allow public access to API")
+        # Add to your security group setup
+        self.sg.add_egress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(2049), "Allow outbound NFS traffic")
 
     def setup_efs(self):
         # EFS for model caching
@@ -83,6 +85,7 @@ class InfraStack(Stack):
             vpc=self.vpc,
             removal_policy=cdk.RemovalPolicy.DESTROY,
             lifecycle_policy=efs.LifecyclePolicy.AFTER_7_DAYS,
+            vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
         )
 
         # Mount target security group
@@ -122,10 +125,11 @@ class InfraStack(Stack):
             image=ecs.ContainerImage.from_registry(
                 "joegaffney/deferred-diffusion:api-latest", credentials=self.dockerhub_secret
             ),
+            logging=ecs.LogDrivers.aws_logs(
+                stream_prefix="api-container", log_retention=cdk.aws_logs.RetentionDays.ONE_DAY
+            ),
             environment={
                 "PYTHONUNBUFFERED": "1",
-                "HF_HOME": "/WORKSPACE",
-                "TORCH_HOME": "/WORKSPACE",
                 "CELERY_BROKER_URL": f"redis://redis.deferred-diffusion.local:{self.redis_port}/0",
                 "CELERY_RESULT_BACKEND": f"redis://redis.deferred-diffusion.local:{self.redis_port}/1",
             },
@@ -151,6 +155,9 @@ class InfraStack(Stack):
         redis_task.add_container(
             "redis",
             image=ecs.ContainerImage.from_registry("redis:latest"),
+            logging=ecs.LogDrivers.aws_logs(
+                stream_prefix="redis-container", log_retention=cdk.aws_logs.RetentionDays.ONE_DAY
+            ),
             port_mappings=[ecs.PortMapping(container_port=self.redis_port)],
         )
 
@@ -171,20 +178,49 @@ class InfraStack(Stack):
         )
 
     def create_worker_service(self):
-        worker_task = ecs.Ec2TaskDefinition(self, "WorkerTaskDef", network_mode=ecs.NetworkMode.AWS_VPC)
+        # Create role with proper EFS permissions
+        worker_task_role = iam.Role(self, "WorkerTaskRole", assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"))
+        worker_task_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "elasticfilesystem:ClientMount",
+                    "elasticfilesystem:ClientRootAccess",
+                    "elasticfilesystem:ClientWrite",
+                ],
+                resources=[self.file_system.file_system_arn],
+            )
+        )
+
+        # Create task definition with the role assigned
+        worker_task = ecs.Ec2TaskDefinition(
+            self,
+            "WorkerTaskDef",
+            network_mode=ecs.NetworkMode.AWS_VPC,
+            task_role=worker_task_role,
+            execution_role=self.task_role,  # Add execution role as well
+        )
+
         volume_name = "hf_cache"
         worker_task.add_volume(
             name=volume_name,
-            efs_volume_configuration=ecs.EfsVolumeConfiguration(file_system_id=self.file_system.file_system_id),
+            efs_volume_configuration=ecs.EfsVolumeConfiguration(
+                file_system_id=self.file_system.file_system_id,
+                transit_encryption="ENABLED",
+                authorization_config=ecs.AuthorizationConfig(iam="ENABLED"),
+            ),
         )
-
         worker_container = worker_task.add_container(
             "worker",
             image=ecs.ContainerImage.from_registry(
                 "joegaffney/deferred-diffusion:worker-latest", credentials=self.dockerhub_secret
             ),
-            memory_limit_mib=57344,  # ~56GB (out of 64GB total on g5.4xlarge)
-            cpu=15360,  # ~15 vCPUs (out of 16 total on g5.4xlarge)
+            # Add logging configuration here:
+            logging=ecs.LogDrivers.aws_logs(
+                stream_prefix="worker-container", log_retention=cdk.aws_logs.RetentionDays.ONE_DAY
+            ),
+            # memory_limit_mib=57344,  # ~56GB (out of 64GB total on g5.4xlarge)
+            # cpu=15360,  # ~15 vCPUs (out of 16 total on g5.4xlarge)
+            memory_reservation_mib=1024 * 12,  # Soft limit (1GB)
             environment={
                 "PYTHONUNBUFFERED": "1",
                 "OPENAI_API_KEY": "dummy-key",
@@ -197,6 +233,7 @@ class InfraStack(Stack):
             secrets={
                 "HF_TOKEN": ecs.Secret.from_secrets_manager(self.hf_token_secret),
             },
+            gpu_count=1,
         )
 
         worker_container.add_mount_points(
@@ -204,11 +241,29 @@ class InfraStack(Stack):
         )
 
         # EC2 Capacity
+        # instance_role = iam.Role(
+        #     self,
+        #     "Ec2InstanceRole",
+        #     assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+        #     managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEC2ContainerServiceforEC2Role")],
+        # )
+        # instance_role.add_to_policy(
+        #     iam.PolicyStatement(
+        #         actions=[
+        #             "elasticfilesystem:ClientMount",
+        #             "elasticfilesystem:ClientWrite",
+        #             "elasticfilesystem:ClientRootAccess",
+        #         ],
+        #         resources=[self.file_system.file_system_arn],
+        #     )
+        # )
+
         self.cluster.add_capacity(
             "DefaultAutoScalingGroup",
-            instance_type=ec2.InstanceType("g5.4xlarge"),
+            instance_type=ec2.InstanceType("g5.xlarge"),
             desired_capacity=1,
             vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
+            machine_image=ecs.EcsOptimizedImage.amazon_linux2(hardware_type=ecs.AmiHardwareType.GPU),
         )
 
         self.worker_service = ecs.Ec2Service(
@@ -220,6 +275,16 @@ class InfraStack(Stack):
             security_groups=[self.sg],
             vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
         )
+
+        # Spot Instances for cost savings
+        # self.cluster.add_capacity(
+        #     "DefaultAutoScalingGroup",
+        #     instance_type=ec2.InstanceType("g5.4xlarge"),
+        #     desired_capacity=1,
+        #     vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
+        #     spot_price="2.00",  # Maximum price you're willing to pay per hour (in USD)
+        #     spot_instance_draining=True,  # Allow for graceful termination
+        # )
 
     def create_queue_monitor(self):
         queue_monitor_role = iam.Role(
