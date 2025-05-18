@@ -24,7 +24,7 @@ Ireland viable
 g5.2xlarge
 g5.4xlarge
 
-Need to swich to Sweaden to g6e instances or USA
+Need to switch to Sweden to g6e instances or USA
 """
 
 
