@@ -1,4 +1,4 @@
-.PHONY: all build down up generate-clients test-texts test-images tag-and-push
+.PHONY: all build down up generate-clients test-texts test-images test-it-tests tag-and-push
 
 # Default target
 all: generate-clients
@@ -31,6 +31,10 @@ test-images: generate-clients
 	cd ..
 	docker-compose exec workers pytest tests/images
 
+test-it-tests: generate-clients
+	cd it_tests && pytest -vs
+	cd ..
+	
 # Tag and push Docker images to GitHub Container Registry
 tag-and-push:
 # Define variables

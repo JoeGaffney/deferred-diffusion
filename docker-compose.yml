@@ -10,6 +10,7 @@ services:
     volumes:
       - hf_cache:/WORKSPACE # Using Docker named volume
     environment:
+      - DEF_DIF_API_KEYS=${DEF_DIF_API_KEYS}
       - PYTHONUNBUFFERED=1
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE

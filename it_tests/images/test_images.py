@@ -3,8 +3,9 @@ from http import HTTPStatus
 from uuid import UUID
 
 import pytest
+
 from generated.api_client.api.images import images_create, images_get
-from generated.api_client.client import Client
+from generated.api_client.client import AuthenticatedClient, Client
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
@@ -15,10 +16,10 @@ model = ImageRequestModel("sd1.5")
 
 @pytest.fixture
 def api_client():
-    """Fixture to create API client for tests."""
-
-    base_url = os.getenv("DD_SERVER_ADDRESS", "http://127.0.0.1:5000")
-    return Client(base_url=base_url)
+    return AuthenticatedClient(
+        base_url=os.getenv("DEF_DIF_API_ADDRESS", "http://127.0.0.1:5000"),
+        token=os.getenv("DEF_DIF_API_KEY", ""),
+    )
 
 
 def create_image(api_client):
