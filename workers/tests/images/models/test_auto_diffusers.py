@@ -34,8 +34,8 @@ def test_models(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                image=None if mode == "text_to_image" else image_to_base64("../test_data/color_v001.jpeg"),
-                mask=image_to_base64("../test_data/mask_v001.png"),
+                image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
+                mask=image_to_base64("../assets/mask_v001.png"),
                 prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,
                 guidance_scale=5,

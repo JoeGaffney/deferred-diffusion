@@ -9,7 +9,7 @@ from utils.utils import load_image_from_base64
 def test_sequence_agent_image_conversion():
     """Test the conversion of an image to base64."""
 
-    image_a = image_to_base64("../test_data/color_v001.jpeg")
+    image_a = image_to_base64("../assets/color_v001.jpeg")
     pil_image = load_image_from_base64(image_a)
 
     assert isinstance(pil_image, Image.Image), "Expected 'result' to be a PIL image"
@@ -18,7 +18,7 @@ def test_sequence_agent_image_conversion():
 def test_sequence_agent_image_passing():
     sequence_data = SequenceRequest(
         prompt="Create a sequence about an adventure.",
-        scene_reference_image=image_to_base64("../test_data/color_v001.jpeg"),
+        scene_reference_image=image_to_base64("../assets/color_v001.jpeg"),
     )
 
     data = TextRequest(
@@ -52,9 +52,9 @@ def test_sequence_agent_with_references():
     result = main(
         SequenceRequest(
             prompt="Create a sequence about an adventure.",
-            scene_reference_image=image_to_base64("../test_data/color_v001.jpeg"),
-            # protagonist_reference_image=image_to_base64("../test_data/face_v001.jpeg"),
-            # antagonist_reference_image=image_to_base64("../test_data/face_v002.jpeg"),
+            scene_reference_image=image_to_base64("../assets/color_v001.jpeg"),
+            # protagonist_reference_image=image_to_base64("../assets/face_v001.jpeg"),
+            # antagonist_reference_image=image_to_base64("../assets/face_v002.jpeg"),
         )
     )
 

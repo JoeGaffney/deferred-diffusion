@@ -25,7 +25,7 @@ def test_models(mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                image=image_to_base64("../test_data/style_v001.jpeg"),
+                image=image_to_base64("../assets/style_v001.jpeg"),
                 prompt="Person, house, tree, flowers",
                 strength=0.5,
                 guidance_scale=5,

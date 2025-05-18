@@ -26,7 +26,7 @@ def test_models(mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                image=image_to_base64("../test_data/color_v001.jpeg"),
+                image=image_to_base64("../assets/color_v001.jpeg"),
                 prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,
                 guidance_scale=5,

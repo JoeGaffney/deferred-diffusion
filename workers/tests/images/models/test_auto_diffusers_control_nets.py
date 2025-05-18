@@ -23,13 +23,13 @@ MODELS = ["sdxl", "sd3", "sd3.5"]
 # Update the mapping to use these keys
 MODEL_CONTROLNET_MAPPING = {
     "sdxl": [
-        ControlNetSchema(model="canny", image=image_to_base64("../test_data/canny_v001.png"), conditioning_scale=0.5)
+        ControlNetSchema(model="canny", image=image_to_base64("../assets/canny_v001.png"), conditioning_scale=0.5)
     ],
     "sd3": [
-        ControlNetSchema(model="canny", image=image_to_base64("../test_data/canny_v001.png"), conditioning_scale=0.5)
+        ControlNetSchema(model="canny", image=image_to_base64("../assets/canny_v001.png"), conditioning_scale=0.5)
     ],
     "sd3.5": [
-        ControlNetSchema(model="canny", image=image_to_base64("../test_data/canny_v001.png"), conditioning_scale=0.5)
+        ControlNetSchema(model="canny", image=image_to_base64("../assets/canny_v001.png"), conditioning_scale=0.5)
     ],
 }
 
@@ -50,8 +50,8 @@ def test_models_with_control_nets(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                image=None if mode == "text_to_image" else image_to_base64("../test_data/color_v001.jpeg"),
-                mask=image_to_base64("../test_data/mask_v001.png"),
+                image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
+                mask=image_to_base64("../assets/mask_v001.png"),
                 prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
                 strength=0.5,
                 guidance_scale=5,
