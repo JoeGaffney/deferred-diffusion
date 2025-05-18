@@ -10,15 +10,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY workers/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install additional dependencies
 RUN pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git --no-deps --ignore-requires-python
 RUN pip install --no-cache-dir --no-deps sam2 --ignore-requires-python
 RUN pip install --no-cache-dir supervision hydra-core iopath
-RUN pip install --no-cache-dir celery redis
-RUN pip install --no-cache-dir pytest
 
 # Copy only specific directories instead of everything
 COPY workers/ ./workers/

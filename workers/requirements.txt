@@ -1,7 +1,6 @@
 accelerate
 bitsandbytes
 diffusers
-fastapi
 ftfy
 gguf
 imageio
@@ -11,10 +10,11 @@ openapi-python-client
 opencv-python
 protobuf
 pydantic
-pydantic-ai
 qwen-vl-utils
 runwayml
 sentencepiece
 transformers
-uvicorn
 hf_xet
+celery
+redis
+pytest

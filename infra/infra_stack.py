@@ -195,7 +195,7 @@ class InfraStack(Stack):
         worker_task = ecs.Ec2TaskDefinition(
             self,
             "WorkerTaskDef",
-            network_mode=ecs.NetworkMode.AWS_VPC,
+            network_mode=ecs.NetworkMode.BRIDGE,
             task_role=worker_task_role,
             execution_role=self.task_role,  # Add execution role as well
         )
@@ -241,41 +241,33 @@ class InfraStack(Stack):
         )
 
         # EC2 Capacity
-        # instance_role = iam.Role(
-        #     self,
-        #     "Ec2InstanceRole",
-        #     assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
-        #     managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEC2ContainerServiceforEC2Role")],
-        # )
-        # instance_role.add_to_policy(
-        #     iam.PolicyStatement(
-        #         actions=[
-        #             "elasticfilesystem:ClientMount",
-        #             "elasticfilesystem:ClientWrite",
-        #             "elasticfilesystem:ClientRootAccess",
-        #         ],
-        #         resources=[self.file_system.file_system_arn],
-        #     )
-        # )
-
-        self.cluster.add_capacity(
-            "DefaultAutoScalingGroup",
+        asg = autoscaling.AutoScalingGroup(
+            self,
+            "WorkerAutoScalingGroup",
+            vpc=self.vpc,
             instance_type=ec2.InstanceType("g5.xlarge"),
+            machine_image=ecs.EcsOptimizedImage.amazon_linux2(hardware_type=ecs.AmiHardwareType.GPU),
             desired_capacity=1,
             vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
-            machine_image=ecs.EcsOptimizedImage.amazon_linux2(hardware_type=ecs.AmiHardwareType.GPU),
+            associate_public_ip_address=True,
+            security_group=self.sg,  # This is critical for EFS access
         )
 
+        # Add the ASG to the cluster
+        capacity_provider = ecs.AsgCapacityProvider(self, "AsgCapacityProvider", auto_scaling_group=asg)
+        self.cluster.add_asg_capacity_provider(capacity_provider)
+
+        # Create the EC2 Service using the capacity provider
         self.worker_service = ecs.Ec2Service(
             self,
             "WorkerService",
             cluster=self.cluster,
             task_definition=worker_task,
             desired_count=1,
-            security_groups=[self.sg],
-            vpc_subnets={"subnet_type": ec2.SubnetType.PUBLIC},
+            capacity_provider_strategies=[
+                ecs.CapacityProviderStrategy(capacity_provider=capacity_provider.capacity_provider_name, weight=1)
+            ],
         )
-
         # Spot Instances for cost savings
         # self.cluster.add_capacity(
         #     "DefaultAutoScalingGroup",
