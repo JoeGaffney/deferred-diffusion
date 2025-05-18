@@ -46,7 +46,7 @@ def test_style(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                image=None if mode == "text_to_image" else image_to_base64("../test_data/color_v001.jpeg"),
+                image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
                 prompt="a cat, masterpiece, best quality, high quality",
                 negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
                 strength=0.75,
@@ -55,7 +55,7 @@ def test_style(model_id, mode):
                 max_height=height,
                 controlnets=[],
                 ip_adapters=[
-                    IpAdapterModel(image=image_to_base64("../test_data/style_v001.jpeg"), model="style", scale=0.5)
+                    IpAdapterModel(image=image_to_base64("../assets/style_v001.jpeg"), model="style", scale=0.5)
                 ],
             )
         ),
@@ -93,8 +93,8 @@ def test_face(model_id, mode):
                 max_height=height,
                 controlnets=[],
                 ip_adapters=[
-                    IpAdapterModel(image=image_to_base64("../test_data/style_v001.jpeg"), model="style", scale=0.5),
-                    IpAdapterModel(image=image_to_base64("../test_data/face_v001.jpeg"), model="face", scale=0.5),
+                    IpAdapterModel(image=image_to_base64("../assets/style_v001.jpeg"), model="style", scale=0.5),
+                    IpAdapterModel(image=image_to_base64("../assets/face_v001.jpeg"), model="face", scale=0.5),
                 ],
             )
         ),

@@ -18,9 +18,9 @@ model = TextRequestModel("Qwen/Qwen2.5-VL-3B-Instruct")
 model = TextRequestModel("gpt-4o-mini")
 # model = TextRequestModel("gpt-4.1-mini")
 
-image_a = image_to_base64("../test_data/color_v001.jpeg")
-image_b = image_to_base64("../test_data/style_v001.jpeg")
-video_a = image_to_base64("../test_data/video_v001.mp4")
+image_a = image_to_base64("../assets/color_v001.jpeg")
+image_b = image_to_base64("../assets/style_v001.jpeg")
+video_a = image_to_base64("../assets/video_v001.mp4")
 
 
 @pytest.fixture

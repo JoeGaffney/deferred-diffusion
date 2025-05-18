@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir supervision hydra-core iopath
 
 # Copy only specific directories instead of everything
 COPY workers/ ./workers/
-COPY test_data/ ./test_data/
+COPY assets/ ./assets/
 
 # Set the working directory to the api folder
 WORKDIR /app/workers

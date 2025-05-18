@@ -20,7 +20,7 @@ def test_image_to_video():
         VideoContext(
             VideoRequest(
                 model="LTX-Video",
-                image=image_to_base64("../test_data/color_v002.png"),
+                image=image_to_base64("../assets/color_v002.png"),
                 prompt="A man with short gray hair plays a red electric guitar.",
                 num_inference_steps=20,
                 guidance_scale=4,

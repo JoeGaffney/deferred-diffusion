@@ -125,7 +125,7 @@ You can call from the make file.
 
 ```
 Make test-images
-Make test-tests
+Make test-texts
 ``
 
 Or locally

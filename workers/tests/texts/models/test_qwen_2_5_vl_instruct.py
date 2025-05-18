@@ -7,9 +7,9 @@ from texts.context import TextContext
 from texts.models.qwen_2_5_vl_instruct import main
 from texts.schemas import MessageContent, MessageItem, TextRequest
 
-image_a = image_to_base64("../test_data/color_v001.jpeg")
-image_b = image_to_base64("../test_data/style_v001.jpeg")
-video_a = image_to_base64("../test_data/video_v001.mp4")
+image_a = image_to_base64("../assets/color_v001.jpeg")
+image_b = image_to_base64("../assets/style_v001.jpeg")
+video_a = image_to_base64("../assets/video_v001.mp4")
 
 
 def validate_result(result, expected_keyword=None):

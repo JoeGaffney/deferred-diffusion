@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy only specific directories instead of everything
 COPY api/ ./api/
-COPY test_data/ ./test_data/
+COPY assets/ ./assets/
 
 # Set the working directory to the api folder
 WORKDIR /app/api
