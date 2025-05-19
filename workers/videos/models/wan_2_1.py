@@ -28,7 +28,7 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         model_id=model_id,
         subfolder="text_encoder",
         model_class=UMT5EncoderModel,
-        load_in_4bit=False,
+        load_in_4bit=True,
         torch_dtype=torch_dtype,
         disabled=True,
     )
