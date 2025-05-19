@@ -1,49 +1,38 @@
 from functools import lru_cache
 
 import torch
-from diffusers import (
-    GGUFQuantizationConfig,
-    HunyuanVideoImageToVideoPipeline,
-    HunyuanVideoTransformer3DModel,
-)
-from diffusers.utils import load_image
-from huggingface_hub import hf_hub_download
-from transformers import BitsAndBytesConfig, CLIPTextModel, LlamaModel, QuantoConfig
+from diffusers import HunyuanVideoImageToVideoPipeline, HunyuanVideoTransformer3DModel
+from transformers import CLIPTextModel
 
 from common.logger import logger
+from common.pipeline_helpers import get_quantized_model
 from utils.utils import cache_info_decorator, get_16_9_resolution, resize_image
 from videos.context import VideoContext
-from videos.schemas import VideoRequest
-
-# quant_config = BitsAndBytesConfig(load_in_8bit=True, llm_int8_enable_fp32_cpu_offload=True) # won't offload to GPU
-quant_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16)
-# quant_config = BitsAndBytesConfig(load_in_8bit=True, bnb_8bit_compute_dtype=torch.bfloat16)
-# quant_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="fp4", bnb_4bit_compute_dtype=torch.bfloat16)
 
 
 @cache_info_decorator
 @lru_cache(maxsize=1)
 def get_pipeline(model_id="hunyuanvideo-community/HunyuanVideo-I2V"):
-    transformer = HunyuanVideoTransformer3DModel.from_pretrained(
+
+    transformer = get_quantized_model(
         model_id,
         subfolder="transformer",
-        quantization_config=quant_config,
+        model_class=HunyuanVideoTransformer3DModel,
+        load_in_4bit=True,
         torch_dtype=torch.bfloat16,
     )
+
     # text_encoder = LlamaModel.from_pretrained(
     #     model_id, subfolder="text_encoder", quantization_config=quant_config, torch_dtype=torch.float16
     # )
-    text_encoder_2 = CLIPTextModel.from_pretrained(
-        model_id, subfolder="text_encoder_2", quantization_config=quant_config, torch_dtype=torch.float16
+
+    text_encoder_2 = get_quantized_model(
+        model_id,
+        subfolder="text_encoder_2",
+        model_class=CLIPTextModel,
+        load_in_4bit=True,
+        torch_dtype=torch.float16,
     )
-    # gguf_transformer_path = hf_hub_download(
-    #     repo_id="city96/HunyuanVideo-I2V-gguf", filename="hunyuan-video-i2v-720p-Q5_K_M.gguf"
-    # )
-    # transformer = HunyuanVideoTransformer3DModel.from_single_file(
-    #     gguf_transformer_path,
-    #     quantization_config=GGUFQuantizationConfig(compute_dtype=torch.float16),
-    #     torch_dtype=torch.float16,
-    # )
 
     pipe = HunyuanVideoImageToVideoPipeline.from_pretrained(
         model_id,
@@ -63,7 +52,7 @@ def get_pipeline(model_id="hunyuanvideo-community/HunyuanVideo-I2V"):
 
 def image_to_video(context: VideoContext):
     pipe = get_pipeline()
-    width, height = get_16_9_resolution("540p")
+    width, height = get_16_9_resolution("1080p")
     image = context.image
     image = resize_image(image, 32, 1.0, width, height)
 
