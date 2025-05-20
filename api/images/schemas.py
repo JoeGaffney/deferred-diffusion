@@ -98,7 +98,9 @@ class ImageRequest(BaseModel):
     max_width: int = 2048
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     num_inference_steps: int = 25
-    optimize_low_vram: bool = False
+    target_precision: Literal[4, 8, 16] = Field(
+        8, description="Global target precision for quantization; applied selectively per model and component."
+    )
     prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
     strength: float = 0.5
@@ -143,5 +145,4 @@ class ImageCreateResponse(BaseModel):
 class ModelConfig(BaseModel):
     model_path: str
     model_family: str
-    transformer_guf_path: str
     mode: str = "auto"

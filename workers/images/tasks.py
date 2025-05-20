@@ -7,15 +7,14 @@ from images.models.depth_anything import main as depth_anything
 from images.models.segment_anything import main as segment_anything
 from images.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
 from images.schemas import ImageRequest, ImageWorkerResponse
-from utils.utils import pil_to_base64
+from utils.utils import free_gpu_memory, pil_to_base64
 from worker import celery_app
 
 
 @celery_app.task(name="process_image")
 def process_image(request_dict):
-    # Convert dictionary back to proper object
+    free_gpu_memory()
     request = ImageRequest.model_validate(request_dict)
-
     context = ImageContext(request)
     mode = context.model_config.mode
     family = context.model_config.model_family

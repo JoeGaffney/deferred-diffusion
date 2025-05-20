@@ -31,31 +31,26 @@ quant_config = QuantoConfig(weights="int8")
 
 def get_pipeline_flux(config: PipelineConfig):
     args = {}
-    if config.optimize_low_vram:
+    if config.target_precision == 4 or config.target_precision == 8:
+        load_in_4bit = True
+        if config.target_precision == 8:
+            load_in_4bit = False
+
         args["transformer"] = get_quantized_model(
             model_id=config.model_id,
             subfolder="transformer",
             model_class=FluxTransformer2DModel,
-            load_in_4bit=True,
+            load_in_4bit=load_in_4bit,
             torch_dtype=torch.bfloat16,
         )
         args["text_encoder_2"] = get_quantized_model(
             model_id=config.model_id,
             subfolder="text_encoder_2",
             model_class=T5EncoderModel,
-            load_in_4bit=True,
-            torch_dtype=torch.bfloat16,
-        )
-    else:
-        args["transformer"] = get_quantized_model(
-            model_id=config.model_id,
-            subfolder="transformer",
-            model_class=FluxTransformer2DModel,
-            load_in_4bit=False,
+            load_in_4bit=load_in_4bit,
             torch_dtype=torch.bfloat16,
         )
 
-    # NOTE investigate quantization config
     pipe = FluxPipeline.from_pretrained(
         config.model_id,
         torch_dtype=torch.bfloat16,
@@ -105,7 +100,7 @@ def get_pipeline(config: PipelineConfig):
             # Supposed to help with consistency
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)
+    return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
 
 def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):

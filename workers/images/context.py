@@ -26,12 +26,7 @@ IMAGE_MODEL_CONFIG = {
     "Fluently-XL": {"family": "sdxl", "model_path": "fluently/Fluently-XL-v4", "mode": "auto"},
     "sd3": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3-medium-diffusers", "mode": "auto"},
     "sd3.5": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3.5-medium", "mode": "auto"},
-    "flux-schnell": {
-        "family": "flux",
-        "model_path": "black-forest-labs/FLUX.1-schnell",
-        "transformer_guf_path": "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q5_0.gguf",
-        "mode": "auto",
-    },
+    "flux-schnell": {"family": "flux", "model_path": "black-forest-labs/FLUX.1-schnell", "mode": "auto"},
     "depth-anything": {
         "family": "depth_anything",
         "model_path": "depth-anything/Depth-Anything-V2-Large-hf",
@@ -59,7 +54,6 @@ def get_model_config(key: str) -> ModelConfig:
     return ModelConfig(
         model_path=config.get("model_path", ""),
         model_family=config.get("family", ""),
-        transformer_guf_path=config.get("transformer_guf_path", ""),
         mode=config["mode"],
     )
 
@@ -73,7 +67,7 @@ class ImageContext:
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
-        self.optimize_low_vram = bool(data.optimize_low_vram)
+        self.target_precision = data.target_precision
 
         # Round down to nearest multiple of 16
         self.division = 16
@@ -141,9 +135,8 @@ class ImageContext:
         return PipelineConfig(
             model_id=self.model_config.model_path,
             model_family=self.model_config.model_family,
-            model_transformer_guf_path=self.model_config.transformer_guf_path,
             torch_dtype=self.torch_dtype,
-            optimize_low_vram=self.optimize_low_vram,
+            target_precision=self.target_precision,
             use_safetensors=True,
             ip_adapter_models=tuple(models),
             ip_adapter_subfolders=tuple(subfolders),

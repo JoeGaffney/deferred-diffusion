@@ -13,17 +13,15 @@ from utils.utils import ensure_path_exists, get_16_9_resolution
 MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
 
 MODELS = ["flux-schnell", "sdxl", "sd3", "sd3.5"]
-OPTIMIZE_LOW_VRAM = [True]
+DEPTH = [4, 8, 16]
 
 
 @pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize("model_id", MODELS)
-@pytest.mark.parametrize("optimize_low_vram", OPTIMIZE_LOW_VRAM)
-def test_models(model_id, mode, optimize_low_vram):
+@pytest.mark.parametrize("target_precision", DEPTH)
+def test_models(model_id, mode, target_precision):
     """Test models."""
-    output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}.png"
-    if optimize_low_vram:
-        output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}_optimize_low_vram.png"
+    output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}_precsion{target_precision}.png"
     width, height = get_16_9_resolution("540p")
 
     # Delete existing file if it exists
@@ -42,7 +40,7 @@ def test_models(model_id, mode, optimize_low_vram):
                 max_width=width,
                 max_height=height,
                 controlnets=[],
-                optimize_low_vram=optimize_low_vram,
+                target_precision=target_precision,
             )
         ),
         mode=mode,

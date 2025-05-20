@@ -8,6 +8,9 @@ from generated.api_client.api.images import images_create, images_get
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
+from generated.api_client.models.image_request_target_precision import (
+    ImageRequestTargetPrecision,
+)
 from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import UNSET
 from utils import (
@@ -78,7 +81,7 @@ def main(node):
         max_width=params.get("max_width", UNSET),
         negative_prompt=params.get("negative_prompt", UNSET),
         num_inference_steps=params.get("num_inference_steps", UNSET),
-        optimize_low_vram=params.get("optimize_low_vram", UNSET),
+        target_precision=ImageRequestTargetPrecision(int(params.get("target_precision", 8))),
         prompt=params.get("prompt", UNSET),
         seed=params.get("seed", UNSET),
         strength=params.get("strength", UNSET),

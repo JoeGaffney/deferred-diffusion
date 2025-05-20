@@ -2,14 +2,14 @@ from texts.context import TextContext
 from texts.models.auto_openai import main as auto_openai_main
 from texts.models.qwen_2_5_vl_instruct import main as qwen_2_5_vl_instruct_main
 from texts.schemas import TextRequest, TextWorkerResponse
+from utils.utils import free_gpu_memory
 from worker import celery_app
 
 
 @celery_app.task(name="process_text")
 def process_text(request_dict):
-    # Convert dictionary back to proper object
+    free_gpu_memory()
     request = TextRequest.model_validate(request_dict)
-
     context = TextContext(request)
 
     main = None

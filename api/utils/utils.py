@@ -22,7 +22,7 @@ def load_image_from_base64(base64_bytes: str) -> Image.Image:
         raise ValueError(f"Invalid Base64 data: {type(base64_bytes)} {e}") from e
 
 
-async def poll_until_complete(id, max_attempts=30, polling_interval=3) -> AsyncResult:
+async def poll_until_complete(id, max_attempts=90, polling_interval=10) -> AsyncResult:
     """
     Poll a Celery task until it's complete, max attempts reached, or timeout.
 
