@@ -1,7 +1,7 @@
 import os
 
 import torch
-from transformers import BitsAndBytesConfig, QuantoConfig
+from transformers import BitsAndBytesConfig, TorchAoConfig
 
 from common.logger import logger
 
@@ -65,18 +65,21 @@ def get_quantized_model(
 
     quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit)
 
-    # NOTE does not support saving to disk
-    # quant_config = QuantoConfig(weights="int8")
-
-    quant_config = BitsAndBytesConfig(load_in_8bit=True)
+    # NOTE does not support CPU model offload so using TorchAo for 8bit
+    # quant_config = BitsAndBytesConfig(load_in_8bit=True)  # , llm_int8_enable_fp32_cpu_offload=True)
+    quant_config = TorchAoConfig("int8_weight_only")
+    use_safetensors = False
     if load_in_4bit:
         quant_config = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch_dtype
         )
+        use_safetensors = True
 
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
-        model = model_class.from_pretrained(quant_dir, torch_dtype=torch_dtype)
+        model = model_class.from_pretrained(
+            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors
+        )
     except Exception as e:
         logger.warning(f"Failed to load quantized model from {quant_dir}: {e}")
         logger.info(f"Loading and quantizing {model_id} subfolder {subfolder}")
@@ -87,7 +90,7 @@ def get_quantized_model(
             torch_dtype=torch_dtype,
         )
         os.makedirs(quant_dir, exist_ok=True)
-        model.save_pretrained(quant_dir)
+        model.save_pretrained(quant_dir, safe_serialization=use_safetensors)
         logger.info(f"Saved quantized model to {quant_dir}")
 
     return model

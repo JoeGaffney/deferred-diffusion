@@ -10,6 +10,7 @@ from diffusers import (
     FluxPipeline,
     FluxTransformer2DModel,
     GGUFQuantizationConfig,
+    TorchAoConfig,
 )
 from PIL import Image
 from transformers import (
@@ -20,7 +21,7 @@ from transformers import (
 )
 
 from common.logger import logger
-from common.pipeline_helpers import optimize_pipeline
+from common.pipeline_helpers import get_quantized_model, optimize_pipeline
 from images.context import ImageContext
 from images.schemas import PipelineConfig
 from utils.utils import cache_info_decorator
@@ -29,26 +30,39 @@ quant_config = QuantoConfig(weights="int8")
 
 
 def get_pipeline_flux(config: PipelineConfig):
-    transformer = FluxTransformer2DModel.from_single_file(
-        config.model_transformer_guf_path,
-        quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
-        torch_dtype=torch.bfloat16,
-    )
+    args = {}
+    if config.optimize_low_vram:
+        args["transformer"] = get_quantized_model(
+            model_id=config.model_id,
+            subfolder="transformer",
+            model_class=FluxTransformer2DModel,
+            load_in_4bit=True,
+            torch_dtype=torch.bfloat16,
+        )
+        args["text_encoder_2"] = get_quantized_model(
+            model_id=config.model_id,
+            subfolder="text_encoder_2",
+            model_class=T5EncoderModel,
+            load_in_4bit=True,
+            torch_dtype=torch.bfloat16,
+        )
+    else:
+        args["transformer"] = get_quantized_model(
+            model_id=config.model_id,
+            subfolder="transformer",
+            model_class=FluxTransformer2DModel,
+            load_in_4bit=False,
+            torch_dtype=torch.bfloat16,
+        )
 
     # NOTE investigate quantization config
     pipe = FluxPipeline.from_pretrained(
         config.model_id,
-        transformer=transformer,
-        # text_encoder_2=T5EncoderModel.from_pretrained(
-        #     config.model_id,
-        #     subfolder="text_encoder_2",
-        #     quantization_config=quant_config,
-        #     torch_dtype=torch.bfloat16,
-        # ),
         torch_dtype=torch.bfloat16,
+        **args,
     )
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)
+    return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
 
 @cache_info_decorator

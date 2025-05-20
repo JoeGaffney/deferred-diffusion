@@ -18,3 +18,4 @@ hf_xet
 celery
 redis
 pytest
+torchao

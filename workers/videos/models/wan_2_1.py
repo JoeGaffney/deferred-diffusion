@@ -13,9 +13,13 @@ from videos.context import VideoContext
 @cache_info_decorator
 @lru_cache(maxsize=1)
 def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=torch.float16):
-    image_encoder = CLIPVisionModel.from_pretrained(model_id, subfolder="image_encoder", torch_dtype=torch_dtype)
-    vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch_dtype)
-
+    image_encoder = get_quantized_model(
+        model_id=model_id,
+        subfolder="image_encoder",
+        model_class=CLIPVisionModel,
+        load_in_4bit=True,
+        torch_dtype=torch_dtype,
+    )
     transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
@@ -30,12 +34,11 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         model_class=UMT5EncoderModel,
         load_in_4bit=True,
         torch_dtype=torch_dtype,
-        disabled=True,
+        # disabled=True,
     )
 
     pipe = WanImageToVideoPipeline.from_pretrained(
         model_id,
-        vae=vae,
         image_encoder=image_encoder,
         transformer=transformer,
         text_encoder=text_encoder,
