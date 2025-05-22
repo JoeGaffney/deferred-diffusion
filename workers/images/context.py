@@ -24,6 +24,7 @@ IMAGE_MODEL_CONFIG = {
     "sdxl-refiner": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-refiner-1.0", "mode": "auto"},
     "RealVisXL": {"family": "sdxl", "model_path": "SG161222/RealVisXL_V4.0", "mode": "auto"},
     "Fluently-XL": {"family": "sdxl", "model_path": "fluently/Fluently-XL-v4", "mode": "auto"},
+    "juggernaut-xl": {"family": "sdxl", "model_path": "RunDiffusion/Juggernaut-XL-v9", "mode": "auto"},
     "sd3": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3-medium-diffusers", "mode": "auto"},
     "sd3.5": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3.5-medium", "mode": "auto"},
     "flux-schnell": {"family": "flux", "model_path": "black-forest-labs/FLUX.1-schnell", "mode": "auto"},

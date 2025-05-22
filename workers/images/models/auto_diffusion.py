@@ -9,6 +9,7 @@ from diffusers import (
     DiffusionPipeline,
     FluxPipeline,
     FluxTransformer2DModel,
+    StableDiffusionXLPipeline,
 )
 from PIL import Image
 from transformers import CLIPVisionModelWithProjection, QuantoConfig, T5EncoderModel
@@ -76,10 +77,18 @@ def get_pipeline(config: PipelineConfig):
         args["text_encoder_3"] = None
         args["tokenizer_3"] = None
 
-    pipe = DiffusionPipeline.from_pretrained(
-        config.model_id,
-        **args,
-    )
+    if config.model_id == "RunDiffusion/Juggernaut-XL-v9":
+        # NOTE see https://huggingface.co/RunDiffusion/Juggernaut-XL-v9/discussions/6
+        pipe = StableDiffusionXLPipeline.from_single_file(
+            "https://huggingface.co/RunDiffusion/Juggernaut-XL-v9/blob/main/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors",
+            **args,
+        )
+    else:
+        pipe = DiffusionPipeline.from_pretrained(
+            config.model_id,
+            **args,
+        )
+
     if config.ip_adapter_models != ():
         if not hasattr(pipe, "load_ip_adapter"):
             raise ValueError("The pipeline does not support IP-Adapters. Please use a compatible pipeline.")
@@ -143,6 +152,12 @@ def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
         if context.model_config.model_family != "flux":
             args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
         pipe = context.set_ip_adapter_scale(pipe)
+
+    # NOTE there is a bug when using controlnets and ip adapters together with flux
+    # if context.model_config.model_family == "flux":
+    #     num_adapters = pipe.transformer.encoder_hid_proj.num_ip_adapters
+    #     adapter_images = args.get("ip_adapter_image", [])
+    #     logger.info(f"Flux model has {num_adapters} IP adapters and {len(adapter_images)} images")
 
     return pipe, args
 

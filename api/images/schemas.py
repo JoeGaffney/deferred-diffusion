@@ -66,6 +66,7 @@ class ImageRequest(BaseModel):
         "sdxl-refiner",
         "RealVisXL",
         "Fluently-XL",
+        "juggernaut-xl",
         "sd3",
         "sd3.5",
         "flux-schnell",

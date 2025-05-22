@@ -22,6 +22,8 @@ def load_sd3_controlnet(model, torch_dtype=torch.float16):
     return result
 
 
+@cache_info_decorator
+@lru_cache(maxsize=2)
 def load_flux_controlnet(model, torch_dtype=torch.bfloat16):
     result = FluxControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
     return result
