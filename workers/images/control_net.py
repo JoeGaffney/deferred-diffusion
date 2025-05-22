@@ -1,7 +1,7 @@
 from functools import lru_cache
 
 import torch
-from diffusers import ControlNetModel, SD3ControlNetModel
+from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
 
 from common.exceptions import ControlNetConfigError
 from images.schemas import ControlNetSchema, ModelConfig
@@ -22,6 +22,11 @@ def load_sd3_controlnet(model, torch_dtype=torch.float16):
     return result
 
 
+def load_flux_controlnet(model, torch_dtype=torch.bfloat16):
+    result = FluxControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
+    return result
+
+
 CONTROL_NET_MODEL_CONFIG = {
     "sd1.5": {
         "depth": "lllyasviel/sd-controlnet-depth",
@@ -38,8 +43,8 @@ CONTROL_NET_MODEL_CONFIG = {
         "canny": "InstantX/SD3-Controlnet-Canny",
     },
     "flux": {
-        "depth": "XLabs-AI/flux-controlnet-depth-v3",
-        "canny": "XLabs-AI/flux-controlnet-canny-v3",
+        "depth": "XLabs-AI/flux-controlnet-depth-diffusers",
+        "canny": "XLabs-AI/flux-controlnet-canny-diffusers",
     },
 }
 
@@ -72,6 +77,8 @@ class ControlNet:
 
         if model_config.model_family == "sd3":
             self.loaded_controlnet = load_sd3_controlnet(self.model, torch_dtype=torch_dtype)
+        elif model_config.model_family == "flux":
+            self.loaded_controlnet = load_flux_controlnet(self.model)
         else:
             self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)
 

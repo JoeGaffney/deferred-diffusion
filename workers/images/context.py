@@ -220,7 +220,10 @@ class ImageContext:
             scales = []
             for ip_adapter in self.ip_adapters:
                 scales.append(ip_adapter.get_scale_layers())
-            pipe.set_ip_adapter_scale(scales)
+            if len(scales) == 1:
+                pipe.set_ip_adapter_scale(scales[0])
+            else:
+                pipe.set_ip_adapter_scale(scales)
         return pipe
 
     # NOTE could be moved to utils

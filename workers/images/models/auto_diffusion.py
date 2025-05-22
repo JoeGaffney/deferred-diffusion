@@ -9,16 +9,9 @@ from diffusers import (
     DiffusionPipeline,
     FluxPipeline,
     FluxTransformer2DModel,
-    GGUFQuantizationConfig,
-    TorchAoConfig,
 )
 from PIL import Image
-from transformers import (
-    BitsAndBytesConfig,
-    CLIPVisionModelWithProjection,
-    QuantoConfig,
-    T5EncoderModel,
-)
+from transformers import CLIPVisionModelWithProjection, QuantoConfig, T5EncoderModel
 
 from common.logger import logger
 from common.pipeline_helpers import get_quantized_model, optimize_pipeline
@@ -56,6 +49,16 @@ def get_pipeline_flux(config: PipelineConfig):
         torch_dtype=torch.bfloat16,
         **args,
     )
+    if config.ip_adapter_models != ():
+        if not hasattr(pipe, "load_ip_adapter"):
+            raise ValueError("The pipeline does not support IP-Adapters. Please use a compatible pipeline.")
+
+        # load multiple as arrays
+        pipe.load_ip_adapter(
+            list(config.ip_adapter_models),
+            weight_name=list(config.ip_adapter_weights),
+            image_encoder_pretrained_model_name_or_path=config.ip_adapter_image_encoder_subfolder,
+        )
 
     return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
@@ -127,6 +130,23 @@ def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
     return AutoPipelineForInpainting.from_pipe(get_pipeline(pipeline_config), requires_safety_checker=False, **args)
 
 
+def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
+    if context.controlnets_enabled:
+        if context.model_config.model_family == "sd3" or context.model_config.model_family == "flux":
+            args["control_image"] = context.get_controlnet_images()
+        else:
+            args["image"] = context.get_controlnet_images()
+        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
+
+    if context.ip_adapters_enabled:
+        args["ip_adapter_image"] = context.get_ip_adapter_images()
+        if context.model_config.model_family != "flux":
+            args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
+        pipe = context.set_ip_adapter_scale(pipe)
+
+    return pipe, args
+
+
 def text_to_image_call(pipe, context: ImageContext):
     args = {
         "width": context.width,
@@ -137,19 +157,7 @@ def text_to_image_call(pipe, context: ImageContext):
         "generator": context.generator,
         "guidance_scale": context.data.guidance_scale,
     }
-
-    if context.controlnets_enabled:
-        # different pattern of arguments
-        if context.model_config.model_family == "sd3":
-            args["control_image"] = context.get_controlnet_images()
-        else:
-            args["image"] = context.get_controlnet_images()
-        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
-
-    if context.ip_adapters_enabled:
-        args["ip_adapter_image"] = context.get_ip_adapter_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
-        pipe = context.set_ip_adapter_scale(pipe)
+    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     logger.info(f"Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
@@ -172,14 +180,7 @@ def image_to_image_call(pipe, context: ImageContext):
         "guidance_scale": context.data.guidance_scale,
     }
 
-    if context.controlnets_enabled:
-        args["control_image"] = context.get_controlnet_images()
-        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
-
-    if context.ip_adapters_enabled:
-        args["ip_adapter_image"] = context.get_ip_adapter_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
-        pipe = context.set_ip_adapter_scale(pipe)
+    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
@@ -203,15 +204,7 @@ def inpainting_call(pipe, context: ImageContext):
         "guidance_scale": context.data.guidance_scale,
         "padding_mask_crop": None if context.data.inpainting_full_image == True else 32,
     }
-
-    if context.controlnets_enabled:
-        args["control_image"] = context.get_controlnet_images()
-        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
-
-    if context.ip_adapters_enabled:
-        args["ip_adapter_image"] = context.get_ip_adapter_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
-        pipe = context.set_ip_adapter_scale(pipe)
+    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     logger.info(f"Inpainting call {args}")
     processed_image = pipe(**args).images[0]

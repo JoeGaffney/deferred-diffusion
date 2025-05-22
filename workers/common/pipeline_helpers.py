@@ -17,8 +17,11 @@ def optimize_pipeline(pipe, disable_safety_checker=True, sequential_cpu_offload=
     else:
         pipe.enable_model_cpu_offload()
 
-    pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
-    pipe.vae.enable_slicing()
+    try:
+        pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
+        pipe.vae.enable_slicing()
+    except:
+        pass  # VAE tiling is not available for all models
 
     # NOTE Breaks adapter workflows
     # pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
