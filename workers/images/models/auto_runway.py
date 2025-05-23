@@ -3,12 +3,15 @@ import io
 import time
 from typing import Literal
 
+from diffusers.utils import load_image
 from PIL import Image
 from runwayml import RunwayML
+from runwayml.types.text_to_image_create_params import ContentModeration, ReferenceImage
 
 from common.logger import logger
 from images.context import ImageContext
 from utils.utils import convert_mask_for_inpainting, convert_pil_to_bytes
+from videos.models.runway_gen import pill_to_base64
 
 
 def get_size(
@@ -23,7 +26,7 @@ def get_size(
     return size
 
 
-def poll_result(id, wait=10, max_attempts=30):
+def poll_result(id, wait=10, max_attempts=30) -> Image.Image:
     client = RunwayML()
 
     # Poll the task until it's complete
@@ -35,20 +38,18 @@ def poll_result(id, wait=10, max_attempts=30):
         if attempts >= max_attempts:
             raise Exception(f"Task polling exceeded maximum attempts ({max_attempts})")
 
-        time.sleep(wait)  # Wait for ten seconds before polling
+        time.sleep(wait)
         task = client.tasks.retrieve(id)
         logger.info(f"Checking Task: {task}")
         attempts += 1
 
-    if task.status == "SUCCEEDED" and task.output:
-        image_bytes = base64.b64decode(task.output[0])
-        processed_image = Image.open(io.BytesIO(image_bytes))
-        return processed_image
+    if task.status == "SUCCEEDED" and task.output and len(task.output) > 0:
+        return load_image(task.output[0])
 
     raise Exception(f"Task failed: {task}")
 
 
-def text_to_image_call(client: RunwayML, context: ImageContext):
+def text_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
     logger.info(f"Text to image call {context.model_config.model_path}")
     if context.model_config.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
@@ -59,6 +60,7 @@ def text_to_image_call(client: RunwayML, context: ImageContext):
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             seed=context.data.seed,
+            content_moderation=ContentModeration(public_figure_threshold="low"),
         )
     except Exception as e:
         raise RuntimeError(f"Error calling RunwayML API: {e}")
@@ -67,24 +69,23 @@ def text_to_image_call(client: RunwayML, context: ImageContext):
     return poll_result(id)
 
 
-def image_to_image_call(client: RunwayML, context: ImageContext):
+def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
     if context.model_config.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
     if context.color_image:
-        reference_images.append(convert_pil_to_bytes(context.color_image))
+        reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(context.color_image)}"))
 
     if context.ip_adapters_enabled:
         for current in context.get_ip_adapter_images():
-            reference_images.append(convert_pil_to_bytes(current))
+            reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(current)}"))
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
     logger.info(f"Image to image call {context.model_config.model_path} using {len(reference_images)} images")
-
     try:
         task = client.text_to_image.create(
             model=context.model_config.model_path,
@@ -92,6 +93,7 @@ def image_to_image_call(client: RunwayML, context: ImageContext):
             ratio=get_size(context),
             reference_images=reference_images,
             seed=context.data.seed,
+            # content_moderation=ContentModeration(public_figure_threshold="low"),
         )
     except Exception as e:
         raise RuntimeError(f"Error calling RunwayML API: {e}")

@@ -2,7 +2,7 @@ import json
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, Request, logger
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
 

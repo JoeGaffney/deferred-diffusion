@@ -8,6 +8,7 @@ down:
 	docker-compose down
 
 build: down
+	set DOCKER_BUILDKIT=1 
 	docker-compose build
 
 up: build

@@ -20,6 +20,12 @@ COPY assets/ ./assets/
 # Set the working directory to the api folder
 WORKDIR /app/api
 
+# Let mypy resolve absolute imports from /app
+ENV PYTHONPATH=/app/api
+
+# Run mypy to catch runtime-like type errors
+RUN mypy .
+
 # Expose the port FastAPI runs on
 EXPOSE 5000
 

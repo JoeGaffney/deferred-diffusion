@@ -14,8 +14,8 @@ def load_image_from_base64(base64_bytes: str) -> Image.Image:
     try:
         # Convert bytes to a PIL image
         tmp_bytes = base64.b64decode(base64_bytes)
-        image = Image.open(io.BytesIO(tmp_bytes))
-        image = image.convert("RGB")  # Ensure the image is in RGB mode
+        imageFile = Image.open(io.BytesIO(tmp_bytes))
+        image = imageFile.convert("RGB")  # Ensure the image is in RGB mode
         logger.info(f"Image loaded from Base64 bytes, size: {image.size}")
         return image
     except Exception as e:
