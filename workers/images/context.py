@@ -44,6 +44,11 @@ IMAGE_MODEL_CONFIG = {
         "model_path": "gpt-image-1",
         "mode": "auto",
     },
+    "runway/gen4_image": {
+        "family": "runway",
+        "model_path": "gen4_image",
+        "mode": "auto",
+    },
 }
 
 

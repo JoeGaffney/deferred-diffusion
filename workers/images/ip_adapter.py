@@ -8,6 +8,13 @@ from utils.utils import load_image_if_exists
 
 processor = IPAdapterMaskProcessor()
 
+generic_ip_adapter_model = IpAdapterModelConfig(
+    model="default",
+    subfolder="default",
+    weight_name="default",
+    image_encoder=False,
+    image_encoder_subfolder="default",
+)
 
 IP_ADAPTER_MODEL_CONFIG = {
     "sd1.5": {
@@ -79,29 +86,16 @@ IP_ADAPTER_MODEL_CONFIG = {
             image_encoder_subfolder="openai/clip-vit-large-patch14",
         ),
     },
-    # openai is a special case, it uses just the images and not the model - but we still use the same ipdapter flow for parity
+    # openai and runway is a special case, it uses just the images and not the model - but we still use the same ipdapter flow for parity
     "openai": {
-        "style": IpAdapterModelConfig(
-            model="default",
-            subfolder="default",
-            weight_name="default",
-            image_encoder=False,
-            image_encoder_subfolder="default",
-        ),
-        "style-plus": IpAdapterModelConfig(
-            model="default",
-            subfolder="default",
-            weight_name="default",
-            image_encoder=False,
-            image_encoder_subfolder="default",
-        ),
-        "face": IpAdapterModelConfig(
-            model="default",
-            subfolder="default",
-            weight_name="default",
-            image_encoder=False,
-            image_encoder_subfolder="default",
-        ),
+        "style": generic_ip_adapter_model,
+        "style-plus": generic_ip_adapter_model,
+        "face": generic_ip_adapter_model,
+    },
+    "runway": {
+        "style": generic_ip_adapter_model,
+        "style-plus": generic_ip_adapter_model,
+        "face": generic_ip_adapter_model,
     },
 }
 

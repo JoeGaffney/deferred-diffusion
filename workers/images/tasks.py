@@ -3,6 +3,7 @@ from PIL import Image
 from images.context import ImageContext
 from images.models.auto_diffusion import main as auto_diffusion
 from images.models.auto_openai import main as auto_openai
+from images.models.auto_runway import main as auto_runway
 from images.models.depth_anything import main as depth_anything
 from images.models.segment_anything import main as segment_anything
 from images.models.stable_diffusion_upscaler import main as stable_diffusion_upscaler
@@ -35,6 +36,8 @@ def process_image(request_dict):
 
         if family == "openai":
             result = auto_openai(context, mode=auto_mode)
+        elif family == "runway":
+            result = auto_runway(context, mode=auto_mode)
         else:
             result = auto_diffusion(context, mode=auto_mode)
 
