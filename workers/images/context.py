@@ -49,6 +49,11 @@ IMAGE_MODEL_CONFIG = {
         "model_path": "gen4_image",
         "mode": "auto",
     },
+    "HiDream": {
+        "family": "hidream",
+        "model_path": "HiDream-ai/HiDream-E1-Full",
+        "mode": "auto",
+    },
 }
 
 

@@ -16,7 +16,7 @@ MODELS = ["sd1.5", "sdxl", "sd3"]
 
 @pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize("model_id", MODELS)
-def test_models(model_id, mode, target_precision):
+def test_models(model_id, mode):
     """Test models."""
     output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}.png"
     width, height = get_16_9_resolution("540p")
@@ -37,7 +37,6 @@ def test_models(model_id, mode, target_precision):
                 max_width=width,
                 max_height=height,
                 controlnets=[],
-                target_precision=target_precision,
             )
         ),
         mode=mode,

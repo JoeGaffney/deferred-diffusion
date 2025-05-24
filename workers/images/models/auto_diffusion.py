@@ -9,18 +9,28 @@ from diffusers import (
     DiffusionPipeline,
     FluxPipeline,
     FluxTransformer2DModel,
+    HiDreamImageTransformer2DModel,
     StableDiffusionXLPipeline,
 )
 from PIL import Image
-from transformers import CLIPVisionModelWithProjection, QuantoConfig, T5EncoderModel
+from transformers import (
+    CLIPVisionModelWithProjection,
+    LlamaForCausalLM,
+    PreTrainedTokenizerFast,
+    T5EncoderModel,
+)
 
 from common.logger import logger
 from common.pipeline_helpers import get_quantized_model, optimize_pipeline
 from images.context import ImageContext
+from images.models.pipeline_hidream_image_editing import (
+    HiDreamImageEditingPipeline,  # NOTE should eventually be moved to diffusers
+)
 from images.schemas import PipelineConfig
 from utils.utils import cache_info_decorator
 
-quant_config = QuantoConfig(weights="int8")
+# this is common and shared accross a few models use the flux one for now it should be google/t5-v1_1-xxl
+T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
 
 
 def get_pipeline_flux(config: PipelineConfig):
@@ -38,7 +48,7 @@ def get_pipeline_flux(config: PipelineConfig):
             torch_dtype=torch.bfloat16,
         )
         args["text_encoder_2"] = get_quantized_model(
-            model_id=config.model_id,
+            model_id=T5_MODEL_PATH,
             subfolder="text_encoder_2",
             model_class=T5EncoderModel,
             load_in_4bit=load_in_4bit,
@@ -64,11 +74,60 @@ def get_pipeline_flux(config: PipelineConfig):
     return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
 
+def get_pipeline_high_dream(config: PipelineConfig):
+    encoder_4_model_id = "meta-llama/Llama-3.1-8B-Instruct"
+    args = {}
+    if config.target_precision == 4 or config.target_precision == 8:
+        load_in_4bit = True
+        if config.target_precision == 8:
+            load_in_4bit = False
+
+        args["transformer"] = get_quantized_model(
+            model_id=config.model_id,
+            subfolder="transformer",
+            model_class=HiDreamImageTransformer2DModel,
+            load_in_4bit=load_in_4bit,
+            torch_dtype=torch.bfloat16,
+        )
+
+        args["text_encoder_3"] = get_quantized_model(
+            model_id=T5_MODEL_PATH,
+            subfolder="text_encoder_2",
+            model_class=T5EncoderModel,
+            load_in_4bit=load_in_4bit,
+            torch_dtype=torch.bfloat16,
+        )
+
+    # NOTE heavy with multiple text encoders so we use allways use the 4-bit version here
+    args["text_encoder_4"] = get_quantized_model(
+        model_id=encoder_4_model_id,
+        subfolder="",
+        model_class=LlamaForCausalLM,
+        load_in_4bit=True,
+        torch_dtype=torch.bfloat16,
+        # NOTE ref from the model card
+        # output_hidden_states=True,
+        # output_attentions=True,
+    )
+
+    args["tokenizer_4"] = PreTrainedTokenizerFast.from_pretrained(encoder_4_model_id)
+
+    pipe = HiDreamImageEditingPipeline.from_pretrained(
+        config.model_id,
+        torch_dtype=torch.bfloat16,
+        **args,
+    )
+
+    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+
+
 @cache_info_decorator
 @lru_cache(maxsize=4)  # Cache up to 4 different pipelines
 def get_pipeline(config: PipelineConfig):
     if config.model_family == "flux":
         return get_pipeline_flux(config)
+    elif config.model_family == "hidream":
+        return get_pipeline_high_dream(config)
 
     args = {"torch_dtype": config.torch_dtype, "use_safetensors": True}
 
@@ -232,6 +291,10 @@ def inpainting_call(pipe, context: ImageContext):
 def main(context: ImageContext, mode="text") -> Image.Image:
     controlnets = context.get_loaded_controlnets()
     pipeline_config = context.get_pipeline_config()
+
+    # only supports image editing for now
+    if pipeline_config.model_family == "hidream":
+        return image_to_image_call(get_pipeline(pipeline_config), context)
 
     # work around as SD3 not fully supported by diffusers
     if context.controlnets_enabled == True and pipeline_config.model_family == "sd3":

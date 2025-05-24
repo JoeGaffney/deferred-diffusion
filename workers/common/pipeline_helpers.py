@@ -33,8 +33,9 @@ def optimize_pipeline(pipe, disable_safety_checker=True, sequential_cpu_offload=
 
 def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
     quant_bit = "4bit" if load_in_4bit else "8bit"
+    subfolder_name = "default" if subfolder == "" else subfolder
     hf_home = os.getenv("HF_HOME", "")
-    quant_dir = os.path.join(hf_home, "quantized", model_id, quant_bit, subfolder)
+    quant_dir = os.path.join(hf_home, "quantized", model_id, quant_bit, subfolder_name)
     return os.path.normpath(quant_dir)
 
 

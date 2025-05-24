@@ -75,6 +75,7 @@ class ImageRequest(BaseModel):
         "sd-x4-upscaler",
         "gpt-image-1",
         "runway/gen4_image",
+        "HiDream",
     ]
     controlnets: list[ControlNetSchema] = []
     guidance_scale: float = 5.0

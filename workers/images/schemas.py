@@ -75,6 +75,7 @@ class ImageRequest(BaseModel):
         "sd-x4-upscaler",
         "gpt-image-1",
         "runway/gen4_image",
+        "HiDream",
     ]
     controlnets: list[ControlNetSchema] = []
     guidance_scale: float = 5.0
@@ -101,7 +102,8 @@ class ImageRequest(BaseModel):
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     num_inference_steps: int = 25
     target_precision: Literal[4, 8, 16] = Field(
-        8, description="Global target precision for quantization; applied selectively per model and component."
+        description="Global target precision for quantization; applied selectively per model and component.",
+        default=8,
     )
     prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
