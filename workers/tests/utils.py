@@ -2,7 +2,26 @@ import base64
 import os
 from typing import Optional
 
+from PIL import Image
 from pydantic import Base64Bytes
+
+from utils.utils import ensure_path_exists
+
+
+def setup_output_file(model_id, mode, suffix=""):
+    """Prepare output path and delete existing file if needed."""
+    output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}{suffix}.png"
+    if os.path.exists(output_name):
+        os.remove(output_name)
+    return output_name
+
+
+def save_image_and_assert_file_exists(result, output_name):
+    """Save image result and verify it exists."""
+    if isinstance(result, Image.Image):
+        ensure_path_exists(output_name)
+        result.save(output_name)
+    assert os.path.exists(output_name), f"Output file {output_name} was not created."
 
 
 def _convert_image_to_base64(image_path: str) -> Optional[str]:

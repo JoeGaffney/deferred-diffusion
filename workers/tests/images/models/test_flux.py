@@ -1,31 +1,22 @@
-import os
-
 import pytest
-from PIL import Image
 
 from images.context import ImageContext
 from images.models.auto_diffusion import main
 from images.schemas import ImageRequest
-from tests.utils import image_to_base64, optional_image_to_base64
-from utils.utils import ensure_path_exists, free_gpu_memory, get_16_9_resolution
+from tests.utils import save_image_and_assert_file_exists, setup_output_file
+from utils.utils import free_gpu_memory, get_16_9_resolution
 
 # Define constants
 MODES = ["text_to_image"]
-MODELS = ["HiDream"]
-# @pytest.mark.parametrize("model_id", ["flux-schnell", "sd3.5"])
+MODELS = ["flux-schnell", "flux-dev"]
 
 
 @pytest.mark.parametrize("mode", MODES)
-@pytest.mark.parametrize("model_id", MODELS)
 @pytest.mark.parametrize("target_precision", [4, 8])
+@pytest.mark.parametrize("model_id", MODELS)
 def test_models(model_id, mode, target_precision):
-    """Test models."""
-    output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}_precsion{target_precision}.png"
+    output_name = setup_output_file(model_id, mode, f"_precsion{target_precision}")
     width, height = get_16_9_resolution("540p")
-
-    # Delete existing file if it exists
-    if os.path.exists(output_name):
-        os.remove(output_name)
 
     result = main(
         ImageContext(
@@ -44,10 +35,5 @@ def test_models(model_id, mode, target_precision):
         mode=mode,
     )
 
-    if isinstance(result, Image.Image):
-        ensure_path_exists(output_name)
-        result.save(output_name)
-
     free_gpu_memory()
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+    save_image_and_assert_file_exists(result, output_name)

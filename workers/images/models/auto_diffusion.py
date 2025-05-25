@@ -89,17 +89,14 @@ def get_pipeline_high_dream(config: PipelineConfig):
         torch_dtype=torch.bfloat16,
     )
 
-    # NOTE heavy with multiple text encoders so we use allways use the 4-bit version here
     args["text_encoder_4"] = get_quantized_model(
         model_id=LLAMA_MODEL_PATH,
         subfolder="",
         model_class=LlamaForCausalLM,
-        target_precision=config.target_precision,
+        target_precision=4,
         torch_dtype=torch.bfloat16,
-        # NOTE ref from the model card
-        # output_hidden_states=True,
-        # output_attentions=True,
     )
+    # NOTE ref from the model card
     args["text_encoder_4"].output_hidden_states = True
     args["text_encoder_4"].output_attentions = True
 
@@ -115,7 +112,7 @@ def get_pipeline_high_dream(config: PipelineConfig):
 
 
 @cache_info_decorator
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=4)
 def get_pipeline(config: PipelineConfig):
     if config.model_family == "flux":
         return get_pipeline_flux(config)

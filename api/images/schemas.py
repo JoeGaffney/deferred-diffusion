@@ -70,6 +70,7 @@ class ImageRequest(BaseModel):
         "sd3",
         "sd3.5",
         "flux-schnell",
+        "flux-dev",
         "depth-anything",
         "segment-anything",
         "sd-x4-upscaler",

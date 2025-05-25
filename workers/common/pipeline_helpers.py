@@ -79,7 +79,6 @@ def get_quantized_model(
         quant_config = BitsAndBytesConfig(
             load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch_dtype
         )
-        use_safetensors = True
 
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
@@ -87,7 +86,7 @@ def get_quantized_model(
             quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors
         )
     except Exception as e:
-        logger.warning(f"Failed to load quantized model from {quant_dir}: {e}")
+        logger.error(f"Failed to load quantized model from {quant_dir}: {e}")
         logger.info(f"Loading and quantizing {model_id} subfolder {subfolder}")
         model = model_class.from_pretrained(
             model_id,

@@ -28,6 +28,7 @@ IMAGE_MODEL_CONFIG = {
     "sd3": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3-medium-diffusers", "mode": "auto"},
     "sd3.5": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3.5-medium", "mode": "auto"},
     "flux-schnell": {"family": "flux", "model_path": "black-forest-labs/FLUX.1-schnell", "mode": "auto"},
+    "flux-dev": {"family": "flux", "model_path": "black-forest-labs/FLUX.1-dev", "mode": "auto"},
     "depth-anything": {
         "family": "depth_anything",
         "model_path": "depth-anything/Depth-Anything-V2-Large-hf",
