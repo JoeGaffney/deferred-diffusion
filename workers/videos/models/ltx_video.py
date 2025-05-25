@@ -25,7 +25,7 @@ def get_pipeline(model_id="Lightricks/LTX-Video-0.9.7-distilled"):
         model_id,
         subfolder="transformer",
         model_class=LTXVideoTransformer3DModel,
-        load_in_4bit=True,
+        target_precision=4,
         torch_dtype=torch.float16,
     )
 

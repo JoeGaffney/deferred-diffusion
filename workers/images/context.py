@@ -51,7 +51,8 @@ IMAGE_MODEL_CONFIG = {
     },
     "HiDream": {
         "family": "hidream",
-        "model_path": "HiDream-ai/HiDream-E1-Full",
+        # "model_path": "HiDream-ai/HiDream-I1-Fast",
+        "model_path": "HiDream-ai/HiDream-I1-Full",
         "mode": "auto",
     },
 }

@@ -1,4 +1,4 @@
-.PHONY: all build down up generate-clients test-texts test-images test-it-tests test-hi-dream tag-and-push
+.PHONY: all build down up generate-clients test-texts test-images test-it-tests test-precision tag-and-push
 
 # Default target
 all: generate-clients
@@ -36,8 +36,8 @@ test-it-tests: generate-clients
 	cd it_tests && pytest -vs
 	cd ..
 
-test-hi-dream: up
-	docker-compose exec workers pytest tests/images/models/test_hi_dream.py -vs
+test-precision: up
+	docker-compose exec workers pytest tests/images/models/test_precision.py -vs
 
 # Tag and push Docker images to GitHub Container Registry
 tag-and-push:

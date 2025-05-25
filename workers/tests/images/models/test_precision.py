@@ -10,8 +10,9 @@ from tests.utils import image_to_base64, optional_image_to_base64
 from utils.utils import ensure_path_exists, get_16_9_resolution
 
 # Define constants
-MODES = ["img_to_img"]
+MODES = ["text_to_image"]
 MODELS = ["HiDream"]
+# @pytest.mark.parametrize("model_id", ["flux-schnell", "sd3.5"])
 
 
 @pytest.mark.parametrize("mode", MODES)
@@ -20,6 +21,7 @@ MODELS = ["HiDream"]
 def test_models(model_id, mode, target_precision):
     """Test models."""
     output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}_precsion{target_precision}.png"
+    width, height = get_16_9_resolution("540p")
 
     # Delete existing file if it exists
     if os.path.exists(output_name):
@@ -29,12 +31,14 @@ def test_models(model_id, mode, target_precision):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                image=image_to_base64("../assets/color_v002.png"),
-                prompt="Editing Instruction: Convert the image into a Ghibli style. Target Image Description: A person playing a guitar, depicted in a Ghibli style against a plain background.",
-                guidance_scale=5,
+                prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
+                strength=0.5,
+                guidance_scale=3.5,
+                max_width=width,
+                max_height=height,
                 controlnets=[],
-                num_inference_steps=10,
                 target_precision=target_precision,
+                num_inference_steps=15,
             )
         ),
         mode=mode,

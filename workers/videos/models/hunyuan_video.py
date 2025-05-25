@@ -18,7 +18,7 @@ def get_pipeline(model_id="hunyuanvideo-community/HunyuanVideo-I2V"):
         model_id,
         subfolder="transformer",
         model_class=HunyuanVideoTransformer3DModel,
-        load_in_4bit=True,
+        target_precision=4,
         torch_dtype=torch.bfloat16,
     )
 
@@ -30,7 +30,7 @@ def get_pipeline(model_id="hunyuanvideo-community/HunyuanVideo-I2V"):
         model_id,
         subfolder="text_encoder_2",
         model_class=CLIPTextModel,
-        load_in_4bit=True,
+        target_precision=4,
         torch_dtype=torch.float16,
     )
 

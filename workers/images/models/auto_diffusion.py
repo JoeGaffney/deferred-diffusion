@@ -9,6 +9,7 @@ from diffusers import (
     DiffusionPipeline,
     FluxPipeline,
     FluxTransformer2DModel,
+    HiDreamImagePipeline,
     HiDreamImageTransformer2DModel,
     StableDiffusionXLPipeline,
 )
@@ -23,37 +24,32 @@ from transformers import (
 from common.logger import logger
 from common.pipeline_helpers import get_quantized_model, optimize_pipeline
 from images.context import ImageContext
-from images.models.pipeline_hidream_image_editing import (
-    HiDreamImageEditingPipeline,  # NOTE should eventually be moved to diffusers
-)
 from images.schemas import PipelineConfig
 from utils.utils import cache_info_decorator
 
 # this is common and shared accross a few models use the flux one for now it should be google/t5-v1_1-xxl
+T5_MODEL_PATH = "google/t5-efficient-mini"  # use the original one for now
 T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
+LLAMA_MODEL_PATH = "meta-llama/Llama-3.1-8B-Instruct"
 
 
 def get_pipeline_flux(config: PipelineConfig):
     args = {}
-    if config.target_precision == 4 or config.target_precision == 8:
-        load_in_4bit = True
-        if config.target_precision == 8:
-            load_in_4bit = False
 
-        args["transformer"] = get_quantized_model(
-            model_id=config.model_id,
-            subfolder="transformer",
-            model_class=FluxTransformer2DModel,
-            load_in_4bit=load_in_4bit,
-            torch_dtype=torch.bfloat16,
-        )
-        args["text_encoder_2"] = get_quantized_model(
-            model_id=T5_MODEL_PATH,
-            subfolder="text_encoder_2",
-            model_class=T5EncoderModel,
-            load_in_4bit=load_in_4bit,
-            torch_dtype=torch.bfloat16,
-        )
+    args["transformer"] = get_quantized_model(
+        model_id=config.model_id,
+        subfolder="transformer",
+        model_class=FluxTransformer2DModel,
+        target_precision=config.target_precision,
+        torch_dtype=torch.bfloat16,
+    )
+    args["text_encoder_2"] = get_quantized_model(
+        model_id=T5_MODEL_PATH,
+        subfolder="text_encoder_2",
+        model_class=T5EncoderModel,
+        target_precision=4,
+        torch_dtype=torch.bfloat16,
+    )
 
     pipe = FluxPipeline.from_pretrained(
         config.model_id,
@@ -75,44 +71,41 @@ def get_pipeline_flux(config: PipelineConfig):
 
 
 def get_pipeline_high_dream(config: PipelineConfig):
-    encoder_4_model_id = "meta-llama/Llama-3.1-8B-Instruct"
     args = {}
-    if config.target_precision == 4 or config.target_precision == 8:
-        load_in_4bit = True
-        if config.target_precision == 8:
-            load_in_4bit = False
 
-        args["transformer"] = get_quantized_model(
-            model_id=config.model_id,
-            subfolder="transformer",
-            model_class=HiDreamImageTransformer2DModel,
-            load_in_4bit=load_in_4bit,
-            torch_dtype=torch.bfloat16,
-        )
+    args["transformer"] = get_quantized_model(
+        model_id=config.model_id,
+        subfolder="transformer",
+        model_class=HiDreamImageTransformer2DModel,
+        target_precision=config.target_precision,
+        torch_dtype=torch.bfloat16,
+    )
 
-        args["text_encoder_3"] = get_quantized_model(
-            model_id=T5_MODEL_PATH,
-            subfolder="text_encoder_2",
-            model_class=T5EncoderModel,
-            load_in_4bit=load_in_4bit,
-            torch_dtype=torch.bfloat16,
-        )
+    args["text_encoder_3"] = get_quantized_model(
+        model_id=T5_MODEL_PATH,
+        subfolder="text_encoder_2",
+        model_class=T5EncoderModel,
+        target_precision=4,
+        torch_dtype=torch.bfloat16,
+    )
 
     # NOTE heavy with multiple text encoders so we use allways use the 4-bit version here
     args["text_encoder_4"] = get_quantized_model(
-        model_id=encoder_4_model_id,
+        model_id=LLAMA_MODEL_PATH,
         subfolder="",
         model_class=LlamaForCausalLM,
-        load_in_4bit=True,
+        target_precision=4,
         torch_dtype=torch.bfloat16,
         # NOTE ref from the model card
         # output_hidden_states=True,
         # output_attentions=True,
     )
+    args["text_encoder_4"].output_hidden_states = True
+    args["text_encoder_4"].output_attentions = True
 
-    args["tokenizer_4"] = PreTrainedTokenizerFast.from_pretrained(encoder_4_model_id)
+    args["tokenizer_4"] = PreTrainedTokenizerFast.from_pretrained(LLAMA_MODEL_PATH)
 
-    pipe = HiDreamImageEditingPipeline.from_pretrained(
+    pipe = HiDreamImagePipeline.from_pretrained(
         config.model_id,
         torch_dtype=torch.bfloat16,
         **args,
@@ -122,7 +115,7 @@ def get_pipeline_high_dream(config: PipelineConfig):
 
 
 @cache_info_decorator
-@lru_cache(maxsize=4)  # Cache up to 4 different pipelines
+@lru_cache(maxsize=1)
 def get_pipeline(config: PipelineConfig):
     if config.model_family == "flux":
         return get_pipeline_flux(config)
@@ -175,6 +168,9 @@ def get_pipeline(config: PipelineConfig):
 
 
 def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+    if pipeline_config.model_family == "hidream":
+        return get_pipeline(pipeline_config)
+
     args = {}
     if controlnets != []:
         args["controlnet"] = controlnets
@@ -183,6 +179,9 @@ def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
 
 
 def get_image_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+    if pipeline_config.model_family == "hidream":
+        return get_pipeline(pipeline_config)
+
     args = {}
     if controlnets != []:
         args["controlnet"] = controlnets
@@ -191,6 +190,9 @@ def get_image_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
 
 
 def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+    if pipeline_config.model_family == "hidream":
+        return get_pipeline(pipeline_config)
+
     args = {}
     if controlnets != []:
         args["controlnet"] = controlnets
@@ -291,10 +293,6 @@ def inpainting_call(pipe, context: ImageContext):
 def main(context: ImageContext, mode="text") -> Image.Image:
     controlnets = context.get_loaded_controlnets()
     pipeline_config = context.get_pipeline_config()
-
-    # only supports image editing for now
-    if pipeline_config.model_family == "hidream":
-        return image_to_image_call(get_pipeline(pipeline_config), context)
 
     # work around as SD3 not fully supported by diffusers
     if context.controlnets_enabled == True and pipeline_config.model_family == "sd3":

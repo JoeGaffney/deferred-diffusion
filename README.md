@@ -61,8 +61,6 @@ This structure balances **clarity, maintainability, and scalability**, making it
 │── pytest.ini # ✅ Test configuration
 ```
 
-Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
-
 The api will push tasks to worker broker and workers will pick this up. Some endpoints will async wait for tasks some extra long ones will require end client to re-poll and check progress.
 
 ```
@@ -90,6 +88,8 @@ The api will push tasks to worker broker and workers will pick this up. Some end
 │── pytest.ini # ✅ Test configuration
 ```
 
+Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
+
 ### Toolsets (example)
 
 ```
@@ -105,7 +105,7 @@ The api will push tasks to worker broker and workers will pick this up. Some end
 │── cop_video.hda
 ```
 
-# Setup windows
+# Local setup Windows
 
 ```sh
 ./start_venv_setup.bat
@@ -123,62 +123,24 @@ Pytest is used for integration tests confirming the models run.
 
 You can call from the make file.
 
-```
-Make test-images
-Make test-texts
-``
+- Make test-images
+- Make test-texts
 
 Or locally
 
 ```
-
 cd api
-
-```
-
-To run all
-
-```
-
 pytest -vs
-
-```
-
-Images and texts
-
-```
-
-pytest -vs .\tests\images\models\
-pytest -vs .\tests\texts\models\
-
-```
-
-Video and agent tests can be slow and may have a cost when running.
-
-```
-
-pytest -vs .\tests\texts\videos\
-pytest -vs .\tests\agentic\agents\
-
-```
-
-## To test running models directly
-
-A main method can be added
-
-```
-
-cd api/
-
-python -m videos.models.ltx_video
-python -m videos.models.stable_video_diffusion
-
 ```
 
 # Docker
 
 - docker-compose build
 - docker-compose up
+
+To optimize volumes and virtual disk useful after model deletions
+
+- Optimize-VHD -Path "Y:\DOCKER\DockerDesktopWSL\disk\docker_data.vhdx" -Mode Full
 
 Combined
 
@@ -261,6 +223,8 @@ nuke.pluginAddPath(custom_plugin_path)
 # Test message (useful for debugging)
 
 print(f"Custom plugin paths from {custom_plugin_path} have been added.")
+
+```
 
 ```
 

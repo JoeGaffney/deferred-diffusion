@@ -1,9 +1,11 @@
 import os
+from typing import Literal
 
 import torch
 from transformers import BitsAndBytesConfig, TorchAoConfig
 
 from common.logger import logger
+from utils.utils import time_info_decorator
 
 
 def optimize_pipeline(pipe, disable_safety_checker=True, sequential_cpu_offload=False):
@@ -39,13 +41,13 @@ def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
     return os.path.normpath(quant_dir)
 
 
+@time_info_decorator
 def get_quantized_model(
     model_id,
     subfolder,
     model_class,
-    load_in_4bit=True,
+    target_precision: Literal[4, 8, 16] = 8,
     torch_dtype=torch.float16,
-    disabled=False,
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -55,18 +57,18 @@ def get_quantized_model(
         model_id (str): Hugging Face repo/model ID.
         subfolder (str): Subfolder name for the model component (e.g., "transformer").
         model_class (class): The HF model class to load (e.g., WanTransformer3DModel).
-        load_in_4bit (bool): Whether to load in 4-bit quantization. If False, loads in 8-bit.
+        target_precision (Literal[4, 8, 16]): Target precision for quantization.
         torch_dtype (torch.dtype): Dtype to use when loading.
-        disabled (bool): If True, skip loading the quantized model.
 
     Returns:
         model instance
     """
 
-    if disabled:
+    if target_precision == 16:
         logger.warning(f"Quantization disabled for {model_id} subfolder {subfolder}")
-        return model_class.from_pretrained(model_id, subfolder=subfolder)
+        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype)
 
+    load_in_4bit = target_precision == 4
     quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit)
 
     # NOTE does not support CPU model offload so using TorchAo for 8bit

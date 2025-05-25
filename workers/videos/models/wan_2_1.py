@@ -17,14 +17,14 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         model_id=model_id,
         subfolder="image_encoder",
         model_class=CLIPVisionModel,
-        load_in_4bit=True,
+        target_precision=4,
         torch_dtype=torch_dtype,
     )
     transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
         model_class=WanTransformer3DModel,
-        load_in_4bit=True,
+        target_precision=4,
         torch_dtype=torch_dtype,
     )
 
@@ -32,9 +32,8 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         model_id=model_id,
         subfolder="text_encoder",
         model_class=UMT5EncoderModel,
-        load_in_4bit=True,
+        target_precision=4,
         torch_dtype=torch_dtype,
-        # disabled=True,
     )
 
     pipe = WanImageToVideoPipeline.from_pretrained(
