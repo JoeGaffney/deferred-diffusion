@@ -7,7 +7,7 @@ from images.context import ImageContext
 from images.models.auto_diffusion import main
 from images.schemas import ImageRequest
 from tests.utils import image_to_base64, optional_image_to_base64
-from utils.utils import ensure_path_exists, get_16_9_resolution
+from utils.utils import ensure_path_exists, free_gpu_memory, get_16_9_resolution
 
 # Define constants
 MODES = ["text_to_image"]
@@ -48,5 +48,6 @@ def test_models(model_id, mode, target_precision):
         ensure_path_exists(output_name)
         result.save(output_name)
 
+    free_gpu_memory()
     # Check if output file exists
     assert os.path.exists(output_name), f"Output file {output_name} was not created."

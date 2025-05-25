@@ -47,7 +47,7 @@ def get_pipeline_flux(config: PipelineConfig):
         model_id=T5_MODEL_PATH,
         subfolder="text_encoder_2",
         model_class=T5EncoderModel,
-        target_precision=4,
+        target_precision=config.target_precision,
         torch_dtype=torch.bfloat16,
     )
 
@@ -85,7 +85,7 @@ def get_pipeline_high_dream(config: PipelineConfig):
         model_id=T5_MODEL_PATH,
         subfolder="text_encoder_2",
         model_class=T5EncoderModel,
-        target_precision=4,
+        target_precision=config.target_precision,
         torch_dtype=torch.bfloat16,
     )
 
@@ -94,7 +94,7 @@ def get_pipeline_high_dream(config: PipelineConfig):
         model_id=LLAMA_MODEL_PATH,
         subfolder="",
         model_class=LlamaForCausalLM,
-        target_precision=4,
+        target_precision=config.target_precision,
         torch_dtype=torch.bfloat16,
         # NOTE ref from the model card
         # output_hidden_states=True,
