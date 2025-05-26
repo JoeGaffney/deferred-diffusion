@@ -7,7 +7,6 @@ from pydantic import Base64Bytes, BaseModel, Field
 class VideoRequest(BaseModel):
     model: Literal[
         "LTX-Video",
-        "HunyuanVideo",
         "Wan2.1",
         "runway/gen3a_turbo",
         "runway/gen4_turbo",

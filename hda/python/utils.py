@@ -136,7 +136,7 @@ def base64_to_image(base64_str: str, output_path: str, save_copy: bool = False):
 
             # Create the timestamped path
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]  # Keep only 3 digits of milliseconds
-            timestamp_path = os.path.join(directory, timestamp, filename)
+            timestamp_path = os.path.join(directory, f"{timestamp}_{filename}")
             dir_path = os.path.dirname(timestamp_path)
             if dir_path and not os.path.exists(dir_path):
                 os.makedirs(dir_path)
