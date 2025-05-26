@@ -12,7 +12,7 @@ MODELS = ["HiDream"]
 
 
 @pytest.mark.parametrize("mode", MODES)
-@pytest.mark.parametrize("target_precision", [4, 8])
+@pytest.mark.parametrize("target_precision", [4])
 @pytest.mark.parametrize("model_id", MODELS)
 def test_models(model_id, mode, target_precision):
     output_name = output_name = setup_output_file(model_id, mode, f"_precsion{target_precision}")

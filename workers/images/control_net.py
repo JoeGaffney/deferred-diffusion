@@ -10,23 +10,14 @@ from utils.utils import cache_info_decorator, load_image_if_exists
 
 @cache_info_decorator
 @lru_cache(maxsize=2)
-def load_controlnet(model, torch_dtype=torch.float16):
-    result = ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch_dtype, device_map="cpu")
-    return result
+def load_controlnet(model, model_family, torch_dtype=torch.float16):
 
+    if model_family == "sd3":
+        return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
+    elif model_family == "flux":
+        return FluxControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
 
-@cache_info_decorator
-@lru_cache(maxsize=2)
-def load_sd3_controlnet(model, torch_dtype=torch.float16):
-    result = SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
-    return result
-
-
-@cache_info_decorator
-@lru_cache(maxsize=2)
-def load_flux_controlnet(model, torch_dtype=torch.bfloat16):
-    result = FluxControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
-    return result
+    return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch_dtype, device_map="cpu")
 
 
 CONTROL_NET_MODEL_CONFIG = {
@@ -76,13 +67,7 @@ class ControlNet:
             raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")
 
         self.image = self.image.resize([width, height])
-
-        if model_config.model_family == "sd3":
-            self.loaded_controlnet = load_sd3_controlnet(self.model, torch_dtype=torch_dtype)
-        elif model_config.model_family == "flux":
-            self.loaded_controlnet = load_flux_controlnet(self.model)
-        else:
-            self.loaded_controlnet = load_controlnet(self.model, torch_dtype=torch_dtype)
+        self.loaded_controlnet = load_controlnet(self.model, model_config.model_family, torch_dtype=torch_dtype)
 
     # we load then offload to match the same behavior as cpu offloading
     def get_loaded_controlnet(self):

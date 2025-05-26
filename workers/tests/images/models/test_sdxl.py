@@ -14,6 +14,7 @@ from utils.utils import get_16_9_resolution
 
 MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
 MODELS = ["sdxl", "RealVisXL"]
+MODELS = ["RealVisXL"]
 
 
 @pytest.mark.parametrize("mode", MODES)

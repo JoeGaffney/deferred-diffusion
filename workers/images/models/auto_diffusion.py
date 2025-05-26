@@ -112,7 +112,7 @@ def get_pipeline_high_dream(config: PipelineConfig):
 
 
 @cache_info_decorator
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=2)
 def get_pipeline(config: PipelineConfig):
     if config.model_family == "flux":
         return get_pipeline_flux(config)

@@ -7,6 +7,8 @@ from transformers import BitsAndBytesConfig, TorchAoConfig
 from common.logger import logger
 from utils.utils import time_info_decorator
 
+torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
+
 
 def optimize_pipeline(pipe, disable_safety_checker=True, sequential_cpu_offload=False):
     # Override the safety checker
