@@ -134,18 +134,33 @@ def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
 
 def cache_info_decorator(func):
     def wrapper(*args, **kwargs):
-        start = time.time()
-        logger.info(f"Calling {func.__name__} with args: {args}, kwargs: {kwargs}")
+        info = f"Calling {func.__name__} with args: {args}, kwargs: {kwargs}"
 
+        start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
 
         info = func.cache_info()
         logger.info(
+            f"{info}, "
             f"Cache info - hits: {info.hits}, misses: {info.misses}, "
-            f"current size: {info.currsize}, max size: {info.maxsize}"
-            f" - took {end - start:.2f}s"
+            f"current size: {info.currsize}, max size: {info.maxsize}, "
+            f"took: {end - start:.2f}s",
         )
+        return result
+
+    return wrapper
+
+
+def time_info_decorator(func):
+    def wrapper(*args, **kwargs):
+        info = f"Calling {func.__name__} with args: {args}, kwargs: {kwargs}"
+
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+
+        logger.info(f"{info}, took: {end - start:.2f}s")
         return result
 
     return wrapper
@@ -185,10 +200,12 @@ def should_free_gpu_memory(threshold_percent: float = 50.0):
     return usage_percent > threshold_percent
 
 
-def free_gpu_memory(threshold_percent: float = 50.0):
+def free_gpu_memory(threshold_percent: float = 20.0):
     if (should_free_gpu_memory(threshold_percent=threshold_percent) == False) or (torch.cuda.is_available() == False):
         return
 
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
     gc.collect()
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()

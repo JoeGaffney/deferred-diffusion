@@ -1,9 +1,11 @@
 import os
 
-from generated.api_client import Client
+from generated.api_client.client import AuthenticatedClient
 
 MAX_ADDITIONAL_IMAGES = 3
 
-base_url = os.getenv("DD_SERVER_ADDRESS", "http://127.0.0.1:5000")
 
-client = Client(base_url=base_url)
+client = AuthenticatedClient(
+    base_url=os.getenv("DEF_DIF_API_ADDRESS", "http://127.0.0.1:5000"),
+    token=os.getenv("DEF_DIF_API_KEY", ""),
+)

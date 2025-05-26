@@ -18,6 +18,12 @@ RUN pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.gi
 RUN pip install --no-cache-dir --no-deps sam2 --ignore-requires-python
 RUN pip install --no-cache-dir supervision hydra-core iopath
 
+# Install diffusers from the main branch for time being
+RUN pip install -U git+https://github.com/huggingface/diffusers.git@main --no-deps
+
+# List all installed packages during build
+RUN python -m pip freeze
+
 # Copy only specific directories instead of everything
 COPY workers/ ./workers/
 COPY assets/ ./assets/

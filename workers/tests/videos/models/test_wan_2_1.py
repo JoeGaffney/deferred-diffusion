@@ -24,7 +24,7 @@ def test_image_to_video():
                 prompt="A man with short gray hair plays a red electric guitar.",
                 num_inference_steps=10,
                 guidance_scale=4,
-                num_frames=12,
+                num_frames=24,
             )
         )
     )

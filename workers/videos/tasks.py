@@ -1,6 +1,6 @@
 import time
 
-from utils.utils import mp4_to_base64
+from utils.utils import free_gpu_memory, mp4_to_base64
 from videos.context import VideoContext
 from videos.models.hunyuan_video import main as hunyuan_video_main
 from videos.models.ltx_video import main as ltx_video_main
@@ -12,10 +12,8 @@ from worker import celery_app  # Import from worker.py
 
 @celery_app.task(name="process_video")
 def process_video(request_dict):
-    # Convert dictionary back to proper object
+    free_gpu_memory()
     request = VideoRequest.model_validate(request_dict)
-
-    # Recreate context from dict
     context = VideoContext(request)
 
     main = None

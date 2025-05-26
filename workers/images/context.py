@@ -24,14 +24,11 @@ IMAGE_MODEL_CONFIG = {
     "sdxl-refiner": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-refiner-1.0", "mode": "auto"},
     "RealVisXL": {"family": "sdxl", "model_path": "SG161222/RealVisXL_V4.0", "mode": "auto"},
     "Fluently-XL": {"family": "sdxl", "model_path": "fluently/Fluently-XL-v4", "mode": "auto"},
+    "juggernaut-xl": {"family": "sdxl", "model_path": "RunDiffusion/Juggernaut-XL-v9", "mode": "auto"},
     "sd3": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3-medium-diffusers", "mode": "auto"},
     "sd3.5": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3.5-medium", "mode": "auto"},
-    "flux-schnell": {
-        "family": "flux",
-        "model_path": "black-forest-labs/FLUX.1-schnell",
-        "transformer_guf_path": "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q5_0.gguf",
-        "mode": "auto",
-    },
+    "flux-schnell": {"family": "flux", "model_path": "black-forest-labs/FLUX.1-schnell", "mode": "auto"},
+    "flux-dev": {"family": "flux", "model_path": "black-forest-labs/FLUX.1-dev", "mode": "auto"},
     "depth-anything": {
         "family": "depth_anything",
         "model_path": "depth-anything/Depth-Anything-V2-Large-hf",
@@ -48,6 +45,17 @@ IMAGE_MODEL_CONFIG = {
         "model_path": "gpt-image-1",
         "mode": "auto",
     },
+    "runway/gen4_image": {
+        "family": "runway",
+        "model_path": "gen4_image",
+        "mode": "auto",
+    },
+    "HiDream": {
+        "family": "hidream",
+        # "model_path": "HiDream-ai/HiDream-I1-Fast",
+        "model_path": "HiDream-ai/HiDream-I1-Full",
+        "mode": "auto",
+    },
 }
 
 
@@ -59,7 +67,6 @@ def get_model_config(key: str) -> ModelConfig:
     return ModelConfig(
         model_path=config.get("model_path", ""),
         model_family=config.get("family", ""),
-        transformer_guf_path=config.get("transformer_guf_path", ""),
         mode=config["mode"],
     )
 
@@ -73,7 +80,7 @@ class ImageContext:
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
-        self.optimize_low_vram = bool(data.optimize_low_vram)
+        self.target_precision = data.target_precision
 
         # Round down to nearest multiple of 16
         self.division = 16
@@ -141,9 +148,8 @@ class ImageContext:
         return PipelineConfig(
             model_id=self.model_config.model_path,
             model_family=self.model_config.model_family,
-            model_transformer_guf_path=self.model_config.transformer_guf_path,
             torch_dtype=self.torch_dtype,
-            optimize_low_vram=self.optimize_low_vram,
+            target_precision=self.target_precision,
             use_safetensors=True,
             ip_adapter_models=tuple(models),
             ip_adapter_subfolders=tuple(subfolders),
@@ -227,7 +233,10 @@ class ImageContext:
             scales = []
             for ip_adapter in self.ip_adapters:
                 scales.append(ip_adapter.get_scale_layers())
-            pipe.set_ip_adapter_scale(scales)
+            if len(scales) == 1:
+                pipe.set_ip_adapter_scale(scales[0])
+            else:
+                pipe.set_ip_adapter_scale(scales)
         return pipe
 
     # NOTE could be moved to utils

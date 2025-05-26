@@ -1,8 +1,9 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
+from common.auth import verify_token
 from texts.schemas import (
     TextCreateResponse,
     TextRequest,
@@ -12,7 +13,7 @@ from texts.schemas import (
 from utils.utils import poll_until_complete
 from worker import celery_app
 
-router = APIRouter(prefix="/texts", tags=["Texts"])
+router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify_token)])
 
 
 @router.post("", response_model=TextCreateResponse, operation_id="texts_create")

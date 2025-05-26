@@ -10,7 +10,7 @@ from videos.models.runway_gen import main
 from videos.schemas import VideoRequest
 
 
-@pytest.skip(reason="Runway Gen 4 Turbo costs credits")
+@pytest.mark.skip(reason="Runway Gen 4 Turbo costs credits")
 def test_image_to_video():
     output_name = f"../tmp/output/videos/runway_gen4_turbo.mp4"
     ensure_path_exists(output_name)

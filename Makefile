@@ -1,4 +1,4 @@
-.PHONY: all build down up generate-clients test-texts test-images tag-and-push
+.PHONY: all build down up generate-clients test-texts test-images test-it-tests test-worker tag-and-push
 
 # Default target
 all: generate-clients
@@ -8,6 +8,7 @@ down:
 	docker-compose down
 
 build: down
+	set DOCKER_BUILDKIT=1 
 	docker-compose build
 
 up: build
@@ -30,6 +31,17 @@ test-images: generate-clients
 	cd it_tests && pytest images -vs
 	cd ..
 	docker-compose exec workers pytest tests/images
+
+test-it-tests: generate-clients
+	cd it_tests && pytest -vs
+	cd ..
+
+TEST_PATH ?= images/models/test_sdxl.py
+# make test-worker TEST_PATH=images/models/test_sdxl.py
+# make test-worker TEST_PATH=images/models/test_hi_dream.py
+# make test-worker TEST_PATH=images/models/test_flux.py
+test-worker: up
+	docker-compose exec workers pytest tests/$(TEST_PATH) -vs
 
 # Tag and push Docker images to GitHub Container Registry
 tag-and-push:

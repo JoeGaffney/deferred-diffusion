@@ -1,67 +1,43 @@
-import functools
-import time
 from functools import lru_cache
 from venv import logger
 
-import numpy as np
 import torch
-import torch.autograd.profiler as profiler
-from diffusers import (
-    AutoencoderKLWan,
-    GGUFQuantizationConfig,
-    WanImageToVideoPipeline,
-    WanTransformer3DModel,
-)
-from diffusers.hooks import apply_group_offloading
-from diffusers.utils import export_to_video, load_image
-from huggingface_hub import hf_hub_download
-from transformers import (
-    BitsAndBytesConfig,
-    CLIPVisionModel,
-    QuantoConfig,
-    UMT5EncoderModel,
-)
+from diffusers import AutoencoderKLWan, WanImageToVideoPipeline, WanTransformer3DModel
+from transformers import CLIPVisionModel, UMT5EncoderModel
 
+from common.pipeline_helpers import get_quantized_model
 from utils.utils import cache_info_decorator, get_16_9_resolution, resize_image
 from videos.context import VideoContext
-from videos.schemas import VideoRequest
-
-# quant_config = QuantoConfig(weights="int8")
 
 
 @cache_info_decorator
 @lru_cache(maxsize=1)
 def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=torch.float16):
-    quant_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch_dtype)
-
-    image_encoder = CLIPVisionModel.from_pretrained(model_id, subfolder="image_encoder", torch_dtype=torch_dtype)
-    vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch_dtype)
-
-    gguf_transformer_path = hf_hub_download(
-        repo_id="city96/Wan2.1-I2V-14B-480P-gguf", filename="wan2.1-i2v-14b-480p-Q4_0.gguf"
-    )
-    transformer = WanTransformer3DModel.from_single_file(
-        gguf_transformer_path,
-        quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
+    image_encoder = get_quantized_model(
+        model_id=model_id,
+        subfolder="image_encoder",
+        model_class=CLIPVisionModel,
+        target_precision=4,
         torch_dtype=torch_dtype,
     )
-    # transformer = WanTransformer3DModel.from_pretrained(
-    #     model_id,
-    #     subfolder="transformer",
-    #     quantization_config=quant_config,
-    #     torch_dtype=torch_dtype,
-    # )
+    transformer = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer",
+        model_class=WanTransformer3DModel,
+        target_precision=4,
+        torch_dtype=torch_dtype,
+    )
 
-    text_encoder = UMT5EncoderModel.from_pretrained(
-        model_id,
+    text_encoder = get_quantized_model(
+        model_id=model_id,
         subfolder="text_encoder",
+        model_class=UMT5EncoderModel,
+        target_precision=4,
         torch_dtype=torch_dtype,
-        # quantization_config=quant_config,
     )
 
     pipe = WanImageToVideoPipeline.from_pretrained(
         model_id,
-        vae=vae,
         image_encoder=image_encoder,
         transformer=transformer,
         text_encoder=text_encoder,
@@ -79,7 +55,7 @@ def main(context: VideoContext):
     if image is None:
         raise ValueError("Image not found. Please provide a valid image path.")
 
-    width, height = get_16_9_resolution("540p")
+    width, height = get_16_9_resolution("1080p")
     image = resize_image(image, 16, 1.0, width, height)
 
     output = pipe(

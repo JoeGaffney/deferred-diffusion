@@ -9,53 +9,115 @@ from diffusers import (
     DiffusionPipeline,
     FluxPipeline,
     FluxTransformer2DModel,
-    GGUFQuantizationConfig,
+    HiDreamImagePipeline,
+    HiDreamImageTransformer2DModel,
+    StableDiffusionXLPipeline,
 )
 from PIL import Image
 from transformers import (
-    BitsAndBytesConfig,
     CLIPVisionModelWithProjection,
-    QuantoConfig,
+    LlamaForCausalLM,
+    PreTrainedTokenizerFast,
     T5EncoderModel,
 )
 
 from common.logger import logger
-from common.pipeline_helpers import optimize_pipeline
+from common.pipeline_helpers import get_quantized_model, optimize_pipeline
 from images.context import ImageContext
 from images.schemas import PipelineConfig
 from utils.utils import cache_info_decorator
 
-quant_config = QuantoConfig(weights="int8")
+# this is common and shared accross a few models use the flux one for now it should be google/t5-v1_1-xxl
+T5_MODEL_PATH = "google/t5-efficient-mini"  # use the original one for now
+T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
+LLAMA_MODEL_PATH = "meta-llama/Llama-3.1-8B-Instruct"
 
 
 def get_pipeline_flux(config: PipelineConfig):
-    transformer = FluxTransformer2DModel.from_single_file(
-        config.model_transformer_guf_path,
-        quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
+    args = {}
+
+    args["transformer"] = get_quantized_model(
+        model_id=config.model_id,
+        subfolder="transformer",
+        model_class=FluxTransformer2DModel,
+        target_precision=config.target_precision,
+        torch_dtype=torch.bfloat16,
+    )
+    args["text_encoder_2"] = get_quantized_model(
+        model_id=T5_MODEL_PATH,
+        subfolder="text_encoder_2",
+        model_class=T5EncoderModel,
+        target_precision=config.target_precision,
         torch_dtype=torch.bfloat16,
     )
 
-    # NOTE investigate quantization config
     pipe = FluxPipeline.from_pretrained(
         config.model_id,
-        transformer=transformer,
-        # text_encoder_2=T5EncoderModel.from_pretrained(
-        #     config.model_id,
-        #     subfolder="text_encoder_2",
-        #     quantization_config=quant_config,
-        #     torch_dtype=torch.bfloat16,
-        # ),
+        torch_dtype=torch.bfloat16,
+        **args,
+    )
+    if config.ip_adapter_models != ():
+        if not hasattr(pipe, "load_ip_adapter"):
+            raise ValueError("The pipeline does not support IP-Adapters. Please use a compatible pipeline.")
+
+        # load multiple as arrays
+        pipe.load_ip_adapter(
+            list(config.ip_adapter_models),
+            weight_name=list(config.ip_adapter_weights),
+            image_encoder_pretrained_model_name_or_path=config.ip_adapter_image_encoder_subfolder,
+        )
+
+    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+
+
+def get_pipeline_high_dream(config: PipelineConfig):
+    args = {}
+
+    args["transformer"] = get_quantized_model(
+        model_id=config.model_id,
+        subfolder="transformer",
+        model_class=HiDreamImageTransformer2DModel,
+        target_precision=config.target_precision,
         torch_dtype=torch.bfloat16,
     )
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)
+    args["text_encoder_3"] = get_quantized_model(
+        model_id=T5_MODEL_PATH,
+        subfolder="text_encoder_2",
+        model_class=T5EncoderModel,
+        target_precision=config.target_precision,
+        torch_dtype=torch.bfloat16,
+    )
+
+    args["text_encoder_4"] = get_quantized_model(
+        model_id=LLAMA_MODEL_PATH,
+        subfolder="",
+        model_class=LlamaForCausalLM,
+        target_precision=4,
+        torch_dtype=torch.bfloat16,
+    )
+    # NOTE ref from the model card
+    args["text_encoder_4"].output_hidden_states = True
+    args["text_encoder_4"].output_attentions = True
+
+    args["tokenizer_4"] = PreTrainedTokenizerFast.from_pretrained(LLAMA_MODEL_PATH)
+
+    pipe = HiDreamImagePipeline.from_pretrained(
+        config.model_id,
+        torch_dtype=torch.bfloat16,
+        **args,
+    )
+
+    return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
 
 @cache_info_decorator
-@lru_cache(maxsize=4)  # Cache up to 4 different pipelines
+@lru_cache(maxsize=2)
 def get_pipeline(config: PipelineConfig):
     if config.model_family == "flux":
         return get_pipeline_flux(config)
+    elif config.model_family == "hidream":
+        return get_pipeline_high_dream(config)
 
     args = {"torch_dtype": config.torch_dtype, "use_safetensors": True}
 
@@ -64,10 +126,18 @@ def get_pipeline(config: PipelineConfig):
         args["text_encoder_3"] = None
         args["tokenizer_3"] = None
 
-    pipe = DiffusionPipeline.from_pretrained(
-        config.model_id,
-        **args,
-    )
+    if config.model_id == "RunDiffusion/Juggernaut-XL-v9":
+        # NOTE see https://huggingface.co/RunDiffusion/Juggernaut-XL-v9/discussions/6
+        pipe = StableDiffusionXLPipeline.from_single_file(
+            "https://huggingface.co/RunDiffusion/Juggernaut-XL-v9/blob/main/Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors",
+            **args,
+        )
+    else:
+        pipe = DiffusionPipeline.from_pretrained(
+            config.model_id,
+            **args,
+        )
+
     if config.ip_adapter_models != ():
         if not hasattr(pipe, "load_ip_adapter"):
             raise ValueError("The pipeline does not support IP-Adapters. Please use a compatible pipeline.")
@@ -91,10 +161,13 @@ def get_pipeline(config: PipelineConfig):
             # Supposed to help with consistency
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=config.optimize_low_vram)
+    return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
 
 def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+    if pipeline_config.model_family == "hidream":
+        return get_pipeline(pipeline_config)
+
     args = {}
     if controlnets != []:
         args["controlnet"] = controlnets
@@ -103,6 +176,9 @@ def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
 
 
 def get_image_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+    if pipeline_config.model_family == "hidream":
+        return get_pipeline(pipeline_config)
+
     args = {}
     if controlnets != []:
         args["controlnet"] = controlnets
@@ -111,11 +187,37 @@ def get_image_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
 
 
 def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+    if pipeline_config.model_family == "hidream":
+        return get_pipeline(pipeline_config)
+
     args = {}
     if controlnets != []:
         args["controlnet"] = controlnets
 
     return AutoPipelineForInpainting.from_pipe(get_pipeline(pipeline_config), requires_safety_checker=False, **args)
+
+
+def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
+    if context.controlnets_enabled:
+        if context.model_config.model_family == "sd3" or context.model_config.model_family == "flux":
+            args["control_image"] = context.get_controlnet_images()
+        else:
+            args["image"] = context.get_controlnet_images()
+        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
+
+    if context.ip_adapters_enabled:
+        args["ip_adapter_image"] = context.get_ip_adapter_images()
+        if context.model_config.model_family != "flux":
+            args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
+        pipe = context.set_ip_adapter_scale(pipe)
+
+    # NOTE there is a bug when using controlnets and ip adapters together with flux
+    # if context.model_config.model_family == "flux":
+    #     num_adapters = pipe.transformer.encoder_hid_proj.num_ip_adapters
+    #     adapter_images = args.get("ip_adapter_image", [])
+    #     logger.info(f"Flux model has {num_adapters} IP adapters and {len(adapter_images)} images")
+
+    return pipe, args
 
 
 def text_to_image_call(pipe, context: ImageContext):
@@ -128,19 +230,7 @@ def text_to_image_call(pipe, context: ImageContext):
         "generator": context.generator,
         "guidance_scale": context.data.guidance_scale,
     }
-
-    if context.controlnets_enabled:
-        # different pattern of arguments
-        if context.model_config.model_family == "sd3":
-            args["control_image"] = context.get_controlnet_images()
-        else:
-            args["image"] = context.get_controlnet_images()
-        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
-
-    if context.ip_adapters_enabled:
-        args["ip_adapter_image"] = context.get_ip_adapter_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
-        pipe = context.set_ip_adapter_scale(pipe)
+    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     logger.info(f"Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
@@ -163,14 +253,7 @@ def image_to_image_call(pipe, context: ImageContext):
         "guidance_scale": context.data.guidance_scale,
     }
 
-    if context.controlnets_enabled:
-        args["control_image"] = context.get_controlnet_images()
-        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
-
-    if context.ip_adapters_enabled:
-        args["ip_adapter_image"] = context.get_ip_adapter_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
-        pipe = context.set_ip_adapter_scale(pipe)
+    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
@@ -194,15 +277,7 @@ def inpainting_call(pipe, context: ImageContext):
         "guidance_scale": context.data.guidance_scale,
         "padding_mask_crop": None if context.data.inpainting_full_image == True else 32,
     }
-
-    if context.controlnets_enabled:
-        args["control_image"] = context.get_controlnet_images()
-        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
-
-    if context.ip_adapters_enabled:
-        args["ip_adapter_image"] = context.get_ip_adapter_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
-        pipe = context.set_ip_adapter_scale(pipe)
+    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     logger.info(f"Inpainting call {args}")
     processed_image = pipe(**args).images[0]

@@ -10,6 +10,7 @@ services:
     volumes:
       - hf_cache:/WORKSPACE # Using Docker named volume
     environment:
+      - DEF_DIF_API_KEYS=${DEF_DIF_API_KEYS}
       - PYTHONUNBUFFERED=1
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
@@ -40,6 +41,7 @@ services:
       - TORCH_HOME=/WORKSPACE
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - CELERYD_PREFETCH_MULTIPLIER=1
     depends_on:
       - redis
       - api

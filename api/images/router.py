@@ -1,8 +1,11 @@
+import os
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.security import APIKeyHeader
 
+from common.auth import verify_token
 from images.schemas import (
     ImageCreateResponse,
     ImageRequest,
@@ -12,7 +15,9 @@ from images.schemas import (
 from utils.utils import poll_until_complete
 from worker import celery_app
 
-router = APIRouter(prefix="/images", tags=["Images"])
+router = APIRouter(
+    prefix="/images", tags=["Images"], dependencies=[Depends(verify_token)]  # This will apply to all routes
+)
 
 
 @router.post("", response_model=ImageCreateResponse, operation_id="images_create")

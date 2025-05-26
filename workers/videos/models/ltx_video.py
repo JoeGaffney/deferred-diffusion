@@ -4,18 +4,38 @@ import torch
 from diffusers.pipelines.ltx.pipeline_ltx_condition import (
     LTXConditionPipeline,
     LTXVideoCondition,
+    LTXVideoTransformer3DModel,
 )
 
 from common.logger import logger
-from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
+from common.pipeline_helpers import get_quantized_model
+from utils.utils import (
+    cache_info_decorator,
+    ensure_divisible,
+    get_16_9_resolution,
+    resize_image,
+)
 from videos.context import VideoContext
 
 
+@cache_info_decorator
 @lru_cache(maxsize=1)
-def get_pipeline(model_id="Lightricks/LTX-Video-0.9.5"):
-    pipe = LTXConditionPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16)
-    # pipe.vae.enable_tiling()
-    # pipe.vae.enable_slicing()
+def get_pipeline(model_id="Lightricks/LTX-Video-0.9.7-distilled"):
+    transformer = get_quantized_model(
+        model_id,
+        subfolder="transformer",
+        model_class=LTXVideoTransformer3DModel,
+        target_precision=4,
+        torch_dtype=torch.float16,
+    )
+
+    pipe = LTXConditionPipeline.from_pretrained(
+        model_id,
+        transformer=transformer,
+        torch_dtype=torch.float16,
+    )
+
+    pipe.vae.enable_tiling()
     pipe.enable_model_cpu_offload()
 
     logger.warning(f"Loaded pipeline {model_id}")
@@ -25,7 +45,7 @@ def get_pipeline(model_id="Lightricks/LTX-Video-0.9.5"):
 def image_to_video(context: VideoContext):
     pipe = get_pipeline()
 
-    width, height = get_16_9_resolution("540p")
+    width, height = get_16_9_resolution("1080p")
     image = context.image
     image = resize_image(image, 32, 1.0, width, height)
 

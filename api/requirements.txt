@@ -7,3 +7,4 @@ uvicorn
 celery
 redis
 pillow
+mypy

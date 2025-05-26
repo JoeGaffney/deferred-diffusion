@@ -5,7 +5,7 @@ from uuid import UUID
 import pytest
 
 from generated.api_client.api.texts import texts_create, texts_get
-from generated.api_client.client import Client
+from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models.message_content import MessageContent
 from generated.api_client.models.message_item import MessageItem
 from generated.api_client.models.text_create_response import TextCreateResponse
@@ -25,10 +25,10 @@ video_a = image_to_base64("../assets/video_v001.mp4")
 
 @pytest.fixture
 def api_client():
-    """Fixture to create API client for tests."""
-
-    base_url = os.getenv("DD_SERVER_ADDRESS", "http://127.0.0.1:5000")
-    return Client(base_url=base_url)
+    return AuthenticatedClient(
+        base_url=os.getenv("DEF_DIF_API_ADDRESS", "http://127.0.0.1:5000"),
+        token=os.getenv("DEF_DIF_API_KEY", ""),
+    )
 
 
 def create_text(api_client):

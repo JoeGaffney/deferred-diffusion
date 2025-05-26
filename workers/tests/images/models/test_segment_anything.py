@@ -1,25 +1,20 @@
-import os
-
 import pytest
-from PIL import Image
 
 from images.context import ImageContext
 from images.models.segment_anything import main
 from images.schemas import ImageRequest
-from tests.utils import image_to_base64, optional_image_to_base64
-from utils.utils import ensure_path_exists
+from tests.utils import (
+    image_to_base64,
+    save_image_and_assert_file_exists,
+    setup_output_file,
+)
 
 
 @pytest.mark.parametrize("mode", ["mask"])
 def test_models(mode):
     """Test models."""
     model_id = "segment-anything"
-
-    output_name = f"../tmp/output/{model_id.replace('/', '_')}/{mode}.png"
-
-    # Delete existing file if it exists
-    if os.path.exists(output_name):
-        os.remove(output_name)
+    output_name = setup_output_file(model_id, mode)
 
     result = main(
         ImageContext(
@@ -35,9 +30,4 @@ def test_models(mode):
         mode=mode,
     )
 
-    if isinstance(result, Image.Image):
-        ensure_path_exists(output_name)
-        result.save(output_name)
-
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+    save_image_and_assert_file_exists(result, output_name)

@@ -1,9 +1,10 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 
+from common.auth import verify_token
 from utils.utils import poll_until_complete
 from videos.schemas import (
     VideoCreateResponse,
@@ -13,7 +14,7 @@ from videos.schemas import (
 )
 from worker import celery_app
 
-router = APIRouter(prefix="/videos", tags=["Videos"])
+router = APIRouter(prefix="/videos", tags=["Videos"], dependencies=[Depends(verify_token)])
 
 
 @router.post("", response_model=VideoCreateResponse, operation_id="videos_create")
