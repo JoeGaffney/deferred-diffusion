@@ -6,6 +6,7 @@ from diffusers.pipelines.ltx.pipeline_ltx_condition import (
     LTXVideoCondition,
     LTXVideoTransformer3DModel,
 )
+from transformers import CLIPVisionModel, UMT5EncoderModel
 
 from common.logger import logger
 from common.pipeline_helpers import get_quantized_model
@@ -14,25 +15,34 @@ from utils.utils import (
     ensure_divisible,
     get_16_9_resolution,
     resize_image,
+    time_info_decorator,
 )
 from videos.context import VideoContext
 
 
-@cache_info_decorator
-@lru_cache(maxsize=1)
+@time_info_decorator
 def get_pipeline(model_id="Lightricks/LTX-Video-0.9.7-distilled"):
     transformer = get_quantized_model(
         model_id,
         subfolder="transformer",
         model_class=LTXVideoTransformer3DModel,
-        target_precision=4,
-        torch_dtype=torch.float16,
+        target_precision=8,
+        torch_dtype=torch.bfloat16,
+    )
+
+    text_encoder = get_quantized_model(
+        model_id,
+        subfolder="text_encoder",
+        model_class=UMT5EncoderModel,
+        target_precision=8,
+        torch_dtype=torch.bfloat16,
     )
 
     pipe = LTXConditionPipeline.from_pretrained(
         model_id,
         transformer=transformer,
-        torch_dtype=torch.float16,
+        text_encoder=text_encoder,
+        torch_dtype=torch.bfloat16,
     )
 
     pipe.vae.enable_tiling()
