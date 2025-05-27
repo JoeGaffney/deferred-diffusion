@@ -70,10 +70,7 @@ class ApiResponseError(Exception):
         super().__init__(self.message)
 
 
-def set_node_info(node, status, message, id=None):
-    if id:
-        node.setUserData("nodeinfo_api_id", str(id))
-
+def set_node_info(node, status, message):
     node.setUserData("nodeinfo_api_status", str(status))
     node.setUserData("nodeinfo_api_message", str(message))
 

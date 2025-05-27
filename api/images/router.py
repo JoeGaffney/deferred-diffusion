@@ -33,9 +33,9 @@ async def create(request: ImageRequest, response: Response):
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
 async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
     if wait:
-        result = await poll_until_complete(id)
+        result = await poll_until_complete(str(id))
     else:
-        result = AsyncResult(id, app=celery_app)
+        result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
     response = ImageResponse(

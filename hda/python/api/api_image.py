@@ -1,6 +1,3 @@
-import datetime
-from datetime import datetime
-
 import hou
 
 from config import client
@@ -14,13 +11,11 @@ from generated.api_client.models.image_request_target_precision import (
 from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import UNSET
 from utils import (
-    ApiResponseError,
     base64_to_image,
     get_control_nets,
     get_ip_adapters,
     get_node_parameters,
     get_output_path,
-    handle_api_response,
     input_to_base64,
     reload_outputs,
     set_node_info,
@@ -29,25 +24,27 @@ from utils import (
 
 
 @threaded
-def api_get_call(id, output_path: str, node):
+def api_get_call(node, id, output_path: str, wait=False):
+    set_node_info(node, "PENDING", "")
+
     try:
-        response = images_get.sync_detailed(id, client=client)
+        parsed = images_get.sync(id, client=client, wait=wait)
     except Exception as e:
         set_node_info(node, "ERROR", str(e))
-        hou.ui.displayMessage(str(e))
+        hou.ui.displayMessage(f"Failed. {str(e)}")
         return
 
     def update_ui():
-        try:
-            parsed = handle_api_response(response, ImageResponse, "API Get Call Failed")
+        if not isinstance(parsed, ImageResponse):
+            message = "Unexpected response type from API call."
+            set_node_info(node, "ERROR", message)
+            hou.ui.displayMessage(message)
+            return
 
-            if not parsed.status == "SUCCESS" or not parsed.result:
-                raise ApiResponseError(
-                    f"Task {parsed.status} with error: {parsed.error_message}", status=parsed.status
-                )
-        except ApiResponseError as e:
-            set_node_info(node, e.status, str(e))  # Use status from exception
-            hou.ui.displayMessage(str(e))
+        if not parsed.status == "SUCCESS" or not parsed.result:
+            message = f"Task {parsed.status} with error: {parsed.error_message}"
+            set_node_info(node, parsed.status, message)  # Use status from exception
+            hou.ui.displayMessage(message)
             return
 
         # Save the image to the specified path before reloading the outputs
@@ -61,9 +58,27 @@ def api_get_call(id, output_path: str, node):
     hou.ui.postEventCallback(update_ui)
 
 
+def api_call(node, body: ImageRequest, output_image_path: str):
+    try:
+        parsed = images_create.sync(client=client, body=body)
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        raise
+
+    if not isinstance(parsed, ImageCreateResponse):
+        set_node_info(node, "ERROR", "Unexpected response type from API call.")
+        raise ValueError("Unexpected response type from API call.")
+
+    try:
+        node.parm("task_id").set(str(parsed.id))
+    except:
+        pass
+
+    api_get_call(node, str(parsed.id), output_image_path, wait=True)
+
+
 def main(node):
     set_node_info(node, "", "")
-
     params = get_node_parameters(node)
     output_image_path = get_output_path(node, movie=False)
     image = input_to_base64(node, "src")
@@ -87,26 +102,17 @@ def main(node):
         strength=params.get("strength", UNSET),
     )
 
-    # make the initial API call to create the image task
-    id = None
-    try:
-        response = images_create.sync_detailed(client=client, body=body)
-    except Exception as e:
-        set_node_info(node, "ERROR", str(e))
-        raise
+    api_call(node, body, output_image_path)
 
-    try:
-        parsed = handle_api_response(response, ImageCreateResponse)
 
-        id = parsed.id
-        if not id:
-            raise ApiResponseError("No ID found in the response.")
-    except ApiResponseError as e:
-        set_node_info(node, e.status, str(e))  # Use status from exception
-        raise
+def main_get(node):
+    task_id = node.parm("task_id").eval()
+    if not task_id or task_id == "":
+        hou.ui.displayMessage("Task ID is required to get the image.")
+        return
 
-    set_node_info(node, "PENDING", "", str(id))
-    api_get_call(id, output_image_path, node)
+    output_image_path = get_output_path(node, movie=False)
+    api_get_call(node, task_id, output_image_path, wait=False)
 
 
 def main_frame_range(node):
