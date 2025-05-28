@@ -22,6 +22,8 @@ Gizmo {
  seed 42
  addUserKnob {26 "" +STARTLINE}
  addUserKnob {22 generate T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" +STARTLINE}
+ addUserKnob {1 task_id}
+ addUserKnob {22 get_task T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)" +STARTLINE}
  addUserKnob {20 Paths}
  addUserKnob {1 path_root}
  path_root "\[file dirname \[value root.name]]/processed/\[value this.name]"
