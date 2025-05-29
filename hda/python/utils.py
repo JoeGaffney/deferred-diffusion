@@ -70,10 +70,7 @@ class ApiResponseError(Exception):
         super().__init__(self.message)
 
 
-def set_node_info(node, status, message, id=None):
-    if id:
-        node.setUserData("nodeinfo_api_id", str(id))
-
+def set_node_info(node, status, message):
     node.setUserData("nodeinfo_api_status", str(status))
     node.setUserData("nodeinfo_api_message", str(message))
 
@@ -136,7 +133,7 @@ def base64_to_image(base64_str: str, output_path: str, save_copy: bool = False):
 
             # Create the timestamped path
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]  # Keep only 3 digits of milliseconds
-            timestamp_path = os.path.join(directory, timestamp, filename)
+            timestamp_path = os.path.join(directory, f"{timestamp}_{filename}")
             dir_path = os.path.dirname(timestamp_path)
             if dir_path and not os.path.exists(dir_path):
                 os.makedirs(dir_path)

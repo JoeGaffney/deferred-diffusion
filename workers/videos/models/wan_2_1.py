@@ -1,30 +1,40 @@
-from functools import lru_cache
 from venv import logger
 
 import torch
-from diffusers import AutoencoderKLWan, WanImageToVideoPipeline, WanTransformer3DModel
+from diffusers import (
+    FlowMatchEulerDiscreteScheduler,
+    WanImageToVideoPipeline,
+    WanTransformer3DModel,
+)
+from diffusers.hooks.group_offloading import apply_group_offloading
 from transformers import CLIPVisionModel, UMT5EncoderModel
 
 from common.pipeline_helpers import get_quantized_model
-from utils.utils import cache_info_decorator, get_16_9_resolution, resize_image
+from utils.utils import (
+    cache_info_decorator,
+    get_16_9_resolution,
+    resize_image,
+    time_info_decorator,
+)
 from videos.context import VideoContext
 
+torch.backends.cuda.matmul.allow_tf32 = True
 
-@cache_info_decorator
-@lru_cache(maxsize=1)
-def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=torch.float16):
+
+@time_info_decorator
+def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=torch.bfloat16):
     image_encoder = get_quantized_model(
         model_id=model_id,
         subfolder="image_encoder",
         model_class=CLIPVisionModel,
-        target_precision=4,
+        target_precision=16,
         torch_dtype=torch_dtype,
     )
     transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
         model_class=WanTransformer3DModel,
-        target_precision=4,
+        target_precision=8,
         torch_dtype=torch_dtype,
     )
 
@@ -32,17 +42,23 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
         model_id=model_id,
         subfolder="text_encoder",
         model_class=UMT5EncoderModel,
-        target_precision=4,
+        target_precision=8,
         torch_dtype=torch_dtype,
     )
+
+    # Alt schedulers
+    scheduler = FlowMatchEulerDiscreteScheduler(shift=5.0)
+    # scheduler = UniPCMultistepScheduler(prediction_type="flow_prediction", use_flow_sigmas=True, flow_shift=4.0)
 
     pipe = WanImageToVideoPipeline.from_pretrained(
         model_id,
         image_encoder=image_encoder,
         transformer=transformer,
         text_encoder=text_encoder,
+        scheduler=scheduler,
         torch_dtype=torch_dtype,
     )
+
     pipe.enable_model_cpu_offload()
 
     logger.warning(f"Loaded pipeline {model_id}")

@@ -89,5 +89,5 @@ def main(node):
         set_node_info(node, e.status, str(e))
         raise
 
-    set_node_info(node, "PENDING", "", str(id))
+    set_node_info(node, "PENDING", "")
     api_get_call(id, output_video_path, node)

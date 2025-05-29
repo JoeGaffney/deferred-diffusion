@@ -1,0 +1,27 @@
+FROM pytorch/pytorch:2.7.0-cuda12.6-cudnn9-runtime
+
+WORKDIR /app
+
+# Install git and other utilities if needed
+RUN apt-get update && apt-get install -y git
+
+# Clone ComfyUI repo
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git .
+
+# Install ComfyUI Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# # Create required directories
+RUN mkdir -p /app/custom_nodes
+
+# Install ComfyUI Manager
+# RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git /app/custom_nodes/ComfyUI-Manager
+
+# Optional: Install any additional dependencies for ComfyUI Manager
+# RUN pip install --no-cache-dir -r /app/custom_nodes/ComfyUI-Manager/requirements.txt || echo "No requirements.txt file or some requirements failed to install"
+
+# Expose port if ComfyUI serves a web UI or API
+EXPOSE 8188
+
+# Run ComfyUI with browser support
+CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188"]

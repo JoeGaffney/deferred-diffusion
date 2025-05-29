@@ -65,6 +65,31 @@ services:
       - workers
       - redis
 
+  # comfy worker wip
+  comfy-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.comfy-worker
+
+    volumes:
+      # - /mnt/y/COMFY:/app/models
+      # - Y:/COMFY:/app/models
+      # - comfy_models:/app/models
+      - Y:/COMFY/models:/app/models
+      - Y:/COMFY/custom_nodes:/app/custom_nodes
+      - Y:/COMFY/user:/app/user # For user settings/configs
+    ports:
+      - "8188:8188" # expose ComfyUI web UI port
+    deploy:
+      # replicas: 2 # Number of container
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
 # Volume definitions go at the root level, not nested inside the service
 volumes:
   hf_cache: {}
+  # comfy_models: {}

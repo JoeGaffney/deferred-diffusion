@@ -87,6 +87,22 @@ def find_nodes_of_type(node, target_class_type: str, stop_at_types=[NODE_IMAGE])
     return matching_nodes
 
 
+def set_node_value(node, knob_name: str, value):
+    """Set the value of a knob on a node."""
+    knob = node.knob(knob_name)
+    if knob is None:
+        raise ValueError(f"Knob '{knob_name}' not found on node '{node.name()}'")
+
+    if hasattr(knob, "setValue") is False:
+        raise ValueError(f"Knob '{knob_name}' does not support setting value")
+
+    try:
+        knob.setValue(value)
+        print(f"Set knob '{knob_name}' to value: {value}")
+    except Exception as e:
+        raise ValueError(f"Failed to set knob '{knob_name}': {str(e)}") from e
+
+
 def get_node_value(
     node,
     knob_name: str,

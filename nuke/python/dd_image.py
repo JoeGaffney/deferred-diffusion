@@ -1,4 +1,7 @@
+import os
+
 import nuke
+import nukescripts
 
 from config import client
 from generated.api_client.api.images import images_create, images_get
@@ -13,6 +16,7 @@ from utils import (
     get_ip_adapters,
     get_node_value,
     node_to_base64,
+    set_node_value,
     threaded,
 )
 
@@ -24,6 +28,15 @@ def create_dd_image_node():
     # Optionally: You can set other properties or interact with the node here
     # e.g., If you want to call a function defined inside the gizmo, you can do it here
     return node
+
+
+def replace_hashes_with_frame(path_with_hashes, frame):
+    num_hashes = path_with_hashes.count("#")
+    if num_hashes == 0:
+        # No hashes to replace, return original path
+        return path_with_hashes
+    frame_str = str(frame).zfill(num_hashes)
+    return path_with_hashes.replace("#" * num_hashes, frame_str)
 
 
 @threaded
@@ -48,15 +61,18 @@ def api_get_call(id, output_image_path: str, output_read):
             nuke.message(f"Task failed with error: {response.parsed.error_message}")
             return
 
-        base64_to_image(response.parsed.result.base64_data, output_image_path)
+        resolved_output_path = replace_hashes_with_frame(output_image_path, nuke.frame())
+        nuke.tprint(f"resolved_output_path {resolved_output_path}")
 
+        base64_to_image(response.parsed.result.base64_data, resolved_output_path)
+        set_node_value(output_read, "file", output_image_path)
         output_read["reload"].execute()
 
     nuke.executeInMainThread(update_ui)
     nuke.tprint("API call completed successfully.")
 
 
-def api_call(body: ImageRequest, output_image_path: str, output_read):
+def api_call(node, body: ImageRequest, output_image_path: str, output_read):
     nuke.tprint("Calling API...")
     response = images_create.sync_detailed(client=client, body=body)
 
@@ -73,13 +89,27 @@ def api_call(body: ImageRequest, output_image_path: str, output_read):
         nuke.message("No ID found in the response.")
         return
 
-    api_get_call(id, output_image_path, output_read)
+    set_node_value(node, "task_id", str(id))
+    api_get_call(str(id), output_image_path, output_read)
+
+
+def get_output_path(node, movie=False) -> str:
+    node_name = node.name()
+    time_stamp = str(node.__hash__())
+    # time_stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    extension = "#####.png"
+    if movie:
+        extension = "mp4"
+
+    script_dir = os.path.dirname(nuke.root().name())
+    output_image_path = f"{script_dir}/deferred-diffusion/{node_name}/{time_stamp}.{extension}"
+    return output_image_path
 
 
 def process_image(node):
     """This function is defined to process the node"""
 
-    output_image_path = get_node_value(node, "file", mode="evaluate")
+    output_image_path = get_output_path(node, movie=False)
     if not output_image_path:
         raise ValueError("Output image path is required.")
 
@@ -113,4 +143,4 @@ def process_image(node):
         max_height=int(width_height[1]),
     )
 
-    api_call(body, output_image_path, output_read)
+    api_call(node, body, output_image_path, output_read)
