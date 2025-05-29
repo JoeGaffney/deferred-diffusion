@@ -32,6 +32,9 @@ services:
     stdin_open: true
     volumes:
       - hf_cache:/WORKSPACE
+      # For now comfy runs in the monolith worker
+      - Y:/COMFY/models:/app/ComfyUI/models
+      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
     environment:
       - PYTHONUNBUFFERED=1
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -65,11 +68,11 @@ services:
       - workers
       - redis
 
-  # comfy worker wip
-  comfy-worker:
+  # comfy ui for creating and managing workflows
+  comfy:
     build:
       context: .
-      dockerfile: Dockerfile.comfy-worker
+      dockerfile: Dockerfile.comfy
 
     volumes:
       # - /mnt/y/COMFY:/app/models
@@ -81,7 +84,6 @@ services:
     ports:
       - "8188:8188" # expose ComfyUI web UI port
     deploy:
-      # replicas: 2 # Number of container
       resources:
         reservations:
           devices:

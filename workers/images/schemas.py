@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple
 
 from pydantic import Base64Bytes, BaseModel, Field
 from torch import dtype
@@ -78,6 +78,7 @@ class ImageRequest(BaseModel):
         "runway/gen4_image",
         "HiDream",
     ]
+    comfy_workflow: Optional[Dict[str, Any]] = None
     controlnets: list[ControlNetSchema] = []
     guidance_scale: float = 5.0
     image: Optional[str] = Field(

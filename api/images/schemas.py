@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
@@ -78,6 +78,7 @@ class ImageRequest(BaseModel):
         "runway/gen4_image",
         "HiDream",
     ]
+    comfy_workflow: Optional[Dict[str, Any]] = None
     controlnets: list[ControlNetSchema] = []
     guidance_scale: float = 5.0
     image: Optional[str] = Field(

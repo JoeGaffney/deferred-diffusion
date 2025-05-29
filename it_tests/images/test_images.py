@@ -1,3 +1,4 @@
+import json
 import os
 from http import HTTPStatus
 from uuid import UUID
@@ -22,13 +23,14 @@ def api_client():
     )
 
 
-def create_image(api_client):
+def create_image(api_client, comfy_workflow=None):
     """Helper function to create an image and return its ID."""
     request = ImageRequest(
         prompt="A beautiful mountain landscape",
         model=model,
         max_width=512,
         max_height=512,
+        comfy_workflow=comfy_workflow,
     )
 
     response = images_create.sync_detailed(client=api_client, body=request)
@@ -59,3 +61,29 @@ def test_get_image(api_client):
     assert isinstance(response.parsed, ImageResponse)
     assert response.parsed.id == image_id
     assert response.parsed.status == "SUCCESS"
+
+
+def test_get_workflow_basic(api_client):
+    """Test retrieving an image workflow by ID."""
+    comfy_workflow = json.load(open("../assets/workflow_basic_v001.json", encoding="utf-8"))
+    image_id = create_image(api_client, comfy_workflow=comfy_workflow)
+    response = images_get.sync_detailed(id=image_id, client=api_client, wait=True)
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.parsed is not None
+    assert isinstance(response.parsed, ImageResponse)
+    assert response.parsed.id == image_id
+    assert response.parsed.status == "SUCCESS"  # Should be pending since we didn't wait
+
+
+def test_get_workflow_advanced(api_client):
+    """Test retrieving an image workflow by ID."""
+    comfy_workflow = json.load(open("../assets/workflow_basic_v001.json", encoding="utf-8"))
+    image_id = create_image(api_client, comfy_workflow=comfy_workflow)
+    response = images_get.sync_detailed(id=image_id, client=api_client, wait=True)
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.parsed is not None
+    assert isinstance(response.parsed, ImageResponse)
+    assert response.parsed.id == image_id
+    assert response.parsed.status == "SUCCESS"  # Should be pending since we didn't wait
