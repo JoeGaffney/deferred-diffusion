@@ -79,8 +79,18 @@ class ImageRequest(BaseModel):
         "HiDream",
     ]
     comfy_workflow: Optional[Dict[str, Any]] = None
-    controlnets: list[ControlNetSchema] = []
+    prompt: str = "Detailed, 8k, photorealistic"
+    negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     guidance_scale: float = 5.0
+    max_height: int = 2048
+    max_width: int = 2048
+    num_inference_steps: int = 25
+    seed: int = 42
+    strength: float = 0.5
+    inpainting_full_image: bool = True
+    target_precision: Literal[4, 8, 16] = Field(
+        8, description="Global target precision for quantization; applied selectively per model and component."
+    )
     image: Optional[str] = Field(
         default=None,
         description="Optional Base64 image string",
@@ -89,8 +99,6 @@ class ImageRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    inpainting_full_image: bool = True
-    ip_adapters: list[IpAdapterModel] = []
     mask: Optional[str] = Field(
         default=None,
         description="Optional Base64 image string",
@@ -99,16 +107,8 @@ class ImageRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    max_height: int = 2048
-    max_width: int = 2048
-    negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
-    num_inference_steps: int = 25
-    target_precision: Literal[4, 8, 16] = Field(
-        8, description="Global target precision for quantization; applied selectively per model and component."
-    )
-    prompt: str = "Detailed, 8k, photorealistic"
-    seed: int = 42
-    strength: float = 0.5
+    ip_adapters: list[IpAdapterModel] = []
+    controlnets: list[ControlNetSchema] = []
 
 
 class ImageWorkerResponse(BaseModel):
