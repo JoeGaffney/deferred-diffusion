@@ -3,9 +3,11 @@ from uuid import UUID
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 
 from common.auth import verify_token
+from common.comfy.comfy_utils import model_schema_to_comfy_nodes
 from images.schemas import (
     ImageCreateResponse,
     ImageRequest,
@@ -32,6 +34,14 @@ async def create(request: ImageRequest, response: Response):
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.get("/workflow/schema", operation_id="images_get_workflow_schema")
+async def get_workflow_schema():
+    nodes = model_schema_to_comfy_nodes(ImageRequest)
+    print(nodes)
+    print(f"Generated {len(nodes)} nodes for ImageRequest schema")
+    return JSONResponse(nodes, status_code=200)
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")

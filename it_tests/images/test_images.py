@@ -23,17 +23,10 @@ def api_client():
     )
 
 
-def create_image(api_client, comfy_workflow=None):
+def create_image(api_client, body: ImageRequest) -> UUID:
     """Helper function to create an image and return its ID."""
-    request = ImageRequest(
-        prompt="A beautiful mountain landscape",
-        model=model,
-        max_width=512,
-        max_height=512,
-        comfy_workflow=comfy_workflow,
-    )
 
-    response = images_create.sync_detailed(client=api_client, body=request)
+    response = images_create.sync_detailed(client=api_client, body=body)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
@@ -46,14 +39,15 @@ def create_image(api_client, comfy_workflow=None):
 
 def test_create_image(api_client):
     """Test creating an image through the API."""
-    image_id = create_image(api_client)
+    body = ImageRequest(prompt="A beautiful mountain landscape", model=model, max_width=512, max_height=512)
+    image_id = create_image(api_client, body)
     assert isinstance(image_id, UUID)
 
 
 def test_get_image(api_client):
     """Test retrieving an image by ID."""
-    image_id = create_image(api_client)
-
+    body = ImageRequest(prompt="A beautiful mountain landscape", model=model, max_width=512, max_height=512)
+    image_id = create_image(api_client, body)
     response = images_get.sync_detailed(id=image_id, client=api_client, wait=True)
 
     assert response.status_code == HTTPStatus.OK
@@ -65,8 +59,15 @@ def test_get_image(api_client):
 
 def test_get_workflow_basic(api_client):
     """Test retrieving an image workflow by ID."""
-    comfy_workflow = json.load(open("../assets/workflow_basic_v001.json", encoding="utf-8"))
-    image_id = create_image(api_client, comfy_workflow=comfy_workflow)
+    body = ImageRequest(
+        prompt="A beautiful mountain landscape",
+        model=model,
+        max_width=512,
+        max_height=512,
+        comfy_workflow=json.load(open("../assets/workflows/image2image", encoding="utf-8")),
+    )
+    image_id = create_image(api_client, body)
+
     response = images_get.sync_detailed(id=image_id, client=api_client, wait=True)
 
     assert response.status_code == HTTPStatus.OK
@@ -78,8 +79,15 @@ def test_get_workflow_basic(api_client):
 
 def test_get_workflow_advanced(api_client):
     """Test retrieving an image workflow by ID."""
-    comfy_workflow = json.load(open("../assets/workflow_basic_v001.json", encoding="utf-8"))
-    image_id = create_image(api_client, comfy_workflow=comfy_workflow)
+    body = ImageRequest(
+        prompt="A beautiful mountain landscape",
+        model=model,
+        max_width=512,
+        max_height=512,
+        comfy_workflow=json.load(open("../assets/workflows/text2Image.json", encoding="utf-8")),
+    )
+    image_id = create_image(api_client, body)
+
     response = images_get.sync_detailed(id=image_id, client=api_client, wait=True)
 
     assert response.status_code == HTTPStatus.OK
