@@ -1,9 +1,18 @@
 {
   "3": {
     "inputs": {
-      "seed": 163867191686976,
-      "steps": 20,
-      "cfg": 8,
+      "seed": [
+        "17",
+        0
+      ],
+      "steps": [
+        "16",
+        0
+      ],
+      "cfg": [
+        "13",
+        0
+      ],
       "sampler_name": "euler",
       "scheduler": "normal",
       "denoise": 1,
@@ -40,8 +49,14 @@
   },
   "5": {
     "inputs": {
-      "width": 512,
-      "height": 512,
+      "width": [
+        "14",
+        0
+      ],
+      "height": [
+        "15",
+        0
+      ],
       "batch_size": 1
     },
     "class_type": "EmptyLatentImage",
@@ -51,7 +66,10 @@
   },
   "6": {
     "inputs": {
-      "text": "beautiful scenery nature glass bottle landscape, , purple galaxy bottle,",
+      "text": [
+        "11",
+        0
+      ],
       "clip": [
         "4",
         1
@@ -64,7 +82,10 @@
   },
   "7": {
     "inputs": {
-      "text": "text, watermark",
+      "text": [
+        "12",
+        0
+      ],
       "clip": [
         "4",
         1
@@ -102,6 +123,96 @@
     "class_type": "SaveImage",
     "_meta": {
       "title": "Save Image"
+    }
+  },
+  "10": {
+    "inputs": {
+      "image": "example.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "api_image"
+    }
+  },
+  "11": {
+    "inputs": {
+      "value": "Detailed, 8k, photorealistic"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "api_prompt"
+    }
+  },
+  "12": {
+    "inputs": {
+      "value": "worst quality, inconsistent motion, blurry, jittery, distorted"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "api_negative_prompt"
+    }
+  },
+  "13": {
+    "inputs": {
+      "value": 5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "api_guidance_scale"
+    }
+  },
+  "14": {
+    "inputs": {
+      "value": 512
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_max_height"
+    }
+  },
+  "15": {
+    "inputs": {
+      "value": 512
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_max_width"
+    }
+  },
+  "16": {
+    "inputs": {
+      "value": 25
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_num_inference_steps"
+    }
+  },
+  "17": {
+    "inputs": {
+      "value": 42
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_seed"
+    }
+  },
+  "18": {
+    "inputs": {
+      "value": 0.5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "api_strength"
+    }
+  },
+  "19": {
+    "inputs": {
+      "image": "example.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "api_mask"
     }
   }
 }

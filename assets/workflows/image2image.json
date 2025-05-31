@@ -1,12 +1,12 @@
 {
   "3": {
     "inputs": {
-      "seed": 254437842659800,
-      "steps": ["19", 0],
-      "cfg": 8,
+      "seed": ["21", 0],
+      "steps": ["22", 0],
+      "cfg": ["26", 0],
       "sampler_name": "dpmpp_2m",
       "scheduler": "normal",
-      "denoise": 0.8700000000000001,
+      "denoise": ["20", 0],
       "model": ["14", 0],
       "positive": ["6", 0],
       "negative": ["7", 0],
@@ -19,7 +19,7 @@
   },
   "6": {
     "inputs": {
-      "text": "photograph of victorian woman with wings, sky clouds, meadow grass\n",
+      "text": ["24", 0],
       "clip": ["14", 1]
     },
     "class_type": "CLIPTextEncode",
@@ -29,7 +29,7 @@
   },
   "7": {
     "inputs": {
-      "text": "watermark, text\n",
+      "text": ["25", 0],
       "clip": ["14", 1]
     },
     "class_type": "CLIPTextEncode",
@@ -59,16 +59,16 @@
   },
   "10": {
     "inputs": {
-      "image": "Capture1.PNG"
+      "image": "example.png"
     },
     "class_type": "LoadImage",
     "_meta": {
-      "title": "image"
+      "title": "Load Image"
     }
   },
   "12": {
     "inputs": {
-      "pixels": ["10", 0],
+      "pixels": ["19", 0],
       "vae": ["14", 2]
     },
     "class_type": "VAEEncode",
@@ -85,22 +85,94 @@
       "title": "Load Checkpoint"
     }
   },
+  "17": {
+    "inputs": {
+      "value": 512
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_max_height"
+    }
+  },
+  "18": {
+    "inputs": {
+      "image": "example.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "api_mask"
+    }
+  },
   "19": {
+    "inputs": {
+      "image": "example.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "api_image"
+    }
+  },
+  "20": {
+    "inputs": {
+      "value": 0.5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "api_strength"
+    }
+  },
+  "21": {
+    "inputs": {
+      "value": 42
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_seed"
+    }
+  },
+  "22": {
     "inputs": {
       "value": 25
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "num_inference_steps"
+      "title": "api_num_inference_steps"
     }
   },
-  "21": {
+  "23": {
     "inputs": {
-      "value": ""
+      "value": 512
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "seed"
+      "title": "api_max_width"
+    }
+  },
+  "24": {
+    "inputs": {
+      "value": "Detailed, 8k, photorealistic"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "api_prompt"
+    }
+  },
+  "25": {
+    "inputs": {
+      "value": "worst quality, inconsistent motion, blurry, jittery, distorted"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "api_negative_prompt"
+    }
+  },
+  "26": {
+    "inputs": {
+      "value": 5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "api_guidance_scale"
     }
   }
 }

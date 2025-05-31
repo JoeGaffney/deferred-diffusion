@@ -6,8 +6,10 @@ from common.comfy.comfy_utils import (
     ensure_comfy_alive,
     get_image,
     queue_prompt,
+    remap_workflow,
     wait_for_completion,
 )
+from common.logger import log_pretty
 from images.context import ImageContext
 from images.models.auto_diffusion import main as auto_diffusion
 from images.models.auto_openai import main as auto_openai
@@ -69,11 +71,9 @@ def process_image_workflow(request_dict):
     if not comfy_workflow:
         raise ValueError("Comfy workflow is required for this task")
 
-    # Ensure workflow is a dictionary
-    if isinstance(comfy_workflow, str):
-        workflow = json.loads(comfy_workflow)
-    else:
-        workflow = comfy_workflow
+    log_pretty("Processing ComfyUI workflow", comfy_workflow)
+    workflow = remap_workflow(comfy_workflow, request)
+    log_pretty("Remapped ComfyUI workflow", workflow)
 
     # Queue the workflow to ComfyUI
     queue_response = queue_prompt(workflow)

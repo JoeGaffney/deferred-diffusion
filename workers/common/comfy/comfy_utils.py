@@ -33,9 +33,9 @@ def start_comfy():
     COMFY_PROCESS = subprocess.Popen(
         ["python", "main.py", "--disable-auto-launch", "--listen", "127.0.0.1", "--port", str(COMFY_PORT)],
         cwd=COMFY_PATH,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
+        # stdout=subprocess.PIPE,
+        # stderr=subprocess.STDOUT,
+        # text=True,
     )
 
     # Wait for Comfy to be responsive
@@ -88,3 +88,57 @@ def wait_for_completion(prompt_id, timeout=300, check_interval=1):
                 return outputs
         time.sleep(check_interval)
     raise TimeoutError(f"ComfyUI workflow did not complete within {timeout} seconds")
+
+
+def remap_workflow(workflow, data) -> dict:
+    """Remap the workflow to match ComfyUI's expected format.
+
+    Args:
+        workflow (dict): The ComfyUI workflow to remap
+        data (ImageRequest): The request data containing parameter values
+
+    Returns:
+        dict: The remapped workflow with updated values
+    """
+    # Make a deep copy of the workflow to avoid modifying the original
+    remapped = workflow.copy()
+
+    # Iterate through all nodes
+    for node_id, node in remapped.items():
+        # Check if node has metadata with a title
+        if "_meta" in node and "title" in node["_meta"]:
+            title = node["_meta"]["title"]
+
+            # Check if title starts with "api_"
+            if title.startswith("api_"):
+                param_name = title[4:]  # Remove "api_" prefix
+
+                # Check if the parameter exists in the data object
+                if hasattr(data, param_name):
+                    param_value = getattr(data, param_name)
+
+                    # Handle LoadImage type nodes specially
+                    if node["class_type"] == "LoadImage" and param_value is not None:
+                        # Convert base64 to image and save
+                        temp_filename = f"temp_{param_name}_{int(time.time())}.png"
+
+                        # Decode the base64 image
+                        img_data = base64.b64decode(param_value)
+                        img = Image.open(BytesIO(img_data))
+
+                        # Save to ComfyUI's input directory
+                        input_dir = os.path.join(COMFY_PATH, "input")
+                        os.makedirs(input_dir, exist_ok=True)
+                        img_path = os.path.join(input_dir, temp_filename)
+                        img.save(img_path)
+
+                        # Update the node's image input
+                        node["inputs"]["image"] = temp_filename
+
+                    # Handle all other node types dynamically
+                    elif "inputs" in node and "value" in node["inputs"]:
+                        # Only update if the parameter value is not None
+                        if param_value is not None:
+                            node["inputs"]["value"] = param_value
+
+    return remapped

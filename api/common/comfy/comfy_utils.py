@@ -1,7 +1,22 @@
 import inspect
-from typing import Any, Dict, List, Optional, get_args, get_origin
+from typing import Any, Dict, List, Optional, Union, get_args, get_origin
 
 from pydantic import BaseModel
+
+
+def is_string_type(ftype: Any) -> bool:
+    """Check if a type is a string or Optional[str]."""
+    # Direct string type
+    if ftype is str or ftype == str:
+        return True
+
+    # Check for Optional[str] (Union[str, None])
+    origin = get_origin(ftype)
+    if origin is not None and origin is Union:
+        args = get_args(ftype)
+        return len(args) == 2 and str in args and (type(None) in args or None in args)
+
+    return False
 
 
 def model_schema_to_comfy_nodes(schema: BaseModel, start_id=1) -> Dict[str, Any]:
@@ -29,9 +44,14 @@ def model_schema_to_comfy_nodes(schema: BaseModel, start_id=1) -> Dict[str, Any]
 
         # Check if this is an image field by examining json_schema_extra
         is_image = False
-        if hasattr(field, "json_schema_extra") and field.json_schema_extra:
-            content_encoding = field.json_schema_extra.get("contentEncoding")
-            content_type = field.json_schema_extra.get("contentMediaType")
+        if hasattr(field, "json_schema_extra") and field.json_schema_extra and is_string_type(ftype) is True:
+            # Handle json_schema_extra which can be a dict or callable
+            schema_extra = field.json_schema_extra
+            if callable(schema_extra):
+                continue
+
+            content_encoding = schema_extra.get("contentEncoding")
+            content_type = schema_extra.get("contentMediaType")
             if content_encoding == "base64" and content_type and "image/" in str(content_type):
                 is_image = True
 
