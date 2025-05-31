@@ -1,5 +1,6 @@
 import base64
 import io
+import json
 import os
 import shutil
 import tempfile
@@ -232,6 +233,22 @@ def get_node_parameters(node):
         values = [parm.eval() for parm in parm_tuple]
         params[parm_tuple.name()] = values[0] if len(values) == 1 else values
     return params
+
+
+def load_comfy_workflow(workflow_path: str) -> dict:
+    expanded_path = hou.expandString(workflow_path)
+
+    if not os.path.exists(expanded_path):
+        raise ValueError(f"ComfyUI workflow file not found: {expanded_path}")
+
+    try:
+        with open(expanded_path, "r", encoding="utf-8") as f:
+            workflow_json = json.load(f)
+        return workflow_json
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in ComfyUI workflow file: {expanded_path}") from exc
+    except Exception as e:
+        raise ValueError(f"Error loading ComfyUI workflow: {str(e)}") from e
 
 
 def get_control_nets(node) -> list[ControlNetSchema]:

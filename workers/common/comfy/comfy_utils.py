@@ -10,6 +10,7 @@ from io import BytesIO
 from PIL import Image
 
 from common.logger import logger
+from images.schemas import ComfyWorkflow
 
 COMFY_PORT = 8188
 COMFY_PATH = "/app/ComfyUI"
@@ -90,7 +91,7 @@ def wait_for_completion(prompt_id, timeout=300, check_interval=1):
     raise TimeoutError(f"ComfyUI workflow did not complete within {timeout} seconds")
 
 
-def remap_workflow(workflow, data) -> dict:
+def remap_workflow(workflow: ComfyWorkflow, data) -> dict:
     """Remap the workflow to match ComfyUI's expected format.
 
     Args:
@@ -101,7 +102,7 @@ def remap_workflow(workflow, data) -> dict:
         dict: The remapped workflow with updated values
     """
     # Make a deep copy of the workflow to avoid modifying the original
-    remapped = workflow.copy()
+    remapped = workflow.model_dump()
 
     # Iterate through all nodes
     for node_id, node in remapped.items():

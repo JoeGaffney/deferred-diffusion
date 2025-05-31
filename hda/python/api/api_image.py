@@ -5,6 +5,7 @@ import hou
 
 from config import client
 from generated.api_client.api.images import images_create, images_get
+from generated.api_client.models.comfy_workflow import ComfyWorkflow
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
@@ -20,6 +21,7 @@ from utils import (
     get_node_parameters,
     get_output_path,
     input_to_base64,
+    load_comfy_workflow,
     reload_outputs,
     set_node_info,
     threaded,
@@ -90,12 +92,19 @@ def main(node):
     image = input_to_base64(node, "src")
     mask = input_to_base64(node, "mask")
 
+    comfy_workflow = params.get("comfy_workflow", "")
+    if comfy_workflow is not "":
+        workflow_dict = load_comfy_workflow(comfy_workflow)
+        comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
+    else:
+        comfy_workflow = UNSET
+
     body = ImageRequest(
         model=ImageRequestModel(params.get("model", "sd1.5")),
+        comfy_workflow=comfy_workflow,
         controlnets=get_control_nets(node),
         guidance_scale=params.get("guidance_scale", UNSET),
         image=image,
-        inpainting_full_image=params.get("inpainting_full_image", False),
         ip_adapters=get_ip_adapters(node),
         mask=mask,
         max_height=params.get("max_height", UNSET),

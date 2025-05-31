@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
@@ -59,6 +59,14 @@ class IpAdapterModel(BaseModel):
     scale_layers: str = "all"
 
 
+class ComfyWorkflow(BaseModel):
+    """Represents a ComfyUI workflow with dynamic node structure."""
+
+    model_config = {
+        "extra": "allow",
+    }
+
+
 class ImageRequest(BaseModel):
     model: Literal[
         "sd1.5",
@@ -78,7 +86,9 @@ class ImageRequest(BaseModel):
         "runway/gen4_image",
         "HiDream",
     ]
-    comfy_workflow: Optional[Dict[str, Any]] = None
+    comfy_workflow: Optional[ComfyWorkflow] = Field(
+        default=None, description="ComfyUI workflow configuration with dynamic node structure"
+    )
     prompt: str = "Detailed, 8k, photorealistic"
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     guidance_scale: float = 5.0
@@ -87,7 +97,6 @@ class ImageRequest(BaseModel):
     num_inference_steps: int = 25
     seed: int = 42
     strength: float = 0.5
-    inpainting_full_image: bool = True
     target_precision: Literal[4, 8, 16] = Field(
         8, description="Global target precision for quantization; applied selectively per model and component."
     )

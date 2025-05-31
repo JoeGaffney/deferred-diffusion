@@ -59,6 +59,14 @@ class IpAdapterModel(BaseModel):
     scale_layers: str = "all"
 
 
+class ComfyWorkflow(BaseModel):
+    """Represents a ComfyUI workflow with dynamic node structure."""
+
+    model_config = {
+        "extra": "allow",
+    }
+
+
 class ImageRequest(BaseModel):
     model: Literal[
         "sd1.5",
@@ -78,7 +86,10 @@ class ImageRequest(BaseModel):
         "runway/gen4_image",
         "HiDream",
     ]
-    comfy_workflow: Optional[Dict[str, Any]] = None
+    comfy_workflow: Optional[ComfyWorkflow] = Field(
+        default=None,
+        description="ComfyUI workflow configuration with dynamic node structure",
+    )
     controlnets: list[ControlNetSchema] = []
     guidance_scale: float = 5.0
     image: Optional[str] = Field(
@@ -89,7 +100,6 @@ class ImageRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    inpainting_full_image: bool = True
     ip_adapters: list[IpAdapterModel] = []
     mask: Optional[str] = Field(
         default=None,
