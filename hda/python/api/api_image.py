@@ -1,7 +1,11 @@
+import traceback
+from contextlib import contextmanager
+
 import hou
 
 from config import client
 from generated.api_client.api.images import images_create, images_get
+from generated.api_client.models.comfy_workflow import ComfyWorkflow
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
@@ -17,64 +21,68 @@ from utils import (
     get_node_parameters,
     get_output_path,
     input_to_base64,
+    load_comfy_workflow,
     reload_outputs,
     set_node_info,
     threaded,
 )
 
 
+@contextmanager
+def houdini_error_handling(node):
+    try:
+        yield
+    except ValueError as e:
+        set_node_info(node, "ERROR", str(e))
+        hou.ui.displayMessage(str(e))
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        traceback.print_exc()
+        hou.ui.displayMessage(str(e), severity=hou.severityType.Error)
+
+
 @threaded
 def api_get_call(node, id, output_path: str, wait=False):
     set_node_info(node, "PENDING", "")
 
-    try:
-        parsed = images_get.sync(id, client=client, wait=wait)
-    except Exception as e:
-        set_node_info(node, "ERROR", str(e))
-        hou.ui.displayMessage(f"Failed. {str(e)}")
-        return
+    with houdini_error_handling(node):
+        try:
+            parsed = images_get.sync(id, client=client, wait=wait)
+        except Exception as e:
+            raise RuntimeError(e) from e
 
-    def update_ui():
-        if not isinstance(parsed, ImageResponse):
-            message = "Unexpected response type from API call."
-            set_node_info(node, "ERROR", message)
-            hou.ui.displayMessage(message)
-            return
+        def update_ui():
+            with houdini_error_handling(node):
+                if not isinstance(parsed, ImageResponse):
+                    raise ValueError("Unexpected response type from API call.")
 
-        if not parsed.status == "SUCCESS" or not parsed.result:
-            message = f"Task {parsed.status} with error: {parsed.error_message}"
-            set_node_info(node, parsed.status, message)  # Use status from exception
-            hou.ui.displayMessage(message)
-            return
+                if not parsed.status == "SUCCESS" or not parsed.result:
+                    raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
-        # Save the image to the specified path before reloading the outputs
-        resolved_output_path = hou.expandString(output_path)
-        base64_to_image(parsed.result.base64_data, resolved_output_path, save_copy=True)
+                # Save the image to the specified path before reloading the outputs
+                resolved_output_path = hou.expandString(output_path)
+                base64_to_image(parsed.result.base64_data, resolved_output_path, save_copy=True)
 
-        node.parm("output_image_path").set(output_path)
-        reload_outputs(node, "output_read")
-        set_node_info(node, "COMPLETE", output_path)
+                node.parm("output_image_path").set(output_path)
+                reload_outputs(node, "output_read")
+                set_node_info(node, "COMPLETE", output_path)
 
-    hou.ui.postEventCallback(update_ui)
+        hou.ui.postEventCallback(update_ui)
 
 
 def api_call(node, body: ImageRequest, output_image_path: str):
-    try:
-        parsed = images_create.sync(client=client, body=body)
-    except Exception as e:
-        set_node_info(node, "ERROR", str(e))
-        raise
 
-    if not isinstance(parsed, ImageCreateResponse):
-        set_node_info(node, "ERROR", "Unexpected response type from API call.")
-        raise ValueError("Unexpected response type from API call.")
+    with houdini_error_handling(node):
+        try:
+            parsed = images_create.sync(client=client, body=body)
+        except Exception as e:
+            raise RuntimeError(f"API call failed: {str(e)}") from e
 
-    try:
+        if not isinstance(parsed, ImageCreateResponse):
+            raise ValueError("Unexpected response type from API call.")
+
         node.parm("task_id").set(str(parsed.id))
-    except:
-        pass
-
-    api_get_call(node, str(parsed.id), output_image_path, wait=True)
+        api_get_call(node, str(parsed.id), output_image_path, wait=True)
 
 
 def main(node):
@@ -84,12 +92,19 @@ def main(node):
     image = input_to_base64(node, "src")
     mask = input_to_base64(node, "mask")
 
+    comfy_workflow = params.get("comfy_workflow", "")
+    if comfy_workflow is not "":
+        workflow_dict = load_comfy_workflow(comfy_workflow)
+        comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
+    else:
+        comfy_workflow = UNSET
+
     body = ImageRequest(
         model=ImageRequestModel(params.get("model", "sd1.5")),
+        comfy_workflow=comfy_workflow,
         controlnets=get_control_nets(node),
         guidance_scale=params.get("guidance_scale", UNSET),
         image=image,
-        inpainting_full_image=params.get("inpainting_full_image", False),
         ip_adapters=get_ip_adapters(node),
         mask=mask,
         max_height=params.get("max_height", UNSET),
@@ -106,13 +121,13 @@ def main(node):
 
 
 def main_get(node):
-    task_id = node.parm("task_id").eval()
-    if not task_id or task_id == "":
-        hou.ui.displayMessage("Task ID is required to get the image.")
-        return
+    with houdini_error_handling(node):
+        task_id = node.parm("task_id").eval()
+        if not task_id or task_id == "":
+            raise ValueError("Task ID is required to get the image.")
 
-    output_image_path = get_output_path(node, movie=False)
-    api_get_call(node, task_id, output_image_path, wait=False)
+        output_image_path = get_output_path(node, movie=False)
+        api_get_call(node, task_id, output_image_path, wait=False)
 
 
 def main_frame_range(node):

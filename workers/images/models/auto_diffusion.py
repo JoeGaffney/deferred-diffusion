@@ -275,7 +275,7 @@ def inpainting_call(pipe, context: ImageContext):
         "generator": context.generator,
         "strength": context.data.strength,
         "guidance_scale": context.data.guidance_scale,
-        "padding_mask_crop": None if context.data.inpainting_full_image == True else 32,
+        # "padding_mask_crop": 32,
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 

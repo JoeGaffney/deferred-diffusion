@@ -1,20 +1,21 @@
 import os
 
 import nuke
-import nukescripts
 
 from config import client
 from generated.api_client.api.images import images_create, images_get
+from generated.api_client.models.comfy_workflow import ComfyWorkflow
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
-from generated.api_client.types import UNSET, Unset
+from generated.api_client.types import UNSET
 from utils import (
     base64_to_image,
     get_control_nets,
     get_ip_adapters,
     get_node_value,
+    load_comfy_workflow,
     node_to_base64,
     set_node_value,
     threaded,
@@ -127,8 +128,16 @@ def process_image(node):
     mask = node_to_base64(mask_node, current_frame)
     width_height = get_node_value(node, "width_height", [1024, 1024], return_type=list, mode="value")
 
+    comfy_workflow = get_node_value(node, "comfy_workflow", "", mode="value")
+    if comfy_workflow is not "":
+        workflow_dict = load_comfy_workflow(comfy_workflow)
+        comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
+    else:
+        comfy_workflow = UNSET
+
     body = ImageRequest(
         model=ImageRequestModel(get_node_value(node, "model", "sd1.5", mode="value")),
+        comfy_workflow=comfy_workflow,
         controlnets=get_control_nets(controlnets_node),
         guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
         image=image,
