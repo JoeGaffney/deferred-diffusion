@@ -40,7 +40,7 @@ def start_comfy():
     )
 
     # Wait for Comfy to be responsive
-    for _ in range(100):  # Wait for up to 100 seconds
+    for _ in range(200):  # Wait for up to 200 seconds
         if is_comfy_running():
             logger.info("✅ ComfyUI started successfully.")
             return
