@@ -49,7 +49,7 @@ services:
       - redis
       - api
     deploy:
-      # replicas: 2 # Number of container
+      replicas: 2 # Number of container
       resources:
         reservations:
           devices:
