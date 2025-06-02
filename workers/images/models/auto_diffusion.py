@@ -198,18 +198,18 @@ def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
-    if context.controlnets_enabled:
+    if context.control_nets.is_enabled():
         if context.model_config.model_family == "sd3" or context.model_config.model_family == "flux":
-            args["control_image"] = context.get_controlnet_images()
+            args["control_image"] = context.control_nets.get_images()
         else:
-            args["image"] = context.get_controlnet_images()
-        args["controlnet_conditioning_scale"] = context.get_controlnet_conditioning_scales()
+            args["image"] = context.control_nets.get_images()
+        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
 
-    if context.ip_adapters_enabled:
-        args["ip_adapter_image"] = context.get_ip_adapter_images()
+    if context.adapters.is_enabled():
+        args["ip_adapter_image"] = context.adapters.get_images()
         if context.model_config.model_family != "flux":
-            args["cross_attention_kwargs"] = {"ip_adapter_masks": context.get_ip_adapter_masks()}
-        pipe = context.set_ip_adapter_scale(pipe)
+            args["cross_attention_kwargs"] = {"ip_adapter_masks": context.adapters.get_masks()}
+        pipe = context.adapters.set_scale(pipe)
 
     # NOTE there is a bug when using controlnets and ip adapters together with flux
     # if context.model_config.model_family == "flux":
@@ -288,11 +288,11 @@ def inpainting_call(pipe, context: ImageContext):
 
 
 def main(context: ImageContext, mode="text") -> Image.Image:
-    controlnets = context.get_loaded_controlnets()
+    controlnets = context.control_nets.get_loaded_controlnets()
     pipeline_config = context.get_pipeline_config()
 
     # work around as SD3 not fully supported by diffusers
-    if context.controlnets_enabled == True and pipeline_config.model_family == "sd3":
+    if context.control_nets.is_enabled() and pipeline_config.model_family == "sd3":
         return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)
 
     if mode == "text_to_image":

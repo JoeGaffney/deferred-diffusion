@@ -157,3 +157,74 @@ class IpAdapter:
 
     def get_mask(self):
         return processor.preprocess(self.mask_image)
+
+
+class Adapters:
+    def __init__(self, adapters: list[IpAdapterModel], model_config: ModelConfig, width, height):
+        self.adapters: list[IpAdapter] = []
+
+        # Handle initialization errors and create valid adapters
+        for data in adapters:
+            try:
+                adapter = IpAdapter(data, model_config, width, height)
+                self.adapters.append(adapter)
+            except IPAdapterConfigError as e:
+                logger.error(f"Failed to initialize IP-Adapter: {e}")
+
+    def is_enabled(self) -> bool:
+        """Check if there are any valid adapters."""
+        return len(self.adapters) > 0
+
+    def get_scales_and_layers(self):
+        return [adapter.get_scale_layers() for adapter in self.adapters]
+
+    def get_masks(self):
+        return [adapter.get_mask() for adapter in self.adapters]
+
+    def get_images(self):
+        return [adapter.image for adapter in self.adapters]
+
+    def get_pipeline_config(self):
+        """Get the configuration needed for the pipeline."""
+        if not self.is_enabled():
+            return {
+                "models": (),
+                "subfolders": (),
+                "weights": (),
+                "image_encoder_model": "",
+                "image_encoder_subfolder": "",
+            }
+
+        models = []
+        subfolders = []
+        weights = []
+        image_encoder_model = ""
+        image_encoder_subfolder = ""
+
+        for adapter in self.adapters:
+            models.append(adapter.config.model)
+            subfolders.append(adapter.config.subfolder)
+            weights.append(adapter.config.weight_name)
+            if adapter.config.image_encoder:
+                image_encoder_model = adapter.config.model
+                image_encoder_subfolder = adapter.config.image_encoder_subfolder
+
+        return {
+            "models": tuple(models),
+            "subfolders": tuple(subfolders),
+            "weights": tuple(weights),
+            "image_encoder_model": image_encoder_model,
+            "image_encoder_subfolder": image_encoder_subfolder,
+        }
+
+    def set_scale(self, pipe):
+        """Set the IP adapter scale on the pipeline."""
+        if not self.is_enabled():
+            return pipe
+
+        scales = self.get_scales_and_layers()
+        if len(scales) == 1:
+            pipe.set_ip_adapter_scale(scales[0])
+        else:
+            pipe.set_ip_adapter_scale(scales)
+        return pipe

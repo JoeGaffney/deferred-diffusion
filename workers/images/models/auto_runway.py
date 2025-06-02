@@ -78,8 +78,8 @@ def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
     if context.color_image:
         reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(context.color_image)}"))
 
-    if context.ip_adapters_enabled:
-        for current in context.get_ip_adapter_images():
+    if context.adapters.is_enabled():
+        for current in context.adapters.get_images():
             reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(current)}"))
 
     if len(reference_images) == 0:
@@ -110,7 +110,7 @@ def main(
     client = RunwayML()
 
     if mode == "text_to_image":
-        if context.ip_adapters_enabled:
+        if context.adapters.is_enabled():
             return image_to_image_call(client, context)
 
         return text_to_image_call(client, context)

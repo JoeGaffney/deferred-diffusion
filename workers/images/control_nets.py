@@ -4,6 +4,7 @@ import torch
 from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
 
 from common.exceptions import ControlNetConfigError
+from common.logger import logger
 from images.schemas import ControlNetSchema, ModelConfig
 from utils.utils import cache_info_decorator, load_image_if_exists
 
@@ -75,3 +76,41 @@ class ControlNet:
 
     def cleanup(self):
         self.loaded_controlnet.to("cpu")
+
+
+class ControlNets:
+    def __init__(
+        self, control_nets: list[ControlNetSchema], model_config: ModelConfig, width, height, torch_dtype=torch.float16
+    ):
+        self.control_nets: list[ControlNet] = []
+
+        # Handle initialization errors and create valid control nets
+        for data in control_nets:
+            try:
+                control_net = ControlNet(data, model_config, width, height, torch_dtype)
+                self.control_nets.append(control_net)
+            except ControlNetConfigError as e:
+                logger.error(f"Failed to initialize ControlNet: {e}")
+
+    def is_enabled(self) -> bool:
+        """Check if there are any valid control nets."""
+        return len(self.control_nets) > 0
+
+    def get_loaded_controlnets(self):
+        if not self.is_enabled():
+            return []
+        return [control_net.get_loaded_controlnet() for control_net in self.control_nets]
+
+    def get_images(self):
+        if not self.is_enabled():
+            return []
+        return [control_net.image for control_net in self.control_nets]
+
+    def get_conditioning_scales(self):
+        if not self.is_enabled():
+            return 0.8
+        return [control_net.conditioning_scale for control_net in self.control_nets]
+
+    def cleanup(self):
+        for control_net in self.control_nets:
+            control_net.cleanup()

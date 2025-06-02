@@ -1,15 +1,13 @@
 import copy
-import os
 import tempfile
-from typing import List, Literal
+from typing import Literal
 
 import torch
 from PIL import Image
 
-from common.exceptions import ControlNetConfigError, IPAdapterConfigError
 from common.logger import logger
-from images.control_net import ControlNet
-from images.ip_adapter import IpAdapter
+from images.adapters import Adapters
+from images.control_nets import ControlNets
 from images.schemas import ImageRequest, ModelConfig, PipelineConfig
 from utils.utils import (
     get_tmp_dir,
@@ -103,59 +101,24 @@ class ImageContext:
             self.mask_image = self.mask_image.convert("L")
             self.mask_image = self.mask_image.resize([self.width, self.height])
 
-        # add our control nets
-        self.controlnets: List[ControlNet] = []
-        for current in data.controlnets:
-            try:
-                tmp = ControlNet(current, self.model_config, self.width, self.height, torch_dtype=self.torch_dtype)
-                self.controlnets.append(tmp)
-            except ControlNetConfigError as e:
-                logger.error(e)
-                continue
-
-        self.controlnets_enabled = len(self.controlnets) > 0
-
-        # add our ip adapters
-        self.ip_adapters: List[IpAdapter] = []
-        for current in data.ip_adapters:
-            try:
-                tmp = IpAdapter(current, self.model_config, self.width, self.height)
-                self.ip_adapters.append(tmp)
-            except IPAdapterConfigError as e:
-                logger.error(e)
-                continue
-
-        self.ip_adapters_enabled = len(self.ip_adapters) > 0
+        # Initialize control nets and adapters
+        self.control_nets = ControlNets(data.controlnets, self.model_config, self.width, self.height, self.torch_dtype)
+        self.adapters = Adapters(data.ip_adapters, self.model_config, self.width, self.height)
 
     def get_pipeline_config(self) -> PipelineConfig:
-        # it wants in a array for multiple adapters
-        models = []
-        subfolders = []
-        weights = []
-        image_encoder_model = ""
-        image_encoder_subfolder = ""
-
-        if self.ip_adapters_enabled == True:
-            # NOTE do we validate against clashes here? Or allow passing through the natural errors?
-            for ip_adapter in self.ip_adapters:
-                models.append(ip_adapter.config.model)
-                subfolders.append(ip_adapter.config.subfolder)
-                weights.append(ip_adapter.config.weight_name)
-                if ip_adapter.config.image_encoder:
-                    image_encoder_model = ip_adapter.config.model
-                    image_encoder_subfolder = ip_adapter.config.image_encoder_subfolder
+        adapter_config = self.adapters.get_pipeline_config()
 
         return PipelineConfig(
             model_id=self.model_config.model_path,
             model_family=self.model_config.model_family,
             torch_dtype=self.torch_dtype,
-            target_precision=self.target_precision,
+            target_precision=self.target_precision,  # type: ignore
             use_safetensors=True,
-            ip_adapter_models=tuple(models),
-            ip_adapter_subfolders=tuple(subfolders),
-            ip_adapter_weights=tuple(weights),
-            ip_adapter_image_encoder_model=image_encoder_model,
-            ip_adapter_image_encoder_subfolder=image_encoder_subfolder,
+            ip_adapter_models=adapter_config.get("models", ()),
+            ip_adapter_subfolders=adapter_config.get("subfolders", ()),
+            ip_adapter_weights=adapter_config.get("weights", ()),
+            ip_adapter_image_encoder_model=adapter_config.get("image_encoder_model", ""),
+            ip_adapter_image_encoder_subfolder=adapter_config.get("image_encoder_subfolder", ""),
         )
 
     def get_quality(self) -> Literal["low", "medium", "high"]:
@@ -177,67 +140,8 @@ class ImageContext:
     def resize_image_to_orig(self, image: Image.Image, scale=1) -> Image.Image:
         return image.resize((self.orig_width * scale, self.orig_height * scale))
 
-    def get_controlnet_images(self):
-        if self.controlnets_enabled == False:
-            return []
-
-        images = []
-        for controlnet in self.controlnets:
-            images.append(controlnet.image)
-        return images
-
-    def get_controlnet_conditioning_scales(self):
-        if self.controlnets_enabled == False:
-            return 0.8
-
-        controlnet_conditioning_scales = []
-        for controlnet in self.controlnets:
-            controlnet_conditioning_scales.append(controlnet.conditioning_scale)
-        return controlnet_conditioning_scales
-
-    def get_loaded_controlnets(self):
-        if self.controlnets_enabled == False:
-            return []
-
-        loaded_controlnets = []
-        for controlnet in self.controlnets:
-            loaded_controlnets.append(controlnet.get_loaded_controlnet())
-        return loaded_controlnets
-
     def cleanup(self):
-        if self.controlnets_enabled:
-            for controlnet in self.controlnets:
-                controlnet.cleanup()
-
-    def get_ip_adapter_images(self):
-        if self.ip_adapters_enabled == False:
-            return []
-
-        images = []
-        for ip_adapter in self.ip_adapters:
-            images.append(ip_adapter.image)
-        return images
-
-    def get_ip_adapter_masks(self):
-        if self.ip_adapters_enabled == False:
-            return []
-
-        masks = []
-        for ip_adapter in self.ip_adapters:
-            masks.append(ip_adapter.get_mask())
-
-        return masks
-
-    def set_ip_adapter_scale(self, pipe):
-        if self.ip_adapters_enabled == True:
-            scales = []
-            for ip_adapter in self.ip_adapters:
-                scales.append(ip_adapter.get_scale_layers())
-            if len(scales) == 1:
-                pipe.set_ip_adapter_scale(scales[0])
-            else:
-                pipe.set_ip_adapter_scale(scales)
-        return pipe
+        self.control_nets.cleanup()
 
     # NOTE could be moved to utils
     def save_image(self, image):

@@ -1,15 +1,5 @@
-import json
-
 from PIL import Image
 
-from common.comfy.comfy_utils import (
-    ensure_comfy_alive,
-    get_image,
-    queue_prompt,
-    remap_workflow,
-    wait_for_completion,
-)
-from common.logger import log_pretty
 from images.context import ImageContext
 from images.models.auto_diffusion import main as auto_diffusion
 from images.models.auto_openai import main as auto_openai

@@ -22,14 +22,10 @@ generate-clients: up
 
 # Test texts modules
 test-texts: generate-clients
-	cd it_tests && pytest texts -vs
-	cd ..
 	docker-compose exec workers pytest tests/texts
 
 # Test images modules
 test-images: generate-clients
-	cd it_tests && pytest images -vs
-	cd ..
 	docker-compose exec workers pytest tests/images
 
 test-it-tests: generate-clients

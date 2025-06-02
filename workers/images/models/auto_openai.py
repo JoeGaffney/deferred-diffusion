@@ -50,9 +50,10 @@ def image_to_image_call(client: OpenAI, context: ImageContext):
     if context.color_image:
         reference_images.append(convert_pil_to_bytes(context.color_image))
 
-    if context.ip_adapters_enabled:
-        for current in context.get_ip_adapter_images():
-            reference_images.append(convert_pil_to_bytes(current))
+    if context.adapters.is_enabled():
+        for current in context.adapters.get_images():
+            if current is not None:
+                reference_images.append(convert_pil_to_bytes(current))
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
@@ -118,7 +119,7 @@ def main(
     client = OpenAI()
 
     if mode == "text_to_image":
-        if context.ip_adapters_enabled:
+        if context.adapters.is_enabled():
             return image_to_image_call(client, context)
 
         return text_to_image_call(client, context)
