@@ -1,5 +1,3 @@
-import base64
-import io
 import time
 from typing import Literal
 
@@ -10,7 +8,6 @@ from runwayml.types.text_to_image_create_params import ContentModeration, Refere
 
 from common.logger import logger
 from images.context import ImageContext
-from utils.utils import convert_mask_for_inpainting, convert_pil_to_bytes
 from videos.models.runway_gen import pill_to_base64
 
 
@@ -102,21 +99,18 @@ def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
     return poll_result(id)
 
 
-def main(
-    context: ImageContext,
-    mode="text_to_image",
-) -> Image.Image:
-
+def main(context: ImageContext) -> Image.Image:
     client = RunwayML()
 
-    if mode == "text_to_image":
-        if context.adapters.is_enabled():
-            return image_to_image_call(client, context)
+    mode = "img_to_img"
+    if context.data.image is None:
+        mode = "text_to_image"
+    if context.adapters.is_enabled():
+        mode = "img_to_img"
 
+    if mode == "text_to_image":
         return text_to_image_call(client, context)
     elif mode == "img_to_img":
-        return image_to_image_call(client, context)
-    elif mode == "img_to_img_inpainting":
         return image_to_image_call(client, context)
 
     raise ValueError(f"Invalid mode {mode} for RunwayML API")

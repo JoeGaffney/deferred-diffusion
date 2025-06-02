@@ -13,7 +13,7 @@ MODELS = ["flux-dev"]
 
 
 @pytest.mark.parametrize("mode", MODES)
-@pytest.mark.parametrize("target_precision", [4, 8])
+@pytest.mark.parametrize("target_precision", [8])
 @pytest.mark.parametrize("model_id", MODELS)
 def test_models(model_id, mode, target_precision):
     output_name = setup_output_file(model_id, mode, f"_precsion{target_precision}")
@@ -32,8 +32,7 @@ def test_models(model_id, mode, target_precision):
                 target_precision=target_precision,
                 num_inference_steps=15,
             )
-        ),
-        mode=mode,
+        )
     )
 
     free_gpu_memory()

@@ -9,7 +9,7 @@ from images.context import ImageContext
 
 
 @lru_cache(maxsize=1)
-def get_pipeline(model_id):
+def get_pipeline(model_id) -> StableDiffusionUpscalePipeline:
     pipe = StableDiffusionUpscalePipeline.from_pretrained(
         model_id,
         torch_dtype=torch.float16,
@@ -19,7 +19,13 @@ def get_pipeline(model_id):
     return optimize_pipeline(pipe, disable_safety_checker=False)
 
 
-def upscale_call(pipe, context: ImageContext, scale=4):
+def main(context: ImageContext):
+    if context.color_image is None:
+        raise ValueError("No input image provided")
+
+    pipe = get_pipeline(context.model_config.model_path)
+    scale = 4
+
     processed_image = pipe(
         prompt=context.data.prompt,
         negative_prompt=context.data.negative_prompt,
@@ -31,8 +37,3 @@ def upscale_call(pipe, context: ImageContext, scale=4):
 
     processed_image = context.resize_image_to_orig(processed_image, scale=scale)
     return processed_image
-
-
-def main(context: ImageContext, mode="upscaler"):
-    context.model = "stabilityai/stable-diffusion-x4-upscaler"
-    return upscale_call(get_pipeline(context.model), context, scale=4)

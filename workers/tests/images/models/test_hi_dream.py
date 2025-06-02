@@ -31,8 +31,7 @@ def test_models(model_id, mode, target_precision):
                 target_precision=target_precision,
                 num_inference_steps=15,
             )
-        ),
-        mode=mode,
+        )
     )
 
     free_gpu_memory()

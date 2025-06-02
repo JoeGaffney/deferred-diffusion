@@ -17,43 +17,24 @@ from utils.utils import (
 )
 
 IMAGE_MODEL_CONFIG = {
-    "sd1.5": {"family": "sd1.5", "model_path": "stable-diffusion-v1-5/stable-diffusion-v1-5", "mode": "auto"},
-    "sdxl": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-base-1.0", "mode": "auto"},
-    "sdxl-refiner": {"family": "sdxl", "model_path": "stabilityai/stable-diffusion-xl-refiner-1.0", "mode": "auto"},
-    "RealVisXL": {"family": "sdxl", "model_path": "SG161222/RealVisXL_V4.0", "mode": "auto"},
-    "Fluently-XL": {"family": "sdxl", "model_path": "fluently/Fluently-XL-v4", "mode": "auto"},
-    "juggernaut-xl": {"family": "sdxl", "model_path": "RunDiffusion/Juggernaut-XL-v9", "mode": "auto"},
-    "sd3": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3-medium-diffusers", "mode": "auto"},
-    "sd3.5": {"family": "sd3", "model_path": "stabilityai/stable-diffusion-3.5-medium", "mode": "auto"},
-    "flux-schnell": {"family": "flux", "model_path": "black-forest-labs/FLUX.1-schnell", "mode": "auto"},
-    "flux-dev": {"family": "flux", "model_path": "black-forest-labs/FLUX.1-dev", "mode": "auto"},
-    "depth-anything": {
-        "family": "depth_anything",
-        "model_path": "depth-anything/Depth-Anything-V2-Large-hf",
-        "mode": "depth",
-    },
-    "segment-anything": {"family": "segment_anything", "model_path": "sam2.1_hiera_base_plus", "mode": "mask"},
-    "sd-x4-upscaler": {
-        "family": "stable-diffusion-x4-upscaler",
-        "model_path": "stabilityai/stable-diffusion-x4-upscaler",
-        "mode": "upscale",
-    },
-    "gpt-image-1": {
-        "family": "openai",
-        "model_path": "gpt-image-1",
-        "mode": "auto",
-    },
-    "runway/gen4_image": {
-        "family": "runway",
-        "model_path": "gen4_image",
-        "mode": "auto",
-    },
-    "HiDream": {
-        "family": "hidream",
-        # "model_path": "HiDream-ai/HiDream-I1-Fast",
-        "model_path": "HiDream-ai/HiDream-I1-Full",
-        "mode": "auto",
-    },
+    "sd1.5": ModelConfig(model_family="sd1.5", model_path="stable-diffusion-v1-5/stable-diffusion-v1-5"),
+    "sdxl": ModelConfig(model_family="sdxl", model_path="stabilityai/stable-diffusion-xl-base-1.0"),
+    "sdxl-refiner": ModelConfig(model_family="sdxl", model_path="stabilityai/stable-diffusion-xl-refiner-1.0"),
+    "RealVisXL": ModelConfig(model_family="sdxl", model_path="SG161222/RealVisXL_V4.0"),
+    "Fluently-XL": ModelConfig(model_family="sdxl", model_path="fluently/Fluently-XL-v4"),
+    "juggernaut-xl": ModelConfig(model_family="sdxl", model_path="RunDiffusion/Juggernaut-XL-v9"),
+    "sd3": ModelConfig(model_family="sd3", model_path="stabilityai/stable-diffusion-3-medium-diffusers"),
+    "sd3.5": ModelConfig(model_family="sd3", model_path="stabilityai/stable-diffusion-3.5-medium"),
+    "flux-schnell": ModelConfig(model_family="flux", model_path="black-forest-labs/FLUX.1-schnell"),
+    "flux-dev": ModelConfig(model_family="flux", model_path="black-forest-labs/FLUX.1-dev"),
+    "depth-anything": ModelConfig(
+        model_family="depth_anything", model_path="depth-anything/Depth-Anything-V2-Large-hf"
+    ),
+    "segment-anything": ModelConfig(model_family="segment_anything", model_path="sam2.1_hiera_base_plus"),
+    "sd-x4-upscaler": ModelConfig(model_family="sd_upscaler", model_path="stabilityai/stable-diffusion-x4-upscaler"),
+    "gpt-image-1": ModelConfig(model_family="openai", model_path="gpt-image-1"),
+    "runway/gen4_image": ModelConfig(model_family="runway", model_path="gen4_image"),
+    "HiDream": ModelConfig(model_family="hidream", model_path="HiDream-ai/HiDream-I1-Full"),
 }
 
 
@@ -61,12 +42,7 @@ def get_model_config(key: str) -> ModelConfig:
     config = IMAGE_MODEL_CONFIG.get(key)
     if not config:
         raise ValueError(f"Model config for {key} not found")
-
-    return ModelConfig(
-        model_path=config.get("model_path", ""),
-        model_family=config.get("family", ""),
-        mode=config["mode"],
-    )
+    return config
 
 
 class ImageContext:

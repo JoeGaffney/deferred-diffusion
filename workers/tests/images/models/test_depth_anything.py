@@ -30,8 +30,7 @@ def test_models(mode):
                 max_height=height,
                 controlnets=[],
             )
-        ),
-        mode=mode,
+        )
     )
 
     save_image_and_assert_file_exists(result, output_name)

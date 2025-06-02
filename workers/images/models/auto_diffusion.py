@@ -287,9 +287,15 @@ def inpainting_call(pipe, context: ImageContext):
     return processed_image
 
 
-def main(context: ImageContext, mode="text") -> Image.Image:
+def main(context: ImageContext) -> Image.Image:
     controlnets = context.control_nets.get_loaded_controlnets()
     pipeline_config = context.get_pipeline_config()
+
+    mode = "img_to_img"
+    if context.data.mask:
+        mode = "img_to_img_inpainting"
+    if context.data.image is None:
+        mode = "text_to_image"
 
     # work around as SD3 not fully supported by diffusers
     if context.control_nets.is_enabled() and pipeline_config.model_family == "sd3":

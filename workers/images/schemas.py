@@ -1,7 +1,20 @@
-from typing import Any, Dict, Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple, TypeAlias
 
 from pydantic import Base64Bytes, BaseModel, Field
 from torch import dtype
+
+ModelFamily: TypeAlias = Literal[
+    "sd1.5",
+    "sdxl",
+    "sd3",
+    "hidream",
+    "flux",
+    "openai",
+    "runway",
+    "sd_upscaler",
+    "segment_anything",
+    "depth_anything",
+]
 
 
 class ControlNetSchema(BaseModel):
@@ -128,13 +141,12 @@ class ImageWorkerResponse(BaseModel):
 
 class ModelConfig(BaseModel):
     model_path: str
-    model_family: str
-    mode: str = "auto"
+    model_family: ModelFamily
 
 
 class PipelineConfig(BaseModel):
     model_id: str
-    model_family: str
+    model_family: ModelFamily
     torch_dtype: dtype
     target_precision: Literal[4, 8, 16] = Field(
         8, description="Global target precision for quantization; applied selectively per model and component."

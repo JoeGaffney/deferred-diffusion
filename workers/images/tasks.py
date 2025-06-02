@@ -19,29 +19,23 @@ def process_image(request_dict):
 
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
-    mode = context.model_config.mode
     family = context.model_config.model_family
 
-    if mode == "upscale":
-        result = stable_diffusion_upscaler(context, mode=mode)
-    elif mode == "depth":
-        result = depth_anything(context, mode=mode)
-    elif mode == "mask":
-        result = segment_anything(context, mode=mode)
+    result = None
+    if family in ["sd1.5", "sdxl", "sd3", "hidream", "flux"]:
+        result = auto_diffusion(context)
+    elif family == "openai":
+        result = auto_openai(context)
+    elif family == "runway":
+        result = auto_runway(context)
+    elif family == "sd_upscaler":
+        result = stable_diffusion_upscaler(context)
+    elif family == "depth_anything":
+        result = depth_anything(context)
+    elif family == "segment_anything":
+        result = segment_anything(context)
     else:
-        # auto_diffusion
-        auto_mode = "img_to_img"
-        if context.data.mask:
-            auto_mode = "img_to_img_inpainting"
-        if context.data.image is None:
-            auto_mode = "text_to_image"
-
-        if family == "openai":
-            result = auto_openai(context, mode=auto_mode)
-        elif family == "runway":
-            result = auto_runway(context, mode=auto_mode)
-        else:
-            result = auto_diffusion(context, mode=auto_mode)
+        raise ValueError(f"Unsupported model family: {family}")
 
     if isinstance(result, Image.Image):
         # save a temp file for now
