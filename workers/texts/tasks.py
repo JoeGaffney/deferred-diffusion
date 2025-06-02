@@ -1,5 +1,5 @@
 from texts.context import TextContext
-from texts.models.auto_openai import main as auto_openai_main
+from texts.models.openai import main as openai_main
 from texts.models.qwen_2_5_vl_instruct import main as qwen_2_5_vl_instruct_main
 from texts.schemas import TextRequest, TextWorkerResponse
 from utils.utils import free_gpu_memory
@@ -16,9 +16,9 @@ def process_text(request_dict):
     if request.model == "Qwen/Qwen2.5-VL-3B-Instruct":
         main = qwen_2_5_vl_instruct_main
     elif request.model == "gpt-4o-mini":
-        main = auto_openai_main
+        main = openai_main
     elif request.model == "gpt-4.1-mini":
-        main = auto_openai_main
+        main = openai_main
 
     if not main:
         raise ValueError(f"Invalid model {request.model}")

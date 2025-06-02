@@ -164,39 +164,6 @@ def get_pipeline(config: PipelineConfig):
     return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
 
-def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-    if pipeline_config.model_family == "hidream":
-        return get_pipeline(pipeline_config)
-
-    args = {}
-    if controlnets != []:
-        args["controlnet"] = controlnets
-
-    return AutoPipelineForText2Image.from_pipe(get_pipeline(pipeline_config), requires_safety_checker=False, **args)
-
-
-def get_image_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-    if pipeline_config.model_family == "hidream":
-        return get_pipeline(pipeline_config)
-
-    args = {}
-    if controlnets != []:
-        args["controlnet"] = controlnets
-
-    return AutoPipelineForImage2Image.from_pipe(get_pipeline(pipeline_config), requires_safety_checker=False, **args)
-
-
-def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-    if pipeline_config.model_family == "hidream":
-        return get_pipeline(pipeline_config)
-
-    args = {}
-    if controlnets != []:
-        args["controlnet"] = controlnets
-
-    return AutoPipelineForInpainting.from_pipe(get_pipeline(pipeline_config), requires_safety_checker=False, **args)
-
-
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
     if context.control_nets.is_enabled():
         if context.model_config.model_family == "sd3" or context.model_config.model_family == "flux":
@@ -220,7 +187,22 @@ def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
     return pipe, args
 
 
-def text_to_image_call(pipe, context: ImageContext):
+def text_to_image_call(context: ImageContext):
+
+    def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+        if pipeline_config.model_family == "hidream":
+            return get_pipeline(pipeline_config)
+
+        args = {}
+        if controlnets != []:
+            args["controlnet"] = controlnets
+
+        return AutoPipelineForText2Image.from_pipe(
+            get_pipeline(pipeline_config), requires_safety_checker=False, **args
+        )
+
+    pipe = get_text_pipeline(context.get_pipeline_config(), controlnets=context.control_nets.get_loaded_controlnets())
+
     args = {
         "width": context.width,
         "height": context.height,
@@ -240,7 +222,22 @@ def text_to_image_call(pipe, context: ImageContext):
     return processed_image
 
 
-def image_to_image_call(pipe, context: ImageContext):
+def image_to_image_call(context: ImageContext):
+
+    def get_image_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+        if pipeline_config.model_family == "hidream":
+            return get_pipeline(pipeline_config)
+
+        args = {}
+        if controlnets != []:
+            args["controlnet"] = controlnets
+
+        return AutoPipelineForImage2Image.from_pipe(
+            get_pipeline(pipeline_config), requires_safety_checker=False, **args
+        )
+
+    pipe = get_image_pipeline(context.get_pipeline_config(), controlnets=context.control_nets.get_loaded_controlnets())
+
     args = {
         "width": context.width,
         "height": context.height,
@@ -263,7 +260,23 @@ def image_to_image_call(pipe, context: ImageContext):
     return processed_image
 
 
-def inpainting_call(pipe, context: ImageContext):
+def inpainting_call(context: ImageContext):
+
+    def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
+        if pipeline_config.model_family == "hidream":
+            return get_pipeline(pipeline_config)
+
+        args = {}
+        if controlnets != []:
+            args["controlnet"] = controlnets
+
+        return AutoPipelineForInpainting.from_pipe(
+            get_pipeline(pipeline_config), requires_safety_checker=False, **args
+        )
+
+    pipe = get_inpainting_pipeline(
+        context.get_pipeline_config(), controlnets=context.control_nets.get_loaded_controlnets()
+    )
     args = {
         "width": context.width,
         "height": context.height,
@@ -280,7 +293,7 @@ def inpainting_call(pipe, context: ImageContext):
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     logger.info(f"Inpainting call {args}")
-    processed_image = pipe(**args).images[0]
+    processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
     processed_image = context.resize_image_to_orig(processed_image)
@@ -288,7 +301,6 @@ def inpainting_call(pipe, context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
-    controlnets = context.control_nets.get_loaded_controlnets()
     pipeline_config = context.get_pipeline_config()
 
     mode = "img_to_img"
@@ -299,13 +311,13 @@ def main(context: ImageContext) -> Image.Image:
 
     # work around as SD3 not fully supported by diffusers
     if context.control_nets.is_enabled() and pipeline_config.model_family == "sd3":
-        return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)
+        return text_to_image_call(context)
 
     if mode == "text_to_image":
-        return text_to_image_call(get_text_pipeline(pipeline_config, controlnets=controlnets), context)
+        return text_to_image_call(context)
     elif mode == "img_to_img":
-        return image_to_image_call(get_image_pipeline(pipeline_config, controlnets=controlnets), context)
+        return image_to_image_call(context)
     elif mode == "img_to_img_inpainting":
-        return inpainting_call(get_inpainting_pipeline(pipeline_config, controlnets=controlnets), context)
+        return inpainting_call(context)
 
     raise ValueError(f"Unknown mode: {mode}")
