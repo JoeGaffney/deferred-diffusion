@@ -22,10 +22,13 @@ from transformers import (
 )
 
 from common.logger import logger
-from common.pipeline_helpers import get_quantized_model, optimize_pipeline
+from common.pipeline_helpers import (
+    decorator_global_pipeline_cache,
+    get_quantized_model,
+    optimize_pipeline,
+)
 from images.context import ImageContext
 from images.schemas import PipelineConfig
-from utils.utils import cache_info_decorator
 
 # this is common and shared accross a few models use the flux one for now it should be google/t5-v1_1-xxl
 T5_MODEL_PATH = "google/t5-efficient-mini"  # use the original one for now
@@ -111,8 +114,7 @@ def get_pipeline_high_dream(config: PipelineConfig):
     return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
 
-@cache_info_decorator
-@lru_cache(maxsize=2)
+@decorator_global_pipeline_cache
 def get_pipeline(config: PipelineConfig):
     if config.model_family == "flux":
         return get_pipeline_flux(config)

@@ -9,19 +9,13 @@ from diffusers.pipelines.ltx.pipeline_ltx_condition import (
 from transformers import CLIPVisionModel, UMT5EncoderModel
 
 from common.logger import logger
-from common.pipeline_helpers import get_quantized_model
-from utils.utils import (
-    cache_info_decorator,
-    ensure_divisible,
-    get_16_9_resolution,
-    resize_image,
-    time_info_decorator,
-)
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
+from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
 
-@time_info_decorator
-def get_pipeline(model_id="Lightricks/LTX-Video-0.9.7-distilled"):
+@decorator_global_pipeline_cache
+def get_pipeline(model_id):
     transformer = get_quantized_model(
         model_id,
         subfolder="transformer",
@@ -53,7 +47,7 @@ def get_pipeline(model_id="Lightricks/LTX-Video-0.9.7-distilled"):
 
 
 def image_to_video(context: VideoContext):
-    pipe = get_pipeline()
+    pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
     width, height = get_16_9_resolution("1080p")
     image = context.image
@@ -81,7 +75,7 @@ def image_to_video(context: VideoContext):
 
 
 def text_to_video(context: VideoContext):
-    pipe = get_pipeline()
+    pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
     width, height = get_16_9_resolution("540p")
     width = ensure_divisible(width, divisor=32)

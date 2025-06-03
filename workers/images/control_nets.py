@@ -5,12 +5,13 @@ from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
 
 from common.exceptions import ControlNetConfigError
 from common.logger import logger
+from common.pipeline_helpers import decorator_global_pipeline_cache
 from images.schemas import ControlNetSchema, ModelConfig
-from utils.utils import cache_info_decorator, load_image_if_exists
+from utils.utils import load_image_if_exists
 
 
-@cache_info_decorator
-@lru_cache(maxsize=2)
+# NOTE maybe we don't cache?
+@lru_cache(maxsize=1)
 def load_controlnet(model, model_family, torch_dtype=torch.float16):
 
     if model_family == "sd3":
