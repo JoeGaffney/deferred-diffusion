@@ -1,4 +1,5 @@
-.PHONY: all build down up generate-clients test-texts test-images test-it-tests test-worker tag-and-push
+.PHONY:  all down copy-schemas build  up generate-clients test-texts test-images test-it-tests test-worker tag-and-push
+
 
 # Default target
 all: generate-clients
@@ -7,8 +8,14 @@ all: generate-clients
 down:
 	docker-compose down
 
-build: down
-	set DOCKER_BUILDKIT=1 
+# atm we align by copying schemas from the api to the workers
+# this is a temporary solution until we have a better way to manage schemas
+copy-schemas:
+	copy api\images\schemas.py workers\images\schemas.py
+	copy api\texts\schemas.py workers\texts\schemas.py
+	copy api\videos\schemas.py workers\videos\schemas.py
+
+build: down copy-schemas
 	docker-compose build
 
 up: build

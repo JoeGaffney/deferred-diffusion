@@ -1,20 +1,53 @@
 import copy
 import tempfile
-from typing import Literal
+from typing import Literal, Tuple
 
 import torch
 from PIL import Image
+from pydantic import BaseModel
 
 from common.logger import logger
 from images.adapters import Adapters
 from images.control_nets import ControlNets
-from images.schemas import ImageRequest, PipelineConfig
+from images.schemas import ImageRequest, ModelFamily
 from utils.utils import (
     get_tmp_dir,
     load_image_if_exists,
     resize_image,
     save_copy_with_timestamp,
 )
+
+
+class PipelineConfig(BaseModel):
+    model_id: str
+    model_family: ModelFamily
+    torch_dtype: torch.dtype
+    target_precision: Literal[4, 8, 16] = 8
+    use_safetensors: bool
+    ip_adapter_models: Tuple[str, ...]
+    ip_adapter_subfolders: Tuple[str, ...]
+    ip_adapter_weights: Tuple[str, ...]
+    ip_adapter_image_encoder_model: str
+    ip_adapter_image_encoder_subfolder: str
+
+    class Config:
+        frozen = True  # Makes the model immutable/hashable
+        arbitrary_types_allowed = True  # Needed for torch.dtype
+
+    def __hash__(self):
+        return hash(
+            (
+                self.model_id,
+                self.torch_dtype,
+                self.target_precision,
+                self.use_safetensors,
+                self.ip_adapter_models,
+                self.ip_adapter_subfolders,
+                self.ip_adapter_weights,
+                self.ip_adapter_image_encoder_model,
+                self.ip_adapter_image_encoder_subfolder,
+            )
+        )
 
 
 class ImageContext:

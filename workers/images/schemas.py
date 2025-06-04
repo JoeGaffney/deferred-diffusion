@@ -1,7 +1,7 @@
 from typing import Any, Dict, Literal, Optional, Tuple, TypeAlias
+from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
-from torch import dtype
 
 ModelName: TypeAlias = Literal[
     "sd1.5",
@@ -190,35 +190,33 @@ class ImageWorkerResponse(BaseModel):
     base64_data: Base64Bytes
 
 
-class PipelineConfig(BaseModel):
-    model_id: str
-    model_family: ModelFamily
-    torch_dtype: dtype
-    target_precision: Literal[4, 8, 16] = Field(
-        8, description="Global target precision for quantization; applied selectively per model and component."
-    )
-    use_safetensors: bool
-    ip_adapter_models: Tuple[str, ...]
-    ip_adapter_subfolders: Tuple[str, ...]
-    ip_adapter_weights: Tuple[str, ...]
-    ip_adapter_image_encoder_model: str
-    ip_adapter_image_encoder_subfolder: str
+class ImageResponse(BaseModel):
+    id: UUID
+    status: str
+    result: Optional[ImageWorkerResponse] = None
+    error_message: Optional[str] = None
 
     class Config:
-        frozen = True  # Makes the model immutable/hashable
-        arbitrary_types_allowed = True  # Needed for torch.dtype
+        json_schema_extra = {
+            "example": {
+                "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
+                "status": "SUCCESS",
+                "result": {
+                    "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
+                },
+                "error_message": None,
+            }
+        }
 
-    def __hash__(self):
-        return hash(
-            (
-                self.model_id,
-                self.torch_dtype,
-                self.target_precision,
-                self.use_safetensors,
-                self.ip_adapter_models,
-                self.ip_adapter_subfolders,
-                self.ip_adapter_weights,
-                self.ip_adapter_image_encoder_model,
-                self.ip_adapter_image_encoder_subfolder,
-            )
-        )
+
+class ImageCreateResponse(BaseModel):
+    id: UUID
+    status: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
+                "status": "PENDING",
+            }
+        }
