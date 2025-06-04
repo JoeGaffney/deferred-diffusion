@@ -16,21 +16,23 @@ from utils.utils import free_gpu_memory, pil_to_base64
 from worker import celery_app
 
 
+def process_result(context, result):
+    if isinstance(result, Image.Image):
+        context.save_image(result)
+        return ImageWorkerResponse(base64_data=pil_to_base64(result)).model_dump()
+    raise ValueError("Image generation failed")
+
+
 @celery_app.task(name="process_image")
 def process_image(request_dict):
     free_gpu_memory()
-
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
-    family = context.model_config.model_family
+    family = context.data.model_family
 
     result = None
     if family in ["sd1.5", "sdxl", "sd3", "hidream", "flux"]:
         result = auto_diffusion_main(context)
-    elif family == "openai":
-        result = openai_main(context)
-    elif family == "runway":
-        result = runway_main(context)
     elif family == "sd_upscaler":
         result = stable_diffusion_upscaler_main(context)
     elif family == "depth_anything":
@@ -40,12 +42,24 @@ def process_image(request_dict):
     else:
         raise ValueError(f"Unsupported model family: {family}")
 
-    if isinstance(result, Image.Image):
-        # save a temp file for now
-        context.save_image(result)
-        return ImageWorkerResponse(base64_data=pil_to_base64(result)).model_dump()
+    return process_result(context, result)
 
-    raise ValueError("Image generation failed")
+
+@celery_app.task(name="process_image_external")
+def process_image_external(request_dict):
+    request = ImageRequest.model_validate(request_dict)
+    context = ImageContext(request)
+    family = context.data.model_family
+
+    result = None
+    if family == "openai":
+        result = openai_main(context)
+    elif family == "runway":
+        result = runway_main(context)
+    else:
+        raise ValueError(f"Unsupported model family: {family}")
+
+    return process_result(context, result)
 
 
 @celery_app.task(name="process_image_workflow")
@@ -58,9 +72,4 @@ def process_image_workflow(request_dict):
 
     result = comfy_main(context)
 
-    if isinstance(result, Image.Image):
-        # save a temp file for now
-        context.save_image(result)
-        return ImageWorkerResponse(base64_data=pil_to_base64(result)).model_dump()
-
-    raise ValueError("Image generation failed")
+    return process_result(context, result)

@@ -8,7 +8,7 @@ from PIL import Image
 from common.logger import logger
 from images.adapters import Adapters
 from images.control_nets import ControlNets
-from images.schemas import ImageRequest, ModelConfig, PipelineConfig
+from images.schemas import ImageRequest, PipelineConfig
 from utils.utils import (
     get_tmp_dir,
     load_image_if_exists,
@@ -16,40 +16,11 @@ from utils.utils import (
     save_copy_with_timestamp,
 )
 
-IMAGE_MODEL_CONFIG = {
-    "sd1.5": ModelConfig(model_family="sd1.5", model_path="stable-diffusion-v1-5/stable-diffusion-v1-5"),
-    "sdxl": ModelConfig(model_family="sdxl", model_path="stabilityai/stable-diffusion-xl-base-1.0"),
-    "sdxl-refiner": ModelConfig(model_family="sdxl", model_path="stabilityai/stable-diffusion-xl-refiner-1.0"),
-    "RealVisXL": ModelConfig(model_family="sdxl", model_path="SG161222/RealVisXL_V4.0"),
-    "Fluently-XL": ModelConfig(model_family="sdxl", model_path="fluently/Fluently-XL-v4"),
-    "juggernaut-xl": ModelConfig(model_family="sdxl", model_path="RunDiffusion/Juggernaut-XL-v9"),
-    "sd3": ModelConfig(model_family="sd3", model_path="stabilityai/stable-diffusion-3-medium-diffusers"),
-    "sd3.5": ModelConfig(model_family="sd3", model_path="stabilityai/stable-diffusion-3.5-medium"),
-    "flux-schnell": ModelConfig(model_family="flux", model_path="black-forest-labs/FLUX.1-schnell"),
-    "flux-dev": ModelConfig(model_family="flux", model_path="black-forest-labs/FLUX.1-dev"),
-    "depth-anything": ModelConfig(
-        model_family="depth_anything", model_path="depth-anything/Depth-Anything-V2-Large-hf"
-    ),
-    "segment-anything": ModelConfig(model_family="segment_anything", model_path="sam2.1_hiera_base_plus"),
-    "sd-x4-upscaler": ModelConfig(model_family="sd_upscaler", model_path="stabilityai/stable-diffusion-x4-upscaler"),
-    "gpt-image-1": ModelConfig(model_family="openai", model_path="gpt-image-1"),
-    "runway/gen4_image": ModelConfig(model_family="runway", model_path="gen4_image"),
-    "HiDream": ModelConfig(model_family="hidream", model_path="HiDream-ai/HiDream-I1-Full"),
-}
-
-
-def get_model_config(key: str) -> ModelConfig:
-    config = IMAGE_MODEL_CONFIG.get(key)
-    if not config:
-        raise ValueError(f"Model config for {key} not found")
-    return config
-
 
 class ImageContext:
     def __init__(self, data: ImageRequest):
         self.data = data
         self.model = data.model
-        self.model_config = get_model_config(data.model)
         self.torch_dtype = torch.float16  # just keep float 16 for now
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
@@ -78,15 +49,17 @@ class ImageContext:
             self.mask_image = self.mask_image.resize([self.width, self.height])
 
         # Initialize control nets and adapters
-        self.control_nets = ControlNets(data.controlnets, self.model_config, self.width, self.height, self.torch_dtype)
-        self.adapters = Adapters(data.ip_adapters, self.model_config, self.width, self.height)
+        self.control_nets = ControlNets(
+            data.controlnets, self.data.model_family, self.width, self.height, self.torch_dtype
+        )
+        self.adapters = Adapters(data.ip_adapters, self.data.model_family, self.width, self.height)
 
     def get_pipeline_config(self) -> PipelineConfig:
         adapter_config = self.adapters.get_pipeline_config()
 
         return PipelineConfig(
-            model_id=self.model_config.model_path,
-            model_family=self.model_config.model_family,
+            model_id=self.data.model_path,
+            model_family=self.data.model_family,
             torch_dtype=self.torch_dtype,
             target_precision=self.target_precision,  # type: ignore
             use_safetensors=True,

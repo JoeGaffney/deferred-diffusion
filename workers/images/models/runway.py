@@ -47,13 +47,13 @@ def poll_result(id, wait=10, max_attempts=30) -> Image.Image:
 
 
 def text_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
-    logger.info(f"Text to image call {context.model_config.model_path}")
-    if context.model_config.model_path != "gen4_image":
+    logger.info(f"Text to image call {context.data.model_path}")
+    if context.data.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
     try:
         task = client.text_to_image.create(
-            model=context.model_config.model_path,
+            model=context.data.model_path,
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             seed=context.data.seed,
@@ -67,7 +67,7 @@ def text_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
 
 
 def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
-    if context.model_config.model_path != "gen4_image":
+    if context.data.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
     # gather all possible reference images we piggy back on the ipdapter images
@@ -82,10 +82,10 @@ def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
-    logger.info(f"Image to image call {context.model_config.model_path} using {len(reference_images)} images")
+    logger.info(f"Image to image call {context.data.model_path} using {len(reference_images)} images")
     try:
         task = client.text_to_image.create(
-            model=context.model_config.model_path,
+            model=context.data.model_path,
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             reference_images=reference_images,

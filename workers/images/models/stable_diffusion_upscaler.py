@@ -23,7 +23,7 @@ def main(context: ImageContext):
     if context.color_image is None:
         raise ValueError("No input image provided")
 
-    pipe = get_pipeline(context.model_config.model_path)
+    pipe = get_pipeline(context.data.model_path)
     scale = 4
 
     processed_image = pipe(

@@ -168,7 +168,7 @@ def get_pipeline(config: PipelineConfig):
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
     if context.control_nets.is_enabled():
-        if context.model_config.model_family == "sd3" or context.model_config.model_family == "flux":
+        if context.data.model_family == "sd3" or context.data.model_family == "flux":
             args["control_image"] = context.control_nets.get_images()
         else:
             args["image"] = context.control_nets.get_images()
@@ -176,12 +176,12 @@ def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
 
     if context.adapters.is_enabled():
         args["ip_adapter_image"] = context.adapters.get_images()
-        if context.model_config.model_family != "flux":
+        if context.data.model_family != "flux":
             args["cross_attention_kwargs"] = {"ip_adapter_masks": context.adapters.get_masks()}
         pipe = context.adapters.set_scale(pipe)
 
     # NOTE there is a bug when using controlnets and ip adapters together with flux
-    # if context.model_config.model_family == "flux":
+    # if context.data.model_family == "flux":
     #     num_adapters = pipe.transformer.encoder_hid_proj.num_ip_adapters
     #     adapter_images = args.get("ip_adapter_image", [])
     #     logger.info(f"Flux model has {num_adapters} IP adapters and {len(adapter_images)} images")

@@ -3,7 +3,7 @@ from PIL import Image
 
 from common.exceptions import IPAdapterConfigError
 from common.logger import logger
-from images.schemas import IpAdapterModel, IpAdapterModelConfig, ModelConfig
+from images.schemas import IpAdapterModel, IpAdapterModelConfig, ModelFamily
 from utils.utils import load_image_if_exists
 
 processor = IPAdapterMaskProcessor()
@@ -100,12 +100,12 @@ IP_ADAPTER_MODEL_CONFIG = {
 }
 
 
-def get_ip_adapter_config(model_family: str, adapter_type: str) -> IpAdapterModelConfig:
-    model_config = IP_ADAPTER_MODEL_CONFIG.get(model_family)
-    if not model_config:
+def get_ip_adapter_config(model_family: ModelFamily, adapter_type: str) -> IpAdapterModelConfig:
+    config = IP_ADAPTER_MODEL_CONFIG.get(str(model_family))
+    if not model_family:
         raise IPAdapterConfigError(f"IP-Adapter model config for {model_family} not found")
 
-    ip_adapter_config = model_config.get(adapter_type)
+    ip_adapter_config = config.get(adapter_type)
     if not ip_adapter_config:
         raise IPAdapterConfigError(f"IP-Adapter model path for {adapter_type} not found in {model_family}")
 
@@ -113,12 +113,12 @@ def get_ip_adapter_config(model_family: str, adapter_type: str) -> IpAdapterMode
 
 
 class IpAdapter:
-    def __init__(self, data: IpAdapterModel, model_config: ModelConfig, width, height):
-        self.config = get_ip_adapter_config(model_config.model_family, data.model)
+    def __init__(self, data: IpAdapterModel, model_family: ModelFamily, width, height):
+        self.config = get_ip_adapter_config(model_family, data.model)
         self.scale = data.scale
         self.scale_layers = data.scale_layers
         self.model = self.config.model
-        if model_config.model_family == "flux":
+        if model_family == "flux":
             self.scale_layers = "default"
 
         self.image = load_image_if_exists(data.image)
@@ -160,13 +160,13 @@ class IpAdapter:
 
 
 class Adapters:
-    def __init__(self, adapters: list[IpAdapterModel], model_config: ModelConfig, width, height):
+    def __init__(self, adapters: list[IpAdapterModel], model_family: ModelFamily, width, height):
         self.adapters: list[IpAdapter] = []
 
         # Handle initialization errors and create valid adapters
         for data in adapters:
             try:
-                adapter = IpAdapter(data, model_config, width, height)
+                adapter = IpAdapter(data, model_family, width, height)
                 self.adapters.append(adapter)
             except IPAdapterConfigError as e:
                 logger.error(f"Failed to initialize IP-Adapter: {e}")

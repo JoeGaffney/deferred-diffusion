@@ -25,8 +25,8 @@ def main(context: ImageContext):
         raise ValueError("No input image provided")
 
     image = context.color_image
-    image_processor = AutoImageProcessor.from_pretrained(context.model_config.model_path)
-    pipe = get_pipeline(context.model_config.model_path)
+    image_processor = AutoImageProcessor.from_pretrained(context.data.model_path)
+    pipe = get_pipeline(context.data.model_path)
     update_device(pipe, "cuda")
 
     # prepare image for the model

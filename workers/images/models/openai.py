@@ -23,9 +23,9 @@ def get_size(
 
 
 def text_to_image_call(client: OpenAI, context: ImageContext):
-    logger.info(f"Text to image call {context.model_config.model_path}")
+    logger.info(f"Text to image call {context.data.model_path}")
     result = client.images.generate(
-        model=context.model_config.model_path,
+        model=context.data.model_path,
         quality=context.get_quality(),
         prompt=context.data.prompt,
         size=get_size(context),
@@ -58,10 +58,10 @@ def image_to_image_call(client: OpenAI, context: ImageContext):
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
-    logger.info(f"Image to image call {context.model_config.model_path} using {len(reference_images)} images")
+    logger.info(f"Image to image call {context.data.model_path} using {len(reference_images)} images")
 
     result = client.images.edit(
-        model=context.model_config.model_path,
+        model=context.data.model_path,
         quality=context.get_quality(),
         prompt=context.data.prompt,
         size=get_size(context),  # type: ignore type hints wrong
@@ -81,7 +81,7 @@ def image_to_image_call(client: OpenAI, context: ImageContext):
 
 
 def inpainting_call(client: OpenAI, context: ImageContext):
-    logger.info(f"Image to image inpainting call {context.model_config.model_path}")
+    logger.info(f"Image to image inpainting call {context.data.model_path}")
     if context.color_image is None:
         raise ValueError("No color image provided")
 
@@ -91,7 +91,7 @@ def inpainting_call(client: OpenAI, context: ImageContext):
     converted_mask = convert_mask_for_inpainting(context.mask_image)
 
     result = client.images.edit(
-        model=context.model_config.model_path,
+        model=context.data.model_path,
         quality=context.get_quality(),
         prompt=context.data.prompt,
         size=get_size(context),  # type: ignore type hints wrong
