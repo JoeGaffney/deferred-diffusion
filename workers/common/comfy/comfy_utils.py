@@ -78,7 +78,7 @@ def get_image(filename, subfolder="", folder_type="output"):
     return Image.open(BytesIO(img_data))
 
 
-def wait_for_completion(prompt_id, timeout=300, check_interval=1):
+def wait_for_completion(prompt_id, timeout=300, check_interval=2):
     """Wait for the ComfyUI prompt to complete processing."""
     start_time = time.time()
     while time.time() - start_time < timeout:
@@ -89,6 +89,24 @@ def wait_for_completion(prompt_id, timeout=300, check_interval=1):
                 return outputs
         time.sleep(check_interval)
     raise TimeoutError(f"ComfyUI workflow did not complete within {timeout} seconds")
+
+
+def free_resources(unload_models=False, free_memory=True):
+    """Free ComfyUI resources by unloading models and/or freeing memory.
+
+    Args:
+        unload_models (bool): Whether to unload models from Ram
+        free_memory (bool): Whether to free CUDA memory
+
+    Returns:
+        dict: Response from the ComfyUI API
+    """
+    payload = {"unload_models": unload_models, "free_memory": free_memory}
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(f"{COMFY_API_URL}/free", data=data)
+    req.add_header("Content-Type", "application/json")
+    response = urllib.request.urlopen(req)
+    return response.status == 200
 
 
 def remap_workflow(workflow: ComfyWorkflow, data) -> dict:

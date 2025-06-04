@@ -1,5 +1,6 @@
 from PIL import Image
 
+from common.comfy import comfy_utils
 from common.pipeline_helpers import reset_global_pipeline_cache
 from images.context import ImageContext
 from images.models.auto_diffusion import main as auto_diffusion_main
@@ -65,6 +66,7 @@ def process_image_external(request_dict):
 @celery_app.task(name="process_image_workflow")
 def process_image_workflow(request_dict):
     reset_global_pipeline_cache()
+    comfy_utils.free_resources()
     free_gpu_memory()
 
     request = ImageRequest.model_validate(request_dict)

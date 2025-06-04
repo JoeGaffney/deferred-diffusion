@@ -28,7 +28,6 @@ def get_pipeline(model_id):
 
 
 def main(context: TextContext):
-    model = "Qwen/Qwen2.5-VL-3B-Instruct"
     model, processor = get_pipeline(context.data.model)
     messages = [message.model_dump() for message in context.data.messages]
     original_messages = copy.deepcopy(messages)

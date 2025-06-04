@@ -1,4 +1,4 @@
-.PHONY:  all down copy-schemas build  up generate-clients test-texts test-images test-it-tests test-worker tag-and-push
+.PHONY:  all down copy-schemas build  up generate-clients test-texts test-images test-videos test-it-tests test-worker tag-and-push
 
 
 # Default target
@@ -34,6 +34,9 @@ test-texts: generate-clients
 # Test images modules
 test-images: generate-clients
 	docker-compose exec workers pytest tests/images
+
+test-videos: generate-clients
+	docker-compose exec workers pytest tests/videos
 
 test-it-tests: generate-clients
 	cd it_tests && pytest -vs

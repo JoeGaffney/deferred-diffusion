@@ -9,7 +9,7 @@ from utils.utils import free_gpu_memory, get_16_9_resolution
 # Define constants
 MODES = ["text_to_image"]
 MODELS = ["flux-schnell", "flux-dev"]
-MODELS = ["flux-dev"]
+MODELS = ["flux-schnell"]
 
 
 @pytest.mark.parametrize("mode", MODES)

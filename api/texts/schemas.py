@@ -1,8 +1,11 @@
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from celery.states import ALL_STATES
 from pydantic import BaseModel, Field, RootModel
+
+ModelName: TypeAlias = Literal["Qwen2.5-VL-3B-Instruct", "gpt-4o-mini", "gpt-4.1-mini"]
+ModelFamily: TypeAlias = Literal["qwen", "openai"]
 
 
 class TextContent(BaseModel):
@@ -23,12 +26,39 @@ class MessageItem(BaseModel):
 class TextRequest(BaseModel):
     temperature: float = 0.7
     seed: int = 42
-    model: Literal["Qwen/Qwen2.5-VL-3B-Instruct", "gpt-4o-mini", "gpt-4.1-mini"] = Field(
-        description="model", default="Qwen/Qwen2.5-VL-3B-Instruct"
-    )
+    model: ModelName = Field(description="model", default="Qwen2.5-VL-3B-Instruct")
     messages: list[MessageItem] = Field(description="List of messages", default=[])
     images: List[str] = Field(description="Image references", default=[])
     videos: List[str] = Field(description="Video references", default=[])
+
+    @property
+    def model_family(self) -> ModelFamily:
+        mapping: Dict[ModelName, ModelFamily] = {
+            "Qwen2.5-VL-3B-Instruct": "qwen",
+            "gpt-4o-mini": "openai",
+            "gpt-4.1-mini": "openai",
+        }
+        try:
+            return mapping[self.model]
+        except KeyError:
+            raise ValueError(f"No model family defined for model '{self.model}'")
+
+    @property
+    def model_path(self) -> str:
+        mapping: Dict[ModelName, str] = {
+            "Qwen2.5-VL-3B-Instruct": "Qwen/Qwen2.5-VL-3B-Instruct",
+            "gpt-4o-mini": "gpt-4o-mini",
+            "gpt-4.1-mini": "gpt-4.1-mini",
+        }
+        try:
+            return mapping[self.model]
+        except KeyError:
+            raise ValueError(f"No model path defined for model '{self.model}'")
+
+    @property
+    def external_model(self) -> bool:
+        external_models = ["openai"]
+        return self.model_family in external_models
 
 
 class TextWorkerResponse(BaseModel):

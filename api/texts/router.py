@@ -18,8 +18,12 @@ router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify
 
 @router.post("", response_model=TextCreateResponse, operation_id="texts_create")
 async def create(request: TextRequest, response: Response):
+    task_name = "process_text"
+    if request.external_model:
+        task_name = "process_text_external"
+
     try:
-        result = celery_app.send_task("process_text", args=[request.model_dump()])
+        result = celery_app.send_task(task_name, args=[request.model_dump()])
         response.headers["Location"] = f"/texts/{result.id}"
         return TextCreateResponse(id=result.id, status=result.status)
     except Exception as e:

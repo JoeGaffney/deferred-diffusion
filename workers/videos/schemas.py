@@ -1,16 +1,19 @@
-from typing import Literal, Optional
+from typing import Dict, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
 
+ModelName: TypeAlias = Literal[
+    "LTX-Video",
+    "Wan2.1",
+    "runway/gen3a_turbo",
+    "runway/gen4_turbo",
+]
+ModelFamily: TypeAlias = Literal["ltx", "wan", "runway"]
+
 
 class VideoRequest(BaseModel):
-    model: Literal[
-        "LTX-Video",
-        "Wan2.1",
-        "runway/gen3a_turbo",
-        "runway/gen4_turbo",
-    ]
+    model: ModelName
     image: str = Field(
         description="Base64 image string",
         json_schema_extra={
@@ -24,6 +27,37 @@ class VideoRequest(BaseModel):
     num_frames: int = 48
     num_inference_steps: int = 25
     seed: int = 42
+
+    @property
+    def model_family(self) -> ModelFamily:
+        mapping: Dict[ModelName, ModelFamily] = {
+            "LTX-Video": "ltx",
+            "Wan2.1": "wan",
+            "runway/gen3a_turbo": "runway",
+            "runway/gen4_turbo": "runway",
+        }
+        try:
+            return mapping[self.model]
+        except KeyError:
+            raise ValueError(f"No model family defined for model '{self.model}'")
+
+    @property
+    def model_path(self) -> str:
+        mapping: Dict[ModelName, str] = {
+            "LTX-Video": "Lightricks/LTX-Video-0.9.7-distilled",
+            "Wan2.1": "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers",
+            "runway/gen3a_turbo": "gen3a_turbo",
+            "runway/gen4_turbo": "gen4_turbo",
+        }
+        try:
+            return mapping[self.model]
+        except KeyError:
+            raise ValueError(f"No model path defined for model '{self.model}'")
+
+    @property
+    def external_model(self) -> bool:
+        external_models = ["runway"]
+        return self.model_family in external_models
 
 
 class VideoWorkerResponse(BaseModel):

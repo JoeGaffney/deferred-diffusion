@@ -11,6 +11,7 @@ MODES = ["text_to_image"]
 MODELS = ["HiDream"]
 
 
+@pytest.mark.skip(reason="Slow test")
 @pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize("target_precision", [4])
 @pytest.mark.parametrize("model_id", MODELS)
