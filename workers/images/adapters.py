@@ -3,7 +3,7 @@ from PIL import Image
 
 from common.exceptions import IPAdapterConfigError
 from common.logger import logger
-from images.schemas import IpAdapterModel, IpAdapterModelConfig, ModelConfig
+from images.schemas import IpAdapterModel, IpAdapterModelConfig, ModelFamily
 from utils.utils import load_image_if_exists
 
 processor = IPAdapterMaskProcessor()
@@ -100,12 +100,12 @@ IP_ADAPTER_MODEL_CONFIG = {
 }
 
 
-def get_ip_adapter_config(model_family: str, adapter_type: str) -> IpAdapterModelConfig:
-    model_config = IP_ADAPTER_MODEL_CONFIG.get(model_family)
-    if not model_config:
+def get_ip_adapter_config(model_family: ModelFamily, adapter_type: str) -> IpAdapterModelConfig:
+    config = IP_ADAPTER_MODEL_CONFIG.get(str(model_family))
+    if not config:
         raise IPAdapterConfigError(f"IP-Adapter model config for {model_family} not found")
 
-    ip_adapter_config = model_config.get(adapter_type)
+    ip_adapter_config = config.get(adapter_type)
     if not ip_adapter_config:
         raise IPAdapterConfigError(f"IP-Adapter model path for {adapter_type} not found in {model_family}")
 
@@ -113,12 +113,12 @@ def get_ip_adapter_config(model_family: str, adapter_type: str) -> IpAdapterMode
 
 
 class IpAdapter:
-    def __init__(self, data: IpAdapterModel, model_config: ModelConfig, width, height):
-        self.config = get_ip_adapter_config(model_config.model_family, data.model)
+    def __init__(self, data: IpAdapterModel, model_family: ModelFamily, width, height):
+        self.config = get_ip_adapter_config(model_family, data.model)
         self.scale = data.scale
         self.scale_layers = data.scale_layers
         self.model = self.config.model
-        if model_config.model_family == "flux":
+        if model_family == "flux":
             self.scale_layers = "default"
 
         self.image = load_image_if_exists(data.image)
@@ -157,3 +157,74 @@ class IpAdapter:
 
     def get_mask(self):
         return processor.preprocess(self.mask_image)
+
+
+class Adapters:
+    def __init__(self, adapters: list[IpAdapterModel], model_family: ModelFamily, width, height):
+        self.adapters: list[IpAdapter] = []
+
+        # Handle initialization errors and create valid adapters
+        for data in adapters:
+            try:
+                adapter = IpAdapter(data, model_family, width, height)
+                self.adapters.append(adapter)
+            except IPAdapterConfigError as e:
+                logger.error(f"Failed to initialize IP-Adapter: {e}")
+
+    def is_enabled(self) -> bool:
+        """Check if there are any valid adapters."""
+        return len(self.adapters) > 0
+
+    def get_scales_and_layers(self):
+        return [adapter.get_scale_layers() for adapter in self.adapters]
+
+    def get_masks(self):
+        return [adapter.get_mask() for adapter in self.adapters]
+
+    def get_images(self):
+        return [adapter.image for adapter in self.adapters]
+
+    def get_pipeline_config(self):
+        """Get the configuration needed for the pipeline."""
+        if not self.is_enabled():
+            return {
+                "models": (),
+                "subfolders": (),
+                "weights": (),
+                "image_encoder_model": "",
+                "image_encoder_subfolder": "",
+            }
+
+        models = []
+        subfolders = []
+        weights = []
+        image_encoder_model = ""
+        image_encoder_subfolder = ""
+
+        for adapter in self.adapters:
+            models.append(adapter.config.model)
+            subfolders.append(adapter.config.subfolder)
+            weights.append(adapter.config.weight_name)
+            if adapter.config.image_encoder:
+                image_encoder_model = adapter.config.model
+                image_encoder_subfolder = adapter.config.image_encoder_subfolder
+
+        return {
+            "models": tuple(models),
+            "subfolders": tuple(subfolders),
+            "weights": tuple(weights),
+            "image_encoder_model": image_encoder_model,
+            "image_encoder_subfolder": image_encoder_subfolder,
+        }
+
+    def set_scale(self, pipe):
+        """Set the IP adapter scale on the pipeline."""
+        if not self.is_enabled():
+            return pipe
+
+        scales = self.get_scales_and_layers()
+        if len(scales) == 1:
+            pipe.set_ip_adapter_scale(scales[0])
+        else:
+            pipe.set_ip_adapter_scale(scales)
+        return pipe

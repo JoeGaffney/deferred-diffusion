@@ -6,23 +6,18 @@ from diffusers import (
     WanImageToVideoPipeline,
     WanTransformer3DModel,
 )
-from diffusers.hooks.group_offloading import apply_group_offloading
 from transformers import CLIPVisionModel, UMT5EncoderModel
 
-from common.pipeline_helpers import get_quantized_model
-from utils.utils import (
-    cache_info_decorator,
-    get_16_9_resolution,
-    resize_image,
-    time_info_decorator,
-)
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
+from utils.utils import get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
 torch.backends.cuda.matmul.allow_tf32 = True
 
 
-@time_info_decorator
-def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=torch.bfloat16):
+# NOTE this one is heavy maybe we should not cache it globally
+# @decorator_global_pipeline_cache
+def get_pipeline(model_id, torch_dtype=torch.bfloat16):
     image_encoder = get_quantized_model(
         model_id=model_id,
         subfolder="image_encoder",
@@ -66,7 +61,7 @@ def get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers", torch_dtype=to
 
 
 def main(context: VideoContext):
-    pipe = get_pipeline()
+    pipe = get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-480P-Diffusers")
     image = context.image
     if image is None:
         raise ValueError("Image not found. Please provide a valid image path.")

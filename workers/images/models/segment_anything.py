@@ -6,30 +6,6 @@ from common.logger import log_pretty, logger
 from images.context import ImageContext
 
 
-def draw_image(image_rgb, masks, xyxy, probs, labels):
-    import supervision as sv
-
-    box_annotator = sv.BoxCornerAnnotator()
-    label_annotator = sv.LabelAnnotator()
-    mask_annotator = sv.MaskAnnotator()
-    # Create class_id for each unique label
-    unique_labels = list(set(labels))
-    class_id_map = {label: idx for idx, label in enumerate(unique_labels)}
-    class_id = [class_id_map[label] for label in labels]
-
-    # Add class_id to the Detections object
-    detections = sv.Detections(
-        xyxy=xyxy,
-        mask=masks.astype(bool),
-        confidence=probs,
-        class_id=np.array(class_id),
-    )
-    annotated_image = box_annotator.annotate(scene=image_rgb.copy(), detections=detections)
-    annotated_image = label_annotator.annotate(scene=annotated_image, detections=detections, labels=labels)
-    annotated_image = mask_annotator.annotate(scene=annotated_image, detections=detections)
-    return annotated_image
-
-
 def main(context: ImageContext, mode="mask"):
     if context.color_image is None:
         raise ValueError("No image provided")
@@ -43,23 +19,6 @@ def main(context: ImageContext, mode="mask"):
 
     if not len(results["masks"]):
         raise ValueError("No masks detected")
-
-    # Draw results on the image
-    debug = True
-    if debug == True:
-        try:
-            image_array = np.asarray(image_pil)
-            output_image = draw_image(
-                image_array,
-                results["masks"],
-                results["boxes"],
-                results["scores"],
-                results["labels"],
-            )
-            output_image = Image.fromarray(np.uint8(output_image)).convert("RGB")
-            debug_path = context.save_image(output_image)
-        except Exception as e:
-            logger.warning(f"Error drawing annotated image: {e}")
 
     image_masks = []
     for mask in results["masks"]:

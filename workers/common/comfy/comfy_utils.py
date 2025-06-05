@@ -3,6 +3,7 @@ import json
 import os
 import socket
 import subprocess
+import threading
 import time
 import urllib.request
 from io import BytesIO
@@ -16,6 +17,23 @@ COMFY_PORT = 8188
 COMFY_PATH = "/app/ComfyUI"
 COMFY_PROCESS = None
 COMFY_API_URL = f"http://127.0.0.1:{COMFY_PORT}"
+dummy_workflow = {
+    "2": {
+        "inputs": {"filename_prefix": "ComfyUIDummy", "images": ["4", 0]},
+        "class_type": "SaveImage",
+        "_meta": {"title": "Save Image"},
+    },
+    "4": {
+        "inputs": {"width": 32, "height": 32, "batch_size": 1, "color": 0},
+        "class_type": "EmptyImage",
+        "_meta": {"title": "EmptyImage"},
+    },
+}
+
+
+def _read_and_log(pipe, logger_func, prefix):
+    for line in iter(pipe.readline, b""):
+        logger_func(f"[COMFY] {line.decode().rstrip()}")
 
 
 def is_comfy_running(port=COMFY_PORT):
@@ -27,20 +45,23 @@ def is_comfy_running(port=COMFY_PORT):
 def start_comfy():
     global COMFY_PROCESS
     if is_comfy_running():
-        logger.info("✅ ComfyUI already running.")
         return
 
     logger.warning("Starting ComfyUI...")
     COMFY_PROCESS = subprocess.Popen(
         ["python", "main.py", "--disable-auto-launch", "--listen", "127.0.0.1", "--port", str(COMFY_PORT)],
         cwd=COMFY_PATH,
-        # stdout=subprocess.PIPE,
-        # stderr=subprocess.STDOUT,
-        # text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=False,  # We'll decode lines ourselves
+        bufsize=1,  # Line buffered
     )
 
+    # Start a thread to read stdout and log it
+    threading.Thread(target=_read_and_log, args=(COMFY_PROCESS.stdout, logger.info, "COMFY"), daemon=True).start()
+
     # Wait for Comfy to be responsive
-    for _ in range(100):  # Wait for up to 100 seconds
+    for _ in range(300):  # Wait for up to 300 seconds
         if is_comfy_running():
             logger.info("✅ ComfyUI started successfully.")
             return
@@ -89,6 +110,35 @@ def wait_for_completion(prompt_id, timeout=300, check_interval=1):
                 return outputs
         time.sleep(check_interval)
     raise TimeoutError(f"ComfyUI workflow did not complete within {timeout} seconds")
+
+
+def free_resources(unload_models=True, free_memory=False):
+    """Trigger ComfyUI to release VRAM and/or unload models. unload_models is VRAM only, free_memory is for CPU memory aswell."""
+    if not is_comfy_running():
+        logger.warning("ComfyUI is not running — skipping resource cleanup.")
+        return
+
+    # Set the free flags
+    payload = {"unload_models": unload_models, "free_memory": free_memory}
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(f"{COMFY_API_URL}/free", data=data)
+    req.add_header("Content-Type", "application/json")
+    try:
+        urllib.request.urlopen(req)
+    except Exception as e:
+        logger.warning(f"Failed to set resource cleanup flags: {e}")
+        return
+
+    # Run a dummy prompt to apply the cleanup
+    try:
+        response = queue_prompt(dummy_workflow)
+        prompt_id = response.get("prompt_id")
+        if prompt_id:
+            wait_for_completion(prompt_id, timeout=10, check_interval=1)
+        else:
+            logger.warning("Dummy cleanup prompt failed to queue.")
+    except Exception as e:
+        logger.warning(f"ComfyUI cleanup job failed: {e}")
 
 
 def remap_workflow(workflow: ComfyWorkflow, data) -> dict:

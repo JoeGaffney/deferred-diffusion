@@ -23,9 +23,9 @@ def get_size(
 
 
 def text_to_image_call(client: OpenAI, context: ImageContext):
-    logger.info(f"Text to image call {context.model_config.model_path}")
+    logger.info(f"Text to image call {context.data.model_path}")
     result = client.images.generate(
-        model=context.model_config.model_path,
+        model=context.data.model_path,
         quality=context.get_quality(),
         prompt=context.data.prompt,
         size=get_size(context),
@@ -50,17 +50,18 @@ def image_to_image_call(client: OpenAI, context: ImageContext):
     if context.color_image:
         reference_images.append(convert_pil_to_bytes(context.color_image))
 
-    if context.ip_adapters_enabled:
-        for current in context.get_ip_adapter_images():
-            reference_images.append(convert_pil_to_bytes(current))
+    if context.adapters.is_enabled():
+        for current in context.adapters.get_images():
+            if current is not None:
+                reference_images.append(convert_pil_to_bytes(current))
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
-    logger.info(f"Image to image call {context.model_config.model_path} using {len(reference_images)} images")
+    logger.info(f"Image to image call {context.data.model_path} using {len(reference_images)} images")
 
     result = client.images.edit(
-        model=context.model_config.model_path,
+        model=context.data.model_path,
         quality=context.get_quality(),
         prompt=context.data.prompt,
         size=get_size(context),  # type: ignore type hints wrong
@@ -80,7 +81,7 @@ def image_to_image_call(client: OpenAI, context: ImageContext):
 
 
 def inpainting_call(client: OpenAI, context: ImageContext):
-    logger.info(f"Image to image inpainting call {context.model_config.model_path}")
+    logger.info(f"Image to image inpainting call {context.data.model_path}")
     if context.color_image is None:
         raise ValueError("No color image provided")
 
@@ -90,7 +91,7 @@ def inpainting_call(client: OpenAI, context: ImageContext):
     converted_mask = convert_mask_for_inpainting(context.mask_image)
 
     result = client.images.edit(
-        model=context.model_config.model_path,
+        model=context.data.model_path,
         quality=context.get_quality(),
         prompt=context.data.prompt,
         size=get_size(context),  # type: ignore type hints wrong
@@ -110,15 +111,17 @@ def inpainting_call(client: OpenAI, context: ImageContext):
     return processed_image
 
 
-def main(
-    context: ImageContext,
-    mode="text_to_image",
-) -> Image.Image:
-
+def main(context: ImageContext) -> Image.Image:
     client = OpenAI()
 
+    mode = "img_to_img"
+    if context.data.mask:
+        mode = "img_to_img_inpainting"
+    if context.data.image is None:
+        mode = "text_to_image"
+
     if mode == "text_to_image":
-        if context.ip_adapters_enabled:
+        if context.adapters.is_enabled():
             return image_to_image_call(client, context)
 
         return text_to_image_call(client, context)

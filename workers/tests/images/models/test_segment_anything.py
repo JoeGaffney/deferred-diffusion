@@ -26,8 +26,7 @@ def test_models(mode):
                 guidance_scale=5,
                 controlnets=[],
             )
-        ),
-        mode=mode,
+        )
     )
 
     save_image_and_assert_file_exists(result, output_name)

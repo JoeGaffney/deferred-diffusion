@@ -2,7 +2,7 @@ from functools import lru_cache
 
 import torch
 from PIL import Image
-from transformers import AutoImageProcessor, AutoModelForDepthEstimation, pipeline
+from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 
 from common.logger import logger
 from images.context import ImageContext
@@ -20,14 +20,13 @@ def get_pipeline(model_id):
     return pipe
 
 
-def main(context: ImageContext, mode="depth"):
-    context.model = "depth-anything/Depth-Anything-V2-Large-hf"
+def main(context: ImageContext):
     if context.color_image is None:
         raise ValueError("No input image provided")
 
     image = context.color_image
-    image_processor = AutoImageProcessor.from_pretrained(context.model)
-    pipe = get_pipeline(context.model)
+    image_processor = AutoImageProcessor.from_pretrained(context.data.model_path)
+    pipe = get_pipeline(context.data.model_path)
     update_device(pipe, "cuda")
 
     # prepare image for the model

@@ -28,7 +28,7 @@ def test_models(model_id, mode):
             ImageRequest(
                 model=model_id,
                 image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
-                mask=image_to_base64("../assets/mask_v001.png"),
+                mask=None if mode == "img_to_img_inpainting" else image_to_base64("../assets/mask_v001.png"),
                 prompt="tornado on farm feild, enhance keep original elements, Detailed, 8k, DSLR photo, photorealistic",
                 strength=0.5,
                 guidance_scale=5,
@@ -36,8 +36,7 @@ def test_models(model_id, mode):
                 max_height=height,
                 controlnets=[],
             )
-        ),
-        mode=mode,
+        )
     )
 
     save_image_and_assert_file_exists(result, output_name)
@@ -61,8 +60,6 @@ def test_models_with_control_nets(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
-                mask=image_to_base64("../assets/mask_v001.png"),
                 prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
                 strength=0.5,
                 guidance_scale=5,
@@ -71,7 +68,6 @@ def test_models_with_control_nets(model_id, mode):
                 controlnets=controlnets,
             )
         ),
-        mode=mode,
     )
 
     save_image_and_assert_file_exists(result, output_name)
@@ -88,7 +84,6 @@ def test_style(model_id, mode):
         ImageContext(
             ImageRequest(
                 model=model_id,
-                image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
                 prompt="a cat, masterpiece, best quality, high quality",
                 negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
                 strength=0.75,
@@ -100,8 +95,7 @@ def test_style(model_id, mode):
                     IpAdapterModel(image=image_to_base64("../assets/style_v001.jpeg"), model="style", scale=0.5)
                 ],
             )
-        ),
-        mode=mode,
+        )
     )
 
     save_image_and_assert_file_exists(result, output_name)
@@ -130,8 +124,7 @@ def test_face(model_id, mode):
                     IpAdapterModel(image=image_to_base64("../assets/face_v001.jpeg"), model="face", scale=0.5),
                 ],
             )
-        ),
-        mode=mode,
+        )
     )
 
     save_image_and_assert_file_exists(result, output_name)

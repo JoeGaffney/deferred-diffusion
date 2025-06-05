@@ -1,5 +1,3 @@
-import base64
-import io
 import time
 from typing import Literal
 
@@ -10,7 +8,6 @@ from runwayml.types.text_to_image_create_params import ContentModeration, Refere
 
 from common.logger import logger
 from images.context import ImageContext
-from utils.utils import convert_mask_for_inpainting, convert_pil_to_bytes
 from videos.models.runway_gen import pill_to_base64
 
 
@@ -50,13 +47,13 @@ def poll_result(id, wait=10, max_attempts=30) -> Image.Image:
 
 
 def text_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
-    logger.info(f"Text to image call {context.model_config.model_path}")
-    if context.model_config.model_path != "gen4_image":
+    logger.info(f"Text to image call {context.data.model_path}")
+    if context.data.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
     try:
         task = client.text_to_image.create(
-            model=context.model_config.model_path,
+            model=context.data.model_path,
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             seed=context.data.seed,
@@ -70,7 +67,7 @@ def text_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
 
 
 def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
-    if context.model_config.model_path != "gen4_image":
+    if context.data.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
     # gather all possible reference images we piggy back on the ipdapter images
@@ -78,17 +75,17 @@ def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
     if context.color_image:
         reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(context.color_image)}"))
 
-    if context.ip_adapters_enabled:
-        for current in context.get_ip_adapter_images():
+    if context.adapters.is_enabled():
+        for current in context.adapters.get_images():
             reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(current)}"))
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
-    logger.info(f"Image to image call {context.model_config.model_path} using {len(reference_images)} images")
+    logger.info(f"Image to image call {context.data.model_path} using {len(reference_images)} images")
     try:
         task = client.text_to_image.create(
-            model=context.model_config.model_path,
+            model=context.data.model_path,
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             reference_images=reference_images,
@@ -102,21 +99,18 @@ def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
     return poll_result(id)
 
 
-def main(
-    context: ImageContext,
-    mode="text_to_image",
-) -> Image.Image:
-
+def main(context: ImageContext) -> Image.Image:
     client = RunwayML()
 
-    if mode == "text_to_image":
-        if context.ip_adapters_enabled:
-            return image_to_image_call(client, context)
+    mode = "img_to_img"
+    if context.data.image is None:
+        mode = "text_to_image"
+    if context.adapters.is_enabled():
+        mode = "img_to_img"
 
+    if mode == "text_to_image":
         return text_to_image_call(client, context)
     elif mode == "img_to_img":
-        return image_to_image_call(client, context)
-    elif mode == "img_to_img_inpainting":
         return image_to_image_call(client, context)
 
     raise ValueError(f"Invalid mode {mode} for RunwayML API")

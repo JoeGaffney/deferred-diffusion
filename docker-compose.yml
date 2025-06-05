@@ -11,6 +11,7 @@ services:
       - hf_cache:/WORKSPACE # Using Docker named volume
     environment:
       - DEF_DIF_API_KEYS=${DEF_DIF_API_KEYS}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PYTHONUNBUFFERED=1
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
@@ -33,7 +34,8 @@ services:
     volumes:
       - hf_cache:/WORKSPACE
       # For now comfy runs in the monolith worker
-      - Y:/COMFY/models:/app/ComfyUI/models
+      - comfy_models:/app/ComfyUI/models # much faster than bind mount but requires a copy
+      # - Y:/COMFY/models:/app/ComfyUI/models
       - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
     environment:
       - PYTHONUNBUFFERED=1
@@ -49,7 +51,7 @@ services:
       - redis
       - api
     deploy:
-      replicas: 2 # Number of container
+      replicas: 1 # Number of container
       resources:
         reservations:
           devices:
@@ -75,10 +77,7 @@ services:
       dockerfile: Dockerfile.comfy
 
     volumes:
-      # - /mnt/y/COMFY:/app/models
-      # - Y:/COMFY:/app/models
-      # - comfy_models:/app/models
-      - Y:/COMFY/models:/app/models
+      - Y:/COMFY/models:/app/models # For user access to models
       - Y:/COMFY/custom_nodes:/app/custom_nodes
       - Y:/COMFY/user:/app/user # For user settings/configs
     ports:
@@ -91,7 +90,23 @@ services:
               count: 1
               capabilities: [gpu]
 
+  model-loader:
+    image: alpine:latest
+    volumes:
+      - Y:/COMFY/models:/source:ro
+      - comfy_models:/destination
+    command: >
+      sh -c "
+        echo 'Setting up...' &&
+        apk add --no-cache rsync &&
+        echo 'Starting models sync...' &&
+        rsync -av --delete /source/ /destination/ &&
+        echo 'Sync complete!'
+      "
+    # profiles:
+    #   - loader
+
 # Volume definitions go at the root level, not nested inside the service
 volumes:
   hf_cache: {}
-  # comfy_models: {}
+  comfy_models: {}

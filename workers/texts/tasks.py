@@ -1,8 +1,8 @@
+from common.memory import free_gpu_memory
 from texts.context import TextContext
-from texts.models.auto_openai import main as auto_openai_main
+from texts.models.openai import main as openai_main
 from texts.models.qwen_2_5_vl_instruct import main as qwen_2_5_vl_instruct_main
 from texts.schemas import TextRequest, TextWorkerResponse
-from utils.utils import free_gpu_memory
 from worker import celery_app
 
 
@@ -12,18 +12,30 @@ def process_text(request_dict):
     request = TextRequest.model_validate(request_dict)
     context = TextContext(request)
 
-    main = None
-    if request.model == "Qwen/Qwen2.5-VL-3B-Instruct":
-        main = qwen_2_5_vl_instruct_main
-    elif request.model == "gpt-4o-mini":
-        main = auto_openai_main
-    elif request.model == "gpt-4.1-mini":
-        main = auto_openai_main
+    result = None
+    if request.model == "Qwen2.5-VL-3B-Instruct":
+        result = qwen_2_5_vl_instruct_main(context)
+    else:
+        raise ValueError(f"Unsupported model: {request.model}")
 
-    if not main:
-        raise ValueError(f"Invalid model {request.model}")
+    # Free GPU memory after processing
+    free_gpu_memory(threshold_percent=1)
+    return TextWorkerResponse(
+        response=result.get("response", ""), chain_of_thought=result.get("chain_of_thought", [])
+    ).model_dump()
 
-    result = main(context)
+
+@celery_app.task(name="process_text_external")
+def process_text_external(request_dict):
+    request = TextRequest.model_validate(request_dict)
+    context = TextContext(request)
+
+    result = None
+    if request.model == "gpt-4o-mini" or request.model == "gpt-4.1-mini":
+        result = openai_main(context)
+    else:
+        raise ValueError(f"Unsupported model: {request.model}")
+
     return TextWorkerResponse(
         response=result.get("response", ""), chain_of_thought=result.get("chain_of_thought", [])
     ).model_dump()

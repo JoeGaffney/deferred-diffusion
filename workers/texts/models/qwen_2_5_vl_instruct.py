@@ -1,17 +1,32 @@
 import copy
 import traceback
-from functools import lru_cache
 
+import torch
 from qwen_vl_utils import process_vision_info
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 from common.logger import log_pretty, logger
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
 from texts.context import TextContext
-from utils.utils import free_gpu_memory, load_image_from_base64
+from utils.utils import load_image_from_base64
 
 
-@lru_cache(maxsize=1)
+# @decorator_global_pipeline_cache
 def get_pipeline(model_id):
+    model = get_quantized_model(
+        model_id=model_id,
+        subfolder="",
+        model_class=Qwen2_5_VLForConditionalGeneration,
+        target_precision=4,
+        torch_dtype=torch.float16,
+    )
+    model.to("cpu")  # Ensure model is on CPU initially
+
+    logger.warning(f"Loaded pipeline {model_id}")
+    return model
+
+
+def get_proccesor(model_id):
     # can affect performance could be reduced further
     # ref original
     # min_pixels = 256 * 28 * 28
@@ -19,17 +34,18 @@ def get_pipeline(model_id):
     min_pixels = 64 * 28 * 28
     max_pixels = 198 * 28 * 28
 
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_id, torch_dtype="auto", device_map="cpu")
     processor = AutoProcessor.from_pretrained(
         model_id, min_pixels=min_pixels, max_pixels=max_pixels, device_map="cpu", use_fast=True
     )
-    logger.warning(f"Loaded pipeline {model_id}")
-    return model, processor
+
+    logger.warning(f"Loaded processor pipeline {model_id}")
+    return processor
 
 
 def main(context: TextContext):
-    model = "Qwen/Qwen2.5-VL-3B-Instruct"
-    model, processor = get_pipeline(context.data.model)
+    model = get_pipeline(context.data.model_path)
+    processor = get_proccesor(context.data.model_path)
+
     messages = [message.model_dump() for message in context.data.messages]
     original_messages = copy.deepcopy(messages)
 
@@ -81,8 +97,9 @@ def main(context: TextContext):
         output = f"Error during inference: {e}"
         raise Exception(output)
     finally:
-        model = model.to("cpu")  # Move model back to CPU
         inputs = inputs.to("cpu")  # Move inputs back to CPU
+        model = model.to("cpu")  # Move model back to CPU
+        del inputs, generated_ids, generated_ids_trimmed, output_text, image_inputs, video_inputs
 
     # we keep only the original as we may have altered adding video and image to the last message
     chain_of_thought = original_messages

@@ -1,5 +1,4 @@
 import base64
-import gc
 import io
 import math
 import os
@@ -9,7 +8,6 @@ import time
 from datetime import datetime
 from typing import Literal, Optional, Tuple
 
-import torch
 from PIL import Image
 
 from common.logger import logger
@@ -132,26 +130,6 @@ def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
     return rgba
 
 
-def cache_info_decorator(func):
-    def wrapper(*args, **kwargs):
-        info = f"Calling {func.__name__} with args: {args}, kwargs: {kwargs}"
-
-        start = time.time()
-        result = func(*args, **kwargs)
-        end = time.time()
-
-        info = func.cache_info()
-        logger.info(
-            f"{info}, "
-            f"Cache info - hits: {info.hits}, misses: {info.misses}, "
-            f"current size: {info.currsize}, max size: {info.maxsize}, "
-            f"took: {end - start:.2f}s",
-        )
-        return result
-
-    return wrapper
-
-
 def time_info_decorator(func):
     def wrapper(*args, **kwargs):
         info = f"Calling {func.__name__} with args: {args}, kwargs: {kwargs}"
@@ -160,55 +138,10 @@ def time_info_decorator(func):
         result = func(*args, **kwargs)
         end = time.time()
 
-        logger.info(f"{info}, took: {end - start:.2f}s")
+        elapsed = end - start
+        if elapsed > 1.0:  # Only log if execution took more than 1 second
+            logger.info(f"{info}, took: {elapsed:.2f}s")
+
         return result
 
     return wrapper
-
-
-def get_gpu_memory_usage():
-    reserved = torch.cuda.memory_reserved() / 1e9
-    allocated = torch.cuda.memory_allocated() / 1e9
-    available, total = torch.cuda.mem_get_info()
-    used = (total - available) / 1e9
-    total = total / 1e9
-    usage_percent = (used / total) * 100
-
-    return (
-        total,
-        used,
-        reserved,
-        allocated,
-        usage_percent,
-    )
-
-
-def get_gpu_memory_usage_pretty():
-    total, used, reserved, allocated, usage_percent = get_gpu_memory_usage()
-
-    return (
-        f"GPU Memory Usage: {used:.2f}GB / {total:.2f}GB,  "
-        f"Reserved: {reserved:.2f}GB, "
-        f"Allocated: {allocated:.2f}GB, "
-        f"Usage: {usage_percent:.2f}%"
-    )
-
-
-def should_free_gpu_memory(threshold_percent: float = 50.0):
-    total, used, reserved, allocated, usage_percent = get_gpu_memory_usage()
-    logger.info(f"{get_gpu_memory_usage_pretty()}")
-    return usage_percent > threshold_percent
-
-
-def free_gpu_memory(threshold_percent: float = 20.0):
-    if (should_free_gpu_memory(threshold_percent=threshold_percent) == False) or (torch.cuda.is_available() == False):
-        return
-
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
-    gc.collect()
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
-
-    after_stats = get_gpu_memory_usage_pretty()
-    logger.warning(f"Clean {after_stats}")

@@ -1,25 +1,41 @@
-# from texts.context import TextContext
-# from texts.models.qwen_2_5_vl_instruct import main as qwen_main
-# from texts.schemas import TextRequest
+from fastapi import HTTPException
+
+from texts.schemas import MessageContent, MessageItem, TextRequest, TextWorkerResponse
+from utils.utils import poll_until_complete
+from worker import celery_app
 
 
-# def main(prompt, image_reference_image: str) -> str:
+async def main(prompt: str, image_reference_image: str) -> str:
+    print(f"Processing image reference with prompt: {prompt}")
+    request = TextRequest(
+        model="gpt-4o-mini",  # or "gpt-4.1-mini" for the other model
+        messages=[
+            MessageItem(
+                role="user",
+                content=[
+                    MessageContent(type="input_text", text=prompt),
+                ],
+            ),
+        ],
+        images=[image_reference_image],
+    )
+    id = None
+    try:
+        create_result = celery_app.send_task("process_text_external", args=[request.model_dump()])
+        id = create_result.id
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
-#     data = TextRequest(
-#         messages=[
-#             {
-#                 "role": "user",
-#                 "content": [
-#                     {"type": "text", "text": prompt},
-#                 ],
-#             }
-#         ],
-#         images=[image_reference_image],
-#     )
-#     result = qwen_main(TextContext(data))
-#     return result["response"]
+    if id is None:
+        raise HTTPException(status_code=500, detail="Task ID is None, task creation failed.")
 
-
-# NOTE add back tooling later
-def main(prompt, image_reference_image: str) -> str:
-    return ""
+    result = await poll_until_complete(str(id))
+    if result.successful():
+        try:
+            result_data = TextWorkerResponse.model_validate(result.result)
+            print(f"Result: {result_data}")
+            return result_data.response
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error parsing result: {str(e)}")
+    else:
+        raise HTTPException(status_code=500, detail=f"Task failed with error: {str(result.result)}")

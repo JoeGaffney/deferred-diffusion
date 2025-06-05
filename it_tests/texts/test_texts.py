@@ -14,7 +14,7 @@ from generated.api_client.models.text_request_model import TextRequestModel
 from generated.api_client.models.text_response import TextResponse
 from utils import image_to_base64
 
-model = TextRequestModel("Qwen/Qwen2.5-VL-3B-Instruct")
+model = TextRequestModel("Qwen2.5-VL-3B-Instruct")
 model = TextRequestModel("gpt-4o-mini")
 # model = TextRequestModel("gpt-4.1-mini")
 

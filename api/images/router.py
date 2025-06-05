@@ -8,6 +8,7 @@ from fastapi.security import APIKeyHeader
 
 from common.auth import verify_token
 from common.comfy.comfy_utils import model_schema_to_comfy_nodes
+from common.logger import log_pretty
 from images.schemas import (
     ImageCreateResponse,
     ImageRequest,
@@ -27,6 +28,8 @@ async def create(request: ImageRequest, response: Response):
     task_name = "process_image"
     if request.comfy_workflow:
         task_name = "process_image_workflow"
+    if request.external_model:
+        task_name = "process_image_external"
 
     try:
         result = celery_app.send_task(task_name, args=[request.model_dump()])
@@ -39,8 +42,7 @@ async def create(request: ImageRequest, response: Response):
 @router.get("/workflow/schema", operation_id="images_get_workflow_schema")
 async def get_workflow_schema():
     nodes = model_schema_to_comfy_nodes(ImageRequest)
-    print(nodes)
-    print(f"Generated {len(nodes)} nodes for ImageRequest schema")
+    log_pretty(f"Generated {len(nodes)} nodes for ImageRequest schema", nodes)
     return JSONResponse(nodes, status_code=200)
 
 

@@ -19,8 +19,12 @@ router = APIRouter(prefix="/videos", tags=["Videos"], dependencies=[Depends(veri
 
 @router.post("", response_model=VideoCreateResponse, operation_id="videos_create")
 async def create(request: VideoRequest, response: Response):
+    task_name = "process_video"
+    if request.external_model:
+        task_name = "process_video_external"
+
     try:
-        result = celery_app.send_task("process_video", args=[request.model_dump()])
+        result = celery_app.send_task(task_name, args=[request.model_dump()])
         response.headers["Location"] = f"/videos/{result.id}"
         return VideoCreateResponse(id=result.id, status=result.status)
     except Exception as e:
