@@ -102,7 +102,7 @@ IP_ADAPTER_MODEL_CONFIG = {
 
 def get_ip_adapter_config(model_family: ModelFamily, adapter_type: str) -> IpAdapterModelConfig:
     config = IP_ADAPTER_MODEL_CONFIG.get(str(model_family))
-    if not model_family:
+    if not config:
         raise IPAdapterConfigError(f"IP-Adapter model config for {model_family} not found")
 
     ip_adapter_config = config.get(adapter_type)
