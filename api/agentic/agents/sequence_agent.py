@@ -60,7 +60,7 @@ def get_agent():
         if ctx.deps.data.scene_reference_image == None:
             return ""
 
-        result = image_reference_main(
+        result = await image_reference_main(
             prompt="Generate a detailed visual description of the scene in the image. To be used for storyboarding by a script agent.",
             image_reference_image=ctx.deps.data.scene_reference_image,
         )
@@ -74,8 +74,8 @@ def get_agent():
         if ctx.deps.data.protagonist_reference_image == None:
             return ""
 
-        result = image_reference_main(
-            prompt=character_prompt,
+        result = await image_reference_main(
+            prompt=str(character_prompt),
             image_reference_image=ctx.deps.data.protagonist_reference_image,
         )
         if result == "":
@@ -83,12 +83,12 @@ def get_agent():
         return f"Protagonist context: {result}"
 
     @sequence_agent.tool
-    def add_antagonist_reference(ctx: RunContext[SequenceDependencies]) -> str:
+    async def add_antagonist_reference(ctx: RunContext[SequenceDependencies]) -> str:
         if ctx.deps.data.antagonist_reference_image == None:
             return ""
 
-        result = image_reference_main(
-            prompt=character_prompt,
+        result = await image_reference_main(
+            prompt=str(character_prompt),
             image_reference_image=ctx.deps.data.antagonist_reference_image,
         )
         if result == "":
@@ -112,5 +112,5 @@ def main(request: SequenceRequest) -> SequenceResponse:
         history = result.all_messages()
 
     log_pretty("History", history)
-    log_pretty("Result", result.data.model_dump())
+    # log_pretty("Result", result.data.model_dump())
     return result.data

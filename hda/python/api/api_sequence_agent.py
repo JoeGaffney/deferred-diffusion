@@ -48,9 +48,9 @@ def main(node):
     body = SequenceRequest(
         prompt=params.get("prompt", ""),
         refinement_prompt=params.get("refinement_prompt", ""),
-        scene_reference_image=input_to_base64(node, "src"),
-        protagonist_reference_image=input_to_base64(node, "src"),
-        antagonist_reference_image=input_to_base64(node, "src"),
+        scene_reference_image=input_to_base64(node, "scene"),
+        protagonist_reference_image=input_to_base64(node, "protagonist"),
+        antagonist_reference_image=input_to_base64(node, "antagonist"),
     )
 
     # make the API call

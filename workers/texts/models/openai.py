@@ -25,7 +25,7 @@ def main(context: TextContext):
     logger.warning(f"Running {context.data.model} with {len(context.data.images)} images")
 
     response = client.responses.create(
-        model=context.data.model,
+        model=context.data.model_path,
         input=messages,
     )
 

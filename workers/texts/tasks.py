@@ -13,11 +13,13 @@ def process_text(request_dict):
     context = TextContext(request)
 
     result = None
-    if request.model == "Qwen/Qwen2.5-VL-3B-Instruct":
+    if request.model == "Qwen2.5-VL-3B-Instruct":
         result = qwen_2_5_vl_instruct_main(context)
     else:
         raise ValueError(f"Unsupported model: {request.model}")
 
+    # Free GPU memory after processing
+    free_gpu_memory(threshold_percent=1)
     return TextWorkerResponse(
         response=result.get("response", ""), chain_of_thought=result.get("chain_of_thought", [])
     ).model_dump()
