@@ -39,8 +39,8 @@ class ModelLRUCache:
 
         # Evict least recently used model if at capacity
         if len(self.cache) >= self.max_models:
-            agressive_eviction = True
-            if agressive_eviction:
+            aggressive_eviction = True
+            if aggressive_eviction:
                 self._evict_all()
             else:
                 self._evict_lru()
