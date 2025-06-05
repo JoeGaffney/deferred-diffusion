@@ -1,6 +1,6 @@
 from PIL import Image
 
-from common.comfy import comfy_utils
+from common.memory import free_gpu_memory
 from common.pipeline_helpers import reset_global_pipeline_cache
 from images.context import ImageContext
 from images.models.auto_diffusion import main as auto_diffusion_main
@@ -13,7 +13,7 @@ from images.models.stable_diffusion_upscaler import (
     main as stable_diffusion_upscaler_main,
 )
 from images.schemas import ImageRequest, ImageWorkerResponse
-from utils.utils import free_gpu_memory, pil_to_base64
+from utils.utils import pil_to_base64
 from worker import celery_app
 
 
@@ -66,7 +66,6 @@ def process_image_external(request_dict):
 @celery_app.task(name="process_image_workflow")
 def process_image_workflow(request_dict):
     reset_global_pipeline_cache()
-    comfy_utils.free_resources()
     free_gpu_memory()
 
     request = ImageRequest.model_validate(request_dict)
@@ -74,4 +73,6 @@ def process_image_workflow(request_dict):
 
     result = comfy_main(context)
 
+    # free up GPU memory again after processing
+    free_gpu_memory()
     return process_result(context, result)

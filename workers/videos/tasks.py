@@ -1,4 +1,5 @@
-from utils.utils import free_gpu_memory, mp4_to_base64
+from common.memory import free_gpu_memory
+from utils.utils import mp4_to_base64
 from videos.context import VideoContext
 from videos.models.ltx_video import main as ltx_video_main
 from videos.models.runway_gen import main as runway_gen_main

@@ -1,8 +1,8 @@
+from common.memory import free_gpu_memory
 from texts.context import TextContext
 from texts.models.openai import main as openai_main
 from texts.models.qwen_2_5_vl_instruct import main as qwen_2_5_vl_instruct_main
 from texts.schemas import TextRequest, TextWorkerResponse
-from utils.utils import free_gpu_memory
 from worker import celery_app
 
 

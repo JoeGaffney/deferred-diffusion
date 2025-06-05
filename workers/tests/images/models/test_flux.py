@@ -35,5 +35,4 @@ def test_models(model_id, mode, target_precision):
         )
     )
 
-    free_gpu_memory()
     save_image_and_assert_file_exists(result, output_name)

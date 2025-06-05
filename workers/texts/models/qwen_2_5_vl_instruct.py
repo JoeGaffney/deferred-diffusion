@@ -7,7 +7,7 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 from common.logger import log_pretty, logger
 from texts.context import TextContext
-from utils.utils import free_gpu_memory, load_image_from_base64
+from utils.utils import load_image_from_base64
 
 
 @lru_cache(maxsize=1)

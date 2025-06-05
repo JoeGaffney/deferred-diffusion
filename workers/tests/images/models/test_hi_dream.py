@@ -4,7 +4,7 @@ from images.context import ImageContext
 from images.models.auto_diffusion import main
 from images.schemas import ImageRequest
 from tests.utils import save_image_and_assert_file_exists, setup_output_file
-from utils.utils import free_gpu_memory, get_16_9_resolution
+from utils.utils import get_16_9_resolution
 
 # Define constants
 MODES = ["text_to_image"]
@@ -35,5 +35,4 @@ def test_models(model_id, mode, target_precision):
         )
     )
 
-    free_gpu_memory()
     save_image_and_assert_file_exists(result, output_name)
