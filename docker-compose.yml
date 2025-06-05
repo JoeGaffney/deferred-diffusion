@@ -97,21 +97,11 @@ services:
       - comfy_models:/destination
     command: >
       sh -c "
-        echo 'Starting smart models sync...' &&
-        mkdir -p /destination /sync_state &&
-        
-        # Install tools needed for smart sync
+        echo 'Setting up...' &&
         apk add --no-cache rsync &&
-        
-        # Use rsync for efficient incremental sync
-        echo 'Syncing only new or modified models...' &&
-        rsync -av --progress --stats --delete /source/ /destination/ &&
-        
-        # Create manifest with timestamps
-        find /source -type f -exec stat -c '%n %Y' {} \; > /sync_state/manifest.txt &&
-        date > /sync_state/last_sync.txt &&
-        
-        echo 'Smart models sync complete!'
+        echo 'Starting models sync...' &&
+        rsync -av --delete /source/ /destination/ &&
+        echo 'Sync complete!'
       "
     # profiles:
     #   - loader
