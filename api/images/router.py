@@ -41,9 +41,9 @@ async def create(request: ImageRequest, response: Response):
 
 @router.get("/workflow/schema", operation_id="images_get_workflow_schema")
 async def get_workflow_schema():
-    nodes = model_schema_to_comfy_nodes(ImageRequest)
-    log_pretty(f"Generated {len(nodes)} nodes for ImageRequest schema", nodes)
-    return JSONResponse(nodes, status_code=200)
+    result = model_schema_to_comfy_nodes(ImageRequest)
+    log_pretty(f"Generated for ImageRequest schema", result)
+    return JSONResponse(result, status_code=200)
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")

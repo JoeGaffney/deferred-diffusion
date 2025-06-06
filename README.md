@@ -4,6 +4,8 @@ Multi model API that can run diffusion and other models with py-torch and extern
 
 Currently example Houdini HDA's are provided as it already provides a rich compositing node based ui, but would be possible to add more applications or a standalone ui.
 
+The api will push tasks to worker broker and workers will pick this up. Some endpoints will async wait for tasks some extra long ones will require end client to re-poll and check progress. Workers can run process tasks using python ML ecosystem, external tasks which call ML providers and workflow tasks which call comfyUI headless.
+
 # **Project Structure Overview**
 
 This project follows a **feature-based structure**, grouping related components together by domain (`images`, `texts`, `videos`). This approach ensures a clear separation of concerns and improves maintainability, scalability, and collaboration.
@@ -24,18 +26,6 @@ We try to use plural to adhere to REST best practices.
 
 - AI models often require **domain-specific logic**. Keeping `schemas.py`, `context.py`, and `models/` in the same module makes it easier to extend functionality.
 - If a new AI domain (`audio`, `3D`, etc.) is introduced, the structure remains consistent just duplicate the existing pattern.
-
-### ✅ **Easier Debugging & Maintenance**
-
-- If an issue occurs in the `images` module, it's contained within `images/`, reducing debugging time.
-- Reduces the risk of modifying shared logic that could unintentionally affect other domains.
-
-### ✅ **Faster Development**
-
-- Different teams can work independently on `images`, `texts`, and `videos` without interfering with each other.
-- Encourages modular development, making it easier to test and iterate on individual features.
-
-This structure balances **clarity, maintainability, and scalability**, making it well-suited for AI-driven projects where different domains have distinct processing needs. 🚀
 
 ```
 /api
@@ -60,8 +50,6 @@ This structure balances **clarity, maintainability, and scalability**, making it
 │── worker.py # ✅ Celery
 │── pytest.ini # ✅ Test configuration
 ```
-
-The api will push tasks to worker broker and workers will pick this up. Some endpoints will async wait for tasks some extra long ones will require end client to re-poll and check progress.
 
 ```
 /workers

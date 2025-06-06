@@ -22,7 +22,6 @@ class PipelineConfig(BaseModel):
     model_id: str
     model_family: ModelFamily
     torch_dtype: torch.dtype
-    target_precision: Literal[4, 8, 16] = 8
     use_safetensors: bool
     ip_adapter_models: Tuple[str, ...]
     ip_adapter_subfolders: Tuple[str, ...]
@@ -39,7 +38,6 @@ class PipelineConfig(BaseModel):
             (
                 self.model_id,
                 self.torch_dtype,
-                self.target_precision,
                 self.use_safetensors,
                 self.ip_adapter_models,
                 self.ip_adapter_subfolders,
@@ -58,7 +56,6 @@ class ImageContext:
         self.orig_height = copy.copy(data.max_height)
         self.orig_width = copy.copy(data.max_width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
-        self.target_precision = data.target_precision
 
         # Round down to nearest multiple of 16
         self.division = 16
@@ -94,7 +91,6 @@ class ImageContext:
             model_id=self.data.model_path,
             model_family=self.data.model_family,
             torch_dtype=self.torch_dtype,
-            target_precision=self.target_precision,  # type: ignore
             use_safetensors=True,
             ip_adapter_models=adapter_config.get("models", ()),
             ip_adapter_subfolders=adapter_config.get("subfolders", ()),

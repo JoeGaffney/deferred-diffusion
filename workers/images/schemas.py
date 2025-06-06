@@ -119,10 +119,6 @@ class ImageRequest(BaseModel):
     max_width: int = 2048
     negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
     num_inference_steps: int = 25
-    target_precision: Literal[4, 8, 16] = Field(
-        description="Global target precision for quantization; applied selectively per model and component.",
-        default=8,
-    )
     prompt: str = "Detailed, 8k, photorealistic"
     seed: int = 42
     strength: float = 0.5

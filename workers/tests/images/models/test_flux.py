@@ -1,10 +1,11 @@
 import pytest
 
+from common.memory import free_gpu_memory
 from images.context import ImageContext
 from images.models.auto_diffusion import main
 from images.schemas import ImageRequest
 from tests.utils import save_image_and_assert_file_exists, setup_output_file
-from utils.utils import free_gpu_memory, get_16_9_resolution
+from utils.utils import get_16_9_resolution
 
 # Define constants
 MODES = ["text_to_image"]
@@ -13,10 +14,9 @@ MODELS = ["flux-schnell"]
 
 
 @pytest.mark.parametrize("mode", MODES)
-@pytest.mark.parametrize("target_precision", [8])
 @pytest.mark.parametrize("model_id", MODELS)
-def test_models(model_id, mode, target_precision):
-    output_name = setup_output_file(model_id, mode, f"_precsion{target_precision}")
+def test_models(model_id, mode):
+    output_name = setup_output_file(model_id, mode)
     width, height = get_16_9_resolution("540p")
 
     result = main(
@@ -29,10 +29,10 @@ def test_models(model_id, mode, target_precision):
                 max_width=width,
                 max_height=height,
                 controlnets=[],
-                target_precision=target_precision,
                 num_inference_steps=15,
             )
         )
     )
 
     save_image_and_assert_file_exists(result, output_name)
+    free_gpu_memory()
