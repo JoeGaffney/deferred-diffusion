@@ -5,8 +5,13 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.images import images_create, images_get
-from generated.api_client.client import AuthenticatedClient, Client
+from generated.api_client.api.images import (
+    images_create,
+    images_get,
+    images_get_workflow_schema,
+)
+from generated.api_client.client import AuthenticatedClient
+from generated.api_client.models.comfy_workflow_response import ComfyWorkflowResponse
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
@@ -43,6 +48,16 @@ def test_create_image(api_client):
     body = ImageRequest(prompt="A beautiful mountain landscape", model=model, max_width=512, max_height=512)
     image_id = create_image(api_client, body)
     assert isinstance(image_id, UUID)
+
+
+def test_get_workflor_schema(api_client):
+    """Test to ensure the workflow schema can be retrieved."""
+    response = images_get_workflow_schema.sync_detailed(client=api_client)
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.parsed is not None
+    assert isinstance(response.parsed, ComfyWorkflowResponse)
+    print(response.parsed.to_dict())
 
 
 def test_get_image(api_client):

@@ -14,6 +14,20 @@ ModelFamily: TypeAlias = Literal["ltx", "wan", "runway"]
 
 class VideoRequest(BaseModel):
     model: ModelName
+    prompt: str = Field(
+        default="Slow camera zoom in, 4k, high quality, cinematic, realistic",
+        description="Positive Prompt text",
+        json_schema_extra={"format": "multi_line"},
+    )
+    negative_prompt: str = Field(
+        default="worst quality, inconsistent motion, blurry, jittery, distorted",
+        description="Negative prompt text",
+        json_schema_extra={"format": "multi_line"},
+    )
+    guidance_scale: float = 5.0
+    num_frames: int = 48
+    num_inference_steps: int = 25
+    seed: int = 42
     image: str = Field(
         description="Base64 image string",
         json_schema_extra={
@@ -21,12 +35,6 @@ class VideoRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    prompt: str = "Slow camera zoom in, 4k, high quality, cinematic, realistic"
-    negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
-    guidance_scale: float = 5.0
-    num_frames: int = 48
-    num_inference_steps: int = 25
-    seed: int = 42
 
     @property
     def model_family(self) -> ModelFamily:
