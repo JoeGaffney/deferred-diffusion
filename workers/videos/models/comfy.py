@@ -1,17 +1,15 @@
-from PIL import Image
-
 from common.comfy.comfy_utils import (
     ensure_comfy_alive,
-    get_image,
+    get_video_path,
     queue_prompt,
     remap_workflow,
     wait_for_completion,
 )
 from common.logger import log_pretty
-from images.context import ImageContext
+from videos.context import VideoContext
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: VideoContext) -> str:
     ensure_comfy_alive()
 
     comfy_workflow = context.data.comfy_workflow
@@ -28,7 +26,7 @@ def main(context: ImageContext) -> Image.Image:
         raise ValueError("Failed to queue ComfyUI workflow")
 
     # Wait for the workflow to complete
-    outputs = wait_for_completion(prompt_id)
+    outputs = wait_for_completion(prompt_id, timeout=1000, check_interval=5)
 
     # Find the first image in the outputs
     result = None
@@ -40,12 +38,12 @@ def main(context: ImageContext) -> Image.Image:
                         # Get the generated image
                         filename = output_data[0]["filename"]
                         subfolder = output_data[0].get("subfolder", "")
-                        result = get_image(filename, subfolder)
+                        result = get_video_path(filename, subfolder)
                         break
         if result:
             break
 
-    if isinstance(result, Image.Image):
-        return result
+    if not result:
+        raise ValueError("No video output found in ComfyUI workflow")
 
-    raise ValueError("Image generation failed")
+    return result

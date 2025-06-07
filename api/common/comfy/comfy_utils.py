@@ -120,6 +120,8 @@ def process_schema_nodes(
 
             widgets_values = [default]
         elif is_string_literal(field_type):
+            continue
+            # NOTE skip string literals for now
             class_type = "PrimitiveString"
             widgets_values = [""]
         else:

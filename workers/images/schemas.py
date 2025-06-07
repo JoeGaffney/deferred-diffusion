@@ -21,10 +21,10 @@ ModelName: TypeAlias = Literal[
     "runway/gen4_image",
     "HiDream",
 ]
-
 ModelFamily: TypeAlias = Literal[
     "sd1.5", "sdxl", "sd3", "hidream", "flux", "openai", "runway", "sd_upscaler", "segment_anything", "depth_anything"
 ]
+TaskName: TypeAlias = Literal["process_image", "process_image_workflow", "process_image_external"]
 
 
 class ComfyWorkflow(BaseModel):
@@ -33,6 +33,20 @@ class ComfyWorkflow(BaseModel):
     model_config = {
         "extra": "allow",
     }
+
+
+class IpAdapterModelConfig(BaseModel):
+    model: str = Field(
+        description="The model name for the IP adapter.",
+    )
+    subfolder: str = Field(
+        description="The subfolder where the IP adapter model is stored.",
+    )
+    weight_name: str = Field(
+        description="The weight name for the IP adapter model.",
+    )
+    image_encoder: bool = Field(description="Whether to use the image encoder for the IP adapter model.")
+    image_encoder_subfolder: str = Field(description="The subfolder where the image encoder model is stored.")
 
 
 class ControlNetSchema(BaseModel):
@@ -51,26 +65,14 @@ class ControlNetSchema(BaseModel):
     )
 
 
-class IpAdapterModelConfig(BaseModel):
-    model: str = Field(
-        description="The model name for the IP adapter.",
-    )
-    subfolder: str = Field(
-        description="The subfolder where the IP adapter model is stored.",
-    )
-    weight_name: str = Field(
-        description="The weight name for the IP adapter model.",
-    )
-    image_encoder: bool = Field(description="Whether to use the image encoder for the IP adapter model.")
-    image_encoder_subfolder: str = Field(description="The subfolder where the image encoder model is stored.")
-
-
 class IpAdapterModel(BaseModel):
     model: Literal[
         "style",
         "style-plus",
         "face",
     ]
+    scale: float = 0.5
+    scale_layers: str = "all"
     image: str = Field(
         description="Base64 image string",
         json_schema_extra={
@@ -86,8 +88,6 @@ class IpAdapterModel(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    scale: float = 0.5
-    scale_layers: str = "all"
 
 
 class ImageRequest(BaseModel):
@@ -111,6 +111,7 @@ class ImageRequest(BaseModel):
     num_inference_steps: int = 25
     seed: int = 42
     guidance_scale: float = 5.0
+    strength: float = 0.5
     image: Optional[str] = Field(
         default=None,
         description="Optional Base64 image string",
@@ -119,7 +120,6 @@ class ImageRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    strength: float = 0.5
     mask: Optional[str] = Field(
         default=None,
         description="Optional Base64 image string",
@@ -128,7 +128,6 @@ class ImageRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-
     ip_adapters: list[IpAdapterModel] = []
     controlnets: list[ControlNetSchema] = []
 
@@ -189,6 +188,15 @@ class ImageRequest(BaseModel):
             "runway",
         ]
         return self.model_family in external_models
+
+    @property
+    def task_name(self) -> TaskName:
+        """Determines the appropriate task name based on request characteristics."""
+        if self.comfy_workflow:
+            return "process_image_workflow"
+        if self.external_model:
+            return "process_image_external"
+        return "process_image"
 
 
 class ImageWorkerResponse(BaseModel):

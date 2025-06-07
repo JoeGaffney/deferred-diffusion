@@ -50,14 +50,18 @@ def test_create_image(api_client):
     assert isinstance(image_id, UUID)
 
 
-def test_get_workflor_schema(api_client):
+def test_get_workflow_schema(api_client):
     """Test to ensure the workflow schema can be retrieved."""
     response = images_get_workflow_schema.sync_detailed(client=api_client)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
     assert isinstance(response.parsed, ComfyWorkflowResponse)
-    print(response.parsed.to_dict())
+
+    # Save the dictionary to a JSON file
+    os.makedirs(output_dir, exist_ok=True)
+    with open(f"{output_dir}/workflow_schema.json", "w", encoding="utf-8") as f:
+        json.dump(response.parsed.to_dict(), f, indent=4)
 
 
 def test_get_image(api_client):

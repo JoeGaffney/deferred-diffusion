@@ -21,10 +21,10 @@ ModelName: TypeAlias = Literal[
     "runway/gen4_image",
     "HiDream",
 ]
-
 ModelFamily: TypeAlias = Literal[
     "sd1.5", "sdxl", "sd3", "hidream", "flux", "openai", "runway", "sd_upscaler", "segment_anything", "depth_anything"
 ]
+TaskName: TypeAlias = Literal["process_image", "process_image_workflow", "process_image_external"]
 
 
 class ComfyWorkflow(BaseModel):
@@ -188,6 +188,15 @@ class ImageRequest(BaseModel):
             "runway",
         ]
         return self.model_family in external_models
+
+    @property
+    def task_name(self) -> TaskName:
+        """Determines the appropriate task name based on request characteristics."""
+        if self.comfy_workflow:
+            return "process_image_workflow"
+        if self.external_model:
+            return "process_image_external"
+        return "process_image"
 
 
 class ImageWorkerResponse(BaseModel):

@@ -12,6 +12,7 @@ from PIL import Image
 
 from common.logger import logger
 from images.schemas import ComfyWorkflow
+from videos.schemas import ComfyWorkflow as ComfyWorkflowVideo
 
 COMFY_PORT = 8188
 COMFY_PATH = "/app/ComfyUI"
@@ -91,12 +92,38 @@ def get_history(prompt_id):
     return json.loads(response.read().decode("utf-8"))
 
 
+# def get_image(filename, subfolder="", folder_type="output"):
+#     """Get an image from ComfyUI's output directory."""
+#     url = f"{COMFY_API_URL}/view?filename={filename}&subfolder={subfolder}&type={folder_type}"
+#     response = urllib.request.urlopen(url)
+#     img_data = response.read()
+#     return Image.open(BytesIO(img_data))
+
+
 def get_image(filename, subfolder="", folder_type="output"):
     """Get an image from ComfyUI's output directory."""
-    url = f"{COMFY_API_URL}/view?filename={filename}&subfolder={subfolder}&type={folder_type}"
-    response = urllib.request.urlopen(url)
-    img_data = response.read()
-    return Image.open(BytesIO(img_data))
+    # Construct the direct file path
+    file_path = os.path.join(COMFY_PATH, folder_type, subfolder, filename)
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Image file {file_path} does not exist.")
+
+    logger.warning(f"Loading image from {file_path}")
+    # Open the image directly from the file system
+    return Image.open(file_path)
+
+
+def get_video_path(filename, subfolder="", folder_type="output"):
+    """Get a video from ComfyUI's output directory."""
+    # Construct the direct file path
+    file_path = os.path.join(COMFY_PATH, folder_type, subfolder, filename)
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Video file {file_path} does not exist.")
+
+    # # Read the file directly
+    # with open(file_path, "rb") as f:
+    #     video_data = f.read()
+
+    return file_path
 
 
 def wait_for_completion(prompt_id, timeout=300, check_interval=1):
@@ -141,7 +168,7 @@ def free_resources(unload_models=True, free_memory=False):
         logger.warning(f"ComfyUI cleanup job failed: {e}")
 
 
-def remap_workflow(workflow: ComfyWorkflow, data) -> dict:
+def remap_workflow(workflow: ComfyWorkflow | ComfyWorkflowVideo, data) -> dict:
     """Remap the workflow to match ComfyUI's expected format.
 
     Args:

@@ -5,6 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 
 from common.auth import verify_token
+from common.comfy.comfy_utils import model_schema_to_comfy_nodes
+from common.logger import log_pretty
+from common.schemas import ComfyWorkflowResponse
 from utils.utils import poll_until_complete
 from videos.schemas import (
     VideoCreateResponse,
@@ -19,16 +22,20 @@ router = APIRouter(prefix="/videos", tags=["Videos"], dependencies=[Depends(veri
 
 @router.post("", response_model=VideoCreateResponse, operation_id="videos_create")
 async def create(request: VideoRequest, response: Response):
-    task_name = "process_video"
-    if request.external_model:
-        task_name = "process_video_external"
-
     try:
-        result = celery_app.send_task(task_name, args=[request.model_dump()])
+        result = celery_app.send_task(request.task_name, args=[request.model_dump()])
         response.headers["Location"] = f"/videos/{result.id}"
         return VideoCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.get("/workflow/schema", response_model=ComfyWorkflowResponse, operation_id="videos_get_workflow_schema")
+async def get_workflow_schema():
+    result = model_schema_to_comfy_nodes(VideoRequest)
+
+    log_pretty(f"Generated for VideoRequest schema", result.model_dump())
+    return result
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
