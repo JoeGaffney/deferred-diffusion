@@ -7,14 +7,14 @@ services:
     stdin_open: true
     ports:
       - "5000:5000"
-    volumes:
-      - hf_cache:/WORKSPACE # Using Docker named volume
+    # volumes:
+    #   - hf_cache:/WORKSPACE # Using Docker named volume
     environment:
       - DEF_DIF_API_KEYS=${DEF_DIF_API_KEYS}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PYTHONUNBUFFERED=1
-      - HF_HOME=/WORKSPACE
-      - TORCH_HOME=/WORKSPACE
+      # - HF_HOME=/WORKSPACE
+      # - TORCH_HOME=/WORKSPACE
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
 
@@ -24,7 +24,7 @@ services:
     ports:
       - "6379:6379"
 
-  # Celery worker service
+  # Celery worker service - for now comfy runs in the monolith worker
   workers:
     build:
       context: .
@@ -32,11 +32,11 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - hf_cache:/WORKSPACE
-      # For now comfy runs in the monolith worker
-      - comfy_models:/app/ComfyUI/models # much faster than bind mount but requires a copy
-      # - Y:/COMFY/models:/app/ComfyUI/models
+      - hf_cache:/WORKSPACE # Using Docker named volume
+      # - Y:/COMFY/models:/app/ComfyUI/models # this is slow on Windows
+      - comfy_models:/app/ComfyUI/models # Using Docker named volume is much faster than bind mount but requires a copy 
       - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
+      - Y:/COMFY/output:/app/ComfyUI/output # For output files
     environment:
       - PYTHONUNBUFFERED=1
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -77,9 +77,10 @@ services:
       dockerfile: Dockerfile.comfy
 
     volumes:
-      - Y:/COMFY/models:/app/models # For user access to models
-      - Y:/COMFY/custom_nodes:/app/custom_nodes
-      - Y:/COMFY/user:/app/user # For user settings/configs
+    - Y:/COMFY/models:/app/ComfyUI/models # For user access to models
+    - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
+    - Y:/COMFY/user:/app/ComfyUI/user # For user settings/configs
+    - Y:/COMFY/output:/app/ComfyUI/output # For output files
     ports:
       - "8188:8188" # expose ComfyUI web UI port
     deploy:
@@ -90,6 +91,7 @@ services:
               count: 1
               capabilities: [gpu]
 
+  # Model loader service to sync models from a shared directory
   model-loader:
     image: alpine:latest
     volumes:
@@ -103,8 +105,6 @@ services:
         rsync -av --delete /source/ /destination/ &&
         echo 'Sync complete!'
       "
-    # profiles:
-    #   - loader
 
 # Volume definitions go at the root level, not nested inside the service
 volumes:
