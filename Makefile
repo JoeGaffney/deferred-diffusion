@@ -1,4 +1,4 @@
-.PHONY:  all down copy-schemas build  up generate-clients test-texts test-images test-videos test-it-tests test-worker tag-and-push
+.PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests  tag-and-push
 
 
 # Default target
@@ -27,27 +27,23 @@ generate-clients: up
 	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path nuke/python/generated --overwrite
 	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path it_tests/generated --overwrite
 
-# Test texts modules
-test-texts: generate-clients
-	docker-compose exec workers pytest tests/texts
 
-# Test images modules
-test-images: generate-clients
-	docker-compose exec workers pytest tests/images
-
-test-videos: generate-clients
-	docker-compose exec workers pytest tests/videos
-
-test-it-tests: generate-clients
-	cd it_tests && pytest -vs
-	cd ..
-
-TEST_PATH ?= images/models/test_sdxl.py
+TEST_PATH ?= images
+# make test-worker TEST_PATH=images
+# make test-worker TEST_PATH=videos
+# make test-worker TEST_PATH=texts
 # make test-worker TEST_PATH=images/models/test_sdxl.py
 # make test-worker TEST_PATH=images/models/test_hi_dream.py
 # make test-worker TEST_PATH=images/models/test_flux.py
 test-worker: up
-	docker-compose exec workers pytest tests/$(TEST_PATH) -vs
+	docker-compose exec workers pytest /tests/$(TEST_PATH) -vs
+
+# make test-it-tests TEST_PATH=images
+# make test-it-tests TEST_PATH=videos
+# make test-it-tests TEST_PATH=texts
+test-it-tests: generate-clients
+	cd it_tests && pytest $(TEST_PATH) -vs
+	cd ..
 
 # Tag and push Docker images to GitHub Container Registry
 tag-and-push:

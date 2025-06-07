@@ -34,8 +34,8 @@ services:
     volumes:
       - hf_cache:/WORKSPACE # Using Docker named volume
       # - Y:/COMFY/models:/app/ComfyUI/models # this is slow on Windows
-      - comfy_models:/app/ComfyUI/models # Using Docker named volume is much faster than bind mount but requires a copy 
-      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
+      - comfy_models:/app/ComfyUI/models # Using Docker named volume is much faster than bind mount but requires a copy
+      - Y:/COMFY/custom_nodes_worker:/app/ComfyUI/custom_nodes
       - Y:/COMFY/output:/app/ComfyUI/output # For output files
     environment:
       - PYTHONUNBUFFERED=1
@@ -77,10 +77,10 @@ services:
       dockerfile: Dockerfile.comfy
 
     volumes:
-    - Y:/COMFY/models:/app/ComfyUI/models # For user access to models
-    - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
-    - Y:/COMFY/user:/app/ComfyUI/user # For user settings/configs
-    - Y:/COMFY/output:/app/ComfyUI/output # For output files
+      - Y:/COMFY/models:/app/ComfyUI/models # For user access to models
+      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
+      - Y:/COMFY/user:/app/ComfyUI/user # For user settings/configs
+      - Y:/COMFY/output:/app/ComfyUI/output # For output files
     ports:
       - "8188:8188" # expose ComfyUI web UI port
     deploy:

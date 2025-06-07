@@ -46,7 +46,7 @@
   },
   "38": {
     "inputs": {
-      "clip_name": "t5/t5xxl_fp16.safetensors",
+      "clip_name": "t5/t5xxl_fp8_e4m3fn.safetensors",
       "type": "ltxv",
       "device": "default"
     },
@@ -57,7 +57,7 @@
   },
   "44": {
     "inputs": {
-      "ckpt_name": "LTXV/ltxv-13b-0.9.7-dev-fp8.safetensors"
+      "ckpt_name": "LTXV/ltxv-13b-0.9.7-distilled-fp8.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
@@ -180,7 +180,7 @@
         2
       ],
       "image": [
-        "88",
+        "96",
         0
       ]
     },
@@ -194,7 +194,6 @@
       "filename_prefix": "video/ComfyUI",
       "format": "mp4",
       "codec": "h264",
-      "video-preview": "",
       "video": [
         "86",
         0
@@ -221,43 +220,13 @@
   "87": {
     "inputs": {
       "image": [
-        "88",
+        "96",
         0
       ]
     },
     "class_type": "GetImageSize+",
     "_meta": {
       "title": "🔧 Get Image Size"
-    }
-  },
-  "88": {
-    "inputs": {
-      "width": 1280,
-      "height": 720,
-      "interpolation": "nearest",
-      "method": "keep proportion",
-      "condition": "always",
-      "multiple_of": 0,
-      "image": [
-        "96",
-        0
-      ]
-    },
-    "class_type": "ImageResize+",
-    "_meta": {
-      "title": "🔧 Image Resize"
-    }
-  },
-  "89": {
-    "inputs": {
-      "images": [
-        "88",
-        0
-      ]
-    },
-    "class_type": "PreviewImage",
-    "_meta": {
-      "title": "Preview Image"
     }
   },
   "90": {
@@ -316,7 +285,7 @@
   },
   "96": {
     "inputs": {
-      "image": "Capture1.PNG"
+      "image": "color_v002.png"
     },
     "class_type": "LoadImage",
     "_meta": {
