@@ -23,19 +23,24 @@ def get_size(
     return size
 
 
-def poll_result(id, wait=10, max_attempts=30) -> Image.Image:
+def poll_until_resolved(id, timeout=500, poll_interval=10) -> Image.Image:
     client = RunwayML()
 
     # Poll the task until it's complete
-    time.sleep(wait)
+    time.sleep(poll_interval)
     task = client.tasks.retrieve(id)
     attempts = 0
 
+    start_time = time.time()
     while task.status not in ["SUCCEEDED", "FAILED"]:
-        if attempts >= max_attempts:
-            raise Exception(f"Task polling exceeded maximum attempts ({max_attempts})")
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= timeout:
+            raise Exception(f"Task polling exceeded timeout ({timeout} seconds)")
 
-        time.sleep(wait)
+        time.sleep(poll_interval)
+        remaining_time = timeout - elapsed_time
+        logger.info(f"Polling task {id}... {remaining_time:.1f} seconds left")
+
         task = client.tasks.retrieve(id)
         logger.info(f"Checking Task: {task}")
         attempts += 1
@@ -63,7 +68,7 @@ def text_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
         raise RuntimeError(f"Error calling RunwayML API: {e}")
 
     id = task.id
-    return poll_result(id)
+    return poll_until_resolved(id)
 
 
 def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
@@ -96,7 +101,7 @@ def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
         raise RuntimeError(f"Error calling RunwayML API: {e}")
 
     id = task.id
-    return poll_result(id)
+    return poll_until_resolved(id)
 
 
 def main(context: ImageContext) -> Image.Image:

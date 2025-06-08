@@ -1,9 +1,9 @@
 from common.comfy.comfy_utils import (
     ensure_comfy_alive,
     get_video_path,
+    poll_until_resolved,
     queue_prompt,
     remap_workflow,
-    wait_for_completion,
 )
 from common.logger import log_pretty
 from videos.context import VideoContext
@@ -26,7 +26,7 @@ def main(context: VideoContext) -> str:
         raise ValueError("Failed to queue ComfyUI workflow")
 
     # Wait for the workflow to complete
-    outputs = wait_for_completion(prompt_id, timeout=1000, check_interval=5)
+    outputs = poll_until_resolved(prompt_id, timeout=1000, poll_interval=10)
 
     # Find the first image in the outputs
     result = None

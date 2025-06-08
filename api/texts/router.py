@@ -10,7 +10,7 @@ from texts.schemas import (
     TextResponse,
     TextWorkerResponse,
 )
-from utils.utils import poll_until_complete
+from utils.utils import poll_until_resolved
 from worker import celery_app
 
 router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify_token)])
@@ -33,7 +33,7 @@ async def create(request: TextRequest, response: Response):
 @router.get("/{id}", response_model=TextResponse, operation_id="texts_get")
 async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
     if wait:
-        result = await poll_until_complete(str(id))
+        result = await poll_until_resolved(str(id))
     else:
         result = AsyncResult(str(id), app=celery_app)
 

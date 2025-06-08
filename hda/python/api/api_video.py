@@ -7,11 +7,10 @@ from generated.api_client.models.comfy_workflow import ComfyWorkflow
 from generated.api_client.models.video_request_model import VideoRequestModel
 from generated.api_client.types import UNSET
 from utils import (
-    ApiResponseError,
     base64_to_image,
     get_node_parameters,
     get_output_path,
-    handle_api_response,
+    houdini_error_handling,
     input_to_base64,
     load_comfy_workflow,
     reload_outputs,
@@ -21,83 +20,86 @@ from utils import (
 
 
 @threaded
-def api_get_call(id, output_path: str, node):
+def _api_get_call(node, id, output_path: str, wait=False):
     try:
-        response = videos_get.sync_detailed(id, client=client)
+        parsed = videos_get.sync(id, client=client, wait=wait)
     except Exception as e:
-        set_node_info(node, "ERROR", str(e))
-        hou.ui.displayMessage(str(e))
+
+        def handle_error():
+            with houdini_error_handling(node):
+                raise RuntimeError(f"API call failed: {str(e)}") from e
+
+        hou.ui.postEventCallback(handle_error)
         return
 
     def update_ui():
-        try:
-            parsed = handle_api_response(response, VideoResponse, "API Get Call Failed")
+        with houdini_error_handling(node):
+            if not isinstance(parsed, VideoResponse):
+                raise ValueError("Unexpected response type from API call.")
 
             if not parsed.status == "SUCCESS" or not parsed.result:
-                raise ApiResponseError(
-                    f"Task {parsed.status} with error: {parsed.error_message}", status=parsed.status
-                )
-        except ApiResponseError as e:
-            set_node_info(node, e.status, str(e))
-            hou.ui.displayMessage(str(e))
-            return
+                raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
-        # Save the video to the specified path before reloading the outputs
-        resolved_output_path = hou.expandString(output_path)
-        base64_to_image(parsed.result.base64_data, resolved_output_path, save_copy=True)
+            # Save the video to the specified path before reloading the outputs
+            resolved_output_path = hou.expandString(output_path)
+            base64_to_image(parsed.result.base64_data, resolved_output_path, save_copy=True)
 
-        node.parm("output_video_path").set(output_path)
-        reload_outputs(node, "output_read_video")
-        set_node_info(node, "COMPLETE", output_path)
+            node.parm("output_video_path").set(output_path)
+            reload_outputs(node, "output_read_video")
+            set_node_info(node, "COMPLETE", output_path)
 
     hou.ui.postEventCallback(update_ui)
 
 
-def main(node):
-    set_node_info(node, "", "")
-
-    params = get_node_parameters(node)
-    output_video_path = get_output_path(node, movie=True)
-    image = input_to_base64(node, "src")
-    if not image:
-        raise ValueError("Input image is required.")
-
-    comfy_workflow = params.get("comfy_workflow", "")
-    if comfy_workflow != "":
-        workflow_dict = load_comfy_workflow(comfy_workflow)
-        comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
-    else:
-        comfy_workflow = UNSET
-
-    body = VideoRequest(
-        model=VideoRequestModel(params.get("model", "LTX-Video")),
-        comfy_workflow=comfy_workflow,
-        image=image,
-        prompt=params.get("prompt", ""),
-        seed=params.get("seed", 0),
-        negative_prompt=params.get("negative_prompt", UNSET),
-        num_frames=params.get("num_frames", UNSET),
-        num_inference_steps=params.get("num_inference_steps", UNSET),
-        guidance_scale=params.get("guidance_scale", UNSET),
-    )
-
-    # make the initial API call to create the video task
-    id = None
+def _api_call(node, body: VideoRequest, output_image_path: str):
     try:
-        response = videos_create.sync_detailed(client=client, body=body)
+        parsed = videos_create.sync(client=client, body=body)
     except Exception as e:
-        set_node_info(node, "ERROR", str(e))
-        raise
+        raise RuntimeError(f"API call failed: {str(e)}") from e
 
-    try:
-        parsed = handle_api_response(response, VideoCreateResponse)
+    if not isinstance(parsed, VideoCreateResponse):
+        raise ValueError("Unexpected response type from API call.")
 
-        id = parsed.id
-        if not id:
-            raise ApiResponseError("No ID found in the response.")
-    except ApiResponseError as e:
-        set_node_info(node, e.status, str(e))
-        raise
+    node.parm("task_id").set(str(parsed.id))
+    _api_get_call(node, str(parsed.id), output_image_path, wait=True)
 
-    set_node_info(node, "PENDING", "")
-    api_get_call(id, output_video_path, node)
+
+def main(node):
+    with houdini_error_handling(node):
+        set_node_info(node, "", "")
+        params = get_node_parameters(node)
+        output_video_path = get_output_path(node, movie=True)
+        image = input_to_base64(node, "src")
+        if not image:
+            raise ValueError("Input image is required.")
+
+        comfy_workflow = params.get("comfy_workflow", "")
+        if comfy_workflow != "":
+            workflow_dict = load_comfy_workflow(comfy_workflow)
+            comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
+        else:
+            comfy_workflow = UNSET
+
+        body = VideoRequest(
+            model=VideoRequestModel(params.get("model", "LTX-Video")),
+            comfy_workflow=comfy_workflow,
+            image=image,
+            prompt=params.get("prompt", ""),
+            seed=params.get("seed", 0),
+            negative_prompt=params.get("negative_prompt", UNSET),
+            num_frames=params.get("num_frames", UNSET),
+            num_inference_steps=params.get("num_inference_steps", UNSET),
+            guidance_scale=params.get("guidance_scale", UNSET),
+        )
+
+        _api_call(node, body, output_video_path)
+
+
+def main_get(node):
+    with houdini_error_handling(node):
+        task_id = node.parm("task_id").eval()
+        if not task_id or task_id == "":
+            raise ValueError("Task ID is required to get the image.")
+
+        output_image_path = get_output_path(node, movie=False)
+        _api_get_call(node, task_id, output_image_path, wait=False)

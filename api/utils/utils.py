@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import time
 
 from celery.result import AsyncResult
 from PIL import Image
@@ -22,14 +23,9 @@ def load_image_from_base64(base64_bytes: str) -> Image.Image:
         raise ValueError(f"Invalid Base64 data: {type(base64_bytes)} {e}") from e
 
 
-async def poll_until_complete(id: str, max_attempts=90, polling_interval=10) -> AsyncResult:
+async def poll_until_resolved(id: str, timeout=300, poll_interval=3) -> AsyncResult:
     """
     Poll a Celery task until it's complete, max attempts reached, or timeout.
-
-    Args:
-        id: The ID of the Celery task to poll
-        max_attempts: Maximum number of polling attempts (default: 30)
-        polling_interval: How often to check task status in seconds (default: 1)
 
     Returns:
         AsyncResult object with task result/status
@@ -39,10 +35,9 @@ async def poll_until_complete(id: str, max_attempts=90, polling_interval=10) -> 
         logger.warning(f"id is not a string, converting from {type(id)}")
         id = str(id)
 
-    logger.debug(f"Polling task with ID: {id}, max attempts: {max_attempts}")
-
-    # Use iteration count instead of time-based approach
-    for attempt in range(max_attempts):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        logger.info(f"Polling task {id}... {timeout - (time.time() - start_time)} seconds left")
         # Get task result
         result = AsyncResult(id, app=celery_app)
 
@@ -52,14 +47,12 @@ async def poll_until_complete(id: str, max_attempts=90, polling_interval=10) -> 
                 logger.error(f"Task {id} failed: {error_msg}")
                 return result
             elif result.successful():
-                logger.info(f"Task {id} completed successfully after {attempt + 1} attempts")
                 return result
 
         # Wait before polling again
-        await asyncio.sleep(polling_interval)
+        await asyncio.sleep(poll_interval)
 
-    # If we get here, we've exceeded max attempts
-    logger.warning(f"Task {id} polling max attempts ({max_attempts}) reached")
+    logger.warning(f"Task {id} polling timeout ({timeout} seconds) reached")
 
     # Get final status before returning
     result = AsyncResult(id, app=celery_app)

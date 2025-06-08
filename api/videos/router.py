@@ -8,7 +8,7 @@ from common.auth import verify_token
 from common.comfy.comfy_utils import model_schema_to_comfy_nodes
 from common.logger import log_pretty
 from common.schemas import ComfyWorkflowResponse
-from utils.utils import poll_until_complete
+from utils.utils import poll_until_resolved
 from videos.schemas import (
     VideoCreateResponse,
     VideoRequest,
@@ -41,7 +41,7 @@ async def get_workflow_schema():
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
 async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
     if wait:
-        result = await poll_until_complete(str(id))
+        result = await poll_until_resolved(str(id), timeout=1000, poll_interval=10)
     else:
         result = AsyncResult(id, app=celery_app)
 

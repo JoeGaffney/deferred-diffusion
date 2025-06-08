@@ -3,9 +3,9 @@ from PIL import Image
 from common.comfy.comfy_utils import (
     ensure_comfy_alive,
     get_image,
+    poll_until_resolved,
     queue_prompt,
     remap_workflow,
-    wait_for_completion,
 )
 from common.logger import log_pretty
 from images.context import ImageContext
@@ -28,7 +28,7 @@ def main(context: ImageContext) -> Image.Image:
         raise ValueError("Failed to queue ComfyUI workflow")
 
     # Wait for the workflow to complete
-    outputs = wait_for_completion(prompt_id)
+    outputs = poll_until_resolved(prompt_id)
 
     # Find the first image in the outputs
     result = None

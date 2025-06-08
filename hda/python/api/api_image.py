@@ -24,81 +24,85 @@ from utils import (
 
 
 @threaded
-def api_get_call(node, id, output_path: str, wait=False):
+def _api_get_call(node, id, output_path: str, wait=False):
     set_node_info(node, "PENDING", "")
 
-    with houdini_error_handling(node):
-        try:
-            parsed = images_get.sync(id, client=client, wait=wait)
-        except Exception as e:
-            raise RuntimeError(e) from e
+    try:
+        parsed = images_get.sync(id, client=client, wait=wait)
+    except Exception as e:
 
-        def update_ui():
+        def handle_error():
             with houdini_error_handling(node):
-                if not isinstance(parsed, ImageResponse):
-                    raise ValueError("Unexpected response type from API call.")
+                raise RuntimeError(f"API call failed: {str(e)}") from e
 
-                if not parsed.status == "SUCCESS" or not parsed.result:
-                    raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
+        hou.ui.postEventCallback(handle_error)
+        return
 
-                # Save the image to the specified path before reloading the outputs
-                resolved_output_path = hou.expandString(output_path)
-                base64_to_image(parsed.result.base64_data, resolved_output_path, save_copy=True)
+    def update_ui():
+        with houdini_error_handling(node):
+            if not isinstance(parsed, ImageResponse):
+                raise ValueError("Unexpected response type from API call.")
 
-                node.parm("output_image_path").set(output_path)
-                reload_outputs(node, "output_read")
-                set_node_info(node, "COMPLETE", output_path)
+            if not parsed.status == "SUCCESS" or not parsed.result:
+                raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
-        hou.ui.postEventCallback(update_ui)
+            # Save the image to the specified path before reloading the outputs
+            resolved_output_path = hou.expandString(output_path)
+            base64_to_image(parsed.result.base64_data, resolved_output_path, save_copy=True)
+
+            node.parm("output_image_path").set(output_path)
+            reload_outputs(node, "output_read")
+            set_node_info(node, "COMPLETE", output_path)
+
+    hou.ui.postEventCallback(update_ui)
 
 
-def api_call(node, body: ImageRequest, output_image_path: str):
+def _api_call(node, body: ImageRequest, output_image_path: str):
+    try:
+        parsed = images_create.sync(client=client, body=body)
+    except Exception as e:
+        raise RuntimeError(f"API call failed: {str(e)}") from e
 
-    with houdini_error_handling(node):
-        try:
-            parsed = images_create.sync(client=client, body=body)
-        except Exception as e:
-            raise RuntimeError(f"API call failed: {str(e)}") from e
+    if not isinstance(parsed, ImageCreateResponse):
+        raise ValueError("Unexpected response type from API call.")
 
-        if not isinstance(parsed, ImageCreateResponse):
-            raise ValueError("Unexpected response type from API call.")
-
-        node.parm("task_id").set(str(parsed.id))
-        api_get_call(node, str(parsed.id), output_image_path, wait=True)
+    node.parm("task_id").set(str(parsed.id))
+    _api_get_call(node, str(parsed.id), output_image_path, wait=True)
 
 
 def main(node):
     set_node_info(node, "", "")
-    params = get_node_parameters(node)
-    output_image_path = get_output_path(node, movie=False)
-    image = input_to_base64(node, "src")
-    mask = input_to_base64(node, "mask")
+    with houdini_error_handling(node):
+        params = get_node_parameters(node)
+        output_image_path = get_output_path(node, movie=False)
+        image = input_to_base64(node, "src")
+        mask = input_to_base64(node, "mask")
 
-    comfy_workflow = params.get("comfy_workflow", "")
-    if comfy_workflow != "":
-        workflow_dict = load_comfy_workflow(comfy_workflow)
-        comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
-    else:
-        comfy_workflow = UNSET
+        comfy_workflow = params.get("comfy_workflow", "")
+        if comfy_workflow != "":
+            workflow_dict = load_comfy_workflow(comfy_workflow)
+            comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
+        else:
+            comfy_workflow = UNSET
 
-    body = ImageRequest(
-        model=ImageRequestModel(params.get("model", "sd1.5")),
-        comfy_workflow=comfy_workflow,
-        controlnets=get_control_nets(node),
-        guidance_scale=params.get("guidance_scale", UNSET),
-        image=image,
-        ip_adapters=get_ip_adapters(node),
-        mask=mask,
-        height=params.get("height", UNSET),
-        width=params.get("width", UNSET),
-        negative_prompt=params.get("negative_prompt", UNSET),
-        num_inference_steps=params.get("num_inference_steps", UNSET),
-        prompt=params.get("prompt", UNSET),
-        seed=params.get("seed", UNSET),
-        strength=params.get("strength", UNSET),
-    )
+        body = ImageRequest(
+            model=ImageRequestModel(params.get("model", "sd1.5")),
+            comfy_workflow=comfy_workflow,
+            controlnets=get_control_nets(node),
+            guidance_scale=params.get("guidance_scale", UNSET),
+            image=image,
+            ip_adapters=get_ip_adapters(node),
+            mask=mask,
+            height=params.get("height", UNSET),
+            width=params.get("width", UNSET),
+            negative_prompt=params.get("negative_prompt", UNSET),
+            num_inference_steps=params.get("num_inference_steps", UNSET),
+            prompt=params.get("prompt", UNSET),
+            seed=params.get("seed", UNSET),
+            strength=params.get("strength", UNSET),
+        )
 
-    api_call(node, body, output_image_path)
+        _api_call(node, body, output_image_path)
 
 
 def main_get(node):
@@ -108,7 +112,7 @@ def main_get(node):
             raise ValueError("Task ID is required to get the image.")
 
         output_image_path = get_output_path(node, movie=False)
-        api_get_call(node, task_id, output_image_path, wait=False)
+        _api_get_call(node, task_id, output_image_path, wait=False)
 
 
 def main_frame_range(node):

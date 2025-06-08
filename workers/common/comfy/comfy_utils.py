@@ -120,7 +120,7 @@ def get_video_path(filename, subfolder="", folder_type="output"):
     return file_path
 
 
-def wait_for_completion(prompt_id, timeout=300, check_interval=1):
+def poll_until_resolved(prompt_id, timeout=300, poll_interval=1):
     """Wait for the ComfyUI prompt to complete processing."""
     start_time = time.time()
     while time.time() - start_time < timeout:
@@ -135,7 +135,7 @@ def wait_for_completion(prompt_id, timeout=300, check_interval=1):
             outputs = history[prompt_id]["outputs"]
             if outputs:
                 return outputs
-        time.sleep(check_interval)
+        time.sleep(poll_interval)
     raise TimeoutError(f"ComfyUI workflow did not complete within {timeout} seconds")
 
 
@@ -161,7 +161,7 @@ def free_resources(unload_models=True, free_memory=False):
         response = queue_prompt(dummy_workflow)
         prompt_id = response.get("prompt_id")
         if prompt_id:
-            wait_for_completion(prompt_id, timeout=10, check_interval=1)
+            poll_until_resolved(prompt_id, timeout=10, poll_interval=1)
         else:
             logger.warning("Dummy cleanup prompt failed to queue.")
     except Exception as e:
