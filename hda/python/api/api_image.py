@@ -1,6 +1,3 @@
-import traceback
-from contextlib import contextmanager
-
 import hou
 
 from config import client
@@ -17,25 +14,13 @@ from utils import (
     get_ip_adapters,
     get_node_parameters,
     get_output_path,
+    houdini_error_handling,
     input_to_base64,
     load_comfy_workflow,
     reload_outputs,
     set_node_info,
     threaded,
 )
-
-
-@contextmanager
-def houdini_error_handling(node):
-    try:
-        yield
-    except ValueError as e:
-        set_node_info(node, "ERROR", str(e))
-        hou.ui.displayMessage(str(e))
-    except Exception as e:
-        set_node_info(node, "ERROR", str(e))
-        traceback.print_exc()
-        hou.ui.displayMessage(str(e), severity=hou.severityType.Error)
 
 
 @threaded
@@ -90,7 +75,7 @@ def main(node):
     mask = input_to_base64(node, "mask")
 
     comfy_workflow = params.get("comfy_workflow", "")
-    if comfy_workflow is not "":
+    if comfy_workflow != "":
         workflow_dict = load_comfy_workflow(comfy_workflow)
         comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
     else:
@@ -104,8 +89,8 @@ def main(node):
         image=image,
         ip_adapters=get_ip_adapters(node),
         mask=mask,
-        max_height=params.get("max_height", UNSET),
-        max_width=params.get("max_width", UNSET),
+        height=params.get("height", UNSET),
+        width=params.get("width", UNSET),
         negative_prompt=params.get("negative_prompt", UNSET),
         num_inference_steps=params.get("num_inference_steps", UNSET),
         prompt=params.get("prompt", UNSET),

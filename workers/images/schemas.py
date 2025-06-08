@@ -106,8 +106,8 @@ class ImageRequest(BaseModel):
         description="Negative prompt text",
         json_schema_extra={"format": "multi_line"},
     )
-    max_height: int = 2048
-    max_width: int = 2048
+    height: int = 512
+    width: int = 512
     num_inference_steps: int = 25
     seed: int = 42
     guidance_scale: float = 5.0

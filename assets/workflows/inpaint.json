@@ -2,33 +2,15 @@
   "3": {
     "inputs": {
       "seed": 173644725223296,
-      "steps": [
-        "39",
-        0
-      ],
-      "cfg": [
-        "37",
-        0
-      ],
+      "steps": ["39", 0],
+      "cfg": ["37", 0],
       "sampler_name": "uni_pc_bh2",
       "scheduler": "normal",
       "denoise": 1,
-      "model": [
-        "29",
-        0
-      ],
-      "positive": [
-        "6",
-        0
-      ],
-      "negative": [
-        "7",
-        0
-      ],
-      "latent_image": [
-        "26",
-        0
-      ]
+      "model": ["29", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["26", 0]
     },
     "class_type": "KSampler",
     "_meta": {
@@ -37,14 +19,8 @@
   },
   "6": {
     "inputs": {
-      "text": [
-        "35",
-        0
-      ],
-      "clip": [
-        "29",
-        1
-      ]
+      "text": ["35", 0],
+      "clip": ["29", 1]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -53,14 +29,8 @@
   },
   "7": {
     "inputs": {
-      "text": [
-        "36",
-        0
-      ],
-      "clip": [
-        "29",
-        1
-      ]
+      "text": ["36", 0],
+      "clip": ["29", 1]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -69,14 +39,8 @@
   },
   "8": {
     "inputs": {
-      "samples": [
-        "3",
-        0
-      ],
-      "vae": [
-        "29",
-        2
-      ]
+      "samples": ["3", 0],
+      "vae": ["29", 2]
     },
     "class_type": "VAEDecode",
     "_meta": {
@@ -86,10 +50,7 @@
   "9": {
     "inputs": {
       "filename_prefix": "ComfyUI",
-      "images": [
-        "8",
-        0
-      ]
+      "images": ["8", 0]
     },
     "class_type": "SaveImage",
     "_meta": {
@@ -99,18 +60,9 @@
   "26": {
     "inputs": {
       "grow_mask_by": 6,
-      "pixels": [
-        "41",
-        0
-      ],
-      "vae": [
-        "29",
-        2
-      ],
-      "mask": [
-        "44",
-        0
-      ]
+      "pixels": ["41", 0],
+      "vae": ["29", 2],
+      "mask": ["44", 0]
     },
     "class_type": "VAEEncodeForInpaint",
     "_meta": {
@@ -132,7 +84,7 @@
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "api_max_height"
+      "title": "api_height"
     }
   },
   "33": {
@@ -150,7 +102,7 @@
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "api_max_width"
+      "title": "api_width"
     }
   },
   "35": {
@@ -219,10 +171,7 @@
   "44": {
     "inputs": {
       "channel": "red",
-      "image": [
-        "33",
-        0
-      ]
+      "image": ["33", 0]
     },
     "class_type": "ImageToMask",
     "_meta": {

@@ -7,16 +7,12 @@ services:
     stdin_open: true
     ports:
       - "5000:5000"
-    # volumes:
-    #   - hf_cache:/WORKSPACE # Using Docker named volume
     environment:
-      - DEF_DIF_API_KEYS=${DEF_DIF_API_KEYS}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PYTHONUNBUFFERED=1
-      # - HF_HOME=/WORKSPACE
-      # - TORCH_HOME=/WORKSPACE
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DEF_DIF_API_KEYS=${DEF_DIF_API_KEYS}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
 
   # Redis service as message broker
   redis:
@@ -35,18 +31,18 @@ services:
       - hf_cache:/WORKSPACE # Using Docker named volume
       # - Y:/COMFY/models:/app/ComfyUI/models # this is slow on Windows
       - comfy_models:/app/ComfyUI/models # Using Docker named volume is much faster than bind mount but requires a copy
-      - Y:/COMFY/custom_nodes_worker:/app/ComfyUI/custom_nodes
+      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
       - Y:/COMFY/output:/app/ComfyUI/output # For output files
     environment:
       - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - CELERYD_PREFETCH_MULTIPLIER=1
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
-      - CELERYD_PREFETCH_MULTIPLIER=1
     depends_on:
       - redis
       - api

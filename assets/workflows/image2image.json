@@ -91,7 +91,7 @@
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "api_max_height"
+      "title": "api_height"
     }
   },
   "18": {
@@ -145,7 +145,7 @@
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "api_max_width"
+      "title": "api_width"
     }
   },
   "24": {

@@ -67,7 +67,7 @@ def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048)
     width = min(image.size[0] * scale, max_width)
     height = min(image.size[1] * scale, max_height)
 
-    # Adjust width and height to be divisible by 32 or 8
+    # Adjust width and height to be divisible by the division factor
     width = math.ceil(width / division) * division
     height = math.ceil(height / division) * division
 

@@ -10,7 +10,7 @@ from io import BytesIO
 
 from PIL import Image
 
-from common.logger import logger
+from common.logger import log_pretty, logger
 from images.schemas import ComfyWorkflow
 from videos.schemas import ComfyWorkflow as ComfyWorkflowVideo
 
@@ -107,8 +107,6 @@ def get_image(filename, subfolder="", folder_type="output"):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Image file {file_path} does not exist.")
 
-    logger.warning(f"Loading image from {file_path}")
-    # Open the image directly from the file system
     return Image.open(file_path)
 
 
@@ -119,10 +117,6 @@ def get_video_path(filename, subfolder="", folder_type="output"):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Video file {file_path} does not exist.")
 
-    # # Read the file directly
-    # with open(file_path, "rb") as f:
-    #     video_data = f.read()
-
     return file_path
 
 
@@ -131,6 +125,12 @@ def wait_for_completion(prompt_id, timeout=300, check_interval=1):
     start_time = time.time()
     while time.time() - start_time < timeout:
         history = get_history(prompt_id)
+        if prompt_id in history and "status" in history[prompt_id]:
+            status = history[prompt_id]["status"]
+            log_pretty(f"Checking status for prompt {prompt_id}", status)
+            if status.get("status_str") in ["error", "failed", "cancelled", "failure"]:
+                raise RuntimeError(f"ComfyUI workflow {prompt_id} encountered an problem: {status}")
+
         if prompt_id in history and "outputs" in history[prompt_id]:
             outputs = history[prompt_id]["outputs"]
             if outputs:

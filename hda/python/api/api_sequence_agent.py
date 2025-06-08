@@ -38,8 +38,8 @@ def create_character_node(node, scene: SceneResponse, character: CharacterRespon
     add_spare_params(result, "scene", scene.to_dict())
     add_spare_params(result, "character", character.to_dict())
     result.parm("prompt").set(f"{character.image_prompt}, {scene.diffusion_positive_prompt_tags}")
-    result.parm("max_width").set(1024)
-    result.parm("max_height").set(1024)
+    result.parm("width").set(1024)
+    result.parm("height").set(1024)
     return result
 
 
@@ -74,8 +74,8 @@ def main(node):
     scene_node = create_image_node(node, node_name=f"{node_name}_scene_{scene.name}")
     add_spare_params(scene_node, "scene", scene.to_dict())
     scene_node.parm("prompt").set(f"{scene.image_prompt}, {scene.diffusion_positive_prompt_tags}")
-    scene_node.parm("max_width").set(1280)
-    scene_node.parm("max_height").set(768)
+    scene_node.parm("width").set(1280)
+    scene_node.parm("height").set(768)
 
     # build the character nodes
     protagonist_node = None
