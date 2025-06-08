@@ -42,14 +42,14 @@ def get_pipeline_flux(config: PipelineConfig):
         model_id=config.model_id,
         subfolder="transformer",
         model_class=FluxTransformer2DModel,
-        target_precision=config.target_precision,
+        target_precision=8,
         torch_dtype=torch.bfloat16,
     )
     args["text_encoder_2"] = get_quantized_model(
         model_id=T5_MODEL_PATH,
         subfolder="text_encoder_2",
         model_class=T5EncoderModel,
-        target_precision=config.target_precision,
+        target_precision=8,
         torch_dtype=torch.bfloat16,
     )
 
@@ -79,7 +79,7 @@ def get_pipeline_high_dream(config: PipelineConfig):
         model_id=config.model_id,
         subfolder="transformer",
         model_class=HiDreamImageTransformer2DModel,
-        target_precision=config.target_precision,
+        target_precision=8,
         torch_dtype=torch.bfloat16,
     )
 
@@ -87,7 +87,7 @@ def get_pipeline_high_dream(config: PipelineConfig):
         model_id=T5_MODEL_PATH,
         subfolder="text_encoder_2",
         model_class=T5EncoderModel,
-        target_precision=config.target_precision,
+        target_precision=8,
         torch_dtype=torch.bfloat16,
     )
 

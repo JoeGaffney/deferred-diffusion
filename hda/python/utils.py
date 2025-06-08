@@ -5,6 +5,8 @@ import os
 import shutil
 import tempfile
 import threading
+import traceback
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Optional
 
@@ -27,6 +29,19 @@ def threaded(fn):
         return thread
 
     return wrapper
+
+
+@contextmanager
+def houdini_error_handling(node):
+    try:
+        yield
+    except ValueError as e:
+        set_node_info(node, "ERROR", str(e))
+        hou.ui.displayMessage(str(e))
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        traceback.print_exc()
+        hou.ui.displayMessage(str(e), severity=hou.severityType.Error)
 
 
 def get_tmp_dir() -> str:

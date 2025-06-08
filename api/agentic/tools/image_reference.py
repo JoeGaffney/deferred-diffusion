@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
 from texts.schemas import MessageContent, MessageItem, TextRequest, TextWorkerResponse
-from utils.utils import poll_until_complete
+from utils.utils import poll_until_resolved
 from worker import celery_app
 
 
@@ -29,7 +29,7 @@ async def main(prompt: str, image_reference_image: str) -> str:
     if id is None:
         raise HTTPException(status_code=500, detail="Task ID is None, task creation failed.")
 
-    result = await poll_until_complete(str(id))
+    result = await poll_until_resolved(str(id))
     if result.successful():
         try:
             result_data = TextWorkerResponse.model_validate(result.result)

@@ -11,6 +11,7 @@ from images.adapters import Adapters
 from images.control_nets import ControlNets
 from images.schemas import ImageRequest, ModelFamily
 from utils.utils import (
+    ensure_divisible,
     get_tmp_dir,
     load_image_if_exists,
     resize_image,
@@ -22,7 +23,6 @@ class PipelineConfig(BaseModel):
     model_id: str
     model_family: ModelFamily
     torch_dtype: torch.dtype
-    target_precision: Literal[4, 8, 16] = 8
     use_safetensors: bool
     ip_adapter_models: Tuple[str, ...]
     ip_adapter_subfolders: Tuple[str, ...]
@@ -39,7 +39,6 @@ class PipelineConfig(BaseModel):
             (
                 self.model_id,
                 self.torch_dtype,
-                self.target_precision,
                 self.use_safetensors,
                 self.ip_adapter_models,
                 self.ip_adapter_subfolders,
@@ -55,21 +54,17 @@ class ImageContext:
         self.data = data
         self.model = data.model
         self.torch_dtype = torch.float16  # just keep float 16 for now
-        self.orig_height = copy.copy(data.max_height)
-        self.orig_width = copy.copy(data.max_width)
+        self.orig_height = copy.copy(data.height)
+        self.orig_width = copy.copy(data.width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
-        self.target_precision = data.target_precision
 
         # Round down to nearest multiple of 16
         self.division = 16
-        self.width = (copy.copy(data.max_width) // self.division) * self.division
-        self.height = (copy.copy(data.max_height) // self.division) * self.division
-
+        self.width = ensure_divisible(copy.copy(data.width), self.division)
+        self.height = ensure_divisible(copy.copy(data.height), self.division)
         self.color_image = load_image_if_exists(data.image)
         if self.color_image:
-            self.color_image = resize_image(
-                self.color_image, self.division, 1.0, self.data.max_width, self.data.max_height
-            )
+            self.color_image = resize_image(self.color_image, self.division, 1.0, 2048, 2048)
             self.orig_width, self.orig_height = self.color_image.size
 
             # NOTE base width and height now become the color image size masks and contolnet images are resized to this
@@ -94,7 +89,6 @@ class ImageContext:
             model_id=self.data.model_path,
             model_family=self.data.model_family,
             torch_dtype=self.torch_dtype,
-            target_precision=self.target_precision,  # type: ignore
             use_safetensors=True,
             ip_adapter_models=adapter_config.get("models", ()),
             ip_adapter_subfolders=adapter_config.get("subfolders", ()),

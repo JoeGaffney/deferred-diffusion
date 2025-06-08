@@ -10,10 +10,37 @@ ModelName: TypeAlias = Literal[
     "runway/gen4_turbo",
 ]
 ModelFamily: TypeAlias = Literal["ltx", "wan", "runway"]
+TaskName: TypeAlias = Literal["process_video", "process_video_workflow", "process_video_external"]
+
+
+class ComfyWorkflow(BaseModel):
+    """Represents a ComfyUI workflow with dynamic node structure."""
+
+    model_config = {
+        "extra": "allow",
+    }
 
 
 class VideoRequest(BaseModel):
     model: ModelName
+    comfy_workflow: Optional[ComfyWorkflow] = Field(
+        default=None,
+        description="ComfyUI workflow configuration with dynamic node structure",
+    )
+    prompt: str = Field(
+        default="Slow camera zoom in, 4k, high quality, cinematic, realistic",
+        description="Positive Prompt text",
+        json_schema_extra={"format": "multi_line"},
+    )
+    negative_prompt: str = Field(
+        default="worst quality, inconsistent motion, blurry, jittery, distorted",
+        description="Negative prompt text",
+        json_schema_extra={"format": "multi_line"},
+    )
+    guidance_scale: float = 5.0
+    num_frames: int = 48
+    num_inference_steps: int = 25
+    seed: int = 42
     image: str = Field(
         description="Base64 image string",
         json_schema_extra={
@@ -21,12 +48,6 @@ class VideoRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    prompt: str = "Slow camera zoom in, 4k, high quality, cinematic, realistic"
-    negative_prompt: str = "worst quality, inconsistent motion, blurry, jittery, distorted"
-    guidance_scale: float = 5.0
-    num_frames: int = 48
-    num_inference_steps: int = 25
-    seed: int = 42
 
     @property
     def model_family(self) -> ModelFamily:
@@ -58,6 +79,15 @@ class VideoRequest(BaseModel):
     def external_model(self) -> bool:
         external_models = ["runway"]
         return self.model_family in external_models
+
+    @property
+    def task_name(self) -> TaskName:
+        """Determines the appropriate task name based on request characteristics."""
+        if self.comfy_workflow:
+            return "process_video_workflow"
+        if self.external_model:
+            return "process_video_external"
+        return "process_video"
 
 
 class VideoWorkerResponse(BaseModel):

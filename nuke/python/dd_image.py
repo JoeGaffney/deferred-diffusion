@@ -148,8 +148,8 @@ def process_image(node):
         prompt=get_node_value(node, "prompt", UNSET, mode="get"),
         seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
         strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),
-        max_width=int(width_height[0]),
-        max_height=int(width_height[1]),
+        width=int(width_height[0]),
+        height=int(width_height[1]),
     )
 
     api_call(node, body, output_image_path, output_read)

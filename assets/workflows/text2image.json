@@ -1,37 +1,16 @@
 {
   "3": {
     "inputs": {
-      "seed": [
-        "17",
-        0
-      ],
-      "steps": [
-        "16",
-        0
-      ],
-      "cfg": [
-        "13",
-        0
-      ],
+      "seed": ["17", 0],
+      "steps": ["16", 0],
+      "cfg": ["13", 0],
       "sampler_name": "euler",
       "scheduler": "normal",
       "denoise": 1,
-      "model": [
-        "4",
-        0
-      ],
-      "positive": [
-        "6",
-        0
-      ],
-      "negative": [
-        "7",
-        0
-      ],
-      "latent_image": [
-        "5",
-        0
-      ]
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
     },
     "class_type": "KSampler",
     "_meta": {
@@ -49,14 +28,8 @@
   },
   "5": {
     "inputs": {
-      "width": [
-        "14",
-        0
-      ],
-      "height": [
-        "15",
-        0
-      ],
+      "width": ["14", 0],
+      "height": ["15", 0],
       "batch_size": 1
     },
     "class_type": "EmptyLatentImage",
@@ -66,14 +39,8 @@
   },
   "6": {
     "inputs": {
-      "text": [
-        "11",
-        0
-      ],
-      "clip": [
-        "4",
-        1
-      ]
+      "text": ["11", 0],
+      "clip": ["4", 1]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -82,14 +49,8 @@
   },
   "7": {
     "inputs": {
-      "text": [
-        "12",
-        0
-      ],
-      "clip": [
-        "4",
-        1
-      ]
+      "text": ["12", 0],
+      "clip": ["4", 1]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -98,14 +59,8 @@
   },
   "8": {
     "inputs": {
-      "samples": [
-        "3",
-        0
-      ],
-      "vae": [
-        "4",
-        2
-      ]
+      "samples": ["3", 0],
+      "vae": ["4", 2]
     },
     "class_type": "VAEDecode",
     "_meta": {
@@ -115,10 +70,7 @@
   "9": {
     "inputs": {
       "filename_prefix": "ComfyUI",
-      "images": [
-        "8",
-        0
-      ]
+      "images": ["8", 0]
     },
     "class_type": "SaveImage",
     "_meta": {
@@ -167,7 +119,7 @@
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "api_max_height"
+      "title": "api_height"
     }
   },
   "15": {
@@ -176,7 +128,7 @@
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "api_max_width"
+      "title": "api_width"
     }
   },
   "16": {

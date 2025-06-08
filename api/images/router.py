@@ -9,13 +9,14 @@ from fastapi.security import APIKeyHeader
 from common.auth import verify_token
 from common.comfy.comfy_utils import model_schema_to_comfy_nodes
 from common.logger import log_pretty
+from common.schemas import ComfyWorkflowResponse
 from images.schemas import (
     ImageCreateResponse,
     ImageRequest,
     ImageResponse,
     ImageWorkerResponse,
 )
-from utils.utils import poll_until_complete
+from utils.utils import poll_until_resolved
 from worker import celery_app
 
 router = APIRouter(
@@ -25,31 +26,26 @@ router = APIRouter(
 
 @router.post("", response_model=ImageCreateResponse, operation_id="images_create")
 async def create(request: ImageRequest, response: Response):
-    task_name = "process_image"
-    if request.comfy_workflow:
-        task_name = "process_image_workflow"
-    if request.external_model:
-        task_name = "process_image_external"
-
     try:
-        result = celery_app.send_task(task_name, args=[request.model_dump()])
+        result = celery_app.send_task(request.task_name, args=[request.model_dump()])
         response.headers["Location"] = f"/images/{result.id}"
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
 
-@router.get("/workflow/schema", operation_id="images_get_workflow_schema")
+@router.get("/workflow/schema", response_model=ComfyWorkflowResponse, operation_id="images_get_workflow_schema")
 async def get_workflow_schema():
-    nodes = model_schema_to_comfy_nodes(ImageRequest)
-    log_pretty(f"Generated {len(nodes)} nodes for ImageRequest schema", nodes)
-    return JSONResponse(nodes, status_code=200)
+    result = model_schema_to_comfy_nodes(ImageRequest)
+
+    log_pretty(f"Generated for ImageRequest schema", result.model_dump())
+    return result
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
 async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
     if wait:
-        result = await poll_until_complete(str(id))
+        result = await poll_until_resolved(str(id))
     else:
         result = AsyncResult(str(id), app=celery_app)
 

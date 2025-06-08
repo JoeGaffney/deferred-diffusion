@@ -166,11 +166,7 @@ def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
 
 @time_info_decorator
 def get_quantized_model(
-    model_id,
-    subfolder,
-    model_class,
-    target_precision: Literal[4, 8, 16] = 8,
-    torch_dtype=torch.float16,
+    model_id, subfolder, model_class, target_precision: Literal[4, 8, 16] = 8, torch_dtype=torch.float16
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -212,10 +208,7 @@ def get_quantized_model(
         logger.error(f"Failed to load quantized model from {quant_dir}: {e}")
         logger.info(f"Loading and quantizing {model_id} subfolder {subfolder}")
         model = model_class.from_pretrained(
-            model_id,
-            subfolder=subfolder,
-            quantization_config=quant_config,
-            torch_dtype=torch_dtype,
+            model_id, subfolder=subfolder, quantization_config=quant_config, torch_dtype=torch_dtype
         )
         os.makedirs(quant_dir, exist_ok=True)
         model.save_pretrained(quant_dir, safe_serialization=use_safetensors)

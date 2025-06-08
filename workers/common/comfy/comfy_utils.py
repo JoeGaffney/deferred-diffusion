@@ -10,8 +10,9 @@ from io import BytesIO
 
 from PIL import Image
 
-from common.logger import logger
+from common.logger import log_pretty, logger
 from images.schemas import ComfyWorkflow
+from videos.schemas import ComfyWorkflow as ComfyWorkflowVideo
 
 COMFY_PORT = 8188
 COMFY_PATH = "/app/ComfyUI"
@@ -91,24 +92,50 @@ def get_history(prompt_id):
     return json.loads(response.read().decode("utf-8"))
 
 
+# def get_image(filename, subfolder="", folder_type="output"):
+#     """Get an image from ComfyUI's output directory."""
+#     url = f"{COMFY_API_URL}/view?filename={filename}&subfolder={subfolder}&type={folder_type}"
+#     response = urllib.request.urlopen(url)
+#     img_data = response.read()
+#     return Image.open(BytesIO(img_data))
+
+
 def get_image(filename, subfolder="", folder_type="output"):
     """Get an image from ComfyUI's output directory."""
-    url = f"{COMFY_API_URL}/view?filename={filename}&subfolder={subfolder}&type={folder_type}"
-    response = urllib.request.urlopen(url)
-    img_data = response.read()
-    return Image.open(BytesIO(img_data))
+    # Construct the direct file path
+    file_path = os.path.join(COMFY_PATH, folder_type, subfolder, filename)
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Image file {file_path} does not exist.")
+
+    return Image.open(file_path)
 
 
-def wait_for_completion(prompt_id, timeout=300, check_interval=1):
+def get_video_path(filename, subfolder="", folder_type="output"):
+    """Get a video from ComfyUI's output directory."""
+    # Construct the direct file path
+    file_path = os.path.join(COMFY_PATH, folder_type, subfolder, filename)
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Video file {file_path} does not exist.")
+
+    return file_path
+
+
+def poll_until_resolved(prompt_id, timeout=300, poll_interval=1):
     """Wait for the ComfyUI prompt to complete processing."""
     start_time = time.time()
     while time.time() - start_time < timeout:
         history = get_history(prompt_id)
+        if prompt_id in history and "status" in history[prompt_id]:
+            status = history[prompt_id]["status"]
+            log_pretty(f"Checking status for prompt {prompt_id}", status)
+            if status.get("status_str") in ["error", "failed", "cancelled", "failure"]:
+                raise RuntimeError(f"ComfyUI workflow {prompt_id} encountered an problem: {status}")
+
         if prompt_id in history and "outputs" in history[prompt_id]:
             outputs = history[prompt_id]["outputs"]
             if outputs:
                 return outputs
-        time.sleep(check_interval)
+        time.sleep(poll_interval)
     raise TimeoutError(f"ComfyUI workflow did not complete within {timeout} seconds")
 
 
@@ -134,14 +161,14 @@ def free_resources(unload_models=True, free_memory=False):
         response = queue_prompt(dummy_workflow)
         prompt_id = response.get("prompt_id")
         if prompt_id:
-            wait_for_completion(prompt_id, timeout=10, check_interval=1)
+            poll_until_resolved(prompt_id, timeout=10, poll_interval=1)
         else:
             logger.warning("Dummy cleanup prompt failed to queue.")
     except Exception as e:
         logger.warning(f"ComfyUI cleanup job failed: {e}")
 
 
-def remap_workflow(workflow: ComfyWorkflow, data) -> dict:
+def remap_workflow(workflow: ComfyWorkflow | ComfyWorkflowVideo, data) -> dict:
     """Remap the workflow to match ComfyUI's expected format.
 
     Args:

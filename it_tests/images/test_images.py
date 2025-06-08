@@ -5,8 +5,13 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.images import images_create, images_get
-from generated.api_client.client import AuthenticatedClient, Client
+from generated.api_client.api.images import (
+    images_create,
+    images_get,
+    images_get_workflow_schema,
+)
+from generated.api_client.client import AuthenticatedClient
+from generated.api_client.models.comfy_workflow_response import ComfyWorkflowResponse
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
@@ -40,13 +45,27 @@ def create_image(api_client, body: ImageRequest) -> UUID:
 
 
 def test_create_image(api_client):
-    body = ImageRequest(prompt="A beautiful mountain landscape", model=model, max_width=512, max_height=512)
+    body = ImageRequest(prompt="A beautiful mountain landscape", model=model, width=512, height=512)
     image_id = create_image(api_client, body)
     assert isinstance(image_id, UUID)
 
 
+def test_get_workflow_schema(api_client):
+    """Test to ensure the workflow schema can be retrieved."""
+    response = images_get_workflow_schema.sync_detailed(client=api_client)
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.parsed is not None
+    assert isinstance(response.parsed, ComfyWorkflowResponse)
+
+    # Save the dictionary to a JSON file
+    os.makedirs(output_dir, exist_ok=True)
+    with open(f"{output_dir}/workflow_schema.json", "w", encoding="utf-8") as f:
+        json.dump(response.parsed.to_dict(), f, indent=4)
+
+
 def test_get_image(api_client):
-    body = ImageRequest(prompt="A beautiful mountain landscape", model=model, max_width=512, max_height=512)
+    body = ImageRequest(prompt="A beautiful mountain landscape", model=model, width=512, height=512)
     image_id = create_image(api_client, body)
     response = images_get.sync_detailed(id=image_id, client=api_client, wait=True)
 
@@ -62,8 +81,8 @@ def test_get_workflow_basic(api_client):
     body = ImageRequest(
         prompt="A beautiful mountain landscape",
         model=model,
-        max_width=512,
-        max_height=512,
+        width=512,
+        height=512,
         comfy_workflow=json.load(open("../assets/workflows/text2Image.json", encoding="utf-8")),
     )
     image_id = create_image(api_client, body)
@@ -82,8 +101,8 @@ def test_get_workflow_advanced(api_client):
     body = ImageRequest(
         prompt="tornado on farm feild, enhance keep original elements, Detailed, 8k, DSLR photo, photorealistic",
         model=model,
-        max_width=512,
-        max_height=512,
+        width=512,
+        height=512,
         image=image_to_base64("../assets/color_v001.jpeg"),
         mask=image_to_base64("../assets/mask_v001.png"),
         comfy_workflow=json.load(open("../assets/workflows/image2Image.json", encoding="utf-8")),
