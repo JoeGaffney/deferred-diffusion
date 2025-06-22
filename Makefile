@@ -36,7 +36,7 @@ TEST_PATH ?= images
 # make test-worker TEST_PATH=images/models/test_hi_dream.py
 # make test-worker TEST_PATH=images/models/test_flux.py
 test-worker: up
-	docker-compose exec workers pytest /tests/$(TEST_PATH) -vs
+	docker-compose exec workers pytest tests/$(TEST_PATH) -vs
 
 # make test-it-tests TEST_PATH=images
 # make test-it-tests TEST_PATH=videos

@@ -3,7 +3,6 @@ import subprocess
 
 import torch
 
-from common.comfy import comfy_utils
 from common.logger import logger
 
 
@@ -69,7 +68,5 @@ def free_gpu_memory(threshold_percent: float = 25):
     torch.cuda.synchronize()
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
-
-    comfy_utils.free_resources(unload_models=True, free_memory=False)
 
     logger.warning(f"Clean {_get_gpu_memory_usage_pretty()}")

@@ -4,7 +4,7 @@ Multi model API that can run diffusion and other models with py-torch and extern
 
 Currently example Houdini HDA's are provided as it already provides a rich compositing node based ui, but would be possible to add more applications or a standalone ui.
 
-The api will push tasks to worker broker and workers will pick this up. Some endpoints will async wait for tasks some extra long ones will require end client to re-poll and check progress. Workers can run process tasks using python ML ecosystem, external tasks which call ML providers and workflow tasks which call comfyUI headless.
+The api will push tasks to worker broker and workers will pick this up. Some endpoints will async wait for tasks some extra long ones will require end client to re-poll and check progress. Workers can run process tasks using python ML ecosystem, external tasks which call ML providers.
 
 # **Project Structure Overview**
 

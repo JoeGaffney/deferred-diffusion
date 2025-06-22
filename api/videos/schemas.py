@@ -10,23 +10,11 @@ ModelName: TypeAlias = Literal[
     "runway/gen4_turbo",
 ]
 ModelFamily: TypeAlias = Literal["ltx", "wan", "runway"]
-TaskName: TypeAlias = Literal["process_video", "process_video_workflow", "process_video_external"]
-
-
-class ComfyWorkflow(BaseModel):
-    """Represents a ComfyUI workflow with dynamic node structure."""
-
-    model_config = {
-        "extra": "allow",
-    }
+TaskName: TypeAlias = Literal["process_video", "process_video_external"]
 
 
 class VideoRequest(BaseModel):
     model: ModelName
-    comfy_workflow: Optional[ComfyWorkflow] = Field(
-        default=None,
-        description="ComfyUI workflow configuration with dynamic node structure",
-    )
     prompt: str = Field(
         default="Slow camera zoom in, 4k, high quality, cinematic, realistic",
         description="Positive Prompt text",
@@ -83,8 +71,6 @@ class VideoRequest(BaseModel):
     @property
     def task_name(self) -> TaskName:
         """Determines the appropriate task name based on request characteristics."""
-        if self.comfy_workflow:
-            return "process_video_workflow"
         if self.external_model:
             return "process_video_external"
         return "process_video"

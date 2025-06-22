@@ -3,7 +3,6 @@ import hou
 from config import client
 from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.models import VideoCreateResponse, VideoRequest, VideoResponse
-from generated.api_client.models.comfy_workflow import ComfyWorkflow
 from generated.api_client.models.video_request_model import VideoRequestModel
 from generated.api_client.types import UNSET
 from utils import (
@@ -12,7 +11,6 @@ from utils import (
     get_output_path,
     houdini_error_handling,
     input_to_base64,
-    load_comfy_workflow,
     reload_outputs,
     set_node_info,
     threaded,
@@ -21,13 +19,15 @@ from utils import (
 
 @threaded
 def _api_get_call(node, id, output_path: str, wait=False):
+    set_node_info(node, "PENDING", "")
+
     try:
         parsed = videos_get.sync(id, client=client, wait=wait)
     except Exception as e:
 
-        def handle_error():
+        def handle_error(error=e):
             with houdini_error_handling(node):
-                raise RuntimeError(f"API call failed: {str(e)}") from e
+                raise RuntimeError(f"API call failed: {str(error)}") from error
 
         hou.ui.postEventCallback(handle_error)
         return
@@ -73,16 +73,8 @@ def main(node):
         if not image:
             raise ValueError("Input image is required.")
 
-        comfy_workflow = params.get("comfy_workflow", "")
-        if comfy_workflow != "":
-            workflow_dict = load_comfy_workflow(comfy_workflow)
-            comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
-        else:
-            comfy_workflow = UNSET
-
         body = VideoRequest(
             model=VideoRequestModel(params.get("model", "LTX-Video")),
-            comfy_workflow=comfy_workflow,
             image=image,
             prompt=params.get("prompt", ""),
             seed=params.get("seed", 0),

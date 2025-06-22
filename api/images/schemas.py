@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Optional, Tuple, TypeAlias
+from typing import Any, Dict, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
@@ -21,18 +21,40 @@ ModelName: TypeAlias = Literal[
     "runway/gen4_image",
     "HiDream",
 ]
+
 ModelFamily: TypeAlias = Literal[
     "sd1.5", "sdxl", "sd3", "hidream", "flux", "openai", "runway", "sd_upscaler", "segment_anything", "depth_anything"
 ]
-TaskName: TypeAlias = Literal["process_image", "process_image_workflow", "process_image_external"]
 
 
-class ComfyWorkflow(BaseModel):
-    """Represents a ComfyUI workflow with dynamic node structure."""
+class ModelInfo(BaseModel):
+    family: ModelFamily
+    path: str
+    external: bool
 
-    model_config = {
-        "extra": "allow",
-    }
+
+MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
+    "sd1.5": ModelInfo(family="sd1.5", path="stable-diffusion-v1-5/stable-diffusion-v1-5", external=False),
+    "sdxl": ModelInfo(family="sdxl", path="stabilityai/stable-diffusion-xl-base-1.0", external=False),
+    "sdxl-refiner": ModelInfo(family="sdxl", path="stabilityai/stable-diffusion-xl-refiner-1.0", external=False),
+    "RealVisXL": ModelInfo(family="sdxl", path="SG161222/RealVisXL_V4.0", external=False),
+    "Fluently-XL": ModelInfo(family="sdxl", path="fluently/Fluently-XL-v4", external=False),
+    "juggernaut-xl": ModelInfo(family="sdxl", path="RunDiffusion/Juggernaut-XL-v9", external=False),
+    "sd3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3-medium-diffusers", external=False),
+    "sd3.5": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-medium", external=False),
+    "flux-schnell": ModelInfo(family="flux", path="black-forest-labs/FLUX.1-schnell", external=False),
+    "flux-dev": ModelInfo(family="flux", path="black-forest-labs/FLUX.1-dev", external=False),
+    "depth-anything": ModelInfo(
+        family="depth_anything", path="depth-anything/Depth-Anything-V2-Large-hf", external=False
+    ),
+    "segment-anything": ModelInfo(family="segment_anything", path="sam2.1_hiera_base_plus", external=False),
+    "sd-x4-upscaler": ModelInfo(family="sd_upscaler", path="stabilityai/stable-diffusion-x4-upscaler", external=False),
+    "gpt-image-1": ModelInfo(family="openai", path="gpt-image-1", external=True),
+    "runway/gen4_image": ModelInfo(family="runway", path="gen4_image", external=True),
+    "HiDream": ModelInfo(family="hidream", path="HiDream-ai/HiDream-I1-Full", external=False),
+}
+
+TaskName: TypeAlias = Literal["process_image", "process_image_external"]
 
 
 class IpAdapterModelConfig(BaseModel):
@@ -92,10 +114,6 @@ class IpAdapterModel(BaseModel):
 
 class ImageRequest(BaseModel):
     model: ModelName
-    comfy_workflow: Optional[ComfyWorkflow] = Field(
-        default=None,
-        description="ComfyUI workflow configuration with dynamic node structure",
-    )
     prompt: str = Field(
         default="Detailed, 8k, photorealistic",
         description="Positive Prompt text",
@@ -133,70 +151,19 @@ class ImageRequest(BaseModel):
 
     @property
     def model_family(self) -> ModelFamily:
-        mapping: Dict[ModelName, ModelFamily] = {
-            "sd1.5": "sd1.5",
-            "sdxl": "sdxl",
-            "sdxl-refiner": "sdxl",
-            "RealVisXL": "sdxl",
-            "Fluently-XL": "sdxl",
-            "juggernaut-xl": "sdxl",
-            "sd3": "sd3",
-            "sd3.5": "sd3",
-            "flux-schnell": "flux",
-            "flux-dev": "flux",
-            "depth-anything": "depth_anything",
-            "segment-anything": "segment_anything",
-            "sd-x4-upscaler": "sd_upscaler",
-            "gpt-image-1": "openai",
-            "runway/gen4_image": "runway",
-            "HiDream": "hidream",
-        }
-        try:
-            return mapping[self.model]
-        except KeyError:
-            raise ValueError(f"No model family defined for model '{self.model}'")
+        return MODEL_CONFIG[self.model].family
 
     @property
     def model_path(self) -> str:
-        mapping: Dict[ModelName, str] = {
-            "sd1.5": "stable-diffusion-v1-5/stable-diffusion-v1-5",
-            "sdxl": "stabilityai/stable-diffusion-xl-base-1.0",
-            "sdxl-refiner": "stabilityai/stable-diffusion-xl-refiner-1.0",
-            "RealVisXL": "SG161222/RealVisXL_V4.0",
-            "Fluently-XL": "fluently/Fluently-XL-v4",
-            "juggernaut-xl": "RunDiffusion/Juggernaut-XL-v9",
-            "sd3": "stabilityai/stable-diffusion-3-medium-diffusers",
-            "sd3.5": "stabilityai/stable-diffusion-3.5-medium",
-            "flux-schnell": "black-forest-labs/FLUX.1-schnell",
-            "flux-dev": "black-forest-labs/FLUX.1-dev",
-            "depth-anything": "depth-anything/Depth-Anything-V2-Large-hf",
-            "segment-anything": "sam2.1_hiera_base_plus",
-            "sd-x4-upscaler": "stabilityai/stable-diffusion-x4-upscaler",
-            "gpt-image-1": "gpt-image-1",
-            "runway/gen4_image": "gen4_image",
-            "HiDream": "HiDream-ai/HiDream-I1-Full",
-        }
-        try:
-            return mapping[self.model]
-        except KeyError:
-            raise ValueError(f"No model path defined for model '{self.model}'")
+        return MODEL_CONFIG[self.model].path
 
     @property
     def external_model(self) -> bool:
-        external_models = [
-            "openai",
-            "runway",
-        ]
-        return self.model_family in external_models
+        return MODEL_CONFIG[self.model].external
 
     @property
     def task_name(self) -> TaskName:
-        """Determines the appropriate task name based on request characteristics."""
-        if self.comfy_workflow:
-            return "process_image_workflow"
-        if self.external_model:
-            return "process_image_external"
-        return "process_image"
+        return "process_image_external" if self.external_model else "process_image"
 
 
 class ImageWorkerResponse(BaseModel):

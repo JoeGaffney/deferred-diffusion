@@ -21,12 +21,6 @@ RUN pip install --no-cache-dir supervision hydra-core iopath
 # Install diffusers from the main branch for time being
 RUN pip install -U git+https://github.com/huggingface/diffusers.git@main --no-deps
 
-# Clone ComfyUI into the image
-RUN git clone https://github.com/comfyanonymous/ComfyUI.git /app/ComfyUI
-
-# Install ComfyUI dependencies
-RUN pip install --no-cache-dir -r /app/ComfyUI/requirements.txt
-
 # List all installed packages during build
 RUN python -m pip freeze
 

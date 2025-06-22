@@ -7,9 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 
 from common.auth import verify_token
-from common.comfy.comfy_utils import model_schema_to_comfy_nodes
 from common.logger import log_pretty
-from common.schemas import ComfyWorkflowResponse
 from images.schemas import (
     ImageCreateResponse,
     ImageRequest,
@@ -32,14 +30,6 @@ async def create(request: ImageRequest, response: Response):
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
-
-
-@router.get("/workflow/schema", response_model=ComfyWorkflowResponse, operation_id="images_get_workflow_schema")
-async def get_workflow_schema():
-    result = model_schema_to_comfy_nodes(ImageRequest)
-
-    log_pretty(f"Generated for ImageRequest schema", result.model_dump())
-    return result
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
