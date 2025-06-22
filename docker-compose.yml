@@ -11,7 +11,7 @@ services:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
-      - DEF_DIF_API_KEYS=${DEF_DIF_API_KEYS}
+      - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
 
   # Redis service as message broker
@@ -20,7 +20,7 @@ services:
     ports:
       - "6379:6379"
 
-  # Celery worker service 
+  # Celery worker service
   workers:
     build:
       context: .
@@ -28,7 +28,7 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - hf_cache:/WORKSPACE 
+      - hf_cache:/WORKSPACE
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -36,6 +36,7 @@ services:
       - CELERYD_PREFETCH_MULTIPLIER=1
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE

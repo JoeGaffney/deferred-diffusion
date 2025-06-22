@@ -32,8 +32,8 @@ def test_models(model_id, mode):
                 prompt="tornado on farm feild, enhance keep original elements, Detailed, 8k, DSLR photo, photorealistic",
                 strength=0.5,
                 guidance_scale=5,
-                max_width=width,
-                max_height=height,
+                width=width,
+                height=height,
                 controlnets=[],
             )
         )
@@ -63,8 +63,8 @@ def test_models_with_control_nets(model_id, mode):
                 prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
                 strength=0.5,
                 guidance_scale=5,
-                max_width=width,
-                max_height=height,
+                width=width,
+                height=height,
                 controlnets=controlnets,
             )
         ),
@@ -88,8 +88,8 @@ def test_style(model_id, mode):
                 negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
                 strength=0.75,
                 guidance_scale=5,
-                max_width=width,
-                max_height=height,
+                width=width,
+                height=height,
                 controlnets=[],
                 ip_adapters=[
                     IpAdapterModel(image=image_to_base64("../assets/style_v001.jpeg"), model="style", scale=0.5)
@@ -116,8 +116,8 @@ def test_face(model_id, mode):
                 negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
                 strength=0.75,
                 guidance_scale=5,
-                max_width=width,
-                max_height=height,
+                width=width,
+                height=height,
                 controlnets=[],
                 ip_adapters=[
                     IpAdapterModel(image=image_to_base64("../assets/style_v001.jpeg"), model="style", scale=0.5),

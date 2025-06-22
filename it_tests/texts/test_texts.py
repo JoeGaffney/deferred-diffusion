@@ -26,8 +26,8 @@ video_a = image_to_base64("../assets/video_v001.mp4")
 @pytest.fixture
 def api_client():
     return AuthenticatedClient(
-        base_url=os.getenv("DEF_DIF_API_ADDRESS", "http://127.0.0.1:5000"),
-        token=os.getenv("DEF_DIF_API_KEY", ""),
+        base_url=os.getenv("DDIFFUSION_API_ADDRESS", "http://127.0.0.1:5000"),
+        token=os.getenv("DDIFFUSION_API_KEY", ""),
     )
 
 

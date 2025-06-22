@@ -2,6 +2,7 @@ from PIL import Image
 
 from common.memory import free_gpu_memory
 from images.context import ImageContext
+from images.external_models.flux_kontext import main as flux_kontext_main
 from images.models.auto_diffusion import main as auto_diffusion_main
 from images.models.depth_anything import main as depth_anything_main
 from images.models.openai import main as openai_main
@@ -55,6 +56,8 @@ def process_image_external(request_dict):
         result = openai_main(context)
     elif family == "runway":
         result = runway_main(context)
+    elif family == "flux_kontext":
+        result = flux_kontext_main(context)
     else:
         raise ValueError(f"Unsupported model family: {family}")
 

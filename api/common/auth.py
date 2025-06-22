@@ -13,7 +13,7 @@ def verify_token(
         raise HTTPException(status_code=403, detail="Missing authorization token")
 
     # Get API key from environment variable
-    api_keys_env = os.environ.get("DEF_DIF_API_KEYS")
+    api_keys_env = os.environ.get("DDIFFUSION_API_KEYS")
     if not api_keys_env:
         raise HTTPException(status_code=403, detail="Server configuration error: authorization not set")
 

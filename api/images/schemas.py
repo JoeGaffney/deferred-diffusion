@@ -17,13 +17,26 @@ ModelName: TypeAlias = Literal[
     "depth-anything",
     "segment-anything",
     "sd-x4-upscaler",
+    "HiDream",
     "gpt-image-1",
     "runway/gen4_image",
-    "HiDream",
+    "flux-kontext-pro",
+    "flux-pro",
 ]
 
 ModelFamily: TypeAlias = Literal[
-    "sd1.5", "sdxl", "sd3", "hidream", "flux", "openai", "runway", "sd_upscaler", "segment_anything", "depth_anything"
+    "sd1.5",
+    "sdxl",
+    "sd3",
+    "hidream",
+    "flux",
+    "openai",
+    "runway",
+    "sd_upscaler",
+    "segment_anything",
+    "depth_anything",
+    "flux_kontext",
+    "flux_pro",
 ]
 
 
@@ -49,9 +62,11 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
     ),
     "segment-anything": ModelInfo(family="segment_anything", path="sam2.1_hiera_base_plus", external=False),
     "sd-x4-upscaler": ModelInfo(family="sd_upscaler", path="stabilityai/stable-diffusion-x4-upscaler", external=False),
+    "HiDream": ModelInfo(family="hidream", path="HiDream-ai/HiDream-I1-Full", external=False),
     "gpt-image-1": ModelInfo(family="openai", path="gpt-image-1", external=True),
     "runway/gen4_image": ModelInfo(family="runway", path="gen4_image", external=True),
-    "HiDream": ModelInfo(family="hidream", path="HiDream-ai/HiDream-I1-Full", external=False),
+    "flux-kontext-pro": ModelInfo(family="flux_kontext", path="black-forest-labs/flux-kontext-pro", external=True),
+    "flux-pro": ModelInfo(family="flux_pro", path="black-forest-labs/flux-1.1-pro", external=True),
 }
 
 TaskName: TypeAlias = Literal["process_image", "process_image_external"]
