@@ -29,9 +29,9 @@ def _api_get_call(node, id, output_path: str, wait=False):
         parsed = images_get.sync(id, client=client, wait=wait)
     except Exception as e:
 
-        def handle_error():
+        def handle_error(error=e):
             with houdini_error_handling(node):
-                raise RuntimeError(f"API call failed: {str(e)}") from e
+                raise RuntimeError(f"API call failed: {str(error)}") from error
 
         hou.ui.postEventCallback(handle_error)
         return
