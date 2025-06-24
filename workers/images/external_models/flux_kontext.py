@@ -1,5 +1,9 @@
+from typing import Any
+
 import replicate
+from diffusers.utils import load_image
 from PIL import Image
+from replicate.helpers import FileOutput
 
 from images.context import ImageContext
 from utils.utils import convert_pil_to_bytes
@@ -17,10 +21,12 @@ def main(context: ImageContext) -> Image.Image:
         "seed": context.data.seed,
     }
 
-    output = replicate.run("black-forest-labs/flux-kontext-pro", input=input)
-    if output is None:
-        raise ValueError("No image data returned from replicate API")
+    output: FileOutput | Any = replicate.run("black-forest-labs/flux-kontext-pro", input=input)
+    if not isinstance(output, FileOutput):
+        raise ValueError(f"Expected output from replicate to be FileOutput, got {type(output)} {str(output)}")
 
-    print(f"Output from Flux Kontext: {output}")
-    processed_image = Image.open(output.read())
+    try:
+        processed_image = load_image(output.url)
+    except Exception as e:
+        raise ValueError(f"Failed to process image from replicate: {str(e)} {output}")
     return processed_image
