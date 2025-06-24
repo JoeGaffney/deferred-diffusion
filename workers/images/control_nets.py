@@ -23,7 +23,7 @@ def load_controlnet(model, model_family, torch_dtype=torch.float16):
 
 
 CONTROL_NET_MODEL_CONFIG = {
-    "sd1.5": {
+    "sd1_5": {
         "depth": "lllyasviel/sd-controlnet-depth",
         "canny": "lllyasviel/sd-controlnet-canny",
         "pose": "lllyasviel/sd-controlnet-openpose",

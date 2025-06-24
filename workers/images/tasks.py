@@ -3,10 +3,10 @@ from PIL import Image
 from common.memory import free_gpu_memory
 from images.context import ImageContext
 from images.external_models.flux_kontext import main as flux_kontext_main
+from images.external_models.openai import main as openai_main
+from images.external_models.runway import main as runway_main
 from images.models.auto_diffusion import main as auto_diffusion_main
 from images.models.depth_anything import main as depth_anything_main
-from images.models.openai import main as openai_main
-from images.models.runway import main as runway_main
 from images.models.segment_anything import main as segment_anything_main
 from images.models.stable_diffusion_upscaler import (
     main as stable_diffusion_upscaler_main,
@@ -31,7 +31,7 @@ def process_image(request_dict):
     family = context.data.model_family
 
     result = None
-    if family in ["sd1.5", "sdxl", "sd3", "hidream", "flux"]:
+    if family in ["sd1_5", "sdxl", "sd3", "hidream", "flux"]:
         result = auto_diffusion_main(context)
     elif family == "sd_upscaler":
         result = stable_diffusion_upscaler_main(context)

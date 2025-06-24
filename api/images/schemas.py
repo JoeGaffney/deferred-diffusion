@@ -25,7 +25,7 @@ ModelName: TypeAlias = Literal[
 ]
 
 ModelFamily: TypeAlias = Literal[
-    "sd1.5",
+    "sd1_5",
     "sdxl",
     "sd3",
     "hidream",
@@ -47,7 +47,7 @@ class ModelInfo(BaseModel):
 
 
 MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
-    "sd1.5": ModelInfo(family="sd1.5", path="stable-diffusion-v1-5/stable-diffusion-v1-5", external=False),
+    "sd1.5": ModelInfo(family="sd1_5", path="stable-diffusion-v1-5/stable-diffusion-v1-5", external=False),
     "sdxl": ModelInfo(family="sdxl", path="stabilityai/stable-diffusion-xl-base-1.0", external=False),
     "sdxl-refiner": ModelInfo(family="sdxl", path="stabilityai/stable-diffusion-xl-refiner-1.0", external=False),
     "RealVisXL": ModelInfo(family="sdxl", path="SG161222/RealVisXL_V4.0", external=False),

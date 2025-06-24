@@ -17,7 +17,7 @@ generic_ip_adapter_model = IpAdapterModelConfig(
 )
 
 IP_ADAPTER_MODEL_CONFIG = {
-    "sd1.5": {
+    "sd1_5": {
         "style": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="models",
