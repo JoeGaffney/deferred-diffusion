@@ -219,7 +219,6 @@ def text_to_image_call(context: ImageContext):
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
-    processed_image = context.resize_image_to_orig(processed_image)
     return processed_image
 
 
@@ -257,7 +256,6 @@ def image_to_image_call(context: ImageContext):
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
-    processed_image = context.resize_image_to_orig(processed_image)
     return processed_image
 
 
@@ -297,7 +295,6 @@ def inpainting_call(context: ImageContext):
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
-    processed_image = context.resize_image_to_orig(processed_image)
     return processed_image
 
 

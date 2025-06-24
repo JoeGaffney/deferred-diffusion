@@ -35,5 +35,4 @@ def main(context: ImageContext):
         guidance_scale=context.data.guidance_scale,
     ).images[0]
 
-    processed_image = context.resize_image_to_orig(processed_image, scale=scale)
     return processed_image

@@ -3,7 +3,6 @@ import tempfile
 from typing import Literal, Tuple
 
 import torch
-from PIL import Image
 from pydantic import BaseModel
 
 from common.logger import logger
@@ -112,9 +111,6 @@ class ImageContext:
         elif self.width < self.height:
             return "portrait"
         return "square"
-
-    def resize_image_to_orig(self, image: Image.Image, scale=1) -> Image.Image:
-        return image.resize((self.orig_width * scale, self.orig_height * scale))
 
     def cleanup(self):
         self.control_nets.cleanup()
