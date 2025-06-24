@@ -1,8 +1,6 @@
 from common.memory import free_gpu_memory
-from common.pipeline_helpers import reset_global_pipeline_cache
 from utils.utils import mp4_to_base64
 from videos.context import VideoContext
-from videos.models.comfy import main as comfy_main
 from videos.models.ltx_video import main as ltx_video_main
 from videos.models.runway_gen import main as runway_gen_main
 from videos.models.wan_2_1 import main as wan_2_1_main
@@ -38,19 +36,4 @@ def process_video_external(request_dict):
     else:
         raise ValueError(f"Unsupported model: {context.model}")
 
-    return VideoWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()
-
-
-@celery_app.task(name="process_video_workflow")
-def process_video_workflow(request_dict):
-    reset_global_pipeline_cache()
-    free_gpu_memory()
-
-    request = VideoRequest.model_validate(request_dict)
-    context = VideoContext(request)
-
-    result = comfy_main(context)
-
-    # free up GPU memory again after processing
-    free_gpu_memory()
     return VideoWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()

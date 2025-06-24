@@ -2,7 +2,6 @@ import hou
 
 from config import client
 from generated.api_client.api.images import images_create, images_get
-from generated.api_client.models.comfy_workflow import ComfyWorkflow
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
@@ -16,7 +15,6 @@ from utils import (
     get_output_path,
     houdini_error_handling,
     input_to_base64,
-    load_comfy_workflow,
     reload_outputs,
     set_node_info,
     threaded,
@@ -31,9 +29,9 @@ def _api_get_call(node, id, output_path: str, wait=False):
         parsed = images_get.sync(id, client=client, wait=wait)
     except Exception as e:
 
-        def handle_error():
+        def handle_error(error=e):
             with houdini_error_handling(node):
-                raise RuntimeError(f"API call failed: {str(e)}") from e
+                raise RuntimeError(f"API call failed: {str(error)}") from error
 
         hou.ui.postEventCallback(handle_error)
         return
@@ -78,16 +76,8 @@ def main(node):
         image = input_to_base64(node, "src")
         mask = input_to_base64(node, "mask")
 
-        comfy_workflow = params.get("comfy_workflow", "")
-        if comfy_workflow != "":
-            workflow_dict = load_comfy_workflow(comfy_workflow)
-            comfy_workflow = ComfyWorkflow.from_dict(workflow_dict)
-        else:
-            comfy_workflow = UNSET
-
         body = ImageRequest(
             model=ImageRequestModel(params.get("model", "sd1.5")),
-            comfy_workflow=comfy_workflow,
             controlnets=get_control_nets(node),
             guidance_scale=params.get("guidance_scale", UNSET),
             image=image,

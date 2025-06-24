@@ -329,19 +329,3 @@ def add_spare_params(node, prefix, params):
 
     # Apply the parameter template
     node.setParmTemplateGroup(parm_group)
-
-
-def load_comfy_workflow(workflow_path: str) -> dict:
-    expanded_path = hou.expandString(workflow_path)
-
-    if not os.path.exists(expanded_path):
-        raise ValueError(f"ComfyUI workflow file not found: {expanded_path}")
-
-    try:
-        with open(expanded_path, "r", encoding="utf-8") as f:
-            workflow_json = json.load(f)
-        return workflow_json
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Invalid JSON in ComfyUI workflow file: {expanded_path}") from exc
-    except Exception as e:
-        raise ValueError(f"Error loading ComfyUI workflow: {str(e)}") from e

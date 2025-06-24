@@ -26,8 +26,8 @@ def test_models(model_id, mode):
                 prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
                 strength=0.5,
                 guidance_scale=3.5,
-                max_width=width,
-                max_height=height,
+                width=width,
+                height=height,
                 controlnets=[],
                 num_inference_steps=15,
             )

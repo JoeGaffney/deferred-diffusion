@@ -26,8 +26,8 @@ def test_models(mode):
                 prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,
                 guidance_scale=5,
-                max_width=width,
-                max_height=height,
+                width=width,
+                height=height,
                 controlnets=[],
             )
         )

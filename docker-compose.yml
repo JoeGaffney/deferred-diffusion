@@ -11,7 +11,7 @@ services:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
-      - DEF_DIF_API_KEYS=${DEF_DIF_API_KEYS}
+      - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
 
   # Redis service as message broker
@@ -20,7 +20,7 @@ services:
     ports:
       - "6379:6379"
 
-  # Celery worker service - for now comfy runs in the monolith worker
+  # Celery worker service
   workers:
     build:
       context: .
@@ -28,11 +28,7 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - hf_cache:/WORKSPACE # Using Docker named volume
-      # - Y:/COMFY/models:/app/ComfyUI/models # this is slow on Windows
-      - comfy_models:/app/ComfyUI/models # Using Docker named volume is much faster than bind mount but requires a copy
-      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
-      - Y:/COMFY/output:/app/ComfyUI/output # For output files
+      - hf_cache:/WORKSPACE
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -40,6 +36,7 @@ services:
       - CELERYD_PREFETCH_MULTIPLIER=1
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
@@ -91,18 +88,19 @@ services:
   model-loader:
     image: alpine:latest
     volumes:
-      - Y:/COMFY/models:/source:ro
-      - comfy_models:/destination
+      - Y:/HF_HOME:/source:ro
+      - hf_cache:/destination
+    environment:
+      - HF_HOME=/WORKSPACE
     command: >
       sh -c "
         echo 'Setting up...' &&
         apk add --no-cache rsync &&
         echo 'Starting models sync...' &&
-        rsync -av --delete /source/ /destination/ &&
+        rsync -av /source/ /destination/ &&
         echo 'Sync complete!'
       "
 
 # Volume definitions go at the root level, not nested inside the service
 volumes:
   hf_cache: {}
-  comfy_models: {}

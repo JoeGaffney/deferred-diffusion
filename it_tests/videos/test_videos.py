@@ -1,17 +1,11 @@
-import json
 import os
 from http import HTTPStatus
 from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.videos import (
-    videos_create,
-    videos_get,
-    videos_get_workflow_schema,
-)
+from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.client import AuthenticatedClient
-from generated.api_client.models.comfy_workflow_response import ComfyWorkflowResponse
 from generated.api_client.models.video_create_response import VideoCreateResponse
 from generated.api_client.models.video_request import VideoRequest
 from generated.api_client.models.video_request_model import VideoRequestModel
@@ -25,8 +19,8 @@ output_dir = "../tmp/output/it-tests/videos"
 @pytest.fixture
 def api_client():
     return AuthenticatedClient(
-        base_url=os.getenv("DEF_DIF_API_ADDRESS", "http://127.0.0.1:5000"),
-        token=os.getenv("DEF_DIF_API_KEY", ""),
+        base_url=os.getenv("DDIFFUSION_API_ADDRESS", "http://127.0.0.1:5000"),
+        token=os.getenv("DDIFFUSION_API_KEY", ""),
     )
 
 
@@ -42,42 +36,6 @@ def create_video(api_client, body: VideoRequest) -> UUID:
     assert response.parsed.status == "PENDING"
 
     return response.parsed.id
-
-
-def test_get_workflow_schema(api_client):
-    """Test to ensure the workflow schema can be retrieved."""
-    response = videos_get_workflow_schema.sync_detailed(client=api_client)
-
-    assert response.status_code == HTTPStatus.OK
-    assert response.parsed is not None
-    assert isinstance(response.parsed, ComfyWorkflowResponse)
-
-    # Save the dictionary to a JSON file
-    os.makedirs(output_dir, exist_ok=True)
-    with open(f"{output_dir}/workflow_schema.json", "w", encoding="utf-8") as f:
-        json.dump(response.parsed.to_dict(), f, indent=4)
-
-
-def test_get_workflow_ltx(api_client):
-    body = VideoRequest(
-        model=VideoRequestModel("LTX-Video"),
-        comfy_workflow=json.load(open("../assets/workflows/ltxv_image_to_video.json", encoding="utf-8")),
-        image=image_to_base64("../assets/color_v002.png"),
-        prompt="A man with short gray hair plays a red electric guitar.",
-        num_inference_steps=7,
-        guidance_scale=3.0,
-        num_frames=96,
-    )
-    image_id = create_video(api_client, body)
-
-    response = videos_get.sync_detailed(id=image_id, client=api_client, wait=True)
-
-    assert response.status_code == HTTPStatus.OK
-    assert response.parsed is not None
-    assert isinstance(response.parsed, VideoResponse)
-    assert response.parsed.id == image_id
-    assert response.parsed.status == "SUCCESS"
-    save_image_and_assert_file_exists(response.parsed.result.base64_data, f"{output_dir}/test_get_workflow_ltx.mp4")  # type: ignore
 
 
 def test_get_ltx(api_client):

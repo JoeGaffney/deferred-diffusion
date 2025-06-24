@@ -3,7 +3,7 @@ version 14.0 v3
 Gizmo {
  inputs 4
  addUserKnob {20 Settings}
- addUserKnob {4 model M {sd1.5 sdxl RealVisXL Fluently-XL sd3 sd3.5 flux-schnell gpt-image-1 sd-x4-upscaler segment-anything depth-anything ""}}
+ addUserKnob {4 model M {sd1.5 sdxl RealVisXL Fluently-XL sd3 sd3.5 flux-schnell sd-x4-upscaler segment-anything depth-anything gpt-image-1 runway/gen4_image flux-kontext-pro}}
  model sdxl
  addUserKnob {2 comfy_workflow t "comfy workflow api json format"}
  addUserKnob {26 "" +STARTLINE}

@@ -1,10 +1,9 @@
 from PIL import Image
 
 from common.memory import free_gpu_memory
-from common.pipeline_helpers import reset_global_pipeline_cache
 from images.context import ImageContext
+from images.external_models.flux_kontext import main as flux_kontext_main
 from images.models.auto_diffusion import main as auto_diffusion_main
-from images.models.comfy import main as comfy_main
 from images.models.depth_anything import main as depth_anything_main
 from images.models.openai import main as openai_main
 from images.models.runway import main as runway_main
@@ -57,22 +56,9 @@ def process_image_external(request_dict):
         result = openai_main(context)
     elif family == "runway":
         result = runway_main(context)
+    elif family == "flux_kontext":
+        result = flux_kontext_main(context)
     else:
         raise ValueError(f"Unsupported model family: {family}")
 
-    return process_result(context, result)
-
-
-@celery_app.task(name="process_image_workflow")
-def process_image_workflow(request_dict):
-    reset_global_pipeline_cache()
-    free_gpu_memory()
-
-    request = ImageRequest.model_validate(request_dict)
-    context = ImageContext(request)
-
-    result = comfy_main(context)
-
-    # free up GPU memory again after processing
-    free_gpu_memory()
     return process_result(context, result)

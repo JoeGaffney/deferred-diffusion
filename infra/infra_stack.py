@@ -131,8 +131,8 @@ class InfraStack(Stack):
                 stream_prefix="api-container", log_retention=cdk.aws_logs.RetentionDays.ONE_DAY
             ),
             environment={
-                "DEF_DIF_API_KEYS": os.getenv(
-                    "DEF_DIF_API_KEYS", "dummy-key"
+                "DDIFFUSION_API_KEYS": os.getenv(
+                    "DDIFFUSION_API_KEYS", "dummy-key"
                 ),  # TODO: Replace with Secrets Manager before production deployment
                 "PYTHONUNBUFFERED": "1",
                 "CELERY_BROKER_URL": f"redis://redis.deferred-diffusion.local:{self.redis_port}/0",
