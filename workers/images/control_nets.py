@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Dict
 
 import torch
 from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
@@ -14,7 +15,7 @@ from utils.utils import load_image_if_exists
 @lru_cache(maxsize=1)
 def load_controlnet(model, model_family, torch_dtype=torch.float16):
 
-    if model_family == "sd3":
+    if model_family == "sd_3":
         return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
     elif model_family == "flux":
         return FluxControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
@@ -22,12 +23,7 @@ def load_controlnet(model, model_family, torch_dtype=torch.float16):
     return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch_dtype, device_map="cpu")
 
 
-CONTROL_NET_MODEL_CONFIG = {
-    "sd1_5": {
-        "depth": "lllyasviel/sd-controlnet-depth",
-        "canny": "lllyasviel/sd-controlnet-canny",
-        "pose": "lllyasviel/sd-controlnet-openpose",
-    },
+CONTROL_NET_MODEL_CONFIG: Dict[ModelFamily, Dict[str, str]] = {
     "sdxl": {
         "depth": "diffusers/controlnet-depth-sdxl-1.0-small",
         "canny": "diffusers/controlnet-canny-sdxl-1.0-small",
@@ -44,7 +40,7 @@ CONTROL_NET_MODEL_CONFIG = {
 }
 
 
-def get_controlnet_model(model_family: str, controlnet_model: str) -> str:
+def get_controlnet_model(model_family: ModelFamily, controlnet_model: str) -> str:
     config = CONTROL_NET_MODEL_CONFIG.get(model_family)
     if not config:
         raise ControlNetConfigError(f"ControlNet model config for {model_family} not found")

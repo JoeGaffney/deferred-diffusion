@@ -113,17 +113,12 @@ def inpainting_call(client: OpenAI, context: ImageContext):
 
 def main(context: ImageContext) -> Image.Image:
     client = OpenAI()
+    mode = context.get_generation_mode()
 
-    mode = "img_to_img"
-    if context.data.mask:
-        mode = "img_to_img_inpainting"
-    if context.data.image is None:
-        mode = "text_to_image"
-
+    # OpenAI-specific handling of text_to_image with adapters
     if mode == "text_to_image":
         if context.adapters.is_enabled():
             return image_to_image_call(client, context)
-
         return text_to_image_call(client, context)
     elif mode == "img_to_img":
         return image_to_image_call(client, context)

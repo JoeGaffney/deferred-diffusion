@@ -13,7 +13,7 @@ from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
 from utils import image_to_base64, save_image_and_assert_file_exists
 
-model = ImageRequestModel("sd1.5")
+model = ImageRequestModel("sdxl")
 output_dir = "../tmp/output/it-tests/images"
 
 

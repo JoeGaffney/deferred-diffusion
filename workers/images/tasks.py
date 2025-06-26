@@ -5,12 +5,13 @@ from images.context import ImageContext
 from images.external_models.flux_kontext import main as flux_kontext_main
 from images.external_models.openai import main as openai_main
 from images.external_models.runway import main as runway_main
-from images.models.auto_diffusion import main as auto_diffusion_main
 from images.models.depth_anything import main as depth_anything_main
+from images.models.flux import main as flux_main
+from images.models.hidream import main as hidream_main
+from images.models.sd3 import main as sd3_main
+from images.models.sd_upscaler import main as sd_upscaler_main
+from images.models.sdxl import main as sdxl_main
 from images.models.segment_anything import main as segment_anything_main
-from images.models.stable_diffusion_upscaler import (
-    main as stable_diffusion_upscaler_main,
-)
 from images.schemas import ImageRequest, ImageWorkerResponse
 from utils.utils import pil_to_base64
 from worker import celery_app
@@ -31,10 +32,16 @@ def process_image(request_dict):
     family = context.data.model_family
 
     result = None
-    if family in ["sd1_5", "sdxl", "sd3", "hidream", "flux"]:
-        result = auto_diffusion_main(context)
+    if family == "sdxl":
+        result = sdxl_main(context)
+    elif family == "sd3":
+        result = sd3_main(context)
+    elif family == "flux":
+        result = flux_main(context)
+    elif family == "hidream":
+        result = hidream_main(context)
     elif family == "sd_upscaler":
-        result = stable_diffusion_upscaler_main(context)
+        result = sd_upscaler_main(context)
     elif family == "depth_anything":
         result = depth_anything_main(context)
     elif family == "segment_anything":
@@ -57,6 +64,9 @@ def process_image_external(request_dict):
     elif family == "runway":
         result = runway_main(context)
     elif family == "flux_kontext":
+        result = flux_kontext_main(context)
+    elif family == "flux_pro":
+        # Assuming flux_pro is handled by the same function as flux_kontext
         result = flux_kontext_main(context)
     else:
         raise ValueError(f"Unsupported model family: {family}")

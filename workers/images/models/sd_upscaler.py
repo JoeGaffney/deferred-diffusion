@@ -24,8 +24,6 @@ def main(context: ImageContext):
         raise ValueError("No input image provided")
 
     pipe = get_pipeline(context.data.model_path)
-    scale = 4
-
     processed_image = pipe(
         prompt=context.data.prompt,
         negative_prompt=context.data.negative_prompt,

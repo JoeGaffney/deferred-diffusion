@@ -3,29 +3,24 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
 
+# User facing choice
 ModelName: TypeAlias = Literal[
-    "sd1.5",
-    "sdxl",
-    "sdxl-refiner",
-    "RealVisXL",
-    "Fluently-XL",
-    "juggernaut-xl",
-    "sd3",
-    "sd3.5",
-    "flux-schnell",
-    "flux-dev",
-    "depth-anything",
-    "segment-anything",
+    "sd-xl",
+    "sd-3",
+    "sd-3-5",
+    "flux-1",
+    "depth-anything-2",
+    "segment-anything-2",
     "sd-x4-upscaler",
-    "HiDream",
-    "gpt-image-1",
-    "runway/gen4_image",
-    "flux-kontext-pro",
-    "flux-pro",
+    "hidream-1",
+    "external-gpt-image-1",
+    "external-runway-gen4-image",
+    "external-flux-kontext",
+    "external-flux-1-1",
 ]
 
+# Family will map to the model pipeline and usually match the pyhon module name
 ModelFamily: TypeAlias = Literal[
-    "sd1_5",
     "sdxl",
     "sd3",
     "hidream",
@@ -47,28 +42,25 @@ class ModelInfo(BaseModel):
 
 
 MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
-    "sd1.5": ModelInfo(family="sd1_5", path="stable-diffusion-v1-5/stable-diffusion-v1-5", external=False),
-    "sdxl": ModelInfo(family="sdxl", path="stabilityai/stable-diffusion-xl-base-1.0", external=False),
-    "sdxl-refiner": ModelInfo(family="sdxl", path="stabilityai/stable-diffusion-xl-refiner-1.0", external=False),
-    "RealVisXL": ModelInfo(family="sdxl", path="SG161222/RealVisXL_V4.0", external=False),
-    "Fluently-XL": ModelInfo(family="sdxl", path="fluently/Fluently-XL-v4", external=False),
-    "juggernaut-xl": ModelInfo(family="sdxl", path="RunDiffusion/Juggernaut-XL-v9", external=False),
-    "sd3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3-medium-diffusers", external=False),
-    "sd3.5": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-medium", external=False),
-    "flux-schnell": ModelInfo(family="flux", path="black-forest-labs/FLUX.1-schnell", external=False),
-    "flux-dev": ModelInfo(family="flux", path="black-forest-labs/FLUX.1-dev", external=False),
-    "depth-anything": ModelInfo(
+    "sd-xl": ModelInfo(family="sdxl", path="SG161222/RealVisXL_V4.0", external=False),
+    "sd-3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3-medium-diffusers", external=False),
+    "sd-3-5": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-medium", external=False),
+    "flux-1": ModelInfo(family="flux", path="black-forest-labs/FLUX.1-dev", external=False),
+    "depth-anything-2": ModelInfo(
         family="depth_anything", path="depth-anything/Depth-Anything-V2-Large-hf", external=False
     ),
-    "segment-anything": ModelInfo(family="segment_anything", path="sam2.1_hiera_base_plus", external=False),
+    "segment-anything-2": ModelInfo(family="segment_anything", path="sam2.1_hiera_base_plus", external=False),
     "sd-x4-upscaler": ModelInfo(family="sd_upscaler", path="stabilityai/stable-diffusion-x4-upscaler", external=False),
-    "HiDream": ModelInfo(family="hidream", path="HiDream-ai/HiDream-I1-Full", external=False),
-    "gpt-image-1": ModelInfo(family="openai", path="gpt-image-1", external=True),
-    "runway/gen4_image": ModelInfo(family="runway", path="gen4_image", external=True),
-    "flux-kontext-pro": ModelInfo(family="flux_kontext", path="black-forest-labs/flux-kontext-pro", external=True),
-    "flux-pro": ModelInfo(family="flux_pro", path="black-forest-labs/flux-1.1-pro", external=True),
+    "hidream-1": ModelInfo(family="hidream", path="HiDream-ai/HiDream-I1-Full", external=False),
+    "external-gpt-image-1": ModelInfo(family="openai", path="gpt-image-1", external=True),
+    "external-runway-gen4-image": ModelInfo(family="runway", path="gen4_image", external=True),
+    "external-flux-kontext": ModelInfo(
+        family="flux_kontext", path="black-forest-labs/flux-kontext-pro", external=True
+    ),
+    "external-flux-1-1": ModelInfo(family="flux_pro", path="black-forest-labs/flux-1.1-pro", external=True),
 }
 
+# External models are non-local models processed by external services
 TaskName: TypeAlias = Literal["process_image", "process_image_external"]
 
 
@@ -215,3 +207,10 @@ class ImageCreateResponse(BaseModel):
                 "status": "PENDING",
             }
         }
+
+
+class ImageModelInfoResponse(BaseModel):
+    name: ModelName
+    family: ModelFamily
+    path: str
+    external: bool

@@ -1,3 +1,5 @@
+from typing import Dict
+
 from diffusers.image_processor import IPAdapterMaskProcessor
 from PIL import Image
 
@@ -16,30 +18,7 @@ generic_ip_adapter_model = IpAdapterModelConfig(
     image_encoder_subfolder="default",
 )
 
-IP_ADAPTER_MODEL_CONFIG = {
-    "sd1_5": {
-        "style": IpAdapterModelConfig(
-            model="h94/IP-Adapter",
-            subfolder="models",
-            weight_name="ip-adapter_sd15.bin",
-            image_encoder=True,
-            image_encoder_subfolder="models/image_encoder",
-        ),
-        "style-plus": IpAdapterModelConfig(
-            model="h94/IP-Adapter",
-            subfolder="models",
-            weight_name="ip-adapter-plus_sd15.bin",
-            image_encoder=True,
-            image_encoder_subfolder="models/image_encoder",
-        ),
-        "face": IpAdapterModelConfig(
-            model="h94/IP-Adapter",
-            subfolder="models",
-            weight_name="ip-adapter-plus-face_sd15.bin",
-            image_encoder=True,
-            image_encoder_subfolder="models/image_encoder",
-        ),
-    },
+IP_ADAPTER_MODEL_CONFIG: Dict[ModelFamily, Dict[str, IpAdapterModelConfig]] = {
     "sdxl": {
         "style": IpAdapterModelConfig(
             model="h94/IP-Adapter",
@@ -101,7 +80,7 @@ IP_ADAPTER_MODEL_CONFIG = {
 
 
 def get_ip_adapter_config(model_family: ModelFamily, adapter_type: str) -> IpAdapterModelConfig:
-    config = IP_ADAPTER_MODEL_CONFIG.get(str(model_family))
+    config = IP_ADAPTER_MODEL_CONFIG.get(model_family)
     if not config:
         raise IPAdapterConfigError(f"IP-Adapter model config for {model_family} not found")
 

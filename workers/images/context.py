@@ -81,6 +81,15 @@ class ImageContext:
         )
         self.adapters = Adapters(data.ip_adapters, self.data.model_family, self.width, self.height)
 
+    def get_generation_mode(self) -> Literal["text_to_image", "img_to_img", "img_to_img_inpainting"]:
+        """Get generation mode, can be overridden by specific models."""
+        if self.data.image is None:
+            return "text_to_image"
+        elif self.data.mask:
+            return "img_to_img_inpainting"
+        else:
+            return "img_to_img"
+
     def get_pipeline_config(self) -> PipelineConfig:
         adapter_config = self.adapters.get_pipeline_config()
 

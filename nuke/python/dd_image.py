@@ -127,7 +127,7 @@ def process_image(node):
     width_height = get_node_value(node, "width_height", [1024, 1024], return_type=list, mode="value")
 
     body = ImageRequest(
-        model=ImageRequestModel(get_node_value(node, "model", "sd1.5", mode="value")),
+        model=ImageRequestModel(get_node_value(node, "model", "sdxl", mode="value")),
         controlnets=get_control_nets(controlnets_node),
         guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
         image=image,

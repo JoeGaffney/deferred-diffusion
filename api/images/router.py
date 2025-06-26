@@ -1,15 +1,13 @@
-import os
 from uuid import UUID
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from fastapi.responses import JSONResponse
-from fastapi.security import APIKeyHeader
 
 from common.auth import verify_token
-from common.logger import log_pretty
 from images.schemas import (
+    MODEL_CONFIG,
     ImageCreateResponse,
+    ImageModelInfoResponse,
     ImageRequest,
     ImageResponse,
     ImageWorkerResponse,
@@ -30,6 +28,14 @@ async def create(request: ImageRequest, response: Response):
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.get("/models", response_model=list[ImageModelInfoResponse], operation_id="images_get_models")
+async def get_models():
+    models_list = [
+        ImageModelInfoResponse(name=name, **model_info.model_dump()) for name, model_info in MODEL_CONFIG.items()
+    ]
+    return models_list
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
