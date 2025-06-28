@@ -21,8 +21,6 @@ from utils.utils import (
 class PipelineConfig(BaseModel):
     model_id: str
     model_family: ModelFamily
-    torch_dtype: torch.dtype
-    use_safetensors: bool
     ip_adapter_models: Tuple[str, ...]
     ip_adapter_subfolders: Tuple[str, ...]
     ip_adapter_weights: Tuple[str, ...]
@@ -37,8 +35,6 @@ class PipelineConfig(BaseModel):
         return hash(
             (
                 self.model_id,
-                self.torch_dtype,
-                self.use_safetensors,
                 self.ip_adapter_models,
                 self.ip_adapter_subfolders,
                 self.ip_adapter_weights,
@@ -52,7 +48,6 @@ class ImageContext:
     def __init__(self, data: ImageRequest):
         self.data = data
         self.model = data.model
-        self.torch_dtype = torch.float16  # just keep float 16 for now
         self.orig_height = copy.copy(data.height)
         self.orig_width = copy.copy(data.width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
@@ -76,9 +71,7 @@ class ImageContext:
             self.mask_image = self.mask_image.resize([self.width, self.height])
 
         # Initialize control nets and adapters
-        self.control_nets = ControlNets(
-            data.controlnets, self.data.model_family, self.width, self.height, self.torch_dtype
-        )
+        self.control_nets = ControlNets(data.controlnets, self.data.model_family, self.width, self.height)
         self.adapters = Adapters(data.ip_adapters, self.data.model_family, self.width, self.height)
 
     def get_generation_mode(self) -> Literal["text_to_image", "img_to_img", "img_to_img_inpainting"]:
@@ -93,11 +86,15 @@ class ImageContext:
     def get_pipeline_config(self) -> PipelineConfig:
         adapter_config = self.adapters.get_pipeline_config()
 
+        # check if we should use inpainting model
+        generation_mode = self.get_generation_mode()
+        model_id = self.data.model_path
+        if generation_mode == "img_to_img_inpainting":
+            model_id = self.data.model_path_inpainting
+
         return PipelineConfig(
-            model_id=self.data.model_path,
+            model_id=model_id,
             model_family=self.data.model_family,
-            torch_dtype=self.torch_dtype,
-            use_safetensors=True,
             ip_adapter_models=adapter_config.get("models", ()),
             ip_adapter_subfolders=adapter_config.get("subfolders", ()),
             ip_adapter_weights=adapter_config.get("weights", ()),

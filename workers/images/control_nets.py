@@ -6,21 +6,20 @@ from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
 
 from common.exceptions import ControlNetConfigError
 from common.logger import logger
-from common.pipeline_helpers import decorator_global_pipeline_cache
 from images.schemas import ControlNetSchema, ModelFamily
 from utils.utils import load_image_if_exists
 
 
 # NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
-def load_controlnet(model, model_family, torch_dtype=torch.float16):
+def load_controlnet(model, model_family: ModelFamily):
 
     if model_family == "sd_3":
-        return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
+        return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
     elif model_family == "flux":
         return FluxControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
 
-    return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch_dtype, device_map="cpu")
+    return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch.float16, device_map="cpu")
 
 
 CONTROL_NET_MODEL_CONFIG: Dict[ModelFamily, Dict[str, str]] = {
@@ -53,7 +52,7 @@ def get_controlnet_model(model_family: ModelFamily, controlnet_model: str) -> st
 
 
 class ControlNet:
-    def __init__(self, data: ControlNetSchema, model_family: ModelFamily, width, height, torch_dtype=torch.float16):
+    def __init__(self, data: ControlNetSchema, model_family: ModelFamily, width, height):
         self.model = get_controlnet_model(model_family, data.model)
         self.conditioning_scale = data.conditioning_scale
         self.image = load_image_if_exists(data.image)
@@ -65,7 +64,7 @@ class ControlNet:
             raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")
 
         self.image = self.image.resize([width, height])
-        self.loaded_controlnet = load_controlnet(self.model, ModelFamily, torch_dtype=torch_dtype)
+        self.loaded_controlnet = load_controlnet(self.model, ModelFamily)
 
     # we load then offload to match the same behavior as cpu offloading
     def get_loaded_controlnet(self):

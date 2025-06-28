@@ -43,6 +43,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         "input_image": convert_pil_to_bytes(context.color_image),
         "output_format": "png",
         "guidance": context.data.guidance_scale,
+        "image_prompt_strength": context.data.strength,
         "steps": 50,
         "safety_tolerance": 6,
         "seed": context.data.seed,

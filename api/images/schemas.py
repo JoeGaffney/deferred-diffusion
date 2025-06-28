@@ -38,7 +38,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         inpainting_path="diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
         external=False,
     ),
-    "sd-3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-medium", external=False),
+    "sd-3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-large", external=False),
     "flux-1": ModelInfo(
         family="flux",
         path="black-forest-labs/FLUX.1-dev",

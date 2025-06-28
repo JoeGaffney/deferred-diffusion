@@ -3,44 +3,44 @@ from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
     AutoPipelineForText2Image,
-    DDIMScheduler,
-    DiffusionPipeline,
+    SD3Transformer2DModel,
+    StableDiffusion3Pipeline,
 )
 from PIL import Image
-from transformers import CLIPVisionModelWithProjection
+from transformers import T5EncoderModel
 
 from common.logger import logger
-from common.pipeline_helpers import decorator_global_pipeline_cache, optimize_pipeline
+from common.pipeline_helpers import (
+    decorator_global_pipeline_cache,
+    get_quantized_model,
+    optimize_pipeline,
+)
 from images.context import ImageContext, PipelineConfig
+
+T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
 
 
 @decorator_global_pipeline_cache
 def get_pipeline(config: PipelineConfig):
-    args = {"torch_dtype": config.torch_dtype, "use_safetensors": True, "text_encoder_3": None, "tokenizer_3": None}
-
-    pipe = DiffusionPipeline.from_pretrained(
+    args = {"torch_dtype": torch.bfloat16, "use_safetensors": True}
+    args["transformer"] = get_quantized_model(
+        model_id=config.model_id,
+        subfolder="transformer",
+        model_class=SD3Transformer2DModel,
+        target_precision=8,
+        torch_dtype=torch.bfloat16,
+    )
+    args["text_encoder_3"] = get_quantized_model(
+        model_id=T5_MODEL_PATH,
+        subfolder="text_encoder_2",  # this is correct as we are loading the T5 encoder from the Flux model
+        model_class=T5EncoderModel,
+        target_precision=8,
+        torch_dtype=torch.bfloat16,
+    )
+    pipe = StableDiffusion3Pipeline.from_pretrained(
         config.model_id,
         **args,
     )
-
-    if config.ip_adapter_models != ():
-        if not hasattr(pipe, "load_ip_adapter"):
-            raise ValueError("The pipeline does not support IP-Adapters. Please use a compatible pipeline.")
-
-        pipe.load_ip_adapter(
-            list(config.ip_adapter_models),
-            subfolder=list(config.ip_adapter_subfolders),
-            weight_name=list(config.ip_adapter_weights),
-        )
-
-        if config.ip_adapter_image_encoder_model != "":
-            image_encoder = CLIPVisionModelWithProjection.from_pretrained(
-                config.ip_adapter_image_encoder_model,
-                subfolder=config.ip_adapter_image_encoder_subfolder,
-                torch_dtype=config.torch_dtype,
-            )
-            pipe.image_encoder = image_encoder
-            pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
     return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
@@ -49,11 +49,6 @@ def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
     if context.control_nets.is_enabled():
         args["control_image"] = context.control_nets.get_images()
         args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
-
-    if context.adapters.is_enabled():
-        args["ip_adapter_image"] = context.adapters.get_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.adapters.get_masks()}
-        pipe = context.adapters.set_scale(pipe)
 
     return pipe, args
 

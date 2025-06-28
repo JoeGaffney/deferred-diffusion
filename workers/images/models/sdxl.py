@@ -16,7 +16,7 @@ from images.context import ImageContext, PipelineConfig
 
 @decorator_global_pipeline_cache
 def get_pipeline(config: PipelineConfig):
-    args = {"torch_dtype": config.torch_dtype, "use_safetensors": True}
+    args = {"torch_dtype": torch.float16, "use_safetensors": True}
 
     pipe = DiffusionPipeline.from_pretrained(
         config.model_id,
@@ -37,7 +37,7 @@ def get_pipeline(config: PipelineConfig):
             image_encoder = CLIPVisionModelWithProjection.from_pretrained(
                 config.ip_adapter_image_encoder_model,
                 subfolder=config.ip_adapter_image_encoder_subfolder,
-                torch_dtype=config.torch_dtype,
+                torch_dtype=torch.float16,
             )
             pipe.image_encoder = image_encoder
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
