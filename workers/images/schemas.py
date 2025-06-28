@@ -7,12 +7,11 @@ from pydantic import Base64Bytes, BaseModel, Field
 ModelName: TypeAlias = Literal[
     "sd-xl",
     "sd-3",
-    "sd-3-5",
     "flux-1",
+    "flux-kontext-1",
     "depth-anything-2",
     "segment-anything-2",
     "sd-x4-upscaler",
-    "hidream-1",
     "external-gpt-image-1",
     "external-runway-gen4-image",
     "external-flux-kontext",
@@ -23,7 +22,6 @@ ModelName: TypeAlias = Literal[
 ModelFamily: TypeAlias = Literal[
     "sdxl",
     "sd3",
-    "hidream",
     "flux",
     "openai",
     "runway",
@@ -39,25 +37,40 @@ class ModelInfo(BaseModel):
     family: ModelFamily
     path: str
     external: bool
+    inpainting_path: Optional[str] = None
 
 
 MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
-    "sd-xl": ModelInfo(family="sdxl", path="SG161222/RealVisXL_V4.0", external=False),
-    "sd-3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3-medium-diffusers", external=False),
-    "sd-3-5": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-medium", external=False),
-    "flux-1": ModelInfo(family="flux", path="black-forest-labs/FLUX.1-dev", external=False),
+    "sd-xl": ModelInfo(
+        family="sdxl",
+        path="SG161222/RealVisXL_V4.0",
+        inpainting_path="diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
+        external=False,
+    ),
+    "sd-3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-medium", external=False),
+    "flux-1": ModelInfo(
+        family="flux",
+        path="black-forest-labs/FLUX.1-dev",
+        inpainting_path="black-forest-labs/FLUX.1-Fill-dev",
+        external=False,
+    ),
+    "flux-kontext-1": ModelInfo(family="flux_kontext", path="black-forest-labs/FLUX.1-Kontext-dev", external=False),
     "depth-anything-2": ModelInfo(
         family="depth_anything", path="depth-anything/Depth-Anything-V2-Large-hf", external=False
     ),
     "segment-anything-2": ModelInfo(family="segment_anything", path="sam2.1_hiera_base_plus", external=False),
     "sd-x4-upscaler": ModelInfo(family="sd_upscaler", path="stabilityai/stable-diffusion-x4-upscaler", external=False),
-    "hidream-1": ModelInfo(family="hidream", path="HiDream-ai/HiDream-I1-Full", external=False),
     "external-gpt-image-1": ModelInfo(family="openai", path="gpt-image-1", external=True),
     "external-runway-gen4-image": ModelInfo(family="runway", path="gen4_image", external=True),
     "external-flux-kontext": ModelInfo(
         family="flux_kontext", path="black-forest-labs/flux-kontext-pro", external=True
     ),
-    "external-flux-1-1": ModelInfo(family="flux_pro", path="black-forest-labs/flux-1.1-pro", external=True),
+    "external-flux-1-1": ModelInfo(
+        family="flux_pro",
+        path="black-forest-labs/flux-1.1-pro",
+        inpainting_path="black-forest-labs/flux-fill-pro",
+        external=True,
+    ),
 }
 
 # External models are non-local models processed by external services

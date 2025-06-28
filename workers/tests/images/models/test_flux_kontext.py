@@ -2,7 +2,7 @@ import pytest
 
 from common.memory import free_gpu_memory
 from images.context import ImageContext
-from images.external_models.flux_kontext import main
+from images.models.flux_kontext import main
 from images.schemas import ImageRequest, ModelName
 from tests.utils import (
     image_to_base64,
@@ -11,10 +11,9 @@ from tests.utils import (
 )
 
 MODES = ["image_to_image"]
-model: ModelName = "external-flux-kontext"
+model: ModelName = "flux-kontext-1"
 
 
-# @pytest.mark.skip(reason="Slow test")
 @pytest.mark.parametrize("mode", MODES)
 def test_models(mode):
     output_name = output_name = setup_output_file(model, mode)
@@ -32,3 +31,4 @@ def test_models(mode):
     )
 
     save_image_and_assert_file_exists(result, output_name)
+    free_gpu_memory()

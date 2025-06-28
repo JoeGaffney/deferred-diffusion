@@ -13,8 +13,8 @@ model: ModelName = "flux-1"
 
 
 @pytest.mark.parametrize("mode", MODES)
-def test_models(model_id, mode):
-    output_name = setup_output_file(mode, mode)
+def test_models(mode):
+    output_name = setup_output_file(model, mode)
     width, height = get_16_9_resolution("540p")
 
     result = main(

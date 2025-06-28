@@ -2,12 +2,12 @@ import pytest
 
 from common.memory import free_gpu_memory
 from images.context import ImageContext
-from images.models.hidream import main
+from images.models.sd3 import main
 from images.schemas import ImageRequest, ModelName
 from tests.utils import save_image_and_assert_file_exists, setup_output_file
 from utils.utils import get_16_9_resolution
 
-model: ModelName = "hidream-1"
+model: ModelName = "sd-3"
 
 
 # @pytest.mark.skip(reason="Slow test")
