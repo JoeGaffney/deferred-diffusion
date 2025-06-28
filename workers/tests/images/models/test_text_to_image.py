@@ -1,19 +1,22 @@
+from typing import List
+
 import pytest
 
 from common.memory import free_gpu_memory
 from images.context import ImageContext
-from images.models.flux import main
 from images.schemas import ImageRequest, ModelName
+from images.tasks import model_router_main as main
 from tests.utils import save_image_and_assert_file_exists, setup_output_file
 from utils.utils import get_16_9_resolution
 
-# Define constants
 MODES = ["text_to_image"]
-model: ModelName = "flux-1"
+models: List[ModelName] = ["sd-xl", "sd-3", "flux-1"]
 
 
 @pytest.mark.parametrize("mode", MODES)
-def test_models(mode):
+@pytest.mark.parametrize("model", models)
+def test_text_to_image(model, mode):
+
     output_name = setup_output_file(model, mode)
     width, height = get_16_9_resolution("540p")
 

@@ -2,6 +2,7 @@ from PIL import Image
 
 from common.memory import free_gpu_memory
 from images.context import ImageContext
+from images.external_models.flux import main as external_flux_main
 from images.external_models.flux_kontext import main as external_flux_kontext_main
 from images.external_models.openai import main as external_openai_main
 from images.external_models.runway import main as external_runway_main
@@ -24,30 +25,46 @@ def process_result(context, result):
     raise ValueError("Image generation failed")
 
 
+def model_router_main(context: ImageContext):
+    family = context.data.model_family
+    if family == "sdxl":
+        return sdxl_main(context)
+    elif family == "sd3":
+        return sd3_main(context)
+    elif family == "flux":
+        return flux_main(context)
+    elif family == "flux_kontext":
+        return flux_kontext_main(context)
+    elif family == "sd_upscaler":
+        return sd_upscaler_main(context)
+    elif family == "depth_anything":
+        return depth_anything_main(context)
+    elif family == "segment_anything":
+        return segment_anything_main(context)
+    else:
+        raise ValueError(f"Unsupported model family: {family}")
+
+
+def external_model_router_main(context: ImageContext):
+    family = context.data.model_family
+    if family == "openai":
+        return external_openai_main(context)
+    elif family == "runway":
+        return external_runway_main(context)
+    elif family == "flux_kontext":
+        return external_flux_kontext_main(context)
+    elif family == "flux":
+        return external_flux_main(context)
+    else:
+        raise ValueError(f"Unsupported model family: {family}")
+
+
 @celery_app.task(name="process_image")
 def process_image(request_dict):
     free_gpu_memory()
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
-    family = context.data.model_family
-
-    result = None
-    if family == "sdxl":
-        result = sdxl_main(context)
-    elif family == "sd3":
-        result = sd3_main(context)
-    elif family == "flux":
-        result = flux_main(context)
-    elif family == "flux_kontext":
-        result = flux_kontext_main(context)
-    elif family == "sd_upscaler":
-        result = sd_upscaler_main(context)
-    elif family == "depth_anything":
-        result = depth_anything_main(context)
-    elif family == "segment_anything":
-        result = segment_anything_main(context)
-    else:
-        raise ValueError(f"Unsupported model family: {family}")
+    result = model_router_main(context)
 
     return process_result(context, result)
 
@@ -56,19 +73,6 @@ def process_image(request_dict):
 def process_image_external(request_dict):
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
-    family = context.data.model_family
-
-    result = None
-    if family == "openai":
-        result = external_openai_main(context)
-    elif family == "runway":
-        result = external_runway_main(context)
-    elif family == "flux_kontext":
-        result = external_flux_kontext_main(context)
-    elif family == "flux_pro":
-        # Assuming flux_pro is handled by the same function as flux_kontext
-        result = external_flux_kontext_main(context)
-    else:
-        raise ValueError(f"Unsupported model family: {family}")
+    result = external_model_router_main(context)
 
     return process_result(context, result)

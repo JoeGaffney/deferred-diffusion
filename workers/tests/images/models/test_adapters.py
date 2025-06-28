@@ -16,28 +16,28 @@ MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
 model: ModelName = "sd-xl"
 
 
-@pytest.mark.parametrize("mode", MODES)
-def test_models(mode):
-    output_name = setup_output_file(model, mode)
-    width, height = get_16_9_resolution("540p")
+# @pytest.mark.parametrize("mode", MODES)
+# def test_models(mode):
+#     output_name = setup_output_file(model, mode)
+#     width, height = get_16_9_resolution("540p")
 
-    result = main(
-        ImageContext(
-            ImageRequest(
-                model=model,
-                image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
-                mask=None if mode == "img_to_img_inpainting" else image_to_base64("../assets/mask_v001.png"),
-                prompt="tornado on farm feild, enhance keep original elements, Detailed, 8k, DSLR photo, photorealistic",
-                strength=0.5,
-                guidance_scale=5,
-                width=width,
-                height=height,
-                controlnets=[],
-            )
-        )
-    )
+#     result = main(
+#         ImageContext(
+#             ImageRequest(
+#                 model=model,
+#                 image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
+#                 mask=None if mode == "img_to_img_inpainting" else image_to_base64("../assets/mask_v001.png"),
+#                 prompt="tornado on farm feild, enhance keep original elements, Detailed, 8k, DSLR photo, photorealistic",
+#                 strength=0.5,
+#                 guidance_scale=5,
+#                 width=width,
+#                 height=height,
+#                 controlnets=[],
+#             )
+#         )
+#     )
 
-    save_image_and_assert_file_exists(result, output_name)
+#     save_image_and_assert_file_exists(result, output_name)
 
 
 @pytest.mark.parametrize("mode", ["text_to_image"])

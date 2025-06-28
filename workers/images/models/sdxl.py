@@ -5,7 +5,6 @@ from diffusers import (
     AutoPipelineForText2Image,
     DDIMScheduler,
     DiffusionPipeline,
-    StableDiffusionXLPipeline,
 )
 from PIL import Image
 from transformers import CLIPVisionModelWithProjection

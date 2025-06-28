@@ -20,16 +20,7 @@ ModelName: TypeAlias = Literal[
 
 # Family will map to the model pipeline and usually match the pyhon module name
 ModelFamily: TypeAlias = Literal[
-    "sdxl",
-    "sd3",
-    "flux",
-    "openai",
-    "runway",
-    "sd_upscaler",
-    "segment_anything",
-    "depth_anything",
-    "flux_kontext",
-    "flux_pro",
+    "sdxl", "sd3", "flux", "openai", "runway", "sd_upscaler", "segment_anything", "depth_anything", "flux_kontext"
 ]
 
 
@@ -66,7 +57,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         family="flux_kontext", path="black-forest-labs/flux-kontext-pro", external=True
     ),
     "external-flux-1-1": ModelInfo(
-        family="flux_pro",
+        family="flux",
         path="black-forest-labs/flux-1.1-pro",
         inpainting_path="black-forest-labs/flux-fill-pro",
         external=True,
@@ -176,6 +167,14 @@ class ImageRequest(BaseModel):
     @property
     def model_path(self) -> str:
         return MODEL_CONFIG[self.model].path
+
+    @property
+    def model_path_inpainting(self) -> str:
+        """Get the inpainting model path if available, otherwise normal."""
+        inpainting_path = MODEL_CONFIG[self.model].inpainting_path
+        if inpainting_path:
+            return inpainting_path
+        return self.model_path
 
     @property
     def external_model(self) -> bool:
