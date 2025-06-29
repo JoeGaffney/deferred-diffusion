@@ -12,10 +12,10 @@ Gizmo {
  addUserKnob {14 width_height l "" -STARTLINE R 0 100}
  width_height {1280 720}
  addUserKnob {26 ""}
- addUserKnob {43 prompt l "Prompt" t "Enter your prompt here" T 4}
+ addUserKnob {43 prompt l "Prompt" t "Enter your prompt here" T 3}
  prompt "Detailed, 8k, photorealistic"
  addUserKnob {26 ""}
- addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here" T 4}
+ addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here" T 2}
  negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
  addUserKnob {26 ""}
  addUserKnob {7 num_inference_steps t quality R 1 50}
@@ -28,8 +28,6 @@ Gizmo {
  seed 42
  addUserKnob {26 ""}
  addUserKnob {20 Paths}
- addUserKnob {1 path_root}
- path_root "\[file dirname \[value root.name]]/processed/\[value this.name]"
  addUserKnob {41 file l output_read T output_read.file}
  addUserKnob {20 endGroup n -1}
 }
@@ -42,7 +40,7 @@ Gizmo {
  Read {
   inputs 0
   file_type png
-  file "\[value parent.path_root]/\[value this.name]/output.#####.png"
+  file "output.#####.png"
   last 2000
   origlast 2000
   origset true
@@ -67,14 +65,7 @@ Gizmo {
  }
  Input {
   inputs 0
-  name adapters
-  xpos 400
-  ypos -129
-  number 3
- }
- Input {
-  inputs 0
-  name controlnets
+  name aux
   xpos 510
   ypos -129
   number 2

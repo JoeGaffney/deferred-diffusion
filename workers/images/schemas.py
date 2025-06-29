@@ -58,7 +58,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
     ),
     "external-flux-1-1": ModelInfo(
         family="flux",
-        path="black-forest-labs/flux-1.1-pro",
+        path="black-forest-labs/flux-1.1-pro-ultra",
         inpainting_path="black-forest-labs/flux-fill-pro",
         external=True,
     ),

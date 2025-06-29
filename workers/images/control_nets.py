@@ -75,15 +75,13 @@ class ControlNet:
 
 
 class ControlNets:
-    def __init__(
-        self, control_nets: list[ControlNetSchema], model_family: ModelFamily, width, height, torch_dtype=torch.float16
-    ):
+    def __init__(self, control_nets: list[ControlNetSchema], model_family: ModelFamily, width, height):
         self.control_nets: list[ControlNet] = []
 
         # Handle initialization errors and create valid control nets
         for data in control_nets:
             try:
-                control_net = ControlNet(data, model_family, width, height, torch_dtype)
+                control_net = ControlNet(data, model_family, width, height)
                 self.control_nets.append(control_net)
             except ControlNetConfigError as e:
                 logger.error(f"Failed to initialize ControlNet: {e}")

@@ -32,8 +32,9 @@ def create_dd_image_node():
 
 
 def set_node_info(node, status, message):
-    # node.setUserData("nodeinfo_api_status", str(status))
-    # node.setUserData("nodeinfo_api_message", str(message))
+    # Update the node label to show current status
+    status_text = f"[{status}]"
+    node["label"].setValue(status_text)
 
     if status == "COMPLETE":
         node["tile_color"].setValue(0x00CC00FF)  # Green
@@ -41,6 +42,8 @@ def set_node_info(node, status, message):
         node["tile_color"].setValue(0xCCCC00FF)  # Yellow
     elif status == "FAILED" or status == "ERROR" or status == "FAILURE":
         node["tile_color"].setValue(0xCC0000FF)  # Red
+        if message:
+            node["label"].setValue(f"{status_text} {message}")
     else:
         node["tile_color"].setValue(0x888888FF)  # Grey
 
@@ -141,8 +144,7 @@ def process_image(node):
         current_frame = nuke.frame()
         image_node = node.input(0)
         mask_node = node.input(1)
-        controlnets_node = node.input(2)
-        adapter_node = node.input(3)
+        aux_node = node.input(2)
 
         image = node_to_base64(image_node, current_frame)
         mask = node_to_base64(mask_node, current_frame)
@@ -150,10 +152,8 @@ def process_image(node):
 
         body = ImageRequest(
             model=ImageRequestModel(get_node_value(node, "model", "sd-xl", mode="value")),
-            controlnets=get_control_nets(controlnets_node),
             guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
             image=image,
-            ip_adapters=get_ip_adapters(adapter_node),
             mask=mask,
             negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
             num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
@@ -162,6 +162,8 @@ def process_image(node):
             strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),
             width=int(width_height[0]),
             height=int(width_height[1]),
+            controlnets=get_control_nets(aux_node),
+            ip_adapters=get_ip_adapters(aux_node),
         )
 
         _api_call(node, body, output_image_path)
