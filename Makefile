@@ -31,12 +31,11 @@ generate-clients: up
 TEST_PATH ?= images
 # make test-worker TEST_PATH=videos
 # make test-worker TEST_PATH=texts
-# make test-worker TEST_PATH=images/models
-# make test-worker TEST_PATH=images/external_models
-# make test-worker TEST_PATH=images/models/test_text_to_image.py
-# make test-worker TEST_PATH=images/models/test_image_to_image.py
-# make test-worker TEST_PATH=images/external_models/test_text_to_image.py
-# make test-worker TEST_PATH=images/external_models/test_image_to_image.py
+# make test-worker TEST_PATH=images
+# make test-worker TEST_PATH=images/test_text_to_image.py
+# make test-worker TEST_PATH=images/test_image_to_image.py
+# make test-worker TEST_PATH=images/test_external_text_to_image.py
+# make test-worker TEST_PATH=images/test_external_image_to_image.py
 test-worker: up
 	docker-compose exec workers pytest tests/$(TEST_PATH) -vs
 
