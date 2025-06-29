@@ -22,7 +22,9 @@ def get_size(
     return size
 
 
-def text_to_image_call(client: OpenAI, context: ImageContext):
+def text_to_image_call(context: ImageContext):
+    client = OpenAI()
+
     logger.info(f"Text to image call {context.data.model_path}")
     result = client.images.generate(
         model=context.data.model_path,
@@ -43,7 +45,8 @@ def text_to_image_call(client: OpenAI, context: ImageContext):
     return processed_image
 
 
-def image_to_image_call(client: OpenAI, context: ImageContext):
+def image_to_image_call(context: ImageContext):
+    client = OpenAI()
 
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
@@ -80,7 +83,8 @@ def image_to_image_call(client: OpenAI, context: ImageContext):
     return processed_image
 
 
-def inpainting_call(client: OpenAI, context: ImageContext):
+def inpainting_call(context: ImageContext):
+    client = OpenAI()
     logger.info(f"Image to image inpainting call {context.data.model_path}")
     if context.color_image is None:
         raise ValueError("No color image provided")
@@ -112,22 +116,15 @@ def inpainting_call(client: OpenAI, context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
-    client = OpenAI()
-
-    mode = "img_to_img"
-    if context.data.mask:
-        mode = "img_to_img_inpainting"
-    if context.data.image is None:
-        mode = "text_to_image"
+    mode = context.get_generation_mode()
 
     if mode == "text_to_image":
         if context.adapters.is_enabled():
-            return image_to_image_call(client, context)
-
-        return text_to_image_call(client, context)
+            return image_to_image_call(context)
+        return text_to_image_call(context)
     elif mode == "img_to_img":
-        return image_to_image_call(client, context)
+        return image_to_image_call(context)
     elif mode == "img_to_img_inpainting":
-        return inpainting_call(client, context)
+        return inpainting_call(context)
 
     raise ValueError(f"Invalid mode {mode} for OpenAI API")

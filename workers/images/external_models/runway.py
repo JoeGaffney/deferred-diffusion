@@ -106,14 +106,11 @@ def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
 
 def main(context: ImageContext) -> Image.Image:
     client = RunwayML()
-
-    mode = "img_to_img"
-    if context.data.image is None:
-        mode = "text_to_image"
-    if context.adapters.is_enabled():
-        mode = "img_to_img"
+    mode = context.get_generation_mode()
 
     if mode == "text_to_image":
+        if context.adapters.is_enabled():
+            return image_to_image_call(client, context)
         return text_to_image_call(client, context)
     elif mode == "img_to_img":
         return image_to_image_call(client, context)

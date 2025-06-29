@@ -114,10 +114,10 @@ def get_node_value(
     """Get the value of a knob from a node."""
     knob = node.knob(knob_name)
     if knob is None:
-        return default
+        raise ValueError(f"Knob '{knob_name}' not found on node '{node.name()}'")
 
     if hasattr(knob, "value") is False:
-        return default
+        raise ValueError(f"Knob '{knob_name}' does not support getting value")
 
     value = default
     if mode == MODE_GET:
@@ -129,7 +129,6 @@ def get_node_value(
     else:
         raise ValueError(f"Invalid mode: {mode}")
 
-    print(f"Knob value: {knob} - {value}")
     if isinstance(value, return_type):
         return value
 
@@ -230,7 +229,6 @@ def get_control_nets(node) -> list[ControlNetSchema]:
 
     current_frame = nuke.frame()
     valid_inputs = find_nodes_of_type(node, "dd_controlnet")
-
     result = []
     for current in valid_inputs:
 
@@ -242,7 +240,7 @@ def get_control_nets(node) -> list[ControlNetSchema]:
         tmp = ControlNetSchema(
             model=ControlNetSchemaModel(get_node_value(current, "model", "depth", mode="value")),
             image=image,
-            conditioning_scale=get_node_value(node, "conditioning_scale", UNSET, return_type=float, mode="value"),
+            conditioning_scale=get_node_value(current, "conditioning_scale", UNSET, return_type=float, mode="value"),
         )
         result.append(tmp)
 
@@ -271,7 +269,7 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
             model=IpAdapterModelModel(get_node_value(current, "model", "style", mode="value")),
             image=image,
             mask=mask,
-            scale=get_node_value(node, "scale", UNSET, return_type=float, mode="value"),
+            scale=get_node_value(current, "scale", UNSET, return_type=float, mode="value"),
             scale_layers=get_node_value(current, "scale_layers", "all", mode="value"),
         )
 

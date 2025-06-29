@@ -24,8 +24,6 @@ def main(context: ImageContext):
         raise ValueError("No input image provided")
 
     pipe = get_pipeline(context.data.model_path)
-    scale = 4
-
     processed_image = pipe(
         prompt=context.data.prompt,
         negative_prompt=context.data.negative_prompt,
@@ -35,5 +33,4 @@ def main(context: ImageContext):
         guidance_scale=context.data.guidance_scale,
     ).images[0]
 
-    processed_image = context.resize_image_to_orig(processed_image, scale=scale)
     return processed_image

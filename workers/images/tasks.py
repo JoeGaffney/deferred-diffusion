@@ -2,15 +2,17 @@ from PIL import Image
 
 from common.memory import free_gpu_memory
 from images.context import ImageContext
-from images.external_models.flux_kontext import main as flux_kontext_main
-from images.models.auto_diffusion import main as auto_diffusion_main
+from images.external_models.flux import main as external_flux_main
+from images.external_models.flux_kontext import main as external_flux_kontext_main
+from images.external_models.openai import main as external_openai_main
+from images.external_models.runway import main as external_runway_main
 from images.models.depth_anything import main as depth_anything_main
-from images.models.openai import main as openai_main
-from images.models.runway import main as runway_main
+from images.models.flux import main as flux_main
+from images.models.flux_kontext import main as flux_kontext_main
+from images.models.sd3 import main as sd3_main
+from images.models.sd_upscaler import main as sd_upscaler_main
+from images.models.sdxl import main as sdxl_main
 from images.models.segment_anything import main as segment_anything_main
-from images.models.stable_diffusion_upscaler import (
-    main as stable_diffusion_upscaler_main,
-)
 from images.schemas import ImageRequest, ImageWorkerResponse
 from utils.utils import pil_to_base64
 from worker import celery_app
@@ -23,24 +25,46 @@ def process_result(context, result):
     raise ValueError("Image generation failed")
 
 
+def model_router_main(context: ImageContext):
+    family = context.data.model_family
+    if family == "sdxl":
+        return sdxl_main(context)
+    elif family == "sd3":
+        return sd3_main(context)
+    elif family == "flux":
+        return flux_main(context)
+    elif family == "flux_kontext":
+        return flux_kontext_main(context)
+    elif family == "sd_upscaler":
+        return sd_upscaler_main(context)
+    elif family == "depth_anything":
+        return depth_anything_main(context)
+    elif family == "segment_anything":
+        return segment_anything_main(context)
+    else:
+        raise ValueError(f"Unsupported model family: {family}")
+
+
+def external_model_router_main(context: ImageContext):
+    family = context.data.model_family
+    if family == "openai":
+        return external_openai_main(context)
+    elif family == "runway":
+        return external_runway_main(context)
+    elif family == "flux_kontext":
+        return external_flux_kontext_main(context)
+    elif family == "flux":
+        return external_flux_main(context)
+    else:
+        raise ValueError(f"Unsupported model family: {family}")
+
+
 @celery_app.task(name="process_image")
 def process_image(request_dict):
     free_gpu_memory()
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
-    family = context.data.model_family
-
-    result = None
-    if family in ["sd1.5", "sdxl", "sd3", "hidream", "flux"]:
-        result = auto_diffusion_main(context)
-    elif family == "sd_upscaler":
-        result = stable_diffusion_upscaler_main(context)
-    elif family == "depth_anything":
-        result = depth_anything_main(context)
-    elif family == "segment_anything":
-        result = segment_anything_main(context)
-    else:
-        raise ValueError(f"Unsupported model family: {family}")
+    result = model_router_main(context)
 
     return process_result(context, result)
 
@@ -49,16 +73,6 @@ def process_image(request_dict):
 def process_image_external(request_dict):
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
-    family = context.data.model_family
-
-    result = None
-    if family == "openai":
-        result = openai_main(context)
-    elif family == "runway":
-        result = runway_main(context)
-    elif family == "flux_kontext":
-        result = flux_kontext_main(context)
-    else:
-        raise ValueError(f"Unsupported model family: {family}")
+    result = external_model_router_main(context)
 
     return process_result(context, result)

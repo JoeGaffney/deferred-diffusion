@@ -77,7 +77,7 @@ def main(node):
         mask = input_to_base64(node, "mask")
 
         body = ImageRequest(
-            model=ImageRequestModel(params.get("model", "sd1.5")),
+            model=ImageRequestModel(params.get("model", "sdxl")),
             controlnets=get_control_nets(node),
             guidance_scale=params.get("guidance_scale", UNSET),
             image=image,

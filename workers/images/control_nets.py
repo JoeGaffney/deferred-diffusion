@@ -1,33 +1,28 @@
 from functools import lru_cache
+from typing import Dict
 
 import torch
 from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
 
 from common.exceptions import ControlNetConfigError
 from common.logger import logger
-from common.pipeline_helpers import decorator_global_pipeline_cache
 from images.schemas import ControlNetSchema, ModelFamily
 from utils.utils import load_image_if_exists
 
 
 # NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
-def load_controlnet(model, model_family, torch_dtype=torch.float16):
+def load_controlnet(model, model_family: ModelFamily):
 
-    if model_family == "sd3":
-        return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch_dtype, device_map="cpu")
+    if model_family == "sd_3":
+        return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
     elif model_family == "flux":
         return FluxControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
 
-    return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch_dtype, device_map="cpu")
+    return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch.float16, device_map="cpu")
 
 
-CONTROL_NET_MODEL_CONFIG = {
-    "sd1.5": {
-        "depth": "lllyasviel/sd-controlnet-depth",
-        "canny": "lllyasviel/sd-controlnet-canny",
-        "pose": "lllyasviel/sd-controlnet-openpose",
-    },
+CONTROL_NET_MODEL_CONFIG: Dict[ModelFamily, Dict[str, str]] = {
     "sdxl": {
         "depth": "diffusers/controlnet-depth-sdxl-1.0-small",
         "canny": "diffusers/controlnet-canny-sdxl-1.0-small",
@@ -44,7 +39,7 @@ CONTROL_NET_MODEL_CONFIG = {
 }
 
 
-def get_controlnet_model(model_family: str, controlnet_model: str) -> str:
+def get_controlnet_model(model_family: ModelFamily, controlnet_model: str) -> str:
     config = CONTROL_NET_MODEL_CONFIG.get(model_family)
     if not config:
         raise ControlNetConfigError(f"ControlNet model config for {model_family} not found")
@@ -57,7 +52,7 @@ def get_controlnet_model(model_family: str, controlnet_model: str) -> str:
 
 
 class ControlNet:
-    def __init__(self, data: ControlNetSchema, model_family: ModelFamily, width, height, torch_dtype=torch.float16):
+    def __init__(self, data: ControlNetSchema, model_family: ModelFamily, width, height):
         self.model = get_controlnet_model(model_family, data.model)
         self.conditioning_scale = data.conditioning_scale
         self.image = load_image_if_exists(data.image)
@@ -69,7 +64,7 @@ class ControlNet:
             raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")
 
         self.image = self.image.resize([width, height])
-        self.loaded_controlnet = load_controlnet(self.model, ModelFamily, torch_dtype=torch_dtype)
+        self.loaded_controlnet = load_controlnet(self.model, model_family)
 
     # we load then offload to match the same behavior as cpu offloading
     def get_loaded_controlnet(self):
@@ -80,15 +75,13 @@ class ControlNet:
 
 
 class ControlNets:
-    def __init__(
-        self, control_nets: list[ControlNetSchema], model_family: ModelFamily, width, height, torch_dtype=torch.float16
-    ):
+    def __init__(self, control_nets: list[ControlNetSchema], model_family: ModelFamily, width, height):
         self.control_nets: list[ControlNet] = []
 
         # Handle initialization errors and create valid control nets
         for data in control_nets:
             try:
-                control_net = ControlNet(data, model_family, width, height, torch_dtype)
+                control_net = ControlNet(data, model_family, width, height)
                 self.control_nets.append(control_net)
             except ControlNetConfigError as e:
                 logger.error(f"Failed to initialize ControlNet: {e}")

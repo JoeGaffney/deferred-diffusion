@@ -1,0 +1,86 @@
+from typing import Literal
+
+import replicate
+from PIL import Image
+
+from common.replicate_helpers import process_replicate_output
+from images.context import ImageContext
+from utils.utils import convert_pil_to_bytes
+
+
+def get_size(
+    context: ImageContext,
+) -> Literal["1:1", "16:9", "9:16"]:
+    size = "1:1"
+    dimension_type = context.get_dimension_type()
+    if dimension_type == "landscape":
+        size = "16:9"
+    elif dimension_type == "portrait":
+        size = "9:16"
+    return size
+
+
+def text_to_image_call(context: ImageContext) -> Image.Image:
+
+    payload = {
+        "prompt": context.data.prompt,
+        "aspect_ratio": get_size(context),
+        "output_format": "png",
+        "safety_tolerance": 6,
+        "seed": context.data.seed,
+    }
+
+    output = replicate.run(context.data.model_path, input=payload)
+    return process_replicate_output(output)
+
+
+def image_to_image_call(context: ImageContext) -> Image.Image:
+    if context.color_image is None:
+        raise ValueError("No color image provided")
+
+    payload = {
+        "prompt": context.data.prompt,
+        "input_image": convert_pil_to_bytes(context.color_image),
+        "output_format": "png",
+        "guidance": context.data.guidance_scale,
+        "image_prompt_strength": context.data.strength,
+        "steps": 50,
+        "safety_tolerance": 6,
+        "seed": context.data.seed,
+    }
+
+    output = replicate.run(context.data.model_path, input=payload)
+    return process_replicate_output(output)
+
+
+def inpainting_call(context: ImageContext) -> Image.Image:
+    if context.color_image is None or context.mask_image is None:
+        raise ValueError("No color image or mask image provided")
+
+    payload = {
+        "prompt": context.data.prompt,
+        "input_image": convert_pil_to_bytes(context.color_image),
+        "mask_image": convert_pil_to_bytes(context.mask_image),
+        "guidance": context.data.guidance_scale,
+        "steps": 50,
+        "output_format": "png",
+        "safety_tolerance": 6,
+        "seed": context.data.seed,
+    }
+
+    output = replicate.run(context.data.model_path_inpainting, input=payload)
+    return process_replicate_output(output)
+
+
+def main(context: ImageContext) -> Image.Image:
+    mode = context.get_generation_mode()
+
+    # OpenAI-specific handling of text_to_image with adapters
+    if mode == "text_to_image":
+        return text_to_image_call(context)
+    elif mode == "img_to_img":
+        return image_to_image_call(context)
+    elif mode == "img_to_img_inpainting":
+        return inpainting_call(context)
+
+    raise ValueError(f"Invalid mode {mode} for OpenAI API")

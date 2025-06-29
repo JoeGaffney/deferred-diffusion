@@ -55,17 +55,20 @@ We try to use plural to adhere to REST best practices.
 /workers
 │── /images # Grouped by results type
 │ ├── models/ # ✅ AI models (ML/DL models, weights, configs)
+│ ├── external_models/ # ✅ external AI models
 | |── api_schemas.py # symlink ?
 │ ├── schemas.py # ✅ Pydantic schemas (data validation)
 │ ├── context.py # ✅ Business logic layer
 │ ├── tasks.py # ✅ Celery task
 │── /texts
 │ ├── models/
+│ ├── external_models/ # ✅ external AI models
 │ ├── schemas.py
 │ ├── context.py
 │ ├── tasks.py
 │── /videos
 │ ├── models/
+│ ├── external_models/ # ✅ external AI models
 │ ├── schemas.py
 │ ├── context.py
 │ ├── tasks.py
@@ -101,7 +104,7 @@ Agentic area is a bit experimental; the agents can call on other modules, for ex
 
 # Building
 
-Run primarly in the docker containers because of the multi service worflows.
+Run primarily in the docker containers because of the multi service wrokflows and the multi copies of model downloads.
 
 Make all
 
@@ -111,8 +114,8 @@ Pytest is used for integration tests confirming the models run.
 
 You can call from the make file.
 
-- Make test-images
-- Make test-texts
+- Make test-worker
+- Make test-it-tests
 
 Or locally
 
@@ -121,23 +124,19 @@ cd api
 pytest -vs
 ```
 
-# Docker
+# Releasing
 
-- docker-compose build
-- docker-compose up
+Currently need a way to package everything up and probably make a seperate docker compose for deployment
+
+Tag & push docker images
+
+- Make tag-and-push
+
+# Docker helpers
 
 To optimize volumes and virtual disk useful after model deletions
 
 - Optimize-VHD -Path "Y:\DOCKER\DockerDesktopWSL\disk\docker_data.vhdx" -Mode Full
-
-Combined
-
-- docker-compose up --build
-
-Tag & push
-
-- docker tag deferred-diffusion-api:latest joegaffney/deferred-diffusion:latest
-- docker push joegaffney/deferred-diffusion:latest
 
 # Toolsets
 

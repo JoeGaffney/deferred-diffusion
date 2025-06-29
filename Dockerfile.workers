@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir --no-deps sam2 --ignore-requires-python
 RUN pip install --no-cache-dir supervision hydra-core iopath
 
 # Install diffusers from the main branch for time being
+ARG REBUILD_DATE=2025-06-28
 RUN pip install -U git+https://github.com/huggingface/diffusers.git@main --no-deps
 
 # List all installed packages during build
