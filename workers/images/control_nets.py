@@ -64,7 +64,7 @@ class ControlNet:
             raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")
 
         self.image = self.image.resize([width, height])
-        self.loaded_controlnet = load_controlnet(self.model, ModelFamily)
+        self.loaded_controlnet = load_controlnet(self.model, model_family)
 
     # we load then offload to match the same behavior as cpu offloading
     def get_loaded_controlnet(self):
