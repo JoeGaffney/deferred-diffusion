@@ -1,4 +1,6 @@
 import os
+import traceback
+from contextlib import contextmanager
 
 import nuke
 
@@ -29,67 +31,31 @@ def create_dd_image_node():
     return node
 
 
-def replace_hashes_with_frame(path_with_hashes, frame):
-    num_hashes = path_with_hashes.count("#")
-    if num_hashes == 0:
-        # No hashes to replace, return original path
-        return path_with_hashes
-    frame_str = str(frame).zfill(num_hashes)
-    return path_with_hashes.replace("#" * num_hashes, frame_str)
+def set_node_info(node, status, message):
+    # node.setUserData("nodeinfo_api_status", str(status))
+    # node.setUserData("nodeinfo_api_message", str(message))
+
+    if status == "COMPLETE":
+        node["tile_color"].setValue(0x00CC00FF)  # Green
+    elif status == "PENDING":
+        node["tile_color"].setValue(0xCCCC00FF)  # Yellow
+    elif status == "FAILED" or status == "ERROR" or status == "FAILURE":
+        node["tile_color"].setValue(0xCC0000FF)  # Red
+    else:
+        node["tile_color"].setValue(0x888888FF)  # Grey
 
 
-@threaded
-def api_get_call(id, output_image_path: str, output_read):
-    nuke.tprint("Calling API get...")
-    response = images_get.sync_detailed(id, client=client)
-
-    def update_ui():
-        if response.status_code != 200:
-            nuke.message(f"API Call Failed: {response}")
-            return
-
-        if not isinstance(response.parsed, ImageResponse):
-            nuke.message(f"Invalid response type: {type(response.parsed)} {response}")
-            return
-
-        if not response.parsed.result:
-            nuke.message("No result found in the response.")
-            return
-
-        if not response.parsed.status == "SUCCESS":
-            nuke.message(f"Task failed with error: {response.parsed.error_message}")
-            return
-
-        resolved_output_path = replace_hashes_with_frame(output_image_path, nuke.frame())
-        nuke.tprint(f"resolved_output_path {resolved_output_path}")
-
-        base64_to_image(response.parsed.result.base64_data, resolved_output_path)
-        set_node_value(output_read, "file", output_image_path)
-        output_read["reload"].execute()
-
-    nuke.executeInMainThread(update_ui)
-    nuke.tprint("API call completed successfully.")
-
-
-def api_call(node, body: ImageRequest, output_image_path: str, output_read):
-    nuke.tprint("Calling API...")
-    response = images_create.sync_detailed(client=client, body=body)
-
-    if response.status_code != 200:
-        nuke.message(f"API Call Failed: {response}")
-        return
-
-    if not isinstance(response.parsed, ImageCreateResponse):
-        nuke.message(f"Invalid response type: {type(response.parsed)} {response}")
-        return
-
-    id = response.parsed.id
-    if not id:
-        nuke.message("No ID found in the response.")
-        return
-
-    set_node_value(node, "task_id", str(id))
-    api_get_call(str(id), output_image_path, output_read)
+@contextmanager
+def nuke_error_handling(node):
+    try:
+        yield
+    except ValueError as e:
+        set_node_info(node, "ERROR", str(e))
+        nuke.message(str(e))
+    except Exception as e:
+        set_node_info(node, "ERROR", str(e))
+        traceback.print_exc()
+        nuke.message(str(e))
 
 
 def get_output_path(node, movie=False) -> str:
@@ -105,41 +71,108 @@ def get_output_path(node, movie=False) -> str:
     return output_image_path
 
 
+def replace_hashes_with_frame(path_with_hashes, frame):
+    num_hashes = path_with_hashes.count("#")
+    if num_hashes == 0:
+        # No hashes to replace, return original path
+        return path_with_hashes
+    frame_str = str(frame).zfill(num_hashes)
+    return path_with_hashes.replace("#" * num_hashes, frame_str)
+
+
+@threaded
+def _api_get_call(node, id, output_path: str, wait=False):
+    set_node_info(node, "PENDING", "")
+
+    try:
+        parsed = images_get.sync(id, client=client, wait=wait)
+    except Exception as e:
+
+        def handle_error(error=e):
+            with nuke_error_handling(node):
+                raise RuntimeError(f"API call failed: {str(error)}") from error
+
+        nuke.executeInMainThread(handle_error)
+        return
+
+    def update_ui():
+        with nuke_error_handling(node):
+            if not isinstance(parsed, ImageResponse):
+                raise ValueError("Unexpected response type from API call.")
+
+            if not parsed.status == "SUCCESS" or not parsed.result:
+                raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
+
+            # Save the image to the specified path
+            resolved_output_path = replace_hashes_with_frame(output_path, nuke.frame())
+            base64_to_image(parsed.result.base64_data, resolved_output_path)
+
+            output_read = nuke.toNode(f"{node.name()}.output_read")
+            set_node_value(output_read, "file", output_path)
+            output_read["reload"].execute()
+
+            set_node_info(node, "COMPLETE", output_path)
+
+    nuke.executeInMainThread(update_ui)
+
+
+def _api_call(node, body: ImageRequest, output_image_path: str):
+    try:
+        parsed = images_create.sync(client=client, body=body)
+    except Exception as e:
+        raise RuntimeError(f"API call failed: {str(e)}") from e
+
+    if not isinstance(parsed, ImageCreateResponse):
+        raise ValueError("Unexpected response type from API call.")
+
+    set_node_value(node, "task_id", str(parsed.id))
+    _api_get_call(node, str(parsed.id), output_image_path, wait=True)
+
+
 def process_image(node):
-    """This function is defined to process the node"""
+    """Process the node using the API"""
+    set_node_info(node, "", "")
 
-    output_image_path = get_output_path(node, movie=False)
-    if not output_image_path:
-        raise ValueError("Output image path is required.")
+    with nuke_error_handling(node):
+        output_image_path = get_output_path(node, movie=False)
+        if not output_image_path:
+            raise ValueError("Output image path is required.")
 
-    output_read = nuke.toNode(f"{node.name()}.output_read")
-    if not output_read:
-        raise ValueError("Output read node not found.")
+        current_frame = nuke.frame()
+        image_node = node.input(0)
+        mask_node = node.input(1)
+        controlnets_node = node.input(2)
+        adapter_node = node.input(3)
 
-    current_frame = nuke.frame()
-    image_node = node.input(0)
-    mask_node = node.input(1)
-    controlnets_node = node.input(2)
-    apdapter_node = node.input(3)
+        image = node_to_base64(image_node, current_frame)
+        mask = node_to_base64(mask_node, current_frame)
+        width_height = get_node_value(node, "width_height", [1024, 1024], return_type=list, mode="value")
 
-    image = node_to_base64(image_node, current_frame)
-    mask = node_to_base64(mask_node, current_frame)
-    width_height = get_node_value(node, "width_height", [1024, 1024], return_type=list, mode="value")
+        body = ImageRequest(
+            model=ImageRequestModel(get_node_value(node, "model", "sd-xl", mode="value")),
+            controlnets=get_control_nets(controlnets_node),
+            guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
+            image=image,
+            ip_adapters=get_ip_adapters(adapter_node),
+            mask=mask,
+            negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
+            num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
+            prompt=get_node_value(node, "prompt", UNSET, mode="get"),
+            seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
+            strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),
+            width=int(width_height[0]),
+            height=int(width_height[1]),
+        )
 
-    body = ImageRequest(
-        model=ImageRequestModel(get_node_value(node, "model", "sdxl", mode="value")),
-        controlnets=get_control_nets(controlnets_node),
-        guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
-        image=image,
-        ip_adapters=get_ip_adapters(apdapter_node),
-        mask=mask,
-        negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
-        num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
-        prompt=get_node_value(node, "prompt", UNSET, mode="get"),
-        seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
-        strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),
-        width=int(width_height[0]),
-        height=int(width_height[1]),
-    )
+        _api_call(node, body, output_image_path)
 
-    api_call(node, body, output_image_path, output_read)
+
+def get_image(node):
+    """Get an image using a task ID"""
+    with nuke_error_handling(node):
+        task_id = get_node_value(node, "task_id", "", mode="get")
+        if not task_id or task_id == "":
+            raise ValueError("Task ID is required to get the image.")
+
+        output_image_path = get_output_path(node, movie=False)
+        _api_get_call(node, task_id, output_image_path, wait=False)

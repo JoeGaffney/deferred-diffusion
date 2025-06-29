@@ -3,14 +3,19 @@ version 14.0 v3
 Gizmo {
  inputs 4
  addUserKnob {20 Settings}
- addUserKnob {4 model M {sd-xl sd-3 sd-3-5 flux-1 depth-anything-2 segment-anything-2 sd-x4-upscaler hidream-1 external-gpt-image-1 external-runway-gen4-image external-flux-kontext external-flux-1-1}}
- model sd-xl
+ addUserKnob {26 ""}
+ addUserKnob {22 generate T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" +STARTLINE}
+ addUserKnob {1 task_id -STARTLINE}
+ addUserKnob {22 get_task -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)"}
  addUserKnob {26 "" +STARTLINE}
- addUserKnob {14 width_height l "" +STARTLINE R 0 100}
+ addUserKnob {4 model M {sd-xl sd-3 flux-1 flux-kontext-1 depth-anything-2 segment-anything-2 sd-x4-upscaler external-gpt-image-1 external-runway-gen4-image external-flux-kontext external-flux-1-1}}
+ addUserKnob {14 width_height l "" -STARTLINE R 0 100}
  width_height {1280 720}
- addUserKnob {1 prompt}
+ addUserKnob {26 ""}
+ addUserKnob {43 prompt l "Prompt" t "Enter your prompt here" T 4}
  prompt "Detailed, 8k, photorealistic"
- addUserKnob {1 negative_prompt}
+ addUserKnob {26 ""}
+ addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here" T 4}
  negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
  addUserKnob {26 ""}
  addUserKnob {7 num_inference_steps t quality R 1 50}
@@ -22,9 +27,6 @@ Gizmo {
  addUserKnob {7 seed t seed R 1 1000}
  seed 42
  addUserKnob {26 ""}
- addUserKnob {22 generate T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" +STARTLINE}
- addUserKnob {1 task_id}
- addUserKnob {22 get_task T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)" +STARTLINE}
  addUserKnob {20 Paths}
  addUserKnob {1 path_root}
  path_root "\[file dirname \[value root.name]]/processed/\[value this.name]"
@@ -40,11 +42,14 @@ Gizmo {
  Read {
   inputs 0
   file_type png
-  file "\[value parent.path_root]/\[value this.name]/output.png"
+  file "\[value parent.path_root]/\[value this.name]/output.#####.png"
+  last 2000
+  origlast 2000
   origset true
   on_error black
-  version 19
+  version 22
   name output_read
+  selected true
   xpos 643
   ypos -178
  }
