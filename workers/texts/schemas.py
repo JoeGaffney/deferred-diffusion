@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, RootModel
 
 ModelName: TypeAlias = Literal["Qwen2.5-VL-3B-Instruct", "gpt-4o-mini", "gpt-4.1-mini"]
 ModelFamily: TypeAlias = Literal["qwen", "openai"]
+TaskName: TypeAlias = Literal["process_text", "process_text_external"]
 
 
 class TextContent(BaseModel):
@@ -59,6 +60,18 @@ class TextRequest(BaseModel):
     def external_model(self) -> bool:
         external_models = ["openai"]
         return self.model_family in external_models
+
+    @property
+    def task_name(self) -> TaskName:
+        """Determines the appropriate task name based on request characteristics."""
+        if self.external_model:
+            return "process_text_external"
+        return "process_text"
+
+    @property
+    def task_queue(self) -> str:
+        """Return the task queue based on whether the model is external or not."""
+        return "cpu" if self.external_model else "gpu"
 
 
 class TextWorkerResponse(BaseModel):

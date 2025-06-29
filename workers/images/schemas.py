@@ -184,6 +184,11 @@ class ImageRequest(BaseModel):
     def task_name(self) -> TaskName:
         return "process_image_external" if self.external_model else "process_image"
 
+    @property
+    def task_queue(self) -> str:
+        """Return the task queue based on whether the model is external or not."""
+        return "cpu" if self.external_model else "gpu"
+
 
 class ImageWorkerResponse(BaseModel):
     base64_data: Base64Bytes

@@ -31,7 +31,6 @@ celery_app = Celery(
     backend=os.getenv("CELERY_RESULT_BACKEND"),
 )
 
-
 celery_app.conf.task_track_started = True
 celery_app.conf.worker_send_task_events = True
 celery_app.conf.task_send_sent_event = True

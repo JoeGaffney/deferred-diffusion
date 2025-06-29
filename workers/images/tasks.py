@@ -59,7 +59,7 @@ def external_model_router_main(context: ImageContext):
         raise ValueError(f"Unsupported model family: {family}")
 
 
-@celery_app.task(name="process_image")
+@celery_app.task(name="process_image", queue="gpu")
 def process_image(request_dict):
     free_gpu_memory()
     request = ImageRequest.model_validate(request_dict)
@@ -69,7 +69,7 @@ def process_image(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="process_image_external")
+@celery_app.task(name="process_image_external", queue="cpu")
 def process_image_external(request_dict):
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)

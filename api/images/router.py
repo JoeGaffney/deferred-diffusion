@@ -23,7 +23,7 @@ router = APIRouter(
 @router.post("", response_model=ImageCreateResponse, operation_id="images_create")
 async def create(request: ImageRequest, response: Response):
     try:
-        result = celery_app.send_task(request.task_name, args=[request.model_dump()])
+        result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
         response.headers["Location"] = f"/images/{result.id}"
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:

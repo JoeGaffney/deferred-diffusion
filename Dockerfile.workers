@@ -35,4 +35,4 @@ WORKDIR /app/workers
 # Command to run Celery worker
 # CMD ["celery", "-A", "worker", "worker", "--loglevel=info", "--concurrency=2"]
 # Fixes CUDA issues with concurrency
-CMD ["celery", "-A", "worker", "worker", "--loglevel=info", "--pool=threads", "--concurrency=1"]
+CMD ["celery", "-A", "worker", "worker", "--loglevel=info", "--pool=threads", "--concurrency=1", "-Q", "gpu,cpu"]
