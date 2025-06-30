@@ -1,0 +1,75 @@
+services:
+  api:
+    image: deferred-diffusion-api:latest
+    tty: true
+    stdin_open: true
+    ports:
+      - "5000:5000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  gpu-workers:
+    image: deferred-diffusion-workers:latest
+    command: celery -A worker worker --loglevel=info --pool=threads --concurrency=1 -Q gpu
+    tty: true
+    stdin_open: true
+    volumes:
+      - hf_cache:/WORKSPACE
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - CELERYD_PREFETCH_MULTIPLIER=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_HOME=/WORKSPACE
+      - TORCH_HOME=/WORKSPACE
+    depends_on:
+      - redis
+      - api
+    deploy:
+      replicas: 1
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  cpu-workers:
+    image: deferred-diffusion-workers:latest
+    command: celery -A worker worker --concurrency=4 --loglevel=info -Q cpu
+    tty: true
+    stdin_open: true
+    volumes:
+      - hf_cache:/WORKSPACE
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - CELERYD_PREFETCH_MULTIPLIER=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RUNWAYML_API_SECRET=${RUNWAYML_API_SECRET}
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_HOME=/WORKSPACE
+      - TORCH_HOME=/WORKSPACE
+    depends_on:
+      - redis
+      - api
+    deploy:
+      replicas: 1
+
+volumes:
+  hf_cache: {}

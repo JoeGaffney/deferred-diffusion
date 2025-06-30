@@ -144,6 +144,17 @@ These are examples on how to simply get things on the path you could use rez or 
 
 Adjust directories depending on where you have the toolset folders and the versions of your application. Examples are given for a windows environment.
 
+## Deploy the release on a server
+
+Docker desktop is required and run
+
+- docker-compose down
+- docker load -i deferred-diffusion-api.tar
+- docker load -i deferred-diffusion-workers.tar
+- docker-compose up -d
+
+An NVME drive with min 500gb of space is potentially required and env vars need to be configured on the host.
+
 ## HDA's houdini setup
 
 ## Python Modules

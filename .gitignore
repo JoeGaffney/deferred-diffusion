@@ -21,6 +21,7 @@ nuke/python/generated/
 hda/backup/
 hda/python/generated/
 it_tests/generated/
+releases/
 *.dat
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
