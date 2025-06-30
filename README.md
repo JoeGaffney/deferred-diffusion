@@ -151,7 +151,7 @@ Docker desktop is required and run
 - docker-compose down
 - docker load -i deferred-diffusion-api.tar
 - docker load -i deferred-diffusion-workers.tar
-- docker-compose up -d
+- docker-compose up -d --no-build
 
 An NVME drive with min 500gb of space is potentially required and env vars need to be configured on the host.
 
