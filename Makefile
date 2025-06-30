@@ -84,13 +84,9 @@ create-release: build
 # Update docker-compose.yml to use versioned images
 	powershell -Command "(Get-Content releases\$(RELEASE_PROJECT_NAME)-$(RELEASE_VERSION)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', 'deferred-diffusion-api:$(RELEASE_VERSION)' -replace 'deferred-diffusion-workers:latest', 'deferred-diffusion-workers:$(RELEASE_VERSION)' | Set-Content releases\$(RELEASE_PROJECT_NAME)-$(RELEASE_VERSION)\docker-compose.yml"
 
-# Create temporary exclusion file
+# Copy directories with exclusions
 	echo __pycache__ > exclude_patterns.txt
 	echo backup >> exclude_patterns.txt
-
-# Copy directories with exclusions
 	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt nuke releases\$(RELEASE_PROJECT_NAME)-$(RELEASE_VERSION)\nuke
 	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt hda releases\$(RELEASE_PROJECT_NAME)-$(RELEASE_VERSION)\hda
-
-# Clean up temporary file
 	del exclude_patterns.txt

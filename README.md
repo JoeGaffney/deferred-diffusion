@@ -1,20 +1,22 @@
 # deferred-diffusion
 
-Multi model API that can run diffusion and other models with py-torch and external services. This can be ran locally or on another machine on the same network accessing the same paths.
+Multi model API that can run diffusion and other models with py-torch and external services.
+
+The API will push tasks to worker broker and workers will pick this up. Workers can run process tasks using python ML ecosystem, external tasks which call ML providers.
+
+Client will call the API get end points to check for task completion. See swagger ui for more info.
 
 Currently example Houdini HDA's are provided as it already provides a rich compositing node based ui, but would be possible to add more applications or a standalone ui.
 
-The api will push tasks to worker broker and workers will pick this up. Some endpoints will async wait for tasks some extra long ones will require end client to re-poll and check progress. Workers can run process tasks using python ML ecosystem, external tasks which call ML providers.
-
-# **Project Structure Overview**
+## **Project Structure Overview**
 
 This project follows a **feature-based structure**, grouping related components together by domain (`images`, `texts`, `videos`). This approach ensures a clear separation of concerns and improves maintainability, scalability, and collaboration.
 
 We try to use plural to adhere to REST best practices.
 
-## **📂 Why This Structure?**
+### **📂 Why This Structure?**
 
-### ✅ **Cohesion & Readability**
+#### ✅ **Cohesion & Readability**
 
 - All components related to a specific AI task (`images`, `texts`, `videos`) are grouped together.
 - They are grouped in a sense of what main data type they return, but can have multi model inputs.
@@ -22,7 +24,7 @@ We try to use plural to adhere to REST best practices.
 - Eliminates the need to navigate across multiple directories to understand a feature.
 - New developers can quickly locate relevant code without confusion.
 
-### ✅ **Scalability for AI Projects**
+#### ✅ **Scalability for AI Projects**
 
 - AI models often require **domain-specific logic**. Keeping `schemas.py`, `context.py`, and `models/` in the same module makes it easier to extend functionality.
 - If a new AI domain (`audio`, `3D`, etc.) is introduced, the structure remains consistent just duplicate the existing pattern.
@@ -81,149 +83,146 @@ We try to use plural to adhere to REST best practices.
 
 Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
 
-### Toolsets (example)
-
-```
-/hda
-│── /python # Grouped by results type
-│ ├── /generated # generated api client
-│ ├── /api/
-│ ├── ├── api_image_node.py # node and api calling logic
-│ ├── utils.py
-│ ├── config.py
-│── cop_image_node.hda
-│── cop_text_node.hda
-│── cop_video.hda
-```
-
-# Local setup Windows
-
-```sh
-./start_venv_setup.bat
-```
-
-# Building
+## Building
 
 Run primarily in the docker containers because of the multi service wrokflows and the multi copies of model downloads.
 
-Make all
+```bash
+make all
+```
 
-# Testing
+### Local setup Windows
+
+For local venv
+
+```bash
+./start_venv_setup.bat
+```
+
+## Testing
 
 Pytest is used for integration tests confirming the models run.
 
 You can call from the make file.
 
-- Make test-worker
-- Make test-it-tests
-
-Or locally
-
-```
-cd api
-pytest -vs
+```bash
+make test-worker
+make test-it-tests
 ```
 
-# Releasing
+## Releasing
 
-Currently need a way to package everything up and probably make a seperate docker compose for deployment
+will make /releases/deferred-diffusion-alpha
+Which will have a tar of the images setup
 
-Tag & push docker images
+```bash
+make create-release
+```
 
-- Make tag-and-push
+Tag & push docker images to the hub - optional
 
-# Docker helpers
+```bash
+make tag-and-push
+```
 
-To optimize volumes and virtual disk useful after model deletions
+### Deploy the release on a server
 
-- Optimize-VHD -Path "Y:\DOCKER\DockerDesktopWSL\disk\docker_data.vhdx" -Mode Full
+Docker desktop is required and run
 
-# Toolsets
+```bash
+docker-compose down
+docker load -i deferred-diffusion-api.tar
+docker load -i deferred-diffusion-workers.tar
+docker-compose up -d --no-build
+```
+
+An NVME drive with min 500gb of space is potentially required and env vars need to be configured on the host.
+
+### Required Environment Variables
+
+Server for the containers
+
+```env
+OPENAI_API_KEY=your-openai-key # For OpenAI services
+RUNWAYML_API_SECRET=your-runway-secret # For RunwayML services
+REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
+HF_TOKEN=your-huggingface-token # For Hugging Face model access
+DDIFFUSION_API_KEYS=Welcome1! # API keys for authentication
+```
+
+For the clients where the toolsets are used
+
+```env
+DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
+DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
+```
+
+## Toolsets
 
 These are examples on how to simply get things on the path you could use rez or any other way preferred way to get the modules and plugins loaded.
 
 Adjust directories depending on where you have the toolset folders and the versions of your application. Examples are given for a windows environment.
 
-## Deploy the release on a server
+### HDA's houdini setup
 
-Docker desktop is required and run
+#### Python Modules
 
-- docker-compose down
-- docker load -i deferred-diffusion-api.tar
-- docker load -i deferred-diffusion-workers.tar
-- docker-compose up -d --no-build
-
-An NVME drive with min 500gb of space is potentially required and env vars need to be configured on the host.
-
-## HDA's houdini setup
-
-## Python Modules
-
-The following need to be available to houdini for the api client and agents to work.
+The following need to be available to Houdini for the API client and agents to work.
 
 - httpx
 
 You can install like this to put on roaming path.
 
-```
-
+```bash
 "C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
-
 ```
 
-## Env file
+#### Env file
 
-```
-
+```env
 HOUDINI_PATH = C:/development/deferred-diffusion/hda;&
 HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/hda;&
 PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
-
 ```
 
-## Nuke plug-in setup
+### Nuke plug-in setup
 
-### Python modules
+#### Python modules
 
-The following need to be available to nuke for the api client and agents to work.
+The following need to be available to Nuke for the API client to work.
 
 - httpx
 - attrs
 
 You can install like this.
 
-```
-
+```bash
 "C:\Program Files\Nuke14.0\python.exe" -m pip install httpx attrs
-
 ```
 
-### Adding to the path
+#### Adding to the path
 
 Update your
 
 - C:\Users\USERNAME\.nuke\init.py
 
-```
-
+```python
 import nuke
 
-nuke.message("Nuke initialized!")
-
 # Centralized Nuke plugin path (your custom directory)
-
 custom_plugin_path = r"C:\development\deferred-diffusion\nuke"
 
 # Add your custom plugin paths
-
 nuke.pluginAddPath(custom_plugin_path)
-
-# Test message (useful for debugging)
-
 print(f"Custom plugin paths from {custom_plugin_path} have been added.")
-
 ```
 
-```
+## MISC
 
+### Docker helpers
+
+To optimize volumes and virtual disk useful after model deletions
+
+```bash
+Optimize-VHD -Path "Y:\DOCKER\DockerDesktopWSL\disk\docker_data.vhdx" -Mode Full
 ```
