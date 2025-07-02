@@ -12,10 +12,10 @@ Gizmo {
  addUserKnob {14 width_height l "" -STARTLINE R 0 100}
  width_height {1280 720}
  addUserKnob {26 ""}
- addUserKnob {43 prompt l "Prompt" t "Enter your prompt here" T 3}
+ addUserKnob {43 prompt l "Prompt" t "Enter your prompt here" T 2}
  prompt "Detailed, 8k, photorealistic"
  addUserKnob {26 ""}
- addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here" T 2}
+ addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here" T 1}
  negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
  addUserKnob {26 ""}
  addUserKnob {7 num_inference_steps t quality R 1 50}
