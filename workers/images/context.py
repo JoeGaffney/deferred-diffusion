@@ -52,8 +52,8 @@ class ImageContext:
         self.orig_width = copy.copy(data.width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
 
-        # Round down to nearest multiple of 16
-        self.division = 16
+        # Round down to nearest multiple of the eg. 8, 16, 32, etc.
+        self.division = data.model_divisor
         self.width = ensure_divisible(copy.copy(data.width), self.division)
         self.height = ensure_divisible(copy.copy(data.height), self.division)
         self.color_image = load_image_if_exists(data.image)

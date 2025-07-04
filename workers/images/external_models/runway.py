@@ -2,13 +2,38 @@ import time
 from typing import Literal
 
 from diffusers.utils import load_image
-from PIL import Image
+from PIL import Image, ImageOps
 from runwayml import RunwayML
 from runwayml.types.text_to_image_create_params import ContentModeration, ReferenceImage
 
 from common.logger import logger
 from images.context import ImageContext
 from videos.models.runway_gen import pill_to_base64
+
+
+def fix_aspect_ratio(img: Image.Image, safety_margin: float = 0.02) -> Image.Image:
+    """
+    Adjusts image to meet RunwayML API requirements for aspect ratio (between 0.5 and 2.0).
+    Uses ImageOps.fit to center the image when cropping.
+    """
+    aspect_ratio = img.width / img.height
+
+    # Safe boundaries with margin
+    min_ratio = 0.5 + safety_margin
+    max_ratio = 2.0 - safety_margin
+
+    # Return original if already within safe range
+    if min_ratio <= aspect_ratio <= max_ratio:
+        return img
+
+    # Too wide - adjust to safe max ratio
+    if aspect_ratio > max_ratio:
+        new_height = int(img.width / max_ratio)
+        return ImageOps.fit(img, (img.width, new_height))
+
+    # Too tall - adjust to safe min ratio
+    new_width = int(img.height * min_ratio)
+    return ImageOps.fit(img, (new_width, img.height))
 
 
 def get_size(
@@ -78,11 +103,14 @@ def image_to_image_call(client: RunwayML, context: ImageContext) -> Image.Image:
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
     if context.color_image:
-        reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(context.color_image)}"))
+        fixed_image = fix_aspect_ratio(context.color_image)
+        reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
 
     if context.adapters.is_enabled():
         for current in context.adapters.get_images():
-            reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(current)}"))
+            if current:
+                fixed_image = fix_aspect_ratio(current)
+                reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")

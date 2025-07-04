@@ -6,7 +6,7 @@ from texts.schemas import TextRequest, TextWorkerResponse
 from worker import celery_app
 
 
-@celery_app.task(name="process_text")
+@celery_app.task(name="process_text", queue="gpu")
 def process_text(request_dict):
     free_gpu_memory()
     request = TextRequest.model_validate(request_dict)
@@ -25,7 +25,7 @@ def process_text(request_dict):
     ).model_dump()
 
 
-@celery_app.task(name="process_text_external")
+@celery_app.task(name="process_text_external", queue="cpu")
 def process_text_external(request_dict):
     request = TextRequest.model_validate(request_dict)
     context = TextContext(request)

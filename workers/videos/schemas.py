@@ -75,6 +75,11 @@ class VideoRequest(BaseModel):
             return "process_video_external"
         return "process_video"
 
+    @property
+    def task_queue(self) -> str:
+        """Return the task queue based on whether the model is external or not."""
+        return "cpu" if self.external_model else "gpu"
+
 
 class VideoWorkerResponse(BaseModel):
     base64_data: Base64Bytes

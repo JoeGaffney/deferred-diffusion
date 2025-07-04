@@ -28,6 +28,7 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
         "output_format": "png",
         "safety_tolerance": 6,
         "seed": context.data.seed,
+        "raw": True,
     }
 
     output = replicate.run(context.data.model_path, input=payload)
@@ -47,6 +48,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         "steps": 50,
         "safety_tolerance": 6,
         "seed": context.data.seed,
+        # "raw": True,
     }
 
     output = replicate.run(context.data.model_path, input=payload)
@@ -59,8 +61,8 @@ def inpainting_call(context: ImageContext) -> Image.Image:
 
     payload = {
         "prompt": context.data.prompt,
-        "input_image": convert_pil_to_bytes(context.color_image),
-        "mask_image": convert_pil_to_bytes(context.mask_image),
+        "image": convert_pil_to_bytes(context.color_image),
+        "mask": convert_pil_to_bytes(context.mask_image),
         "guidance": context.data.guidance_scale,
         "steps": 50,
         "output_format": "png",

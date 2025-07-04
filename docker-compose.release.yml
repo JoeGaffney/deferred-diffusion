@@ -1,8 +1,6 @@
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    image: deferred-diffusion-api:latest
     tty: true
     stdin_open: true
     ports:
@@ -14,19 +12,14 @@ services:
       - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
 
-  # Redis service as message broker
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
 
-  # Celery worker service
   gpu-workers:
+    image: deferred-diffusion-workers:latest
     command: celery -A worker worker --loglevel=info --pool=threads --concurrency=1 -Q gpu
-    build:
-      context: .
-      dockerfile: Dockerfile.workers
-    image: deferred-diffusion-workers
     tty: true
     stdin_open: true
     volumes:
@@ -46,7 +39,7 @@ services:
       - redis
       - api
     deploy:
-      replicas: 1 # Number of container
+      replicas: 1
       resources:
         reservations:
           devices:
@@ -55,11 +48,8 @@ services:
               capabilities: [gpu]
 
   cpu-workers:
+    image: deferred-diffusion-workers:latest
     command: celery -A worker worker --concurrency=4 --loglevel=info -Q cpu
-    build:
-      context: .
-      dockerfile: Dockerfile.workers
-    image: deferred-diffusion-workers
     tty: true
     stdin_open: true
     volumes:
@@ -79,7 +69,7 @@ services:
       - redis
       - api
     deploy:
-      replicas: 1 # Number of container
+      replicas: 1
 
   flower:
     image: mher/flower:latest
@@ -93,45 +83,6 @@ services:
       - cpu-workers
       - redis
 
-  # comfy ui for creating and managing workflows
-  comfy:
-    build:
-      context: .
-      dockerfile: Dockerfile.comfy
-
-    volumes:
-      - Y:/COMFY/models:/app/ComfyUI/models # For user access to models
-      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes
-      - Y:/COMFY/user:/app/ComfyUI/user # For user settings/configs
-      - Y:/COMFY/output:/app/ComfyUI/output # For output files
-    ports:
-      - "8188:8188" # expose ComfyUI web UI port
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  # Model loader service to sync models from a shared directory
-  model-loader:
-    image: alpine:latest
-    volumes:
-      - Y:/HF_HOME:/source:ro
-      - hf_cache:/destination
-    environment:
-      - HF_HOME=/WORKSPACE
-    command: >
-      sh -c "
-        echo 'Setting up...' &&
-        apk add --no-cache rsync &&
-        echo 'Starting models sync...' &&
-        rsync -av /source/ /destination/ &&
-        echo 'Sync complete!'
-      "
-
-# Volume definitions go at the root level, not nested inside the service
 volumes:
   hf_cache:
     name: deferred-diffusion_hf_cache

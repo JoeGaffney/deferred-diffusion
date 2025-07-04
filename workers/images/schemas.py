@@ -29,6 +29,12 @@ class ModelInfo(BaseModel):
     path: str
     external: bool
     inpainting_path: Optional[str] = None
+    auto_divisor: int = Field(
+        default=1,
+        ge=1,
+        le=64,
+        description="Divisor for image dimensions. If above 1, the image dimensions will be adjusted to be divisible by this value.",
+    )
 
 
 MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
@@ -37,8 +43,9 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="SG161222/RealVisXL_V4.0",
         inpainting_path="diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
         external=False,
+        auto_divisor=8,  # SDXL models typically use 8 for better performance
     ),
-    "sd-3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-large", external=False),
+    "sd-3": ModelInfo(family="sd3", path="stabilityai/stable-diffusion-3.5-large", external=False, auto_divisor=16),
     "flux-1": ModelInfo(
         family="flux",
         path="black-forest-labs/FLUX.1-dev",
@@ -169,6 +176,10 @@ class ImageRequest(BaseModel):
         return MODEL_CONFIG[self.model].path
 
     @property
+    def model_divisor(self) -> int:
+        return MODEL_CONFIG[self.model].auto_divisor
+
+    @property
     def model_path_inpainting(self) -> str:
         """Get the inpainting model path if available, otherwise normal."""
         inpainting_path = MODEL_CONFIG[self.model].inpainting_path
@@ -183,6 +194,11 @@ class ImageRequest(BaseModel):
     @property
     def task_name(self) -> TaskName:
         return "process_image_external" if self.external_model else "process_image"
+
+    @property
+    def task_queue(self) -> str:
+        """Return the task queue based on whether the model is external or not."""
+        return "cpu" if self.external_model else "gpu"
 
 
 class ImageWorkerResponse(BaseModel):

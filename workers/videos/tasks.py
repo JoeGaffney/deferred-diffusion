@@ -8,7 +8,7 @@ from videos.schemas import VideoRequest, VideoWorkerResponse
 from worker import celery_app
 
 
-@celery_app.task(name="process_video")
+@celery_app.task(name="process_video", queue="gpu")
 def process_video(request_dict):
     free_gpu_memory()
     request = VideoRequest.model_validate(request_dict)
@@ -25,7 +25,7 @@ def process_video(request_dict):
     return VideoWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()
 
 
-@celery_app.task(name="process_video_external")
+@celery_app.task(name="process_video_external", queue="cpu")
 def process_video_external(request_dict):
     request = VideoRequest.model_validate(request_dict)
     context = VideoContext(request)

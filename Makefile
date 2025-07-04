@@ -37,7 +37,7 @@ TEST_PATH ?= images
 # make test-worker TEST_PATH=images/test_external_text_to_image.py
 # make test-worker TEST_PATH=images/test_external_image_to_image.py
 test-worker: up
-	docker-compose exec workers pytest tests/$(TEST_PATH) -vs
+	docker-compose exec gpu-workers pytest tests/$(TEST_PATH) -vs
 
 # make test-it-tests TEST_PATH=images
 # make test-it-tests TEST_PATH=videos
@@ -61,3 +61,32 @@ tag-and-push:
 	docker push $(USERNAME)/$(REPO):api-$(VERSION)
 	docker push $(USERNAME)/$(REPO):worker-$(VERSION)
 
+RELEASE_VERSION ?= 0.1.0
+RELEASE_PROJECT_NAME ?= deferred-diffusion
+create-release: build
+# Create release directory with combined project-version name
+	if not exist releases mkdir releases
+	if exist releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME) rmdir /S /Q releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)
+	mkdir releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)
+
+# Tag images with version (this creates new tags without removing latest tags)
+	docker tag deferred-diffusion-api:latest deferred-diffusion-api:$(RELEASE_VERSION)
+	docker tag deferred-diffusion-workers:latest deferred-diffusion-workers:$(RELEASE_VERSION)
+
+# Save Docker images with latest tag
+	docker save -o releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\deferred-diffusion-api.tar deferred-diffusion-api:${RELEASE_VERSION}
+	docker save -o releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\deferred-diffusion-workers.tar deferred-diffusion-workers:${RELEASE_VERSION}
+
+# Copy deployment docker-compose.yml to release folder
+	copy docker-compose.release.yml releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\docker-compose.yml
+	copy README.md releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\README.md
+
+# Update docker-compose.yml to use versioned images
+	powershell -Command "(Get-Content releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', 'deferred-diffusion-api:$(RELEASE_VERSION)' -replace 'deferred-diffusion-workers:latest', 'deferred-diffusion-workers:$(RELEASE_VERSION)' | Set-Content releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\docker-compose.yml"
+
+# Copy directories with exclusions
+	echo __pycache__ > exclude_patterns.txt
+	echo backup >> exclude_patterns.txt
+	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt nuke releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\nuke
+	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt hda releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\hda
+	del exclude_patterns.txt

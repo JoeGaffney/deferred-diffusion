@@ -33,7 +33,7 @@ def test_text_to_image(model, mode):
                 width=width,
                 height=height,
                 controlnets=[],
-                num_inference_steps=15,
+                num_inference_steps=10,
             )
         )
     )
