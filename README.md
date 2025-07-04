@@ -85,7 +85,7 @@ Agentic area is a bit experimental; the agents can call on other modules, for ex
 
 ## Building
 
-Run primarily in the docker containers because of the multi service wrokflows and the multi copies of model downloads.
+Run primarily in the docker containers because of the multi service workflows and the multi copies of model downloads.
 
 ```bash
 make all
