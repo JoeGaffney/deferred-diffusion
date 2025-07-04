@@ -134,4 +134,4 @@ services:
 # Volume definitions go at the root level, not nested inside the service
 volumes:
   hf_cache:
-    name: deferred-diffusion-hf-cache
+    name: deferred-diffusion_hf_cache

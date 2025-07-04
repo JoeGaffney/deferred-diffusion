@@ -37,7 +37,7 @@ TEST_PATH ?= images
 # make test-worker TEST_PATH=images/test_external_text_to_image.py
 # make test-worker TEST_PATH=images/test_external_image_to_image.py
 test-worker: up
-	docker-compose exec workers pytest tests/$(TEST_PATH) -vs
+	docker-compose exec gpu-workers pytest tests/$(TEST_PATH) -vs
 
 # make test-it-tests TEST_PATH=images
 # make test-it-tests TEST_PATH=videos

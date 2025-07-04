@@ -157,6 +157,16 @@ DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
 DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
 ```
 
+### Testing workers
+
+Tests are included inside the containers these can be ran to verify and also to download any missing models.
+
+```bash
+docker-compose exec gpu-workers pytest tests/images -vs
+docker-compose exec gpu-workers pytest tests/texts -vs
+docker-compose exec gpu-workers pytest tests/videos -vs
+```
+
 ## Toolsets
 
 These are examples on how to simply get things on the path you could use rez or any other way preferred way to get the modules and plugins loaded.
