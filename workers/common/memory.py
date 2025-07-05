@@ -1,9 +1,12 @@
 import gc
+import os
 import subprocess
 
 import torch
 
 from common.logger import logger
+
+LOW_VRAM = os.getenv("LOW_VRAM", "false").lower() == "true"
 
 
 def _get_total_gpu_usage():
