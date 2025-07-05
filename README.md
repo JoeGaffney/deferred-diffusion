@@ -125,20 +125,38 @@ Tag & push docker images to the hub - optional
 make tag-and-push
 ```
 
-### Deploy the release on a server
+### 🚀 Deploying the Release on a Server
 
-Docker desktop is required and run
+1. **Change into the directory** containing the `docker-compose.yml` file.
 
-```bash
-docker-compose down
-docker load -i deferred-diffusion-api.tar
-docker load -i deferred-diffusion-workers.tar
-docker-compose up -d --no-build
-```
+2. **Ensure Docker Desktop is installed** on the server.
 
-An NVME drive with min 500gb of space is potentially required and env vars need to be configured on the host.
+3. **Authenticate with Docker Hub** (one-time setup per machine/user):
 
-### Required Environment Variables
+   ```bash
+   docker login -u joegaffney
+   ```
+
+   At the password prompt, enter your **personal access token (PAT)**, e.g.:
+
+   ```bash
+   dckr_pat__##-###################
+   ```
+
+4. **Pull and run the containers**:
+
+   ```bash
+   docker-compose down
+   docker-compose pull
+   docker-compose up -d --no-build
+   ```
+
+### ⚙️ System Requirements
+
+- **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
+- **Environment Variables**: Ensure all required environment variables are set on the host.
+
+#### Required Environment Variables
 
 Server for the containers
 

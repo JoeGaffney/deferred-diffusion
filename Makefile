@@ -1,4 +1,4 @@
-.PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests  tag-and-push
+.PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests create-release
 
 
 # Default target
@@ -46,47 +46,34 @@ test-it-tests: generate-clients
 	cd it_tests && pytest $(TEST_PATH) -vs
 	cd ..
 
-# Tag and push Docker images to GitHub Container Registry
-tag-and-push:
+VERSION ?= 0.1.0
+PROJECT_NAME ?= deferred-diffusion
+create-release: build
 # Define variables
 	$(eval USERNAME=joegaffney)
 	$(eval REPO=deferred-diffusion)
-	$(eval VERSION=latest)
-# Login to Docker Hub
-	docker login
-# Tag images with different tags in the same repository
+# Create release directory with combined project-version name
+	if not exist releases mkdir releases
+	if exist releases\$(VERSION)\$(PROJECT_NAME) rmdir /S /Q releases\$(VERSION)\$(PROJECT_NAME)
+	mkdir releases\$(VERSION)\$(PROJECT_NAME)
+
+# Tag images with version (this creates new tags without removing latest tags)
 	docker tag deferred-diffusion-api:latest $(USERNAME)/$(REPO):api-$(VERSION)
 	docker tag deferred-diffusion-workers:latest $(USERNAME)/$(REPO):worker-$(VERSION)
 # Push images
 	docker push $(USERNAME)/$(REPO):api-$(VERSION)
 	docker push $(USERNAME)/$(REPO):worker-$(VERSION)
 
-RELEASE_VERSION ?= 0.1.0
-RELEASE_PROJECT_NAME ?= deferred-diffusion
-create-release: build
-# Create release directory with combined project-version name
-	if not exist releases mkdir releases
-	if exist releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME) rmdir /S /Q releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)
-	mkdir releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)
-
-# Tag images with version (this creates new tags without removing latest tags)
-	docker tag deferred-diffusion-api:latest deferred-diffusion-api:$(RELEASE_VERSION)
-	docker tag deferred-diffusion-workers:latest deferred-diffusion-workers:$(RELEASE_VERSION)
-
-# Save Docker images with latest tag
-	docker save -o releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\deferred-diffusion-api.tar deferred-diffusion-api:${RELEASE_VERSION}
-	docker save -o releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\deferred-diffusion-workers.tar deferred-diffusion-workers:${RELEASE_VERSION}
-
 # Copy deployment docker-compose.yml to release folder
-	copy docker-compose.release.yml releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\docker-compose.yml
-	copy README.md releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\README.md
+	copy docker-compose.release.yml releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml
+	copy README.md releases\$(VERSION)\$(PROJECT_NAME)\README.md
 
 # Update docker-compose.yml to use versioned images
-	powershell -Command "(Get-Content releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', 'deferred-diffusion-api:$(RELEASE_VERSION)' -replace 'deferred-diffusion-workers:latest', 'deferred-diffusion-workers:$(RELEASE_VERSION)' | Set-Content releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\docker-compose.yml"
+	powershell -Command "(Get-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', '$(USERNAME)/$(REPO):api-$(VERSION)' -replace 'deferred-diffusion-workers:latest', '$(USERNAME)/$(REPO):worker-$(VERSION)' | Set-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml"
 
 # Copy directories with exclusions
 	echo __pycache__ > exclude_patterns.txt
 	echo backup >> exclude_patterns.txt
-	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt nuke releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\nuke
-	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt hda releases\$(RELEASE_VERSION)\$(RELEASE_PROJECT_NAME)\hda
+	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt nuke releases\$(VERSION)\$(PROJECT_NAME)\nuke
+	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt hda releases\$(VERSION)\$(PROJECT_NAME)\hda
 	del exclude_patterns.txt
