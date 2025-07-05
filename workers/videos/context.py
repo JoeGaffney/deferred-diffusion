@@ -13,7 +13,6 @@ from videos.schemas import VideoRequest
 class VideoContext:
     def __init__(self, data: VideoRequest):
         self.data = data
-        self.model = data.model
         self.image = load_image_if_exists(data.image)
 
     def get_generator(self, device="cuda"):

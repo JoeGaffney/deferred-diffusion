@@ -8,7 +8,7 @@ from runwayml.types.text_to_image_create_params import ContentModeration, Refere
 
 from common.logger import logger
 from images.context import ImageContext
-from videos.models.runway_gen import pill_to_base64
+from utils.utils import pill_to_base64
 
 
 def fix_aspect_ratio(img: Image.Image, safety_margin: float = 0.02) -> Image.Image:

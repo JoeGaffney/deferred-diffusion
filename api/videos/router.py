@@ -2,13 +2,13 @@ from uuid import UUID
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from fastapi.responses import JSONResponse
 
 from common.auth import verify_token
-from common.logger import log_pretty
 from utils.utils import poll_until_resolved
 from videos.schemas import (
+    MODEL_CONFIG,
     VideoCreateResponse,
+    VideoModelInfoResponse,
     VideoRequest,
     VideoResponse,
     VideoWorkerResponse,
@@ -26,6 +26,14 @@ async def create(request: VideoRequest, response: Response):
         return VideoCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.get("/models", response_model=list[VideoModelInfoResponse], operation_id="videos_get_models")
+async def get_models():
+    models_list = [
+        VideoModelInfoResponse(name=name, **model_info.model_dump()) for name, model_info in MODEL_CONFIG.items()
+    ]
+    return models_list
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")

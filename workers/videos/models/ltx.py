@@ -1,6 +1,3 @@
-import os
-from functools import lru_cache
-
 import torch
 from diffusers.pipelines.ltx.pipeline_ltx_condition import (
     LTXConditionPipeline,
@@ -32,8 +29,6 @@ def get_pipeline(model_id):
         torch_dtype=torch.bfloat16,
     )
 
-    # text_encoder_2 : [T5EncoderModel]
-    # T5, specifically the google/t5-v1_1-xxl variant.
     text_encoder = get_quantized_model(
         model_id=T5_MODEL_PATH,
         subfolder="text_encoder_2",  # This is the subfolder for the T5 encoder in the flux model
@@ -57,7 +52,7 @@ def get_pipeline(model_id):
 
 
 def image_to_video(context: VideoContext):
-    pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
+    pipe = get_pipeline(context.data.model_path)
 
     width, height = get_16_9_resolution("720p")
     image = context.image
@@ -84,30 +79,7 @@ def image_to_video(context: VideoContext):
     return processed_path
 
 
-def text_to_video(context: VideoContext):
-    pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
-
-    width, height = get_16_9_resolution("540p")
-    width = ensure_divisible(width, divisor=32)
-    height = ensure_divisible(height, divisor=32)
-
-    video = pipe.__call__(
-        width=width,
-        height=height,
-        prompt=context.data.prompt,
-        negative_prompt=context.data.negative_prompt,
-        num_frames=context.data.num_frames,
-        num_inference_steps=context.data.num_inference_steps,
-        generator=context.get_generator(),
-        guidance_scale=context.data.guidance_scale,
-    ).frames[0]
-
-    processed_path = context.save_video(video)
-    return processed_path
-
-
 def main(context: VideoContext):
     if context.data.image:
         return image_to_video(context)
-
-    return text_to_video(context)
+    raise ValueError("Image is required for LTX video generation.")

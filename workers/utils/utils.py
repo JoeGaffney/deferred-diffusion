@@ -118,6 +118,14 @@ def mp4_to_base64(file_path: str) -> bytes:
         return base64.b64encode(video_file.read())
 
 
+def pill_to_base64(image):
+    buffered = io.BytesIO()
+    image.save(buffered, format="PNG")
+    img_bytes = buffered.getvalue()
+    base64_image = base64.b64encode(img_bytes).decode("utf-8")
+    return base64_image
+
+
 def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
     """Convert mask image to RGBA format for OpenAI inpainting API.
     White areas will become transparent (edited), black areas will be preserved."""

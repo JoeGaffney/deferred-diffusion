@@ -68,7 +68,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16):
 
 
 def main(context: VideoContext):
-    pipe = get_pipeline(model_id="Wan-AI/Wan2.1-I2V-14B-720P-Diffusers")
+    pipe = get_pipeline(model_id=context.data.model_path)
     image = context.image
     if image is None:
         raise ValueError("Image not found. Please provide a valid image path.")

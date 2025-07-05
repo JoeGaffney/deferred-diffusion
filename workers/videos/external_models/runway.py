@@ -1,21 +1,11 @@
-import base64
 import time
-from io import BytesIO
-from typing import Literal
+from typing import Literal, cast
 
 from runwayml import RunwayML
 
 from common.logger import logger
-from utils.utils import get_16_9_resolution, resize_image
+from utils.utils import get_16_9_resolution, pill_to_base64, resize_image
 from videos.context import VideoContext
-
-
-def pill_to_base64(image):
-    buffered = BytesIO()
-    image.save(buffered, format="PNG")
-    img_bytes = buffered.getvalue()
-    base64_image = base64.b64encode(img_bytes).decode("utf-8")
-    return base64_image
 
 
 def poll_until_resolved(context: VideoContext, id, timeout=500, poll_interval=10):
@@ -58,11 +48,13 @@ def create(context: VideoContext):
 
     image = resize_image(image, 1, 1.0, width, height)
 
-    model: Literal["gen3a_turbo", "gen4_turbo"] = "gen3a_turbo"
+    if context.data.model_path not in ["gen3a_turbo", "gen4_turbo"]:
+        raise ValueError("Only gen3a_turbo and gen4_turbo models are supported")
+
+    model: Literal["gen3a_turbo", "gen4_turbo"] = cast(Literal["gen3a_turbo", "gen4_turbo"], context.data.model_path)
     ratio: Literal["1280:768", "1280:720", "768:1280"] = "1280:768"
     duration: Literal[5, 10] = 5
-    if context.model == "runway/gen4_turbo":
-        model = "gen4_turbo"
+    if model == "gen4_turbo":
         ratio = "1280:720"
 
     # encode image to base64

@@ -12,7 +12,6 @@ from generated.api_client.models.video_request_model import VideoRequestModel
 from generated.api_client.models.video_response import VideoResponse
 from utils import image_to_base64, save_image_and_assert_file_exists
 
-model = VideoRequestModel("LTX-Video")
 output_dir = "../tmp/output/it-tests/videos"
 
 
@@ -40,7 +39,7 @@ def create_video(api_client, body: VideoRequest) -> UUID:
 
 def test_get_ltx(api_client):
     body = VideoRequest(
-        model=VideoRequestModel("LTX-Video"),
+        model=VideoRequestModel("ltx-video"),
         image=image_to_base64("../assets/color_v002.png"),
         prompt="A man with short gray hair plays a red electric guitar.",
         num_inference_steps=7,
