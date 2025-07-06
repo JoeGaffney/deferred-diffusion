@@ -1,5 +1,6 @@
 from venv import logger
 
+import accelerate.hooks
 import torch
 from diffusers import (
     FlowMatchEulerDiscreteScheduler,
@@ -62,6 +63,10 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16):
     )
 
     pipe.enable_model_cpu_offload()
+
+    # NOTE possible optimization for performance
+    # transformer.to("cuda")  # Move transformer to GPU
+    # pipe.transformer = transformer  # Assign the moved transformer to the pipeline
 
     logger.warning(f"Loaded pipeline {model_id}")
     return pipe

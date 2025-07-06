@@ -10,6 +10,7 @@ import time
 from collections import OrderedDict
 from functools import wraps
 
+import accelerate.hooks
 import psutil
 import torch
 from cachetools.keys import hashkey
@@ -17,6 +18,30 @@ from transformers import BitsAndBytesConfig, TorchAoConfig
 
 from common.logger import logger
 from utils.utils import time_info_decorator
+
+# Save the original methods
+original_pre_forward = accelerate.hooks.CpuOffload.pre_forward
+original_post_forward = accelerate.hooks.CpuOffload.post_forward
+
+
+# Create logging wrappers
+def logged_pre_forward(self, module, *args, **kwargs):
+    module_name = module.__class__.__name__
+    result = original_pre_forward(self, module, *args, **kwargs)
+    print(f"✅ Moved {module_name} to {self.execution_device}")
+    return result
+
+
+def logged_post_forward(self, module, output):
+    module_name = module.__class__.__name__
+    result = original_post_forward(self, module, output)
+    print(f"🔄 Moved {module_name} back to CPU")
+    return result
+
+
+# Apply the monkey patch
+accelerate.hooks.CpuOffload.pre_forward = logged_pre_forward
+accelerate.hooks.CpuOffload.post_forward = logged_post_forward
 
 
 class ModelLRUCache:
