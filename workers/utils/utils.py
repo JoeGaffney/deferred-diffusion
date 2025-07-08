@@ -140,14 +140,17 @@ def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
 
 def time_info_decorator(func):
     def wrapper(*args, **kwargs):
-        info = f"Calling {func.__name__} with args: {args}, kwargs: {kwargs}"
 
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
 
         elapsed = end - start
-        if elapsed > 1.0:  # Only log if execution took more than 1 second
+        if elapsed > 0.1:  # Only log if execution took more than 0.1 second
+            args_str = str(args)[:100] + ("..." if len(str(args)) > 100 else "")
+            kwargs_str = str(kwargs)[:100] + ("..." if len(str(kwargs)) > 100 else "")
+
+            info = f"Calling {func.__name__} with args: {args_str}, kwargs: {kwargs_str}"
             logger.info(f"{info}, took: {elapsed:.2f}s")
 
         return result

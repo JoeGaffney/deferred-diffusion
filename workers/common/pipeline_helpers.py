@@ -10,38 +10,42 @@ import time
 from collections import OrderedDict
 from functools import wraps
 
-import accelerate.hooks
-import psutil
 import torch
+from accelerate.hooks import CpuOffload, clear_device_cache, send_to_device
 from cachetools.keys import hashkey
 from transformers import BitsAndBytesConfig, TorchAoConfig
 
 from common.logger import logger
 from utils.utils import time_info_decorator
 
-# Save the original methods
-original_pre_forward = accelerate.hooks.CpuOffload.pre_forward
-original_post_forward = accelerate.hooks.CpuOffload.post_forward
+# Keep reference to original (if you want to restore later)
+_original_pre_forward = CpuOffload.pre_forward
 
 
-# Create logging wrappers
-def logged_pre_forward(self, module, *args, **kwargs):
-    module_name = module.__class__.__name__
-    result = original_pre_forward(self, module, *args, **kwargs)
-    print(f"✅ Moved {module_name} to {self.execution_device}")
-    return result
+@time_info_decorator
+def patched_pre_forward(self, module, *args, **kwargs):
+    target_device = self.execution_device
+    current_device = next(module.parameters()).device
+
+    # Handle previous module offload
+    if self.prev_module_hook is not None:
+        prev_module = self.prev_module_hook.model  # fixed here
+        prev_device = next(prev_module.parameters()).device
+        if prev_device != torch.device("cpu"):
+            print(f"Offloading {str(prev_module.__class__.__name__)} from {prev_device} to CPU")
+            self.prev_module_hook.offload()
+            clear_device_cache()
+
+    if current_device == target_device:
+        return args, kwargs
+
+    # Move current module to target device only if needed
+    module.to(target_device)
+    return send_to_device(args, target_device), send_to_device(kwargs, target_device)
 
 
-def logged_post_forward(self, module, output):
-    module_name = module.__class__.__name__
-    result = original_post_forward(self, module, output)
-    print(f"🔄 Moved {module_name} back to CPU")
-    return result
-
-
-# Apply the monkey patch
-accelerate.hooks.CpuOffload.pre_forward = logged_pre_forward
-accelerate.hooks.CpuOffload.post_forward = logged_post_forward
+# Apply patch
+CpuOffload.pre_forward = patched_pre_forward
 
 
 class ModelLRUCache:
