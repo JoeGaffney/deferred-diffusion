@@ -6,6 +6,7 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
 
 import gc
+import threading
 import time
 from collections import OrderedDict
 from functools import wraps
@@ -21,20 +22,38 @@ from utils.utils import time_info_decorator
 # Keep reference to original (if you want to restore later)
 _original_pre_forward = CpuOffload.pre_forward
 
+# Note: OFFLOAD_MODELS_IN_THREAD should be set to "false" on systems with limited
+# GPU memory (less than 8GB recommended). On high-memory GPUs, enabling this
+# provides significant performance improvements by offloading previous models
+# asynchronously.
+OFFLOAD_MODELS_IN_THREAD = os.getenv("OFFLOAD_MODELS_IN_THREAD", "1") == "1"
+
 
 @time_info_decorator
 def patched_pre_forward(self, module, *args, **kwargs):
+    offload_in_thread = OFFLOAD_MODELS_IN_THREAD  # Set to True to offload in a separate thread
     target_device = self.execution_device
     current_device = next(module.parameters()).device
 
     # Handle previous module offload
     if self.prev_module_hook is not None:
-        prev_module = self.prev_module_hook.model  # fixed here
+        prev_module = self.prev_module_hook.model
         prev_device = next(prev_module.parameters()).device
         if prev_device != torch.device("cpu"):
             print(f"Offloading {str(prev_module.__class__.__name__)} from {prev_device} to CPU")
-            self.prev_module_hook.offload()
-            clear_device_cache()
+
+            # group the offload operations
+            def offload():
+                self.prev_module_hook.offload()
+                clear_device_cache()
+
+            if offload_in_thread == True:
+                # Don't wait for completion - let it happen in background
+                # Note: This assumes next operations don't depend on imediate completion
+                thread = threading.Thread(target=offload)
+                thread.start()
+            else:
+                offload()  # Offload immediately and wait for completion
 
     if current_device == target_device:
         return args, kwargs
