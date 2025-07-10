@@ -146,7 +146,7 @@ def time_info_decorator(func):
         end = time.time()
 
         elapsed = end - start
-        if elapsed > 0.1:  # Only log if execution took more than 0.1 second
+        if elapsed > 1.0:  # Only log if execution took more than 1.0 second
             args_str = str(args)[:100] + ("..." if len(str(args)) > 100 else "")
             kwargs_str = str(kwargs)[:100] + ("..." if len(str(kwargs)) > 100 else "")
 

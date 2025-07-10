@@ -3,6 +3,7 @@ from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForInpainting,
     AutoPipelineForText2Image,
+    FluxFillPipeline,
     FluxPipeline,
     FluxTransformer2DModel,
 )
@@ -89,6 +90,7 @@ def text_to_image_call(context: ImageContext):
         "num_inference_steps": context.data.num_inference_steps,
         "generator": context.generator,
         "guidance_scale": context.data.guidance_scale,
+        "max_sequence_length": 512,  # Adjust as needed
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
@@ -121,6 +123,7 @@ def image_to_image_call(context: ImageContext):
         "generator": context.generator,
         "strength": context.data.strength,
         "guidance_scale": context.data.guidance_scale,
+        "max_sequence_length": 512,  # Adjust as needed
     }
 
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
@@ -133,29 +136,34 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-        args = {}
-        if controlnets != []:
-            args["controlnet"] = controlnets
+    def get_inpainting_pipeline(pipeline_config: PipelineConfig):
 
-        return AutoPipelineForInpainting.from_pipe(
-            get_pipeline(pipeline_config), requires_safety_checker=False, **args
+        base_pipe = get_pipeline(pipeline_config)
+
+        # Create the inpainting pipeline directly without dtype conversion
+        return FluxFillPipeline(
+            transformer=base_pipe.transformer,
+            tokenizer=base_pipe.tokenizer,
+            tokenizer_2=base_pipe.tokenizer_2,
+            text_encoder=base_pipe.text_encoder,
+            text_encoder_2=base_pipe.text_encoder_2,
+            scheduler=base_pipe.scheduler,
+            vae=base_pipe.vae,
         )
 
-    pipe = get_inpainting_pipeline(
-        context.get_pipeline_config(), controlnets=context.control_nets.get_loaded_controlnets()
-    )
+    pipe = get_inpainting_pipeline(context.get_pipeline_config())
+
     args = {
         "width": context.width,
         "height": context.height,
         "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
+        # "negative_prompt": context.data.negative_prompt,
         "image": context.color_image,
         "mask_image": context.mask_image,
         "num_inference_steps": context.data.num_inference_steps,
         "generator": context.generator,
-        "strength": context.data.strength,
         "guidance_scale": context.data.guidance_scale,
+        "max_sequence_length": 512,  # Adjust as needed
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
