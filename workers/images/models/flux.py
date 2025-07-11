@@ -58,6 +58,34 @@ def get_pipeline(config: PipelineConfig):
     return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
 
+@decorator_global_pipeline_cache
+def get_inpainting_pipeline(config: PipelineConfig):
+    args = {}
+
+    args["transformer"] = get_quantized_model(
+        model_id=config.model_id,
+        subfolder="transformer",
+        model_class=FluxTransformer2DModel,
+        target_precision=8,
+        torch_dtype=torch.bfloat16,
+    )
+    args["text_encoder_2"] = get_quantized_model(
+        model_id=T5_MODEL_PATH,
+        subfolder="text_encoder_2",
+        model_class=T5EncoderModel,
+        target_precision=8,
+        torch_dtype=torch.bfloat16,
+    )
+
+    pipe = FluxFillPipeline.from_pretrained(
+        config.model_id,
+        torch_dtype=torch.bfloat16,
+        **args,
+    )
+
+    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+
+
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
     if context.control_nets.is_enabled():
         args["control_image"] = context.control_nets.get_images()
@@ -136,20 +164,6 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    def get_inpainting_pipeline(pipeline_config: PipelineConfig):
-
-        base_pipe = get_pipeline(pipeline_config)
-
-        # Create the inpainting pipeline directly without dtype conversion
-        return FluxFillPipeline(
-            transformer=base_pipe.transformer,
-            tokenizer=base_pipe.tokenizer,
-            tokenizer_2=base_pipe.tokenizer_2,
-            text_encoder=base_pipe.text_encoder,
-            text_encoder_2=base_pipe.text_encoder_2,
-            scheduler=base_pipe.scheduler,
-            vae=base_pipe.vae,
-        )
 
     pipe = get_inpainting_pipeline(context.get_pipeline_config())
 

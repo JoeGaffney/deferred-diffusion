@@ -43,7 +43,6 @@ services:
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
       - LOW_VRAM=1 # Set to true to enable low VRAM mode
-      - OFFLOAD_MODELS_IN_THREAD=1 # Enable offloading models in a separate thread
     depends_on:
       - redis
       - api

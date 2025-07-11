@@ -6,7 +6,6 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
 
 import gc
-import threading
 import time
 from collections import OrderedDict
 from functools import wraps
@@ -22,16 +21,12 @@ from utils.utils import time_info_decorator
 # Keep reference to original (if you want to restore later)
 _original_pre_forward = CpuOffload.pre_forward
 
-# Note: OFFLOAD_MODELS_IN_THREAD should be set to "false" on systems with limited
-# GPU memory (less than 8GB recommended). On high-memory GPUs, enabling this
-# provides significant performance improvements by offloading previous models
-# asynchronously.
-OFFLOAD_MODELS_IN_THREAD = os.getenv("OFFLOAD_MODELS_IN_THREAD", "1") == "1"
+# depends on systems ram resources how many models can be safely cached in ram
+MAX_MODEL_CACHE = int(os.getenv("MAX_MODEL_CACHE", 3))
 
 
 @time_info_decorator
 def patched_pre_forward(self, module, *args, **kwargs):
-    offload_in_thread = OFFLOAD_MODELS_IN_THREAD  # Set to True to offload in a separate thread
     target_device = self.execution_device
     current_device = next(module.parameters()).device
 
@@ -39,21 +34,11 @@ def patched_pre_forward(self, module, *args, **kwargs):
     if self.prev_module_hook is not None:
         prev_module = self.prev_module_hook.model
         prev_device = next(prev_module.parameters()).device
+
         if prev_device != torch.device("cpu"):
             print(f"Offloading {str(prev_module.__class__.__name__)} from {prev_device} to CPU")
-
-            # group the offload operations
-            def offload():
-                self.prev_module_hook.offload()
-                clear_device_cache()
-
-            if offload_in_thread == True:
-                # Don't wait for completion - let it happen in background
-                # Note: This assumes next operations don't depend on imediate completion
-                thread = threading.Thread(target=offload)
-                thread.start()
-            else:
-                offload()  # Offload immediately and wait for completion
+            self.prev_module_hook.offload()
+            clear_device_cache()
 
     if current_device == target_device:
         return args, kwargs
@@ -162,7 +147,7 @@ class ModelLRUCache:
 
 
 # Global cache
-global_pipeline_cache = ModelLRUCache(max_models=2)  # Adjust max_models as needed
+global_pipeline_cache = ModelLRUCache(max_models=MAX_MODEL_CACHE)
 
 
 def reset_global_pipeline_cache():

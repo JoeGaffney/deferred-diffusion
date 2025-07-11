@@ -5,6 +5,7 @@ from diffusers import (
     AutoPipelineForText2Image,
     DDIMScheduler,
     DiffusionPipeline,
+    StableDiffusionXLInpaintPipeline,
 )
 from PIL import Image
 from transformers import CLIPVisionModelWithProjection
@@ -127,6 +128,8 @@ def inpainting_call(context: ImageContext):
         if controlnets != []:
             args["controlnet"] = controlnets
 
+        # NOTE this does not offload properly
+        # return StableDiffusionXLInpaintPipeline.from_pipe(get_pipeline(pipeline_config), **args)
         return AutoPipelineForInpainting.from_pipe(
             get_pipeline(pipeline_config), requires_safety_checker=False, **args
         )
