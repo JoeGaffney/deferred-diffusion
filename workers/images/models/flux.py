@@ -1,7 +1,6 @@
 import torch
 from diffusers import (
     AutoPipelineForImage2Image,
-    AutoPipelineForInpainting,
     AutoPipelineForText2Image,
     FluxFillPipeline,
     FluxPipeline,
@@ -118,7 +117,6 @@ def text_to_image_call(context: ImageContext):
         "num_inference_steps": context.data.num_inference_steps,
         "generator": context.generator,
         "guidance_scale": context.data.guidance_scale,
-        "max_sequence_length": 512,  # Adjust as needed
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
@@ -151,7 +149,6 @@ def image_to_image_call(context: ImageContext):
         "generator": context.generator,
         "strength": context.data.strength,
         "guidance_scale": context.data.guidance_scale,
-        "max_sequence_length": 512,  # Adjust as needed
     }
 
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
@@ -177,7 +174,7 @@ def inpainting_call(context: ImageContext):
         "num_inference_steps": context.data.num_inference_steps,
         "generator": context.generator,
         "guidance_scale": context.data.guidance_scale,
-        "max_sequence_length": 512,  # Adjust as needed
+        "strength": context.data.strength,
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 

@@ -1,7 +1,6 @@
 import torch
 from diffusers import (
     AutoPipelineForImage2Image,
-    AutoPipelineForInpainting,
     AutoPipelineForText2Image,
     DDIMScheduler,
     DiffusionPipeline,
@@ -16,7 +15,7 @@ from images.context import ImageContext, PipelineConfig
 
 
 @decorator_global_pipeline_cache
-def get_pipeline(config: PipelineConfig):
+def get_pipeline(config: PipelineConfig) -> DiffusionPipeline:
     args = {"torch_dtype": torch.float16, "use_safetensors": True}
 
     pipe = DiffusionPipeline.from_pretrained(
@@ -42,6 +41,21 @@ def get_pipeline(config: PipelineConfig):
             )
             pipe.image_encoder = image_encoder
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+
+    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+
+
+@decorator_global_pipeline_cache
+def get_inpainting_pipeline(config: PipelineConfig, variant=None) -> StableDiffusionXLInpaintPipeline:
+    args = {"torch_dtype": torch.float16, "use_safetensors": True}
+
+    if variant:
+        args["variant"] = variant
+
+    pipe = StableDiffusionXLInpaintPipeline.from_pretrained(
+        config.model_id,
+        **args,
+    )
 
     return optimize_pipeline(pipe, sequential_cpu_offload=False)
 
@@ -123,20 +137,8 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-        args = {}
-        if controlnets != []:
-            args["controlnet"] = controlnets
 
-        # NOTE this does not offload properly
-        # return StableDiffusionXLInpaintPipeline.from_pipe(get_pipeline(pipeline_config), **args)
-        return AutoPipelineForInpainting.from_pipe(
-            get_pipeline(pipeline_config), requires_safety_checker=False, **args
-        )
-
-    pipe = get_inpainting_pipeline(
-        context.get_pipeline_config(), controlnets=context.control_nets.get_loaded_controlnets()
-    )
+    pipe = get_inpainting_pipeline(context.get_pipeline_config(), variant="fp16")
     args = {
         "width": context.width,
         "height": context.height,
@@ -149,7 +151,7 @@ def inpainting_call(context: ImageContext):
         "strength": context.data.strength,
         "guidance_scale": context.data.guidance_scale,
     }
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
+    # pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     logger.info(f"Inpainting call {args}")
     processed_image = pipe.__call__(**args).images[0]

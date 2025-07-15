@@ -62,16 +62,30 @@ def ensure_divisible(value: int, divisor=16) -> int:
     return (value // divisor) * divisor
 
 
-def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048):
-    """Ensure the new dimensions do not exceed max_width and max_height"""
-    width = min(image.size[0] * scale, max_width)
-    height = min(image.size[1] * scale, max_height)
+def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048) -> Image.Image:
+    orig_width, orig_height = image.size
+    aspect_ratio = orig_width / orig_height
 
-    # Adjust width and height to be divisible by the division factor
-    width = math.ceil(width / division) * division
-    height = math.ceil(height / division) * division
+    # Scale original size
+    target_width = orig_width * scale
+    target_height = orig_height * scale
 
-    logger.info(f"Image Resized from: {image.size} to {width}x{height}")
+    # Fit inside max bounds while preserving aspect ratio
+    scale_factor = min(max_width / target_width, max_height / target_height, 1.0)
+    target_width *= scale_factor
+    target_height *= scale_factor
+
+    # Round down to divisible size, anchoring width
+    width = int(math.floor(target_width / division) * division)
+    height = int(width / aspect_ratio)
+    height = int(math.floor(height / division) * division)
+
+    # Final check: skip resize if not needed
+    if (width, height) == image.size:
+        logger.info(f"No resize needed. Image size is already {width}x{height} (div/{division})")
+        return image
+
+    logger.info(f"Resizing from {image.size} to ({width}, {height}) (div/{division})")
     return image.resize((width, height))
 
 

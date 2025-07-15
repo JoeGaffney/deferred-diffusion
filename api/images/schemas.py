@@ -41,7 +41,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
     "sd-xl": ModelInfo(
         family="sdxl",
         path="SG161222/RealVisXL_V4.0",
-        inpainting_path="diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
+        inpainting_path="OzzyGT/RealVisXL_V4.0_inpainting",
         external=False,
         auto_divisor=8,  # SDXL models typically use 8 for better performance
     ),
@@ -51,6 +51,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="black-forest-labs/FLUX.1-dev",
         inpainting_path="black-forest-labs/FLUX.1-Fill-dev",
         external=False,
+        auto_divisor=32,  # Flux models typically use 32 for better performance
     ),
     "flux-kontext-1": ModelInfo(family="flux_kontext", path="black-forest-labs/FLUX.1-Kontext-dev", external=False),
     "depth-anything-2": ModelInfo(
@@ -65,9 +66,10 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
     ),
     "external-flux-1-1": ModelInfo(
         family="flux",
-        path="black-forest-labs/flux-1.1-pro-ultra",
+        path="black-forest-labs/flux-1.1-pro",
         inpainting_path="black-forest-labs/flux-fill-pro",
         external=True,
+        auto_divisor=32,  # Flux models typically use 32 for better performance
     ),
 }
 
