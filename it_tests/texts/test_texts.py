@@ -1,4 +1,5 @@
 import os
+import time
 from http import HTTPStatus
 from uuid import UUID
 
@@ -69,8 +70,9 @@ def test_create_text(api_client):
 def test_get_text(api_client):
     """Test retrieving an image by ID."""
     image_id = create_text(api_client)
+    time.sleep(10)  # Wait for the task to be processed
 
-    response = texts_get.sync_detailed(id=image_id, client=api_client, wait=True)
+    response = texts_get.sync_detailed(id=image_id, client=api_client)
     print(response.parsed)
 
     assert response.status_code == HTTPStatus.OK

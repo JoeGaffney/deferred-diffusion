@@ -1,3 +1,5 @@
+import time
+
 import nuke
 
 from config import client
@@ -32,19 +34,37 @@ def create_dd_image_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, wait=False):
+def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
     set_node_info(node, "PENDING", "")
 
-    try:
-        parsed = images_get.sync(id, client=client, wait=wait)
-    except Exception as e:
+    for count in range(1, iterations + 1):
+        # Cap sleep time to avoid excessive wait
+        time.sleep(sleep_time)
 
-        def handle_error(error=e):
-            with nuke_error_handling(node):
-                raise RuntimeError(f"API call failed: {str(error)}") from error
+        try:
+            parsed = images_get.sync(id, client=client)
+            if not isinstance(parsed, ImageResponse):
+                break
 
-        nuke.executeInMainThread(handle_error)
-        return
+            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED"]:
+                break
+
+            def progress_update():
+                if isinstance(parsed, ImageResponse):
+                    message = f"Polling attempt {count}/{iterations}"
+                    print(message)
+                    set_node_info(node, parsed.status, message)
+
+            nuke.executeInMainThread(progress_update)
+
+        except Exception as e:
+
+            def handle_error(error=e):
+                with nuke_error_handling(node):
+                    raise RuntimeError(f"API call failed: {str(error)}") from error
+
+            nuke.executeInMainThread(handle_error)
+            return
 
     def update_ui():
         with nuke_error_handling(node):
@@ -62,7 +82,7 @@ def _api_get_call(node, id, output_path: str, wait=False):
             set_node_value(output_read, "file", output_path)
             output_read["reload"].execute()
 
-            set_node_info(node, "COMPLETE", output_path)
+            set_node_info(node, "COMPLETE", "")
 
     nuke.executeInMainThread(update_ui)
 
@@ -77,7 +97,7 @@ def _api_call(node, body: ImageRequest, output_image_path: str):
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_image_path, wait=True)
+    _api_get_call(node, str(parsed.id), output_image_path, iterations=20)
 
 
 def process_image(node):
@@ -125,4 +145,4 @@ def get_image(node):
             raise ValueError("Task ID is required to get the image.")
 
         output_image_path = get_output_path(node, movie=False)
-        _api_get_call(node, task_id, output_image_path, wait=False)
+        _api_get_call(node, task_id, output_image_path, iterations=1, sleep_time=5)

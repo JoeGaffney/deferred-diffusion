@@ -1,5 +1,5 @@
-import json
 import os
+import time
 from http import HTTPStatus
 from uuid import UUID
 
@@ -11,7 +11,7 @@ from generated.api_client.models.image_create_response import ImageCreateRespons
 from generated.api_client.models.image_request import ImageRequest
 from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
-from utils import image_to_base64, save_image_and_assert_file_exists
+from utils import save_image_and_assert_file_exists
 
 model = ImageRequestModel("sd-xl")
 output_dir = "../tmp/output/it-tests/images"
@@ -48,7 +48,12 @@ def test_create_image(api_client):
 def test_get_image(api_client):
     body = ImageRequest(prompt="A beautiful mountain landscape", model=model, width=512, height=512)
     image_id = create_image(api_client, body)
-    response = images_get.sync_detailed(id=image_id, client=api_client, wait=True)
+
+    for _ in range(20):  # Retry up to 20 times
+        time.sleep(5)
+        response = images_get.sync_detailed(id=image_id, client=api_client)
+        if isinstance(response.parsed, ImageResponse) and response.parsed.status in ["SUCCESS", "COMPLETED"]:
+            break
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None

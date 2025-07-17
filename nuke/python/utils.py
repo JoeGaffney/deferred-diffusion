@@ -44,6 +44,8 @@ def set_node_info(node, status, message):
     # Update the node label to show current status
     status_text = f"[{status}]"
     node["label"].setValue(status_text)
+    if message:
+        node["label"].setValue(f"{status_text}\n{message}")
 
     if status == "COMPLETE":
         node["tile_color"].setValue(0x00CC00FF)  # Green
@@ -53,8 +55,6 @@ def set_node_info(node, status, message):
         node["tile_color"].setValue(0x0000CCFF)  # Blue
     elif status == ["FAILED", "ERROR", "FAILURE"]:
         node["tile_color"].setValue(0xCC0000FF)  # Red
-        if message:
-            node["label"].setValue(f"{status_text} {message}")
     else:
         node["tile_color"].setValue(0x888888FF)  # Grey
 
@@ -226,7 +226,7 @@ def base64_to_file(base64_str: str, output_path: str, create_dir: bool = True):
     except Exception as e:
         raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
 
-    # save a timestamped version by cipying the file to the sample path prepended with a /tmp/timestamp
+    # save a timestamped version by copying the file to the sample path prepended with a /tmp/timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.basename(output_path)
     tmp_path = os.path.join(get_tmp_dir(), f"{timestamp}_{filename}")
@@ -260,10 +260,6 @@ def node_to_base64(input_node, current_frame):
 
     # Clean up
     nuke.delete(temp_write)
-
-    # NOTE: keep the file for debugging
-    # os.remove(temp_path)
-
     return result
 
 

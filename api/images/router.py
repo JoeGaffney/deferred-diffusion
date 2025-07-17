@@ -11,7 +11,6 @@ from images.schemas import (
     ImageWorkerResponse,
     generate_model_docs,
 )
-from utils.utils import poll_until_resolved
 from worker import celery_app
 
 router = APIRouter(
@@ -30,11 +29,8 @@ async def create(request: ImageRequest, response: Response):
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
-async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
-    if wait:
-        result = await poll_until_resolved(str(id))
-    else:
-        result = AsyncResult(str(id), app=celery_app)
+async def get(id: UUID):
+    result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
     response = ImageResponse(

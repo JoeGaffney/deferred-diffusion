@@ -4,7 +4,6 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from common.auth import verify_token
-from utils.utils import poll_until_resolved
 from videos.schemas import (
     VideoCreateResponse,
     VideoRequest,
@@ -28,11 +27,8 @@ async def create(request: VideoRequest, response: Response):
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
-async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
-    if wait:
-        result = await poll_until_resolved(str(id), timeout=1000, poll_interval=10)
-    else:
-        result = AsyncResult(id, app=celery_app)
+async def get(id: UUID):
+    result = AsyncResult(id, app=celery_app)
 
     # Initialize response with common fields
     response = VideoResponse(
