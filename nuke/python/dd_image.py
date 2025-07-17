@@ -1,7 +1,3 @@
-import os
-import traceback
-from contextlib import contextmanager
-
 import nuke
 
 from config import client
@@ -12,11 +8,15 @@ from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import UNSET
 from utils import (
-    base64_to_image,
+    base64_to_file,
     get_control_nets,
     get_ip_adapters,
     get_node_value,
+    get_output_path,
     node_to_base64,
+    nuke_error_handling,
+    replace_hashes_with_frame,
+    set_node_info,
     set_node_value,
     threaded,
 )
@@ -29,58 +29,6 @@ def create_dd_image_node():
     # Optionally: You can set other properties or interact with the node here
     # e.g., If you want to call a function defined inside the gizmo, you can do it here
     return node
-
-
-def set_node_info(node, status, message):
-    # Update the node label to show current status
-    status_text = f"[{status}]"
-    node["label"].setValue(status_text)
-
-    if status == "COMPLETE":
-        node["tile_color"].setValue(0x00CC00FF)  # Green
-    elif status == "PENDING":
-        node["tile_color"].setValue(0xCCCC00FF)  # Yellow
-    elif status == "FAILED" or status == "ERROR" or status == "FAILURE":
-        node["tile_color"].setValue(0xCC0000FF)  # Red
-        if message:
-            node["label"].setValue(f"{status_text} {message}")
-    else:
-        node["tile_color"].setValue(0x888888FF)  # Grey
-
-
-@contextmanager
-def nuke_error_handling(node):
-    try:
-        yield
-    except ValueError as e:
-        set_node_info(node, "ERROR", str(e))
-        nuke.message(str(e))
-    except Exception as e:
-        set_node_info(node, "ERROR", str(e))
-        traceback.print_exc()
-        nuke.message(str(e))
-
-
-def get_output_path(node, movie=False) -> str:
-    node_name = node.name()
-    time_stamp = str(node.__hash__())
-    # time_stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-    extension = "#####.png"
-    if movie:
-        extension = "mp4"
-
-    script_dir = os.path.dirname(nuke.root().name())
-    output_image_path = f"{script_dir}/deferred-diffusion/{node_name}/{time_stamp}.{extension}"
-    return output_image_path
-
-
-def replace_hashes_with_frame(path_with_hashes, frame):
-    num_hashes = path_with_hashes.count("#")
-    if num_hashes == 0:
-        # No hashes to replace, return original path
-        return path_with_hashes
-    frame_str = str(frame).zfill(num_hashes)
-    return path_with_hashes.replace("#" * num_hashes, frame_str)
 
 
 @threaded
@@ -108,7 +56,7 @@ def _api_get_call(node, id, output_path: str, wait=False):
 
             # Save the image to the specified path
             resolved_output_path = replace_hashes_with_frame(output_path, nuke.frame())
-            base64_to_image(parsed.result.base64_data, resolved_output_path)
+            base64_to_file(parsed.result.base64_data, resolved_output_path)
 
             output_read = nuke.toNode(f"{node.name()}.output_read")
             set_node_value(output_read, "file", output_path)
