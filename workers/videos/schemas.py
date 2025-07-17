@@ -17,14 +17,70 @@ class ModelInfo(BaseModel):
     family: ModelFamily
     path: str
     external: bool
+    description: Optional[str] = None
+
+    def to_doc_format(self, model_name: str) -> str:
+        """Generate documentation for this model"""
+        doc = f"### {model_name}\n\n"
+
+        if self.description:
+            doc += f"{self.description}\n\n"
+
+        doc += f"- **Path:** `{self.path}`\n"
+        doc += f"- **Family:** {self.family}\n"
+        doc += f"- **External API:** {'Yes' if self.external else 'No'}\n"
+
+        doc += "\n"
+        return doc
 
 
 MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
-    "ltx-video": ModelInfo(family="ltx", path="Lightricks/LTX-Video-0.9.7-distilled", external=False),
-    "wan-2-1": ModelInfo(family="wan", path="Wan-AI/Wan2.1-I2V-14B-720P-Diffusers", external=False),
-    "external-runway-gen-3": ModelInfo(family="runway", path="gen3a_turbo", external=True),
-    "external-runway-gen-4": ModelInfo(family="runway", path="gen4_turbo", external=True),
+    "ltx-video": ModelInfo(
+        family="ltx",
+        path="Lightricks/LTX-Video-0.9.7-distilled",
+        external=False,
+        description="Fast but more limted video generation model. Good for quick iterations and less complex scenes.",
+    ),
+    "wan-2-1": ModelInfo(
+        family="wan",
+        path="Wan-AI/Wan2.1-I2V-14B-720P-Diffusers",
+        external=False,
+        description="Powerful model with excellent temporal consistency. Specializes in maintaining subject identity and detailed motion from a single image.",
+    ),
+    "external-runway-gen-3": ModelInfo(
+        family="runway",
+        path="gen3a_turbo",
+        external=True,
+        description="Runway's Gen-3 model accessed via API. Great for dynamic scenes, camera movements, and natural motion. Good balance of quality and generation speed.",
+    ),
+    "external-runway-gen-4": ModelInfo(
+        family="runway",
+        path="gen4_turbo",
+        external=True,
+        description="Runway's latest Gen-4 model offering exceptional motion coherence and visual quality. Superior handling of complex animations and realistic physics.",
+    ),
 }
+
+
+def generate_model_docs():
+    """Generate documentation about available video models"""
+    docs = "Generate videos using various diffusion models.\n\n"
+
+    # List all models alphabetically
+    docs += "# Available Models\n\n"
+
+    for model_name, model_info in sorted(MODEL_CONFIG.items()):
+        docs += model_info.to_doc_format(model_name)
+
+    # Add notes section
+    docs += "# Notes\n\n"
+    docs += "- External models are processed through their respective APIs\n"
+    docs += "- Local models run on your GPU infrastructure\n"
+    docs += "- For best results with image-to-video generation:\n"
+    docs += "  - Use high-quality input images\n"
+    docs += "  - Keep prompts consistent with the visual content\n"
+
+    return docs
 
 
 class VideoRequest(BaseModel):
@@ -118,10 +174,3 @@ class VideoCreateResponse(BaseModel):
                 "status": "PENDING",
             }
         }
-
-
-class VideoModelInfoResponse(BaseModel):
-    name: ModelName
-    family: ModelFamily
-    path: str
-    external: bool

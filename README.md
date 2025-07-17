@@ -35,12 +35,10 @@ We try to use plural to adhere to REST best practices.
 │ ├── schemas.py # ✅ Pydantic schemas (data validation)
 │ ├── router.py # ✅ API routes (FastAPI) Calls worker tasks
 │── /texts
-│ ├── schemas.py
-│ ├── router.py
+│ ├── ...
 │── /videos
-│ ├── schemas.py
-│ ├── router.py
-│── /agentic
+│ ├── ...
+│── /agentic # Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
 │ ├── agents/
 │ ├── schemas.py
 │ ├── context.py
@@ -63,25 +61,15 @@ We try to use plural to adhere to REST best practices.
 │ ├── context.py # ✅ Business logic layer
 │ ├── tasks.py # ✅ Celery task
 │── /texts
-│ ├── models/
-│ ├── external_models/ # ✅ external AI models
-│ ├── schemas.py
-│ ├── context.py
-│ ├── tasks.py
+│ ├── ...
 │── /videos
-│ ├── models/
-│ ├── external_models/ # ✅ external AI models
-│ ├── schemas.py
-│ ├── context.py
-│ ├── tasks.py
+│ ├── ...
 │── /common # ✅ Shared components
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
 │── /tests # ✅ Tests mirror the /workers structure
 │── worker.py # ✅ Celery
 │── pytest.ini # ✅ Test configuration
 ```
-
-Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
 
 ## Building
 
