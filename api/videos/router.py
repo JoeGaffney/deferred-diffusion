@@ -28,7 +28,7 @@ async def create(request: VideoRequest, response: Response):
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
 async def get(id: UUID):
-    result = AsyncResult(id, app=celery_app)
+    result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
     response = VideoResponse(

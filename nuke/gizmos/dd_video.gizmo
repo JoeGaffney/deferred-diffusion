@@ -1,0 +1,66 @@
+#! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
+version 14.0 v3
+Gizmo {
+ inputs 4
+ addUserKnob {20 Settings}
+ addUserKnob {26 ""}
+ addUserKnob {22 generate T "import dd_video\nnode = nuke.thisNode()\ndd_video.process_video(node)" +STARTLINE}
+ addUserKnob {1 task_id -STARTLINE}
+ addUserKnob {22 get_task -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.get_video(node)"}
+ addUserKnob {26 "" +STARTLINE}
+ addUserKnob {4 model M {external-runway-gen-3 external-runway-gen-4 ltx-video wan-2-1}}
+ addUserKnob {14 width_height l "" -STARTLINE R 0 100}
+ width_height {1280 720}
+ addUserKnob {26 ""}
+ addUserKnob {43 prompt l "Prompt" t "Enter your prompt here" T 2}
+ prompt "Detailed, cinematic, high quality"
+ addUserKnob {26 ""}
+ addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here" T 1}
+ negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
+ addUserKnob {26 ""}
+ addUserKnob {7 num_inference_steps t quality R 1 50}
+ num_inference_steps 10
+ addUserKnob {7 num_frames R 1 200}
+ num_frames 48
+ addUserKnob {7 guidance_scale t cfg R 1 10}
+ guidance_scale 5
+ addUserKnob {7 seed t seed R 1 1000}
+ seed 42
+ addUserKnob {26 ""}
+ addUserKnob {20 Paths}
+ addUserKnob {41 file l output_read T output_read.file}
+ addUserKnob {20 endGroup n -1}
+}
+ Input {
+  inputs 0
+  name image
+  xpos 70
+  ypos -129
+ }
+ Read {
+  inputs 0
+  file_type mp4
+  file "output.mp4"
+  last 2000
+  origlast 2000
+  origset true
+  on_error black
+  version 22
+  name output_read
+  selected true
+  xpos 643
+  ypos -178
+ }
+ Output {
+  name Output1
+  xpos 643
+  ypos -94
+ }
+ Input {
+  inputs 0
+  name last_frame
+  xpos 290
+  ypos -129
+  number 1
+ }
+end_group

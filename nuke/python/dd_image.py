@@ -38,8 +38,6 @@ def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
     set_node_info(node, "PENDING", "")
 
     for count in range(1, iterations + 1):
-        # Cap sleep time to avoid excessive wait
-        time.sleep(sleep_time)
 
         try:
             parsed = images_get.sync(id, client=client)
@@ -56,7 +54,7 @@ def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
                     set_node_info(node, parsed.status, message)
 
             nuke.executeInMainThread(progress_update)
-
+            time.sleep(sleep_time)
         except Exception as e:
 
             def handle_error(error=e):
@@ -81,7 +79,6 @@ def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
             output_read = nuke.toNode(f"{node.name()}.output_read")
             set_node_value(output_read, "file", output_path)
             output_read["reload"].execute()
-
             set_node_info(node, "COMPLETE", "")
 
     nuke.executeInMainThread(update_ui)
