@@ -4,7 +4,6 @@ from typing import Literal
 import torch
 
 torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
-
 import gc
 import time
 from collections import OrderedDict
@@ -13,6 +12,8 @@ from functools import wraps
 import torch
 from accelerate.hooks import CpuOffload, clear_device_cache, send_to_device
 from cachetools.keys import hashkey
+from diffusers import GGUFQuantizationConfig
+from huggingface_hub import hf_hub_download
 from transformers import BitsAndBytesConfig, TorchAoConfig
 
 from common.logger import logger
@@ -198,6 +199,16 @@ def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
 
 
 @time_info_decorator
+def get_gguf_model(repo_id: str, filename: str, model_class, torch_dtype=torch.bfloat16):
+    path = hf_hub_download(repo_id=repo_id, filename=filename)
+    return model_class.from_single_file(
+        path,
+        quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
+        torch_dtype=torch_dtype,
+    )
+
+
+@time_info_decorator
 def get_quantized_model(
     model_id, subfolder, model_class, target_precision: Literal[4, 8, 16] = 8, torch_dtype=torch.float16
 ):
@@ -229,7 +240,7 @@ def get_quantized_model(
     use_safetensors = False
     if load_in_4bit:
         quant_config = BitsAndBytesConfig(
-            load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch_dtype
+            load_in_4bit=True, bnb_4bit_quant_type="fp4", bnb_4bit_compute_dtype=torch_dtype
         )
 
     try:
@@ -241,7 +252,10 @@ def get_quantized_model(
         logger.error(f"Failed to load quantized model from {quant_dir}: {e}")
         logger.info(f"Loading and quantizing {model_id} subfolder {subfolder}")
         model = model_class.from_pretrained(
-            model_id, subfolder=subfolder, quantization_config=quant_config, torch_dtype=torch_dtype
+            model_id,
+            subfolder=subfolder,
+            quantization_config=quant_config,
+            torch_dtype=torch_dtype,
         )
         os.makedirs(quant_dir, exist_ok=True)
         model.save_pretrained(quant_dir, safe_serialization=use_safetensors)

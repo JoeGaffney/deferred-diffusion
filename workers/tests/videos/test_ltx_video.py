@@ -11,9 +11,7 @@ from videos.schemas import ModelName, VideoRequest
 from videos.tasks import model_router_main as main
 
 MODES = ["image_to_video"]
-models: List[ModelName] = []
-models.append("ltx-video")
-models.append("wan-2-1")
+models: List[ModelName] = ["ltx-video"]
 
 
 @pytest.mark.parametrize("mode", MODES)

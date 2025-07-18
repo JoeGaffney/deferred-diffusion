@@ -1,16 +1,16 @@
 from venv import logger
 
-import accelerate.hooks
 import torch
 from diffusers import (
     FlowMatchEulerDiscreteScheduler,
+    GGUFQuantizationConfig,
     WanImageToVideoPipeline,
     WanTransformer3DModel,
 )
 from transformers import CLIPVisionModel, UMT5EncoderModel
 
 from common.memory import LOW_VRAM
-from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
+from common.pipeline_helpers import get_gguf_model, get_quantized_model
 from utils.utils import get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
@@ -23,8 +23,6 @@ UMT_T5_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
 # NOTE this one is heavy maybe we should not cache it globally
 # @decorator_global_pipeline_cache
 def get_pipeline(model_id, torch_dtype=torch.bfloat16):
-    if LOW_VRAM:
-        logger.warning("Running in low VRAM mode, using 4bit precision for some  models.")
 
     image_encoder = get_quantized_model(
         model_id=model_id,
@@ -33,13 +31,24 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16):
         target_precision=16,
         torch_dtype=torch_dtype,
     )
-    transformer = get_quantized_model(
-        model_id=WAN_TRANSFORMER_MODEL_PATH,
-        subfolder="transformer",
-        model_class=WanTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 8,
-        torch_dtype=torch_dtype,
-    )
+
+    if LOW_VRAM:
+        logger.warning("Running in low VRAM mode, using 4bit precision for some  models.")
+        transformer = get_gguf_model(
+            repo_id="city96/Wan2.1-I2V-14B-720P-gguf",
+            filename="wan2.1-i2v-14b-720p-Q5_K_M.gguf",
+            model_class=WanTransformer3DModel,
+            torch_dtype=torch_dtype,
+        )
+    else:
+        transformer = get_quantized_model(
+            model_id=WAN_TRANSFORMER_MODEL_PATH,
+            subfolder="transformer",
+            model_class=WanTransformer3DModel,
+            target_precision=8,
+            torch_dtype=torch_dtype,
+        )
+
     text_encoder = get_quantized_model(
         model_id=UMT_T5_MODEL_PATH,
         subfolder="text_encoder",
@@ -63,11 +72,6 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16):
 
     pipe.enable_model_cpu_offload()
 
-    # NOTE possible optimization for performance
-    # transformer.to("cuda")  # Move transformer to GPU
-    # pipe.transformer = transformer  # Assign the moved transformer to the pipeline
-
-    logger.warning(f"Loaded pipeline {model_id}")
     return pipe
 
 
