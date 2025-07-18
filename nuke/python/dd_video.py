@@ -18,6 +18,7 @@ from utils import (
     set_node_info,
     set_node_value,
     threaded,
+    update_read_range,
 )
 
 
@@ -27,7 +28,7 @@ def create_dd_video_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
+def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=20):
     set_node_info(node, "PENDING", "")
 
     for count in range(1, iterations + 1):
@@ -68,7 +69,11 @@ def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
 
             output_read = nuke.toNode(f"{node.name()}.output_read")
             set_node_value(output_read, "file", output_path)
-            output_read["reload"].execute()
+            update_read_range(output_read)
+
+            # Set the time offset to the current frame
+            current_frame = nuke.frame()
+            set_node_value(node, "time_offset", current_frame)
             set_node_info(node, "COMPLETE", "")
 
     nuke.executeInMainThread(update_ui)
@@ -84,7 +89,7 @@ def _api_call(node, body: VideoRequest, output_video_path: str):
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_video_path, iterations=20)
+    _api_get_call(node, str(parsed.id), output_video_path, iterations=25)
 
 
 def process_video(node):

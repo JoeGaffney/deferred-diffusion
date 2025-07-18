@@ -40,7 +40,6 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16):
         target_precision=4 if LOW_VRAM else 8,
         torch_dtype=torch_dtype,
     )
-
     text_encoder = get_quantized_model(
         model_id=UMT_T5_MODEL_PATH,
         subfolder="text_encoder",

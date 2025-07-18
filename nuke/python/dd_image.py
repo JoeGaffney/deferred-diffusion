@@ -21,6 +21,7 @@ from utils import (
     set_node_info,
     set_node_value,
     threaded,
+    update_read_range,
 )
 
 
@@ -78,7 +79,8 @@ def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
 
             output_read = nuke.toNode(f"{node.name()}.output_read")
             set_node_value(output_read, "file", output_path)
-            output_read["reload"].execute()
+            update_read_range(output_read)
+
             set_node_info(node, "COMPLETE", "")
 
     nuke.executeInMainThread(update_ui)
@@ -130,7 +132,6 @@ def process_image(node):
             controlnets=get_control_nets(aux_node),
             ip_adapters=get_ip_adapters(aux_node),
         )
-
         _api_call(node, body, output_image_path)
 
 

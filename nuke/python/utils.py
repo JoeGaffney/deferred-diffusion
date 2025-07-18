@@ -72,10 +72,36 @@ def nuke_error_handling(node):
         nuke.message(str(e))
 
 
-def get_tmp_dir() -> str:
-    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion")
+def get_tmp_dir(user_tmp=False) -> str:
+    if user_tmp:
+        # Use the user's temporary directory
+        subdir = tempfile.gettempdir()
+        subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion")
+    else:
+        script_dir = os.path.dirname(nuke.root().name())
+        subdir = os.path.join(script_dir, "deferred-diffusion", "tmp")
+
     os.makedirs(subdir, exist_ok=True)
     return subdir
+
+
+def get_node_root_path(node):
+    node_name = node.name()
+    script_dir = os.path.dirname(nuke.root().name())
+    path = f"{script_dir}/deferred-diffusion/{node_name}"
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def get_output_path(node, movie=False) -> str:
+    root_path = get_node_root_path(node)
+    time_stamp = str(node.__hash__())  # time_stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    extension = "#####.png"
+    if movie:
+        extension = "mp4"
+
+    output_image_path = f"{root_path}/{time_stamp}.{extension}"
+    return output_image_path
 
 
 def get_all_parent_nodes(node, stop_at_types: List, visited=None) -> list:
@@ -227,14 +253,18 @@ def base64_to_file(base64_str: str, output_path: str, create_dir: bool = True):
         raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
 
     # save a timestamped version by copying the file to the sample path prepended with a /tmp/timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = os.path.basename(output_path)
-    tmp_path = os.path.join(get_tmp_dir(), f"{timestamp}_{filename}")
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = os.path.basename(output_path)
+        current_dir = os.path.dirname(output_path)
+        snapshot_dir = f"{current_dir}/snapshots"
+        os.makedirs(snapshot_dir, exist_ok=True)
+        tmp_path = os.path.join(snapshot_dir, f"{timestamp}_{filename}")
 
-    # Copy the file to the timestamped location
-    shutil.copy2(output_path, tmp_path)
-
-    return output_path
+        # Copy the file to the timestamped location
+        shutil.copy2(output_path, tmp_path)
+    except Exception as e:
+        raise ValueError(f"Error creating snapshot of file {output_path}: {str(e)}") from e
 
 
 def node_to_base64(input_node, current_frame):
@@ -242,19 +272,23 @@ def node_to_base64(input_node, current_frame):
     if not input_node:
         return None
 
+    # maybe its better to keep with the node in the current directory
+    tmp_dir = get_tmp_dir()
+
     # Create a temporary Write node
     temp_write = nuke.nodes.Write(name="temp_write_to_base64")
     temp_write.setInput(0, input_node)
     temp_write["file_type"].setValue("png")
 
-    temp_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".png", delete=False).name
+    temp_path = tempfile.NamedTemporaryFile(dir=tmp_dir, suffix=".png", delete=False).name
     temp_path = temp_path.replace("\\", "/")  # Convert backslashes to forward slashes
     temp_write["file"].setValue(temp_path)
+    nuke.tprint(f"Temporary image path: {temp_path} - {temp_write.name()}")
 
     # NOTE test excute Render the current frame
-    # nuke.execute(temp_write.name(), current_frame, current_frame)
-    nuke.render(temp_write.name(), current_frame, current_frame)
-    print(f"Temporary image saved to: {temp_path}")
+    nuke.execute(temp_write.name(), current_frame, current_frame)
+    # nuke.render(temp_write.name(), current_frame, current_frame)
+    nuke.tprint(f"Temporary image saved to: {temp_path}")
 
     result = image_to_base64(temp_path)
 
@@ -318,19 +352,6 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
     return result
 
 
-def get_output_path(node, movie=False) -> str:
-    node_name = node.name()
-    time_stamp = str(node.__hash__())
-    # time_stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-    extension = "#####.png"
-    if movie:
-        extension = "mp4"
-
-    script_dir = os.path.dirname(nuke.root().name())
-    output_image_path = f"{script_dir}/deferred-diffusion/{node_name}/{time_stamp}.{extension}"
-    return output_image_path
-
-
 def replace_hashes_with_frame(path_with_hashes, frame):
     num_hashes = path_with_hashes.count("#")
     if num_hashes == 0:
@@ -338,3 +359,9 @@ def replace_hashes_with_frame(path_with_hashes, frame):
         return path_with_hashes
     frame_str = str(frame).zfill(num_hashes)
     return path_with_hashes.replace("#" * num_hashes, frame_str)
+
+
+def update_read_range(read_node):
+    read_node["reload"].execute()
+    read_node["first"].setValue(int(read_node.firstFrame()))
+    read_node["last"].setValue(int(read_node.lastFrame()))
