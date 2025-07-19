@@ -4,15 +4,11 @@ from diffusers.pipelines.ltx.pipeline_ltx_condition import (
     LTXVideoCondition,
     LTXVideoTransformer3DModel,
 )
-from transformers import CLIPVisionModel, T5EncoderModel, UMT5EncoderModel
+from transformers import T5EncoderModel, UMT5EncoderModel
 
 from common.logger import logger
 from common.memory import LOW_VRAM
-from common.pipeline_helpers import (
-    decorator_global_pipeline_cache,
-    get_gguf_model,
-    get_quantized_model,
-)
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
 from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
@@ -22,22 +18,13 @@ T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
 @decorator_global_pipeline_cache
 def get_pipeline(model_id):
 
-    if LOW_VRAM:
-        logger.warning("Running in low VRAM mode, using 4bit precision for some  models.")
-        transformer = get_gguf_model(
-            repo_id="wsbagnsv1/ltxv-13b-0.9.7-distilled-GGUF",
-            filename="ltxv-13b-0.9.7-distilled-Q4_K_M.gguf",
-            model_class=LTXVideoTransformer3DModel,
-            torch_dtype=torch.bfloat16,
-        )
-    else:
-        transformer = get_quantized_model(
-            model_id,
-            subfolder="transformer",
-            model_class=LTXVideoTransformer3DModel,
-            target_precision=8,
-            torch_dtype=torch.bfloat16,
-        )
+    transformer = get_quantized_model(
+        model_id,
+        subfolder="transformer",
+        model_class=LTXVideoTransformer3DModel,
+        target_precision=4 if LOW_VRAM else 8,
+        torch_dtype=torch.bfloat16,
+    )
 
     text_encoder = get_quantized_model(
         model_id=T5_MODEL_PATH,

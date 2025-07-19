@@ -23,7 +23,7 @@ from utils.utils import time_info_decorator
 _original_pre_forward = CpuOffload.pre_forward
 
 # depends on systems ram resources how many models can be safely cached in ram
-MAX_MODEL_CACHE = int(os.getenv("MAX_MODEL_CACHE", 3))
+MAX_MODEL_CACHE = int(os.getenv("MAX_MODEL_CACHE", 2))
 
 
 @time_info_decorator
@@ -73,11 +73,8 @@ class ModelLRUCache:
 
         # Evict least recently used model if at capacity
         if len(self.cache) >= self.max_models:
-            aggressive_eviction = True
-            if aggressive_eviction:
-                self._evict_all()
-            else:
-                self._evict_lru()
+
+            self._evict_lru()
 
         start = time.time()
         pipeline = loader_fn()
@@ -101,27 +98,6 @@ class ModelLRUCache:
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
         self.evictions += 1
 
-    def _evict_all(self):
-        if not self.cache:
-            return
-
-        cache_size = len(self.cache)
-        logger.warning(f"Evicting all {cache_size} models from cache")
-
-        # Clean up all pipelines
-        for key, pipeline in list(self.cache.items()):
-            try:
-                self._cleanup(pipeline)
-            except Exception as e:
-                logger.error(f"Error cleaning up pipeline {key}: {e}")
-
-        # Clear the cache
-        self.cache.clear()
-        self.evictions += cache_size
-
-        # Force additional garbage collection
-        gc.collect()
-
     def _cleanup(self, pipeline):
         try:
             gc.collect()
@@ -138,22 +114,9 @@ class ModelLRUCache:
             "current_cache_size": len(self.cache),
         }
 
-    def reset_cache(self):
-        """Reset the cache and clear all models."""
-        self._evict_all()
-        self.hits = 0
-        self.misses = 0
-        self.evictions = 0
-        logger.info("Cache reset successfully.")
-
 
 # Global cache
 global_pipeline_cache = ModelLRUCache(max_models=MAX_MODEL_CACHE)
-
-
-def reset_global_pipeline_cache():
-    """Reset the global pipeline cache."""
-    global_pipeline_cache.reset_cache()
 
 
 def decorator_global_pipeline_cache(func):
@@ -196,16 +159,6 @@ def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
     hf_home = os.getenv("HF_HOME", "")
     quant_dir = os.path.join(hf_home, "quantized", model_id, quant_bit, subfolder_name)
     return os.path.normpath(quant_dir)
-
-
-@time_info_decorator
-def get_gguf_model(repo_id: str, filename: str, model_class, torch_dtype=torch.bfloat16):
-    path = hf_hub_download(repo_id=repo_id, filename=filename)
-    return model_class.from_single_file(
-        path,
-        quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
-        torch_dtype=torch_dtype,
-    )
 
 
 @time_info_decorator

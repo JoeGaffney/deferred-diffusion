@@ -9,18 +9,25 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY workers/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Install additional dependencies
+# Install additional dependencies first as they won't change often
 RUN pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git --no-deps --ignore-requires-python
 RUN pip install --no-cache-dir --no-deps sam2 --ignore-requires-python
 RUN pip install --no-cache-dir supervision hydra-core iopath
 
+# Copy requirements first for better caching
+COPY workers/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 # Install diffusers from the main branch for time being
 ARG REBUILD_DATE=2025-06-28
 RUN pip install -U git+https://github.com/huggingface/diffusers.git@main --no-deps
+
+
+# Install optional speedups - should be in the base image but not available in the latest pytorch image
+# RUN pip install xformers
+# RUN pip install sageattention>=2.1.1
+# RUN pip install --no-cache-dir https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.6cxx11abiTRUE-cp310-cp310-linux_x86_64.whl
 
 # List all installed packages during build
 RUN python -m pip freeze

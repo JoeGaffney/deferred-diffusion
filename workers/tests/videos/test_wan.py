@@ -25,7 +25,7 @@ def test_image_to_video(model, mode):
                 model=model,
                 image=image_to_base64("../assets/color_v002.png"),
                 prompt="A man with short gray hair plays a red electric guitar.",
-                num_inference_steps=5,
+                num_inference_steps=6,
                 guidance_scale=3.0,
                 num_frames=24,
             )

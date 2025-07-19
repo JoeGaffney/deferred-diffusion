@@ -35,6 +35,7 @@ services:
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
+      - MAX_MODEL_CACHE=2 # Maximum number of models to cache in memory
       - LOW_VRAM=1 # Set to true to enable low VRAM mode
     depends_on:
       - redis
