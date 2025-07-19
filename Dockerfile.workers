@@ -23,14 +23,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 ARG REBUILD_DATE=2025-06-28
 RUN pip install -U git+https://github.com/huggingface/diffusers.git@main --no-deps
 
-
-# Install optional speedups - should be in the base image but not available in the latest pytorch image
-# RUN pip install xformers
-# RUN pip install sageattention>=2.1.1
+# Install optional speedups
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install xformers>=0.0.29
+RUN pip install https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.0.8/flash_attn-2.7.4.post1+cu126torch2.7-cp311-cp311-linux_x86_64.whl
+# alt offical
 # RUN pip install --no-cache-dir https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.6cxx11abiTRUE-cp310-cp310-linux_x86_64.whl
-
-# List all installed packages during build
-RUN python -m pip freeze
 
 # Copy only specific directories instead of everything
 COPY workers/ ./workers/

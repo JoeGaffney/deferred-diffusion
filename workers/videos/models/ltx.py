@@ -22,7 +22,7 @@ def get_pipeline(model_id):
         model_id,
         subfolder="transformer",
         model_class=LTXVideoTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 8,
+        target_precision=8,
         torch_dtype=torch.bfloat16,
     )
 
@@ -42,7 +42,13 @@ def get_pipeline(model_id):
     )
 
     pipe.vae.enable_tiling()
-    pipe.enable_model_cpu_offload()
+
+    if LOW_VRAM:
+        logger.warning("Enabling sequential CPU offload for low VRAM mode.")
+        pipe.enable_sequential_cpu_offload()
+    else:
+        pipe.enable_model_cpu_offload()
+
     return pipe
 
 
