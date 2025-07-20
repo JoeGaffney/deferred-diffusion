@@ -11,7 +11,7 @@ opencv-python
 protobuf
 pydantic
 qwen-vl-utils
-runwayml
+runwayml==3.6.5
 sentencepiece
 transformers
 hf_xet

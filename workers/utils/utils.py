@@ -62,16 +62,30 @@ def ensure_divisible(value: int, divisor=16) -> int:
     return (value // divisor) * divisor
 
 
-def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048):
-    """Ensure the new dimensions do not exceed max_width and max_height"""
-    width = min(image.size[0] * scale, max_width)
-    height = min(image.size[1] * scale, max_height)
+def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048) -> Image.Image:
+    orig_width, orig_height = image.size
+    aspect_ratio = orig_width / orig_height
 
-    # Adjust width and height to be divisible by the division factor
-    width = math.ceil(width / division) * division
-    height = math.ceil(height / division) * division
+    # Scale original size
+    target_width = orig_width * scale
+    target_height = orig_height * scale
 
-    logger.info(f"Image Resized from: {image.size} to {width}x{height}")
+    # Fit inside max bounds while preserving aspect ratio
+    scale_factor = min(max_width / target_width, max_height / target_height, 1.0)
+    target_width *= scale_factor
+    target_height *= scale_factor
+
+    # Round down to divisible size, anchoring width
+    width = int(math.floor(target_width / division) * division)
+    height = int(width / aspect_ratio)
+    height = int(math.floor(height / division) * division)
+
+    # Final check: skip resize if not needed
+    if (width, height) == image.size:
+        logger.info(f"No resize needed. Image size is already {width}x{height} (div/{division})")
+        return image
+
+    logger.info(f"Resizing from {image.size} to ({width}, {height}) (div/{division})")
     return image.resize((width, height))
 
 
@@ -118,6 +132,14 @@ def mp4_to_base64(file_path: str) -> bytes:
         return base64.b64encode(video_file.read())
 
 
+def pill_to_base64(image):
+    buffered = io.BytesIO()
+    image.save(buffered, format="PNG")
+    img_bytes = buffered.getvalue()
+    base64_image = base64.b64encode(img_bytes).decode("utf-8")
+    return base64_image
+
+
 def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
     """Convert mask image to RGBA format for OpenAI inpainting API.
     White areas will become transparent (edited), black areas will be preserved."""
@@ -132,14 +154,17 @@ def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
 
 def time_info_decorator(func):
     def wrapper(*args, **kwargs):
-        info = f"Calling {func.__name__} with args: {args}, kwargs: {kwargs}"
 
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
 
         elapsed = end - start
-        if elapsed > 1.0:  # Only log if execution took more than 1 second
+        if elapsed > 1.0:  # Only log if execution took more than 1.0 second
+            args_str = str(args)[:100] + ("..." if len(str(args)) > 100 else "")
+            kwargs_str = str(kwargs)[:100] + ("..." if len(str(kwargs)) > 100 else "")
+
+            info = f"Calling {func.__name__} with args: {args_str}, kwargs: {kwargs_str}"
             logger.info(f"{info}, took: {elapsed:.2f}s")
 
         return result

@@ -4,13 +4,83 @@ from uuid import UUID
 from pydantic import Base64Bytes, BaseModel, Field
 
 ModelName: TypeAlias = Literal[
-    "LTX-Video",
-    "Wan2.1",
-    "runway/gen3a_turbo",
-    "runway/gen4_turbo",
+    "ltx-video",
+    "wan-2-1",
+    "external-runway-gen-3",
+    "external-runway-gen-4",
 ]
 ModelFamily: TypeAlias = Literal["ltx", "wan", "runway"]
 TaskName: TypeAlias = Literal["process_video", "process_video_external"]
+
+
+class ModelInfo(BaseModel):
+    family: ModelFamily
+    path: str
+    external: bool
+    description: Optional[str] = None
+
+    def to_doc_format(self, model_name: str) -> str:
+        """Generate documentation for this model"""
+        doc = f"### {model_name}\n\n"
+
+        if self.description:
+            doc += f"{self.description}\n\n"
+
+        doc += f"- **Path:** `{self.path}`\n"
+        doc += f"- **Family:** {self.family}\n"
+        doc += f"- **External API:** {'Yes' if self.external else 'No'}\n"
+
+        doc += "\n"
+        return doc
+
+
+MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
+    "ltx-video": ModelInfo(
+        family="ltx",
+        path="Lightricks/LTX-Video-0.9.7-distilled",
+        external=False,
+        description="Fast but more limted video generation model. Good for quick iterations and less complex scenes.",
+    ),
+    "wan-2-1": ModelInfo(
+        family="wan",
+        path="Wan-AI/Wan2.1-I2V-14B-720P-Diffusers",
+        external=False,
+        description="Powerful model with excellent temporal consistency. Specializes in maintaining subject identity and detailed motion from a single image.",
+    ),
+    "external-runway-gen-3": ModelInfo(
+        family="runway",
+        path="gen3a_turbo",
+        external=True,
+        description="Runway's Gen-3 model accessed via API. Great for dynamic scenes, camera movements, and natural motion. Good balance of quality and generation speed.",
+    ),
+    "external-runway-gen-4": ModelInfo(
+        family="runway",
+        path="gen4_turbo",
+        external=True,
+        description="Runway's latest Gen-4 model offering exceptional motion coherence and visual quality. Superior handling of complex animations and realistic physics.",
+    ),
+}
+
+
+def generate_model_docs():
+    """Generate documentation about available video models"""
+    docs = "Generate videos using various diffusion models.\n\n"
+
+    # List all models alphabetically
+    docs += "# Available Models\n\n"
+
+    for model_name, model_info in sorted(MODEL_CONFIG.items()):
+        docs += model_info.to_doc_format(model_name)
+
+    # Add notes section
+    docs += "# Notes\n\n"
+    docs += "- External models are processed through their respective APIs\n"
+    docs += "- Local models run on your GPU infrastructure\n"
+    docs += "- For best results with image-to-video generation:\n"
+    docs += "  - Use high-quality input images\n"
+    docs += "  - Keep prompts consistent with the visual content\n"
+
+    return docs
 
 
 class VideoRequest(BaseModel):
@@ -36,37 +106,26 @@ class VideoRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
+    image_last_frame: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 image string for the last frame",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
 
     @property
     def model_family(self) -> ModelFamily:
-        mapping: Dict[ModelName, ModelFamily] = {
-            "LTX-Video": "ltx",
-            "Wan2.1": "wan",
-            "runway/gen3a_turbo": "runway",
-            "runway/gen4_turbo": "runway",
-        }
-        try:
-            return mapping[self.model]
-        except KeyError:
-            raise ValueError(f"No model family defined for model '{self.model}'")
+        return MODEL_CONFIG[self.model].family
 
     @property
     def model_path(self) -> str:
-        mapping: Dict[ModelName, str] = {
-            "LTX-Video": "Lightricks/LTX-Video-0.9.7-distilled",
-            "Wan2.1": "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers",
-            "runway/gen3a_turbo": "gen3a_turbo",
-            "runway/gen4_turbo": "gen4_turbo",
-        }
-        try:
-            return mapping[self.model]
-        except KeyError:
-            raise ValueError(f"No model path defined for model '{self.model}'")
+        return MODEL_CONFIG[self.model].path
 
     @property
     def external_model(self) -> bool:
-        external_models = ["runway"]
-        return self.model_family in external_models
+        return MODEL_CONFIG[self.model].external
 
     @property
     def task_name(self) -> TaskName:

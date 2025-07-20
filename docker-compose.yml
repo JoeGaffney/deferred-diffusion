@@ -31,6 +31,7 @@ services:
     stdin_open: true
     volumes:
       - hf_cache:/WORKSPACE
+      - Y:/TEST_OUTPUTS:/app/tmp
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -42,6 +43,8 @@ services:
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
+      - MAX_MODEL_CACHE=2 # Maximum number of models to cache in memory
+      - LOW_VRAM=0 # Set to true to enable low VRAM mode
     depends_on:
       - redis
       - api

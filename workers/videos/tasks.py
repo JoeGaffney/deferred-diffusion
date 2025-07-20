@@ -1,11 +1,36 @@
 from common.memory import free_gpu_memory
 from utils.utils import mp4_to_base64
 from videos.context import VideoContext
-from videos.models.ltx_video import main as ltx_video_main
-from videos.models.runway_gen import main as runway_gen_main
-from videos.models.wan_2_1 import main as wan_2_1_main
+from videos.external_models.runway import main as runway_main
+from videos.models.ltx import main as ltx_main
+from videos.models.wan import main as wan_main
 from videos.schemas import VideoRequest, VideoWorkerResponse
 from worker import celery_app
+
+
+def process_result(context, result):
+    """Process the result of video generation."""
+    if result:
+        return VideoWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()
+    raise ValueError("Video generation failed")
+
+
+def model_router_main(context: VideoContext):
+    family = context.data.model_family
+    if family == "ltx":
+        return ltx_main(context)
+    elif family == "wan":
+        return wan_main(context)
+    else:
+        raise ValueError(f"Unsupported model family: {family}")
+
+
+def external_model_router_main(context: VideoContext):
+    family = context.data.model_family
+    if family == "runway":
+        return runway_main(context)
+    else:
+        raise ValueError(f"Unsupported model family: {family}")
 
 
 @celery_app.task(name="process_video", queue="gpu")
@@ -13,27 +38,15 @@ def process_video(request_dict):
     free_gpu_memory()
     request = VideoRequest.model_validate(request_dict)
     context = VideoContext(request)
+    result = model_router_main(context)
 
-    result = None
-    if context.model == "LTX-Video":
-        result = ltx_video_main(context)
-    elif context.model == "Wan2.1":
-        result = wan_2_1_main(context)
-    else:
-        raise ValueError(f"Unsupported model: {context.model}")
-
-    return VideoWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()
+    return process_result(context, result)
 
 
 @celery_app.task(name="process_video_external", queue="cpu")
 def process_video_external(request_dict):
     request = VideoRequest.model_validate(request_dict)
     context = VideoContext(request)
+    result = external_model_router_main(context)
 
-    result = None
-    if context.model == "runway/gen3a_turbo" or context.model == "runway/gen4_turbo":
-        result = runway_gen_main(context)
-    else:
-        raise ValueError(f"Unsupported model: {context.model}")
-
-    return VideoWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()
+    return process_result(context, result)

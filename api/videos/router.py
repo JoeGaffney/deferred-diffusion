@@ -2,23 +2,21 @@ from uuid import UUID
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from fastapi.responses import JSONResponse
 
 from common.auth import verify_token
-from common.logger import log_pretty
-from utils.utils import poll_until_resolved
 from videos.schemas import (
     VideoCreateResponse,
     VideoRequest,
     VideoResponse,
     VideoWorkerResponse,
+    generate_model_docs,
 )
 from worker import celery_app
 
 router = APIRouter(prefix="/videos", tags=["Videos"], dependencies=[Depends(verify_token)])
 
 
-@router.post("", response_model=VideoCreateResponse, operation_id="videos_create")
+@router.post("", response_model=VideoCreateResponse, operation_id="videos_create", description=generate_model_docs())
 async def create(request: VideoRequest, response: Response):
     try:
         result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
@@ -29,11 +27,8 @@ async def create(request: VideoRequest, response: Response):
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
-async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
-    if wait:
-        result = await poll_until_resolved(str(id), timeout=1000, poll_interval=10)
-    else:
-        result = AsyncResult(id, app=celery_app)
+async def get(id: UUID):
+    result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
     response = VideoResponse(

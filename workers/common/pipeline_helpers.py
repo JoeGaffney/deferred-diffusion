@@ -4,19 +4,53 @@ from typing import Literal
 import torch
 
 torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
-
 import gc
 import time
 from collections import OrderedDict
 from functools import wraps
 
-import psutil
 import torch
+from accelerate.hooks import CpuOffload, clear_device_cache, send_to_device
 from cachetools.keys import hashkey
+from diffusers import GGUFQuantizationConfig
+from huggingface_hub import hf_hub_download
 from transformers import BitsAndBytesConfig, TorchAoConfig
 
 from common.logger import logger
 from utils.utils import time_info_decorator
+
+# Keep reference to original (if you want to restore later)
+_original_pre_forward = CpuOffload.pre_forward
+
+# depends on systems ram resources how many models can be safely cached in ram
+MAX_MODEL_CACHE = int(os.getenv("MAX_MODEL_CACHE", 2))
+
+
+@time_info_decorator
+def patched_pre_forward(self, module, *args, **kwargs):
+    target_device = self.execution_device
+    current_device = next(module.parameters()).device
+
+    # Handle previous module offload
+    if self.prev_module_hook is not None:
+        prev_module = self.prev_module_hook.model
+        prev_device = next(prev_module.parameters()).device
+
+        if prev_device != torch.device("cpu"):
+            print(f"Offloading {str(prev_module.__class__.__name__)} from {prev_device} to CPU")
+            self.prev_module_hook.offload()
+            clear_device_cache()
+
+    if current_device == target_device:
+        return args, kwargs
+
+    # Move current module to target device only if needed
+    module.to(target_device)
+    return send_to_device(args, target_device), send_to_device(kwargs, target_device)
+
+
+# Apply patch
+CpuOffload.pre_forward = patched_pre_forward
 
 
 class ModelLRUCache:
@@ -39,11 +73,8 @@ class ModelLRUCache:
 
         # Evict least recently used model if at capacity
         if len(self.cache) >= self.max_models:
-            aggressive_eviction = True
-            if aggressive_eviction:
-                self._evict_all()
-            else:
-                self._evict_lru()
+
+            self._evict_lru()
 
         start = time.time()
         pipeline = loader_fn()
@@ -67,27 +98,6 @@ class ModelLRUCache:
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
         self.evictions += 1
 
-    def _evict_all(self):
-        if not self.cache:
-            return
-
-        cache_size = len(self.cache)
-        logger.warning(f"Evicting all {cache_size} models from cache")
-
-        # Clean up all pipelines
-        for key, pipeline in list(self.cache.items()):
-            try:
-                self._cleanup(pipeline)
-            except Exception as e:
-                logger.error(f"Error cleaning up pipeline {key}: {e}")
-
-        # Clear the cache
-        self.cache.clear()
-        self.evictions += cache_size
-
-        # Force additional garbage collection
-        gc.collect()
-
     def _cleanup(self, pipeline):
         try:
             gc.collect()
@@ -104,22 +114,9 @@ class ModelLRUCache:
             "current_cache_size": len(self.cache),
         }
 
-    def reset_cache(self):
-        """Reset the cache and clear all models."""
-        self._evict_all()
-        self.hits = 0
-        self.misses = 0
-        self.evictions = 0
-        logger.info("Cache reset successfully.")
-
 
 # Global cache
-global_pipeline_cache = ModelLRUCache(max_models=2)  # Adjust max_models as needed
-
-
-def reset_global_pipeline_cache():
-    """Reset the global pipeline cache."""
-    global_pipeline_cache.reset_cache()
+global_pipeline_cache = ModelLRUCache(max_models=MAX_MODEL_CACHE)
 
 
 def decorator_global_pipeline_cache(func):
@@ -196,7 +193,7 @@ def get_quantized_model(
     use_safetensors = False
     if load_in_4bit:
         quant_config = BitsAndBytesConfig(
-            load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch_dtype
+            load_in_4bit=True, bnb_4bit_quant_type="fp4", bnb_4bit_compute_dtype=torch_dtype
         )
 
     try:
@@ -208,7 +205,10 @@ def get_quantized_model(
         logger.error(f"Failed to load quantized model from {quant_dir}: {e}")
         logger.info(f"Loading and quantizing {model_id} subfolder {subfolder}")
         model = model_class.from_pretrained(
-            model_id, subfolder=subfolder, quantization_config=quant_config, torch_dtype=torch_dtype
+            model_id,
+            subfolder=subfolder,
+            quantization_config=quant_config,
+            torch_dtype=torch_dtype,
         )
         os.makedirs(quant_dir, exist_ok=True)
         model.save_pretrained(quant_dir, safe_serialization=use_safetensors)

@@ -5,14 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from common.auth import verify_token
 from images.schemas import (
-    MODEL_CONFIG,
     ImageCreateResponse,
-    ImageModelInfoResponse,
     ImageRequest,
     ImageResponse,
     ImageWorkerResponse,
+    generate_model_docs,
 )
-from utils.utils import poll_until_resolved
 from worker import celery_app
 
 router = APIRouter(
@@ -20,7 +18,7 @@ router = APIRouter(
 )
 
 
-@router.post("", response_model=ImageCreateResponse, operation_id="images_create")
+@router.post("", response_model=ImageCreateResponse, operation_id="images_create", description=generate_model_docs())
 async def create(request: ImageRequest, response: Response):
     try:
         result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
@@ -30,20 +28,9 @@ async def create(request: ImageRequest, response: Response):
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
 
-@router.get("/models", response_model=list[ImageModelInfoResponse], operation_id="images_get_models")
-async def get_models():
-    models_list = [
-        ImageModelInfoResponse(name=name, **model_info.model_dump()) for name, model_info in MODEL_CONFIG.items()
-    ]
-    return models_list
-
-
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
-async def get(id: UUID, wait: bool = Query(True, description="Whether to wait for task completion")):
-    if wait:
-        result = await poll_until_resolved(str(id))
-    else:
-        result = AsyncResult(str(id), app=celery_app)
+async def get(id: UUID):
+    result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
     response = ImageResponse(

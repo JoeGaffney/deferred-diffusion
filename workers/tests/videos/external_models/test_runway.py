@@ -1,33 +1,32 @@
 import os
 import shutil
+from typing import List
 
 import pytest
 
-from tests.utils import image_to_base64
-from utils.utils import ensure_path_exists
+from tests.utils import image_to_base64, setup_output_file
 from videos.context import VideoContext
-from videos.models.runway_gen import main
-from videos.schemas import VideoRequest
+from videos.schemas import ModelName, VideoRequest
+from videos.tasks import external_model_router_main as main
+
+MODES = ["image_to_image"]
+models: List[ModelName] = ["external-runway-gen-4"]
 
 
-@pytest.mark.skip(reason="Runway Gen 4 Turbo costs credits")
-def test_image_to_video():
-    output_name = f"../tmp/output/videos/runway_gen4_turbo.mp4"
-    ensure_path_exists(output_name)
-
-    # Delete existing file if it exists
-    if os.path.exists(output_name):
-        os.remove(output_name)
+@pytest.mark.parametrize("mode", MODES)
+@pytest.mark.parametrize("model", models)
+def test_image_to_video(model, mode):
+    output_name = setup_output_file(model, mode, extension="mp4")
 
     result = main(
         VideoContext(
             VideoRequest(
-                model="runway/gen4_turbo",
+                model=model,
                 image=image_to_base64("../assets/color_v002.png"),
                 prompt="A man with short gray hair plays a red electric guitar.",
-                num_inference_steps=5,
-                guidance_scale=4,
-                num_frames=8,
+                num_inference_steps=7,
+                guidance_scale=3.0,
+                num_frames=24,
             )
         )
     )
