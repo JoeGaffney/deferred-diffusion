@@ -167,7 +167,7 @@ def generate_model_docs():
     docs += "# Notes \n"
     docs += "- External models are processed through their respective APIs.\n"
     docs += "- Auto Divisor ensures image dimensions are divisible by the specified value.\n"
-    docs += "- ControlNets allow for controling structure and placement.\n"
+    docs += "- ControlNets allow for controlling structure and placement.\n"
     docs += "- IP Adapters guide the image prompt with images - for style and visual reference.\n"
     docs += "- Guidance Scale controls the strength of the prompt influence on the image generation. This can have a different effect with each model, but general rule of thumb is lower values produce more realism.\n"
     docs += "- If there is no image the models will do a text-to-image generation, if there is an image it will do an image-to-image generation.\n"
