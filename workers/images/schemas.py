@@ -134,7 +134,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="gen4_image",
         external=True,
         adapters=True,
-        description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combinging multiple references into a single, cohesive image.",
+        description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combining multiple references into a single, cohesive image.",
     ),
     "external-flux-kontext": ModelInfo(
         family="flux_kontext",
