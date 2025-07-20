@@ -74,7 +74,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         controlnets=True,
         adapters=True,
         inpainting=True,
-        description="Stable Diffusion XL variant supports the most conteol nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
+        description="Stable Diffusion XL variant supports the most control nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
     ),
     "sd-3": ModelInfo(
         family="sd3",
