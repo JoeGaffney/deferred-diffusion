@@ -48,7 +48,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16):
         model_id=WAN_TRANSFORMER_MODEL_PATH,
         subfolder="transformer",
         model_class=WanTransformer3DModel,
-        target_precision=8,
+        target_precision=4 if LOW_VRAM else 8,
         torch_dtype=torch_dtype,
     )
 
@@ -88,11 +88,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16):
     except:
         pass
 
-    if LOW_VRAM:
-        logger.warning("Enabling sequential CPU offload for low VRAM mode.")
-        pipe.enable_sequential_cpu_offload()
-    else:
-        pipe.enable_model_cpu_offload()
+    pipe.enable_model_cpu_offload()
 
     return pipe
 
