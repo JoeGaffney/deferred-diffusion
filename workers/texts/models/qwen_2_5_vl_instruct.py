@@ -6,26 +6,18 @@ from qwen_vl_utils import process_vision_info
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 from common.logger import log_pretty, logger
-from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
 from texts.context import TextContext
-from utils.utils import load_image_from_base64
+from utils.utils import load_image_from_base64, time_info_decorator
 
 
-# @decorator_global_pipeline_cache
+@time_info_decorator
 def get_pipeline(model_id):
-    model = get_quantized_model(
-        model_id=model_id,
-        subfolder="",
-        model_class=Qwen2_5_VLForConditionalGeneration,
-        target_precision=4,
-        torch_dtype=torch.float16,
-    )
-    model.to("cpu")  # Ensure model is on CPU initially
+    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, device_map="cpu")
 
-    logger.warning(f"Loaded pipeline {model_id}")
     return model
 
 
+@time_info_decorator
 def get_proccesor(model_id):
     # can affect performance could be reduced further
     # ref original
@@ -38,7 +30,6 @@ def get_proccesor(model_id):
         model_id, min_pixels=min_pixels, max_pixels=max_pixels, device_map="cpu", use_fast=True
     )
 
-    logger.warning(f"Loaded processor pipeline {model_id}")
     return processor
 
 
@@ -60,7 +51,7 @@ def main(context: TextContext):
                 "image": pil_image,
             }
         )
-    logger.warning(f"Running qwen with {len(context.data.images)} images and {len(context.data.videos)} videos")
+    logger.info(f"Running qwen with {len(context.data.images)} images and {len(context.data.videos)} videos")
 
     # Preparation for inference
     text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
