@@ -42,7 +42,7 @@ def get_pipeline(config: PipelineConfig):
         **args,
     )
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+    return optimize_pipeline(pipe)
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):

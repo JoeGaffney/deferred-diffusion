@@ -42,7 +42,7 @@ def get_pipeline(config: PipelineConfig) -> DiffusionPipeline:
             pipe.image_encoder = image_encoder
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+    return optimize_pipeline(pipe)
 
 
 @decorator_global_pipeline_cache
@@ -57,7 +57,7 @@ def get_inpainting_pipeline(config: PipelineConfig, variant=None) -> StableDiffu
         **args,
     )
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+    return optimize_pipeline(pipe)
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
