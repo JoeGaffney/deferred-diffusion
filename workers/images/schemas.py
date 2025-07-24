@@ -74,15 +74,15 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         controlnets=True,
         adapters=True,
         inpainting=True,
-        description="Stable Diffusion XL variant supports the most control nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
+        description="Stable Diffusion XL variant supports the most conteol nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
     ),
     "sd-3": ModelInfo(
         family="sd3",
         path="stabilityai/stable-diffusion-3.5-large",
         external=False,
         auto_divisor=16,
-        controlnets=True,
-        adapters=True,
+        controlnets=False,
+        adapters=False,
         inpainting=True,
         description="Stable Diffusion 3.5 offers superior prompt understanding and composition. Excels at complex scenes, concept art, and handling multiple subjects with accurate interactions.",
     ),
@@ -134,7 +134,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="gen4_image",
         external=True,
         adapters=True,
-        description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combining multiple references into a single, cohesive image.",
+        description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combinging multiple references into a single, cohesive image.",
     ),
     "external-flux-kontext": ModelInfo(
         family="flux_kontext",
@@ -167,7 +167,7 @@ def generate_model_docs():
     docs += "# Notes \n"
     docs += "- External models are processed through their respective APIs.\n"
     docs += "- Auto Divisor ensures image dimensions are divisible by the specified value.\n"
-    docs += "- ControlNets allow for controlling structure and placement.\n"
+    docs += "- ControlNets allow for controling structure and placement.\n"
     docs += "- IP Adapters guide the image prompt with images - for style and visual reference.\n"
     docs += "- Guidance Scale controls the strength of the prompt influence on the image generation. This can have a different effect with each model, but general rule of thumb is lower values produce more realism.\n"
     docs += "- If there is no image the models will do a text-to-image generation, if there is an image it will do an image-to-image generation.\n"

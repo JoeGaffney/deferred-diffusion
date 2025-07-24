@@ -4,7 +4,7 @@ from uuid import UUID
 from celery.states import ALL_STATES
 from pydantic import BaseModel, Field, RootModel
 
-ModelName: TypeAlias = Literal["Qwen2.5-VL-3B-Instruct", "gpt-4o-mini", "gpt-4.1-mini"]
+ModelName: TypeAlias = Literal["qwen-2-5", "external-gpt-4", "external-gpt-4-1"]
 ModelFamily: TypeAlias = Literal["qwen", "openai"]
 TaskName: TypeAlias = Literal["process_text", "process_text_external"]
 
@@ -27,7 +27,7 @@ class MessageItem(BaseModel):
 class TextRequest(BaseModel):
     temperature: float = 0.7
     seed: int = 42
-    model: ModelName = Field(description="model", default="Qwen2.5-VL-3B-Instruct")
+    model: ModelName = Field(description="model", default="qwen-2-5")
     messages: list[MessageItem] = Field(description="List of messages", default=[])
     images: List[str] = Field(description="Image references", default=[])
     videos: List[str] = Field(description="Video references", default=[])
@@ -35,9 +35,9 @@ class TextRequest(BaseModel):
     @property
     def model_family(self) -> ModelFamily:
         mapping: Dict[ModelName, ModelFamily] = {
-            "Qwen2.5-VL-3B-Instruct": "qwen",
-            "gpt-4o-mini": "openai",
-            "gpt-4.1-mini": "openai",
+            "qwen-2-5": "qwen",
+            "external-gpt-4": "openai",
+            "external-gpt-4-1": "openai",
         }
         try:
             return mapping[self.model]
@@ -47,9 +47,9 @@ class TextRequest(BaseModel):
     @property
     def model_path(self) -> str:
         mapping: Dict[ModelName, str] = {
-            "Qwen2.5-VL-3B-Instruct": "Qwen/Qwen2.5-VL-3B-Instruct",
-            "gpt-4o-mini": "gpt-4o-mini",
-            "gpt-4.1-mini": "gpt-4.1-mini",
+            "qwen-2-5": "Qwen/Qwen2.5-VL-3B-Instruct",
+            "external-gpt-4": "gpt-4o-mini",
+            "external-gpt-4-1": "gpt-4.1-mini",
         }
         try:
             return mapping[self.model]

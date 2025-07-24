@@ -1,7 +1,7 @@
 from common.memory import free_gpu_memory
 from texts.context import TextContext
 from texts.models.openai import main as openai_main
-from texts.models.qwen_2_5_vl_instruct import main as qwen_2_5_vl_instruct_main
+from texts.models.qwen import main as qwen_main
 from texts.schemas import TextRequest, TextWorkerResponse
 from worker import celery_app
 
@@ -11,10 +11,11 @@ def process_text(request_dict):
     free_gpu_memory()
     request = TextRequest.model_validate(request_dict)
     context = TextContext(request)
+    family = context.data.model_family
 
     result = None
-    if request.model == "Qwen2.5-VL-3B-Instruct":
-        result = qwen_2_5_vl_instruct_main(context)
+    if family == "qwen":
+        result = qwen_main(context)
     else:
         raise ValueError(f"Unsupported model: {request.model}")
 
@@ -29,9 +30,10 @@ def process_text(request_dict):
 def process_text_external(request_dict):
     request = TextRequest.model_validate(request_dict)
     context = TextContext(request)
+    family = context.data.model_family
 
     result = None
-    if request.model == "gpt-4o-mini" or request.model == "gpt-4.1-mini":
+    if family == "openai":
         result = openai_main(context)
     else:
         raise ValueError(f"Unsupported model: {request.model}")

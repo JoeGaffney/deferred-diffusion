@@ -1,10 +1,6 @@
-import time
-
-import pytest
-
 from tests.utils import image_to_base64
 from texts.context import TextContext
-from texts.models.qwen_2_5_vl_instruct import main
+from texts.models.qwen import main
 from texts.schemas import MessageContent, MessageItem, TextRequest
 
 image_a = image_to_base64("../assets/color_v001.jpeg")
