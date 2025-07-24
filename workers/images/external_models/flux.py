@@ -41,7 +41,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
 
     payload = {
         "prompt": context.data.prompt,
-        "input_image": convert_pil_to_bytes(context.color_image),
+        "image_prompt": convert_pil_to_bytes(context.color_image),
         "output_format": "png",
         "guidance": context.data.guidance_scale,
         "image_prompt_strength": context.data.strength,

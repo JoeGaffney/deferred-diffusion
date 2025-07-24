@@ -28,10 +28,11 @@ CONTROL_NET_MODEL_CONFIG: Dict[ModelFamily, Dict[str, str]] = {
         "canny": "diffusers/controlnet-canny-sdxl-1.0-small",
         "pose": "xinsir/controlnet-openpose-sdxl-1.0",
     },
-    "sd3": {
-        "depth": "InstantX/SD3-Controlnet-Depth",
-        "canny": "InstantX/SD3-Controlnet-Canny",
-    },
+    # # NOTE issues with SD3 ControlNets, so not using them for now
+    # "sd3": {
+    #     "depth": "InstantX/SD3-Controlnet-Depth",
+    #     "canny": "InstantX/SD3-Controlnet-Canny",
+    # },
     "flux": {
         "depth": "XLabs-AI/flux-controlnet-depth-diffusers",
         "canny": "XLabs-AI/flux-controlnet-canny-diffusers",
