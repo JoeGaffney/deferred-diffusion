@@ -15,6 +15,7 @@ from utils import (
     get_output_path,
     node_to_base64,
     nuke_error_handling,
+    polling_message,
     set_node_info,
     set_node_value,
     threaded,
@@ -28,7 +29,7 @@ def create_dd_video_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=20):
+def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=10):
     set_node_info(node, "PENDING", "")
 
     for count in range(1, iterations + 1):
@@ -42,9 +43,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
 
             def progress_update():
                 if isinstance(parsed, VideoResponse):
-                    message = f"Polling attempt {count}/{iterations}"
-                    print(message)
-                    set_node_info(node, parsed.status, message)
+                    set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
             time.sleep(sleep_time)
@@ -88,7 +87,7 @@ def _api_call(node, body: VideoRequest, output_video_path: str, current_frame: i
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_video_path, current_frame, iterations=25)
+    _api_get_call(node, str(parsed.id), output_video_path, current_frame, iterations=60)
 
 
 def process_video(node):

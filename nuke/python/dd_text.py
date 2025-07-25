@@ -17,6 +17,7 @@ from utils import (
     get_previous_text_messages,
     node_to_base64,
     nuke_error_handling,
+    polling_message,
     set_node_info,
     set_node_value,
     threaded,
@@ -71,9 +72,7 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
 
             def progress_update():
                 if isinstance(parsed, TextResponse):
-                    message = f"Polling attempt {count}/{iterations}"
-                    print(message)
-                    set_node_info(node, parsed.status, message)
+                    set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
             time.sleep(sleep_time)

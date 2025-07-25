@@ -17,6 +17,7 @@ from utils import (
     get_output_path,
     node_to_base64,
     nuke_error_handling,
+    polling_message,
     replace_hashes_with_frame,
     set_node_info,
     set_node_value,
@@ -31,7 +32,7 @@ def create_dd_image_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=10):
+def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=5):
     set_node_info(node, "PENDING", "")
 
     for count in range(1, iterations + 1):
@@ -46,9 +47,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
 
             def progress_update():
                 if isinstance(parsed, ImageResponse):
-                    message = f"Polling attempt {count}/{iterations}"
-                    print(message)
-                    set_node_info(node, parsed.status, message)
+                    set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
             time.sleep(sleep_time)
@@ -92,7 +91,7 @@ def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: i
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=20)
+    _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=60)
 
 
 def process_image(node):

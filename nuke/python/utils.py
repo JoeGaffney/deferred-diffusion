@@ -59,6 +59,11 @@ def set_node_info(node, status, message):
         node["tile_color"].setValue(0x888888FF)  # Grey
 
 
+def polling_message(count, iterations, sleep_time):
+    remaining = (iterations - count) * sleep_time
+    return f"⏳ {count}/{iterations} • ≤{remaining}s left"
+
+
 @contextmanager
 def nuke_error_handling(node):
     try:
