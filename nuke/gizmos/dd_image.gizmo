@@ -4,25 +4,25 @@ Gizmo {
  inputs 3
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
- addUserKnob {4 model M {sd-xl sd-3 flux-1 flux-kontext-1 depth-anything-2 segment-anything-2 sd-x4-upscaler external-gpt-image-1 external-runway-gen4-image external-flux-kontext external-flux-1-1}}
- addUserKnob {22 generate -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)"}
- addUserKnob {1 task_id -STARTLINE}
- addUserKnob {22 get_task -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)"}
+ addUserKnob {4 model l "Model" M {sd-xl sd-3 flux-1 flux-kontext-1 depth-anything-2 segment-anything-2 sd-x4-upscaler external-gpt-image-1 external-runway-gen4-image external-flux-kontext external-flux-1-1} t "Select the image generation model."}
+ addUserKnob {22 generate l "Generate" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" t "Start image generation with current settings."}
+ addUserKnob {1 task_id l "Task ID" -STARTLINE t "ID of the current image generation task."}
+ addUserKnob {22 get_task l "Get Task" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)" t "Fetch the latest image for this task."}
  addUserKnob {26 ""}
- addUserKnob {43 prompt l Prompt t "Enter your prompt here"}
+ addUserKnob {43 prompt l "Prompt" t "Describe the image you want to generate."}
  prompt "Detailed, 8k, photorealistic"
- addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here" -STARTLINE}
+ addUserKnob {43 negative_prompt l "Negative Prompt" t "Describe what to avoid in the image." -STARTLINE}
  negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
  addUserKnob {26 ""}
- addUserKnob {14 width_height l "" +STARTLINE R 0 100}
+ addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
  width_height {1280 720}
- addUserKnob {7 num_inference_steps l steps t "quality num_inference_steps" R 1 50}
+ addUserKnob {7 num_inference_steps l "Quality (Steps)" t "Number of inference steps for generation. Higher means better quality." R 1 50}
  num_inference_steps 25
- addUserKnob {7 strength}
+ addUserKnob {7 strength l "Strength" t "How much the input image influences the result (0-1)."}
  strength 0.5
- addUserKnob {7 guidance_scale t cfg R 1 10}
+ addUserKnob {7 guidance_scale l "Guidance Scale" t "Classifier-free guidance (CFG) scale. Higher = more prompt adherence." R 1 10}
  guidance_scale 5
- addUserKnob {7 seed t seed R 1 1000}
+ addUserKnob {7 seed l "Seed" t "Random seed for reproducibility." R 1 1000}
  seed 42
  addUserKnob {20 Paths}
  addUserKnob {41 file l output_read T output_read.file}
