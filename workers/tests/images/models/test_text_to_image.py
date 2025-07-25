@@ -10,8 +10,8 @@ from tests.utils import save_image_and_assert_file_exists, setup_output_file
 from utils.utils import get_16_9_resolution
 
 MODES = ["text_to_image"]
-# models: List[ModelName] = ["sd-xl", "sd-3", "flux-1"]
-models: List[ModelName] = ["sd-3", "sd-3"]
+models: List[ModelName] = ["sd-xl", "sd-3", "flux-1"]
+# models: List[ModelName] = ["sd-3"]
 
 
 @pytest.mark.parametrize("mode", MODES)

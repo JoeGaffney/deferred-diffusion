@@ -54,7 +54,7 @@ def get_pipeline(config: PipelineConfig):
             image_encoder_pretrained_model_name_or_path=config.ip_adapter_image_encoder_subfolder,
         )
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+    return optimize_pipeline(pipe)
 
 
 @decorator_global_pipeline_cache
@@ -82,7 +82,7 @@ def get_inpainting_pipeline(config: PipelineConfig):
         **args,
     )
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+    return optimize_pipeline(pipe)
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):

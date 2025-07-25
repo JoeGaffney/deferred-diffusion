@@ -53,7 +53,7 @@ def get_pipeline(config: PipelineConfig):
             image_encoder_pretrained_model_name_or_path=config.ip_adapter_image_encoder_subfolder,
         )
 
-    return optimize_pipeline(pipe, sequential_cpu_offload=False)
+    return optimize_pipeline(pipe)
 
 
 def image_to_image_call(context: ImageContext):

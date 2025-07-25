@@ -4,7 +4,7 @@ from diffusers.pipelines.ltx.pipeline_ltx_condition import (
     LTXVideoCondition,
     LTXVideoTransformer3DModel,
 )
-from transformers import T5EncoderModel, UMT5EncoderModel
+from transformers import T5EncoderModel
 
 from common.logger import logger
 from common.memory import LOW_VRAM

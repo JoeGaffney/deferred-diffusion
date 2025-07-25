@@ -12,8 +12,6 @@ from functools import wraps
 import torch
 from accelerate.hooks import CpuOffload, clear_device_cache, send_to_device
 from cachetools.keys import hashkey
-from diffusers import GGUFQuantizationConfig
-from huggingface_hub import hf_hub_download
 from transformers import BitsAndBytesConfig, TorchAoConfig
 
 from common.logger import logger
@@ -128,16 +126,12 @@ def decorator_global_pipeline_cache(func):
     return wrapper
 
 
-def optimize_pipeline(pipe, disable_safety_checker=True, sequential_cpu_offload=False):
+def optimize_pipeline(pipe, disable_safety_checker=True):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
 
-    # Enable CPU offload to save GPU memory
-    if sequential_cpu_offload:
-        pipe.enable_sequential_cpu_offload()
-    else:
-        pipe.enable_model_cpu_offload()
+    pipe.enable_model_cpu_offload()
 
     try:
         pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
@@ -145,8 +139,6 @@ def optimize_pipeline(pipe, disable_safety_checker=True, sequential_cpu_offload=
     except:
         pass  # VAE tiling is not available for all models
 
-    # NOTE Breaks adapter workflows
-    # pipe.enable_attention_slicing("auto")  # Enable attention slicing for faster inference
     if disable_safety_checker:
         pipe.safety_checker = dummy_safety_checker
 

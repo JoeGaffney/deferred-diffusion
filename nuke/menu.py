@@ -5,3 +5,4 @@ nuke.menu("Nodes").addCommand("DeferredDiffusion/DDImage", "nuke.createNode('dd_
 nuke.menu("Nodes").addCommand("DeferredDiffusion/DDControlnet", "nuke.createNode('dd_controlnet')")
 nuke.menu("Nodes").addCommand("DeferredDiffusion/DDAdapter", "nuke.createNode('dd_adapter')")
 nuke.menu("Nodes").addCommand("DeferredDiffusion/DDVideo", "nuke.createNode('dd_video')")
+nuke.menu("Nodes").addCommand("DeferredDiffusion/DDText", "nuke.createNode('dd_text')")

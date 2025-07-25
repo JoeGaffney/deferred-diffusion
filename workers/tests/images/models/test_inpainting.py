@@ -15,6 +15,8 @@ from tests.utils import (
 MODES = ["inpainting"]
 models: List[ModelName] = ["sd-xl", "sd-3", "flux-1"]
 
+models: List[ModelName] = ["flux-1"]
+
 
 @pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize("model", models)

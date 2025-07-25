@@ -59,6 +59,11 @@ def set_node_info(node, status, message):
         node["tile_color"].setValue(0x888888FF)  # Grey
 
 
+def polling_message(count, iterations, sleep_time):
+    remaining = (iterations - count) * sleep_time
+    return f"⏳ {count}/{iterations} • ≤{remaining}s left"
+
+
 @contextmanager
 def nuke_error_handling(node):
     try:
@@ -159,7 +164,6 @@ def set_node_value(node, knob_name: str, value):
 
     try:
         knob.setValue(value)
-        print(f"Set knob '{knob_name}' to value: {value}")
     except Exception as e:
         raise ValueError(f"Failed to set knob '{knob_name}': {str(e)}") from e
 
@@ -285,12 +289,16 @@ def node_to_base64(input_node, current_frame):
     temp_write["file"].setValue(temp_path)
     nuke.tprint(f"Temporary image path: {temp_path} - {temp_write.name()}")
 
-    # NOTE test excute Render the current frame
-    nuke.execute(temp_write.name(), current_frame, current_frame)
-    # nuke.render(temp_write.name(), current_frame, current_frame)
-    nuke.tprint(f"Temporary image saved to: {temp_path}")
+    try:
+        # NOTE test excute Render the current frame
+        nuke.execute(temp_write.name(), current_frame, current_frame)
+        # nuke.render(temp_write.name(), current_frame, current_frame)
+        nuke.tprint(f"Temporary image saved to: {temp_path}")
 
-    result = image_to_base64(temp_path)
+        result = image_to_base64(temp_path)
+    except Exception as e:
+        nuke.tprint(f"Error converting node {input_node.name()} to base64: {str(e)}")
+        result = None
 
     # Clean up
     nuke.delete(temp_write)
@@ -350,6 +358,27 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
         result.append(tmp)
 
     return result
+
+
+def get_previous_text_messages(node) -> str:
+    if node is None:
+        return ""
+
+    if node.Class() != "dd_text":
+        return ""
+
+    # NOTE some issues here with how nuke handles json encoded text so we read from text knob directly
+    # k = node["chain_of_thought"]
+    # chain_of_thought = k.value()
+    # nuke.tprint(f"chain_of_thought: {chain_of_thought}")
+
+    # k = node["chain_of_thought_alt"]
+    # chain_of_thought_alt = k.value()
+    # nuke.tprint(f"chain_of_thought_alt: {chain_of_thought_alt}")
+
+    chain_of_thought = get_node_value(node, "chain_of_thought_alt", "[]", mode=MODE_VALUE)
+    nuke.tprint(f"chain_of_thought: {chain_of_thought}")
+    return chain_of_thought
 
 
 def replace_hashes_with_frame(path_with_hashes, frame):
