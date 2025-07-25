@@ -26,16 +26,12 @@ from utils import (
 
 
 def create_dd_image_node():
-    # Create the node from the gizmo (no need to re-define defaults)
-    node = nuke.createNode("dd_image")  # 'dd_image' is the name of your gizmo
-
-    # Optionally: You can set other properties or interact with the node here
-    # e.g., If you want to call a function defined inside the gizmo, you can do it here
+    node = nuke.createNode("dd_image")
     return node
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
+def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=10):
     set_node_info(node, "PENDING", "")
 
     for count in range(1, iterations + 1):
@@ -74,7 +70,7 @@ def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
             # Save the image to the specified path
-            resolved_output_path = replace_hashes_with_frame(output_path, nuke.frame())
+            resolved_output_path = replace_hashes_with_frame(output_path, current_frame)
             base64_to_file(parsed.result.base64_data, resolved_output_path)
 
             output_read = nuke.toNode(f"{node.name()}.output_read")
@@ -86,7 +82,7 @@ def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=10):
     nuke.executeInMainThread(update_ui)
 
 
-def _api_call(node, body: ImageRequest, output_image_path: str):
+def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: int):
     try:
         parsed = images_create.sync(client=client, body=body)
     except Exception as e:
@@ -96,19 +92,19 @@ def _api_call(node, body: ImageRequest, output_image_path: str):
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_image_path, iterations=20)
+    _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=20)
 
 
 def process_image(node):
     """Process the node using the API"""
     set_node_info(node, "", "")
+    current_frame = nuke.frame()
 
     with nuke_error_handling(node):
         output_image_path = get_output_path(node, movie=False)
         if not output_image_path:
             raise ValueError("Output image path is required.")
 
-        current_frame = nuke.frame()
         image_node = node.input(0)
         mask_node = node.input(1)
         aux_node = node.input(2)
@@ -132,15 +128,17 @@ def process_image(node):
             controlnets=get_control_nets(aux_node),
             ip_adapters=get_ip_adapters(aux_node),
         )
-        _api_call(node, body, output_image_path)
+        _api_call(node, body, output_image_path, current_frame)
 
 
 def get_image(node):
     """Get an image using a task ID"""
+    current_frame = nuke.frame()
+
     with nuke_error_handling(node):
         task_id = get_node_value(node, "task_id", "", mode="get")
         if not task_id or task_id == "":
             raise ValueError("Task ID is required to get the image.")
 
         output_image_path = get_output_path(node, movie=False)
-        _api_get_call(node, task_id, output_image_path, iterations=1, sleep_time=5)
+        _api_get_call(node, task_id, output_image_path, current_frame, iterations=1, sleep_time=5)

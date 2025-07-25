@@ -28,7 +28,7 @@ def create_dd_video_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=20):
+def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=20):
     set_node_info(node, "PENDING", "")
 
     for count in range(1, iterations + 1):
@@ -72,14 +72,13 @@ def _api_get_call(node, id, output_path: str, iterations=1, sleep_time=20):
             update_read_range(output_read)
 
             # Set the time offset to the current frame
-            current_frame = nuke.frame()
             set_node_value(node, "time_offset", current_frame)
             set_node_info(node, "COMPLETE", "")
 
     nuke.executeInMainThread(update_ui)
 
 
-def _api_call(node, body: VideoRequest, output_video_path: str):
+def _api_call(node, body: VideoRequest, output_video_path: str, current_frame: int):
     try:
         parsed = videos_create.sync(client=client, body=body)
     except Exception as e:
@@ -89,17 +88,18 @@ def _api_call(node, body: VideoRequest, output_video_path: str):
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_video_path, iterations=25)
+    _api_get_call(node, str(parsed.id), output_video_path, current_frame, iterations=25)
 
 
 def process_video(node):
     set_node_info(node, "", "")
+    current_frame = nuke.frame()
+
     with nuke_error_handling(node):
         output_video_path = get_output_path(node, movie=True)
         if not output_video_path:
             raise ValueError("Output video path is required.")
 
-        current_frame = nuke.frame()
         image_node = node.input(0)
         image = node_to_base64(image_node, current_frame)
         if not image:
@@ -119,14 +119,16 @@ def process_video(node):
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
             image_last_frame=image_last_frame,
         )
-        _api_call(node, body, output_video_path)
+        _api_call(node, body, output_video_path, current_frame)
 
 
 def get_video(node):
+    current_frame = nuke.frame()
+
     with nuke_error_handling(node):
         task_id = get_node_value(node, "task_id", "", mode="get")
         if not task_id or task_id == "":
             raise ValueError("Task ID is required to get the video.")
 
         output_video_path = get_output_path(node, movie=True)
-        _api_get_call(node, task_id, output_video_path, iterations=1, sleep_time=5)
+        _api_get_call(node, task_id, output_video_path, current_frame, iterations=1, sleep_time=5)
