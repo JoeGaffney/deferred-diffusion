@@ -4,21 +4,19 @@ Gizmo {
  inputs 3
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
- addUserKnob {22 generate T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" +STARTLINE}
+ addUserKnob {4 model M {sd-xl sd-3 flux-1 flux-kontext-1 depth-anything-2 segment-anything-2 sd-x4-upscaler external-gpt-image-1 external-runway-gen4-image external-flux-kontext external-flux-1-1}}
+ addUserKnob {22 generate -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)"}
  addUserKnob {1 task_id -STARTLINE}
  addUserKnob {22 get_task -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)"}
  addUserKnob {26 ""}
- addUserKnob {4 model M {sd-xl sd-3 flux-1 flux-kontext-1 depth-anything-2 segment-anything-2 sd-x4-upscaler external-gpt-image-1 external-runway-gen4-image external-flux-kontext external-flux-1-1}}
- addUserKnob {14 width_height l "" -STARTLINE R 0 100}
- width_height {1280 720}
- addUserKnob {26 ""}
  addUserKnob {43 prompt l Prompt t "Enter your prompt here"}
  prompt "Detailed, 8k, photorealistic"
- addUserKnob {26 ""}
- addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here"}
+ addUserKnob {43 negative_prompt l "Negative Prompt" t "Enter negative prompt here" -STARTLINE}
  negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
  addUserKnob {26 ""}
- addUserKnob {7 num_inference_steps t quality R 1 50}
+ addUserKnob {14 width_height l "" +STARTLINE R 0 100}
+ width_height {1280 720}
+ addUserKnob {7 num_inference_steps l steps t "quality num_inference_steps" R 1 50}
  num_inference_steps 25
  addUserKnob {7 strength}
  strength 0.5
@@ -26,12 +24,12 @@ Gizmo {
  guidance_scale 5
  addUserKnob {7 seed t seed R 1 1000}
  seed 42
- addUserKnob {26 ""}
  addUserKnob {20 Paths}
  addUserKnob {41 file l output_read T output_read.file}
  addUserKnob {41 first l "Frame Range" T output_read.first}
  addUserKnob {41 last l "" -STARTLINE T output_read.last}
  addUserKnob {41 on_error l "Missing Frames" T output_read.on_error}
+ addUserKnob {41 colorspace l "Input Transform" T output_read.colorspace}
  addUserKnob {20 endGroup n -1}
 }
  Input {

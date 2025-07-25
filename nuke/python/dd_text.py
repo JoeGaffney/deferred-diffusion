@@ -23,27 +23,6 @@ from utils import (
 )
 
 
-def split_text(text, max_length=120):
-    words = text.split()
-    lines = []
-    current_line = ""
-
-    for word in words:
-        if len(current_line) + len(word) + 1 > max_length:
-            lines.append(current_line)
-            current_line = word
-        else:
-            if current_line:
-                current_line += " " + word
-            else:
-                current_line = word
-
-    if current_line:
-        lines.append(current_line)
-
-    return "\n".join(lines)
-
-
 def get_messages(node):
 
     # grab the previous messages from the input node
@@ -118,7 +97,7 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
             set_node_value(node, "chain_of_thought", chain_of_thought_str)
             set_node_value(node, "chain_of_thought_alt", chain_of_thought_str)
 
-            response_str = split_text(str(parsed.result.response))
+            response_str = str(parsed.result.response)
             set_node_value(node, "response", response_str)
             set_node_info(node, "COMPLETE", "")
 

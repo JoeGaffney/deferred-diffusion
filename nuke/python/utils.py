@@ -371,7 +371,7 @@ def get_previous_text_messages(node) -> str:
     # chain_of_thought_alt = k.value()
     # nuke.tprint(f"chain_of_thought_alt: {chain_of_thought_alt}")
 
-    chain_of_thought = get_node_value(node, "chain_of_thought_alt", "[]", mode="get")
+    chain_of_thought = get_node_value(node, "chain_of_thought_alt", "[]", mode=MODE_VALUE)
     nuke.tprint(f"chain_of_thought: {chain_of_thought}")
     return chain_of_thought
 

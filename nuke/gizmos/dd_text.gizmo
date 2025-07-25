@@ -2,25 +2,21 @@
 version 14.0 v3
 Gizmo {
  inputs 3
- label "\[ERROR]\nFailed to set knob 'chain_of_thought_alt': value() argument 1 must be bool, not str"
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
- addUserKnob {22 generate T "import dd_text\nnode = nuke.thisNode()\ndd_text.process_text(node)" +STARTLINE}
+ addUserKnob {4 model M {qwen-2-5 external-gpt-4 external-gpt-4-1}}
+ model external-gpt-4
+ addUserKnob {22 generate -STARTLINE T "import dd_text\nnode = nuke.thisNode()\ndd_text.process_text(node)"}
  addUserKnob {1 task_id -STARTLINE}
  task_id e855044f-787e-4d80-bcfb-9d7f9e76a943
  addUserKnob {22 get_task -STARTLINE T "import dd_text\nnode = nuke.thisNode()\ndd_text.get_text(node)"}
  addUserKnob {26 ""}
- addUserKnob {4 model M {qwen-2-5 external-gpt-4 external-gpt-4-1}}
- model external-gpt-4
- addUserKnob {43 prompt l Prompt t "Enter your prompt here"}
- prompt "What is the meaning of life?"
- addUserKnob {26 ""}
- addUserKnob {43 response l Response t "Generated response"}
- addUserKnob {26 ""}
+ addUserKnob {43 prompt l " Prompt" t "Enter your prompt here" -STARTLINE}
+ prompt "Make me a prompt suitable for stable diffusion image generation - be creative please."
+ addUserKnob {43 response l Response t "Generated response" -STARTLINE}
  addUserKnob {20 Output}
  addUserKnob {43 chain_of_thought l "Chain of Thought" t "Model reasoning"}
  addUserKnob {26 chain_of_thought_alt l "" +STARTLINE T chain}
- addUserKnob {20 endGroup_1 n -1}
  addUserKnob {20 endGroup n -1}
 }
  Input {
