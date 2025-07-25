@@ -18,6 +18,10 @@ Gizmo {
  addUserKnob {43 chain_of_thought l "Chain of Thought" t "Model reasoning and explanation."}
  addUserKnob {26 chain_of_thought_alt l "" +STARTLINE T chain}
  addUserKnob {20 endGroup n -1}
+ addUserKnob {20 HelpTab l "Help"}
+ addUserKnob {22 help_button l "Documentation" -STARTLINE T "import dd_help\ndd_help.open_docs()" t "Open the documentation page in your browser."}
+ addUserKnob {22 task_button l "Task Monitor" -STARTLINE T "import dd_help\ndd_help.open_task()" t "Open the task monitoring page in your browser."}
+ addUserKnob {20 endGroup n -1}
 }
  Input {
   inputs 0
