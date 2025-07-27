@@ -8,8 +8,10 @@ ModelName: TypeAlias = Literal[
     "wan-2-1",
     "external-runway-gen-3",
     "external-runway-gen-4",
+    "external-runway-act-two",
+    "external-runway-upscale",
 ]
-ModelFamily: TypeAlias = Literal["ltx", "wan", "runway"]
+ModelFamily: TypeAlias = Literal["ltx", "wan", "runway", "runway_act", "runway_upscale"]
 TaskName: TypeAlias = Literal["process_video", "process_video_external"]
 
 
@@ -59,6 +61,18 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         external=True,
         description="Runway's latest Gen-4 model offering exceptional motion coherence and visual quality. Superior handling of complex animations and realistic physics.",
     ),
+    "external-runway-act-two": ModelInfo(
+        family="runway_act",
+        path="act_two",
+        external=True,
+        description="Runway's Act Two model updates a video with reference image. Ideal for enhancing existing footage with new visual elements while maintaining original motion and style.",
+    ),
+    "external-runway-upscale": ModelInfo(
+        family="runway_upscale",
+        path="upscale_v1",
+        external=True,
+        description="Runway's Upscale model for high-quality video upscaling. Utilizes advanced techniques to enhance video resolution and detail.",
+    ),
 }
 
 
@@ -99,7 +113,8 @@ class VideoRequest(BaseModel):
     num_frames: int = 48
     num_inference_steps: int = 25
     seed: int = 42
-    image: str = Field(
+    image: Optional[str] = Field(
+        default=None,
         description="Base64 image string",
         json_schema_extra={
             "contentEncoding": "base64",
@@ -112,6 +127,14 @@ class VideoRequest(BaseModel):
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
+        },
+    )
+    video: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 video string for video input",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "video/*",
         },
     )
 

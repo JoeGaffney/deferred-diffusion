@@ -6,7 +6,7 @@ import torch
 from diffusers.utils import export_to_video
 
 from common.logger import logger
-from utils.utils import get_tmp_dir, load_image_if_exists
+from utils.utils import get_tmp_dir, load_image_if_exists, load_video_frames_if_exists
 from videos.schemas import VideoRequest
 
 
@@ -14,6 +14,7 @@ class VideoContext:
     def __init__(self, data: VideoRequest):
         self.data = data
         self.image = load_image_if_exists(data.image)
+        self.video_frames = load_video_frames_if_exists(data.video)
 
     def get_generator(self, device="cuda"):
         return torch.Generator(device=device).manual_seed(self.data.seed)

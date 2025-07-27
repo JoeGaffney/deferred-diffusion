@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from typing import Literal, Optional, Tuple
 
+from diffusers.utils import export_to_video, load_video
 from PIL import Image
 
 from common.logger import logger
@@ -23,6 +24,26 @@ resolutions_16_9 = {
     "432p": (768, 432),  # by 8
     "360p": (640, 360),
 }
+
+
+def time_info_decorator(func):
+    def wrapper(*args, **kwargs):
+
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+
+        elapsed = end - start
+        if elapsed > 1.0:  # Only log if execution took more than 1.0 second
+            args_str = str(args)[:100] + ("..." if len(str(args)) > 100 else "")
+            kwargs_str = str(kwargs)[:100] + ("..." if len(str(kwargs)) > 100 else "")
+
+            info = f"Calling {func.__name__} with args: {args_str}, kwargs: {kwargs_str}"
+            logger.info(f"{info}, took: {elapsed:.2f}s")
+
+        return result
+
+    return wrapper
 
 
 def get_16_9_resolution(resolution: Resolutions) -> Tuple[int, int]:
@@ -152,21 +173,25 @@ def convert_mask_for_inpainting(mask: Image.Image) -> Image.Image:
     return rgba
 
 
-def time_info_decorator(func):
-    def wrapper(*args, **kwargs):
+def load_video_bytes_if_exists(base64_bytes: Optional[str]) -> Optional[bytes]:
+    """Load video from Base64 string if it exists, return raw bytes."""
+    if (base64_bytes is None) or (base64_bytes == ""):
+        return None
+    try:
+        return base64.b64decode(base64_bytes)
+    except Exception as e:
+        raise ValueError(f"Invalid Base64 video data: {type(base64_bytes)} {e}") from e
 
-        start = time.time()
-        result = func(*args, **kwargs)
-        end = time.time()
 
-        elapsed = end - start
-        if elapsed > 1.0:  # Only log if execution took more than 1.0 second
-            args_str = str(args)[:100] + ("..." if len(str(args)) > 100 else "")
-            kwargs_str = str(kwargs)[:100] + ("..." if len(str(kwargs)) > 100 else "")
+def load_video_frames_if_exists(base64_bytes: Optional[str]) -> Optional[list[Image.Image]]:
+    """Load video from Base64 string and return frames as PIL images."""
+    video_bytes = load_video_bytes_if_exists(base64_bytes)
+    if video_bytes is None:
+        return None
 
-            info = f"Calling {func.__name__} with args: {args_str}, kwargs: {kwargs_str}"
-            logger.info(f"{info}, took: {elapsed:.2f}s")
+    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
+    with open(video_path, "wb") as f:
+        f.write(video_bytes)
 
-        return result
-
-    return wrapper
+    pil_images = load_video(video_path)
+    return pil_images
