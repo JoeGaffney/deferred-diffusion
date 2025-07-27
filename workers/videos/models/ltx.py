@@ -58,11 +58,20 @@ def image_to_video(context: VideoContext):
         image=image,
         frame_index=0,
     )
+    conditions = [condition1]
+
+    if context.video_frames:
+        video_condition = LTXVideoCondition(
+            image=image,
+            video=context.video_frames[: context.data.num_frames],
+            frame_index=0,
+        )
+        conditions.append(video_condition)
 
     video = pipe.__call__(
         width=image.size[0],
         height=image.size[1],
-        conditions=[condition1],
+        conditions=conditions,
         prompt=context.data.prompt,
         negative_prompt=context.data.negative_prompt,
         num_inference_steps=context.data.num_inference_steps,

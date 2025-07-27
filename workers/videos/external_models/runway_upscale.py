@@ -32,6 +32,10 @@ def main(context: VideoContext):
         f.write(decoded_bytes)
     logger.info(f"Debug: Saved API input video to {debug_path}")
 
+    # For testing purposes, you can use a sample video URI
+    # Uncomment the next line to use a sample video instead of the provided one
+    # video_uri = "https://www.sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4"
+
     try:
         task = client.video_upscale.create(
             model=model,
