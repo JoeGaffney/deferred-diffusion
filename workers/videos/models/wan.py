@@ -20,8 +20,11 @@ UMT_T5_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
 # @decorator_global_pipeline_cache
 def get_pipeline(model_id, torch_dtype=torch.bfloat16):
 
+    # 2.1 use the same transformer for all variants
+    transformer_path = WAN_TRANSFORMER_MODEL_PATH if "Wan2.1" in model_id else model_id
+
     transformer = get_quantized_model(
-        model_id=WAN_TRANSFORMER_MODEL_PATH,
+        model_id=transformer_path,
         subfolder="transformer",
         model_class=WanTransformer3DModel,
         target_precision=4 if LOW_VRAM else 8,
@@ -88,12 +91,17 @@ def main(context: VideoContext):
     width, height = get_16_9_resolution("720p")
     image = resize_image(image, 16, 1.0, width, height)
 
+    # Wan gives better results with a default negative prompt
+    use_default_negative_prompt = True
+    negative_prompt_wan_chinese = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
+    negative_prompt = negative_prompt_wan_chinese if use_default_negative_prompt else context.data.negative_prompt
+
     output = pipe(
         width=image.size[0],
         height=image.size[1],
         image=image,
         prompt=context.data.prompt,
-        negative_prompt=context.data.negative_prompt,
+        negative_prompt=negative_prompt,
         num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
         guidance_scale=context.data.guidance_scale,

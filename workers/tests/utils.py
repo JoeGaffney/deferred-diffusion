@@ -39,7 +39,7 @@ def _convert_image_to_base64(image_path: str) -> Optional[str]:
             base64_str = base64.b64encode(image_bytes)
             base64_str = base64_str.decode("utf-8")  # Convert to a string
 
-            print(f"Base64: {base64_str[:100]}...")
+            print(f"Base64: {base64_str[:100]}... length: {len(base64_str)}")
             return base64_str
     except Exception as e:
         raise ValueError(f"Error encoding image {image_path}: {str(e)}")

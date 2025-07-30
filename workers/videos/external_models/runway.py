@@ -1,11 +1,10 @@
-import time
 from typing import Literal, cast
 
 from runwayml import RunwayML
 from runwayml.types.text_to_image_create_params import ContentModeration
 
 from common.logger import logger
-from utils.utils import get_16_9_resolution, pill_to_base64, resize_image
+from utils.utils import pill_to_base64, resize_image
 from videos.context import VideoContext
 
 
@@ -30,7 +29,7 @@ def main(context: VideoContext):
         ratio = "1280:720"
 
     # encode image to base64
-    base64_image = pill_to_base64(image)
+    image_uri = f"data:image/png;base64,{pill_to_base64(image)}"
 
     # Create a new image-to-video task using the "gen3a_turbo" model
     logger.info(f"Creating Runway {model} task")
@@ -38,7 +37,7 @@ def main(context: VideoContext):
     try:
         task = client.image_to_video.create(
             model=model,
-            prompt_image=f"data:image/png;base64,{base64_image}",
+            prompt_image=image_uri,
             prompt_text=context.data.prompt,
             ratio=ratio,
             duration=duration,

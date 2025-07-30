@@ -1,11 +1,8 @@
-import base64
-import tempfile
 from typing import Literal, cast
 
 from runwayml import RunwayML
 
 from common.logger import logger
-from utils.utils import get_tmp_dir
 from videos.context import VideoContext
 
 
@@ -23,18 +20,6 @@ def main(context: VideoContext):
     logger.info(f"Creating Runway {model} task")
     video = video.replace("\n", "").replace("\r", "")
     video_uri = f"data:video/mp4;base64,{video}"
-
-    # Save the exact video being sent to the API for inspection
-    print(f"Video URI: {video_uri[:100]}...")  # Print first 100 characters for debugging
-    decoded_bytes = base64.b64decode(video)
-    debug_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4", delete=False).name
-    with open(debug_path, "wb") as f:
-        f.write(decoded_bytes)
-    logger.info(f"Debug: Saved API input video to {debug_path}")
-
-    # For testing purposes, you can use a sample video URI
-    # Uncomment the next line to use a sample video instead of the provided one
-    # video_uri = "https://www.sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4"
 
     try:
         task = client.video_upscale.create(

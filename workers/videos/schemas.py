@@ -6,6 +6,7 @@ from pydantic import Base64Bytes, BaseModel, Field
 ModelName: TypeAlias = Literal[
     "ltx-video",
     "wan-2-1",
+    "wan-2-2-5b",
     "external-runway-gen-3",
     "external-runway-gen-4",
     "external-runway-act-two",
@@ -48,6 +49,12 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="Wan-AI/Wan2.1-I2V-14B-720P-Diffusers",
         external=False,
         description="Powerful model with excellent temporal consistency. Specializes in maintaining subject identity and detailed motion from a single image.",
+    ),
+    "wan-2-2-5b": ModelInfo(
+        family="wan",
+        path="Wan-AI/Wan2.2-TI2V-5B-Diffusers",
+        external=False,
+        description="Latest Wan model with improved quality and consistency. Handles complex scenes and dynamic motion better than Wan-2-1.",
     ),
     "external-runway-gen-3": ModelInfo(
         family="runway",

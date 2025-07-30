@@ -22,10 +22,14 @@ def main(context: VideoContext):
     if video is None:
         raise ValueError("Input video is None. Please provide a valid video.")
 
+    model: Literal["act_two"] = cast(Literal["act_two"], context.data.model_path)
+
     # TODO switch to closest resolution as per the aspect ratio
     image = resize_image(image, 1, 1.0, 2048, 2048)
-    model: Literal["act_two"] = cast(Literal["act_two"], context.data.model_path)
+    image_uri = f"data:image/png;base64,{pill_to_base64(image)}"
     ratio: Literal["1280:720", "720:1280", "960:960"] = "1280:720"
+
+    video_uri = f"data:video/mp4;base64,{video}"
 
     logger.info(f"Creating Runway {model} task")
     try:
@@ -33,16 +37,14 @@ def main(context: VideoContext):
             model=model,
             character={
                 "type": "image",
-                "uri": f"data:image/png;base64,{pill_to_base64(image)}",
+                "uri": image_uri,
             },
             body_control=True,
-            reference={"type": "video", "uri": f"data:video/mp4;base64,{video}"},
+            reference={"type": "video", "uri": video_uri},
             ratio=ratio,
             seed=context.data.seed,
             content_moderation=ContentModeration(public_figure_threshold="low"),
-        ).wait_for_task_output(
-            timeout=60 * 60
-        )  # 60 minutes timeout
+        ).wait_for_task_output()
     except Exception as e:
         raise RuntimeError(f"Error calling RunwayML API: {e}")
 
