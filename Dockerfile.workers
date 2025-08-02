@@ -20,7 +20,7 @@ COPY workers/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install diffusers from the main branch for time being
-ARG REBUILD_DATE=2025-07-26
+ARG REBUILD_DATE=2025-08-01
 RUN pip install -U git+https://github.com/huggingface/diffusers.git@main --no-deps
 
 # Install optional speedups

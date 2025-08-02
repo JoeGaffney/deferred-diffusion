@@ -11,8 +11,7 @@ from videos.schemas import ModelName, VideoRequest
 from videos.tasks import model_router_main as main
 
 MODES = ["image_to_video"]
-models: List[ModelName] = ["wan-2-1", "wan-2-2-5b"]
-models: List[ModelName] = ["wan-2-2-5b"]
+models: List[ModelName] = ["wan-2-1"]
 
 
 @pytest.mark.parametrize("mode", MODES)
@@ -25,7 +24,7 @@ def test_image_to_video(model, mode):
             VideoRequest(
                 model=model,
                 image=image_to_base64("../assets/color_v002.png"),
-                prompt="A man with short gray hair plays a red electric guitar.",
+                prompt="A man with short gray hair plays a red electric guitar. Looking at the camera.",
                 num_inference_steps=6,
                 guidance_scale=3.0,
                 num_frames=24,
