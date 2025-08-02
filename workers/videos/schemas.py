@@ -12,7 +12,7 @@ ModelName: TypeAlias = Literal[
     "runway-upscale",
     "runway-gen-4-aleph",
 ]
-ModelFamily: TypeAlias = Literal["ltx", "wan", "runway", "runway_act", "runway_upscale"]
+ModelFamily: TypeAlias = Literal["ltx", "wan", "runway", "runway_act", "runway_upscale", "runway_aleph"]
 TaskName: TypeAlias = Literal["process_video", "process_video_external"]
 
 
@@ -75,7 +75,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         description="Runway's Upscale model for high-quality video upscaling. Utilizes advanced techniques to enhance video resolution and detail.",
     ),
     "runway-gen-4-aleph": ModelInfo(
-        family="runway",
+        family="runway_aleph",
         path="gen4_aleph",
         external=True,
         description="Runway's Gen-4 Aleph model, takes in video input as well as images and can enhance or change the video. Or even generate new video content based on the input images and video. Ideal for creative video transformations and enhancements.",
