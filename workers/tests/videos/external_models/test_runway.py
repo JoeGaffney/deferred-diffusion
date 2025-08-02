@@ -10,7 +10,7 @@ from videos.schemas import ModelName, VideoRequest
 from videos.tasks import external_model_router_main as main
 
 MODES = ["image_to_image"]
-models: List[ModelName] = ["external-runway-gen-4"]
+models: List[ModelName] = ["runway-gen-4"]
 
 
 @pytest.mark.parametrize("mode", MODES)

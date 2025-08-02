@@ -12,10 +12,10 @@ ModelName: TypeAlias = Literal[
     "depth-anything-2",
     "segment-anything-2",
     "sd-x4-upscaler",
-    "external-gpt-image-1",
-    "external-runway-gen4-image",
-    "external-flux-kontext",
-    "external-flux-1-1",
+    "gpt-image-1",
+    "runway-gen4-image",
+    "flux-kontext-1-pro",
+    "flux-1-1-pro",
 ]
 
 # Family will map to the model pipeline and usually match the pyhon module name
@@ -121,7 +121,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         external=False,
         description="Specialized 4x upscaling model that enhances image resolution while adding realistic details. Excellent for enlarging images without quality loss.",
     ),
-    "external-gpt-image-1": ModelInfo(
+    "gpt-image-1": ModelInfo(
         family="openai",
         path="gpt-image-1",
         external=True,
@@ -129,20 +129,20 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         inpainting=True,
         description="OpenAI's advanced image generation model with exceptional understanding of complex prompts. Excels at photorealistic imagery, accurate object rendering, and following detailed instructions.",
     ),
-    "external-runway-gen4-image": ModelInfo(
+    "runway-gen4-image": ModelInfo(
         family="runway",
         path="gen4_image",
         external=True,
         adapters=True,
         description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combinging multiple references into a single, cohesive image.",
     ),
-    "external-flux-kontext": ModelInfo(
+    "flux-kontext-1-pro": ModelInfo(
         family="flux_kontext",
         path="black-forest-labs/flux-kontext-pro",
         external=True,
         description="Professional version of FLUX Kontext accessed via API. Offers superior contextual awareness for creating coherent image sequences and variations with consistent themes.",
     ),
-    "external-flux-1-1": ModelInfo(
+    "flux-1-1-pro": ModelInfo(
         family="flux",
         path="black-forest-labs/flux-1.1-pro",
         inpainting_path="black-forest-labs/flux-fill-pro",

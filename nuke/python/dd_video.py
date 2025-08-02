@@ -108,7 +108,7 @@ def process_video(node):
         image_last_frame = node_to_base64(image_last_frame_node, current_frame)
 
         body = VideoRequest(
-            model=VideoRequestModel(get_node_value(node, "model", "external-runway-gen-3", mode="value")),
+            model=VideoRequestModel(get_node_value(node, "model", "runway-gen-3", mode="value")),
             image=image,
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
             negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),

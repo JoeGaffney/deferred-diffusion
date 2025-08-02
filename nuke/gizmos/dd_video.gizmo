@@ -4,7 +4,7 @@ Gizmo {
  inputs 2
  addUserKnob {20 Settings}
  addUserKnob {26 "" +STARTLINE}
- addUserKnob {4 model l "Model" M {ltx-video wan-2-1 external-runway-gen-3 external-runway-gen-4} t "Select the video generation model."}
+ addUserKnob {4 model l "Model" M {ltx-video wan-2-1 runway-gen-3 runway-gen-4} t "Select the video generation model."}
  addUserKnob {22 generate l "Generate" -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.process_video(node)" t "Start video generation with current settings."}
  addUserKnob {1 task_id l "Task ID" -STARTLINE t "ID of the current video generation task."}
  addUserKnob {22 get_task l "Get Task" -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.get_video(node)" t "Fetch the latest video for this task."}

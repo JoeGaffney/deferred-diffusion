@@ -10,7 +10,7 @@ from videos.schemas import ModelName, VideoRequest
 from videos.tasks import external_model_router_main as main
 
 MODES = ["video_upscale"]
-models: List[ModelName] = ["external-runway-upscale"]
+models: List[ModelName] = ["runway-upscale"]
 
 
 @pytest.mark.parametrize("mode", MODES)
