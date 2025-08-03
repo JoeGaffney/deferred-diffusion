@@ -1,3 +1,4 @@
+import os
 import time
 
 import nuke
@@ -13,6 +14,7 @@ from utils import (
     base64_to_file,
     get_node_value,
     get_output_path,
+    image_to_base64,
     node_to_base64,
     nuke_error_handling,
     polling_message,
@@ -87,7 +89,7 @@ def _api_call(node, body: VideoRequest, output_video_path: str, current_frame: i
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_video_path, current_frame, iterations=60)
+    _api_get_call(node, str(parsed.id), output_video_path, current_frame, iterations=100)
 
 
 def process_video(node):
@@ -101,22 +103,31 @@ def process_video(node):
 
         image_node = node.input(0)
         image = node_to_base64(image_node, current_frame)
-        if not image:
-            raise ValueError("Image input is required.")
 
         image_last_frame_node = node.input(1)
         image_last_frame = node_to_base64(image_last_frame_node, current_frame)
 
+        # video input we extract from a file path parameter at the moment
+        video = get_node_value(node, "video", UNSET, mode="get")
+        nuke.tprint(f"Processing video: {video}")
+        video_base64 = UNSET
+        if video and video != UNSET and video != "":
+            # Check if the video file exists
+            if not os.path.exists(video):
+                raise ValueError(f"Video file does not exist: {video}")
+            video_base64 = image_to_base64(video)
+
         body = VideoRequest(
-            model=VideoRequestModel(get_node_value(node, "model", "runway-gen-3", mode="value")),
+            model=VideoRequestModel(get_node_value(node, "model", UNSET, mode="value")),
             image=image,
+            image_last_frame=image_last_frame,
+            video=video_base64,
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
             negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
             guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
             num_frames=get_node_value(node, "num_frames", UNSET, return_type=int, mode="value"),
             num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
-            image_last_frame=image_last_frame,
         )
         _api_call(node, body, output_video_path, current_frame)
 
