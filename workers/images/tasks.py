@@ -9,8 +9,8 @@ from images.external_models.runway import main as external_runway_main
 from images.models.depth_anything import main as depth_anything_main
 from images.models.flux import main as flux_main
 from images.models.flux_kontext import main as flux_kontext_main
+from images.models.real_esrgan import main as real_esrgan_main
 from images.models.sd3 import main as sd3_main
-from images.models.sd_upscaler import main as sd_upscaler_main
 from images.models.sdxl import main as sdxl_main
 from images.models.segment_anything import main as segment_anything_main
 from images.schemas import ImageRequest, ImageWorkerResponse
@@ -35,8 +35,8 @@ def model_router_main(context: ImageContext):
         return flux_main(context)
     elif family == "flux_kontext":
         return flux_kontext_main(context)
-    elif family == "sd_upscaler":
-        return sd_upscaler_main(context)
+    elif family == "real_esrgan":
+        return real_esrgan_main(context)
     elif family == "depth_anything":
         return depth_anything_main(context)
     elif family == "segment_anything":

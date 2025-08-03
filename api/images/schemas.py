@@ -11,7 +11,7 @@ ModelName: TypeAlias = Literal[
     "flux-kontext-1",
     "depth-anything-2",
     "segment-anything-2",
-    "sd-x4-upscaler",
+    "real-esrgan-x4",
     "gpt-image-1",
     "runway-gen4-image",
     "flux-kontext-1-pro",
@@ -20,7 +20,7 @@ ModelName: TypeAlias = Literal[
 
 # Family will map to the model pipeline and usually match the pyhon module name
 ModelFamily: TypeAlias = Literal[
-    "sdxl", "sd3", "flux", "openai", "runway", "sd_upscaler", "segment_anything", "depth_anything", "flux_kontext"
+    "sdxl", "sd3", "flux", "openai", "runway", "real_esrgan", "segment_anything", "depth_anything", "flux_kontext"
 ]
 
 
@@ -115,11 +115,11 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         external=False,
         description="State-of-the-art image segmentation model. Precisely identifies and segments objects, people, and features for compositing, editing, and analysis.",
     ),
-    "sd-x4-upscaler": ModelInfo(
-        family="sd_upscaler",
-        path="stabilityai/stable-diffusion-x4-upscaler",
+    "real-esrgan-x4": ModelInfo(
+        family="real_esrgan",
+        path="weights/RealESRGAN_x4plus.pth",
         external=False,
-        description="Specialized 4x upscaling model that enhances image resolution while adding realistic details. Excellent for enlarging images without quality loss.",
+        description="x4 upscaller model based on Real-ESRGAN. Ideal for enhancing image resolution while preserving details and textures. Great for upscaling low-resolution images.",
     ),
     "gpt-image-1": ModelInfo(
         family="openai",
