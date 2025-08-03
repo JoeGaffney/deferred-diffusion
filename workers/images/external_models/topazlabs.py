@@ -11,11 +11,10 @@ def main(context: ImageContext) -> Image.Image:
         raise ValueError("No color image provided")
 
     payload = {
-        "prompt": context.data.prompt,
-        "input_image": convert_pil_to_bytes(context.color_image),
+        "image": convert_pil_to_bytes(context.color_image),
+        "upscale_factor": "4x",
         "output_format": "png",
-        "safety_tolerance": 6,
-        "seed": context.data.seed,
+        "face_enhancement": False,
     }
 
     output = replicate.run(context.data.model_path, input=payload)

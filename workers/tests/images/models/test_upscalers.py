@@ -5,20 +5,15 @@ import pytest
 from common.memory import free_gpu_memory
 from images.context import ImageContext
 from images.schemas import ImageRequest, ModelName
-from images.tasks import external_model_router_main as main
+from images.tasks import router_main as main
 from tests.utils import (
     image_to_base64,
     save_image_and_assert_file_exists,
     setup_output_file,
 )
 
-MODES = ["image_to_image"]
-models: List[ModelName] = [
-    "flux-1-1-pro",
-    "flux-kontext-1-pro",
-    "gpt-image-1",
-    "runway-gen4-image",
-]
+MODES = ["upscale_image"]
+models: List[ModelName] = ["real-esrgan-x4", "topazlabs-upscale"]
 
 
 @pytest.mark.parametrize("mode", MODES)

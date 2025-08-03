@@ -11,9 +11,9 @@ from utils.utils import get_16_9_resolution
 
 MODES = ["text_to_image"]
 models: List[ModelName] = [
-    "external-flux-1-1",
-    "external-gpt-image-1",
-    "external-runway-gen4-image",
+    "flux-1-1-pro",
+    "gpt-image-1",
+    "runway-gen4-image",
 ]
 
 

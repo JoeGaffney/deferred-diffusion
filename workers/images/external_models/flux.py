@@ -48,6 +48,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         "steps": 50,
         "safety_tolerance": 6,
         "seed": context.data.seed,
+        "aspect_ratio": get_size(context),
         # "raw": True,
     }
 
@@ -63,7 +64,7 @@ def inpainting_call(context: ImageContext) -> Image.Image:
         "prompt": context.data.prompt,
         "image": convert_pil_to_bytes(context.color_image),
         "mask": convert_pil_to_bytes(context.mask_image),
-        "guidance": context.data.guidance_scale,
+        "guidance": context.data.guidance_scale * 10,  # range is from 1.5 to 100
         "steps": 50,
         "output_format": "png",
         "safety_tolerance": 6,

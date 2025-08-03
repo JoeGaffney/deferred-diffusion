@@ -4,7 +4,7 @@ from uuid import UUID
 from celery.states import ALL_STATES
 from pydantic import BaseModel, Field, RootModel
 
-ModelName: TypeAlias = Literal["qwen-2-5", "external-gpt-4", "external-gpt-4-1"]
+ModelName: TypeAlias = Literal["qwen-2-5", "gpt-4", "gpt-4-1"]
 ModelFamily: TypeAlias = Literal["qwen", "openai"]
 TaskName: TypeAlias = Literal["process_text", "process_text_external"]
 
@@ -36,8 +36,8 @@ class TextRequest(BaseModel):
     def model_family(self) -> ModelFamily:
         mapping: Dict[ModelName, ModelFamily] = {
             "qwen-2-5": "qwen",
-            "external-gpt-4": "openai",
-            "external-gpt-4-1": "openai",
+            "gpt-4": "openai",
+            "gpt-4-1": "openai",
         }
         try:
             return mapping[self.model]
@@ -48,8 +48,8 @@ class TextRequest(BaseModel):
     def model_path(self) -> str:
         mapping: Dict[ModelName, str] = {
             "qwen-2-5": "Qwen/Qwen2.5-VL-3B-Instruct",
-            "external-gpt-4": "gpt-4o-mini",
-            "external-gpt-4-1": "gpt-4.1-mini",
+            "gpt-4": "gpt-4o-mini",
+            "gpt-4-1": "gpt-4.1-mini",
         }
         try:
             return mapping[self.model]

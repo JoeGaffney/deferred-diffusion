@@ -6,10 +6,13 @@ from pydantic import Base64Bytes, BaseModel, Field
 ModelName: TypeAlias = Literal[
     "ltx-video",
     "wan-2-1",
-    "external-runway-gen-3",
-    "external-runway-gen-4",
+    "runway-gen-3",
+    "runway-gen-4",
+    "runway-act-two",
+    "runway-upscale",
+    "runway-gen-4-aleph",
 ]
-ModelFamily: TypeAlias = Literal["ltx", "wan", "runway"]
+ModelFamily: TypeAlias = Literal["ltx", "wan", "runway", "runway_act", "runway_upscale", "runway_aleph"]
 TaskName: TypeAlias = Literal["process_video", "process_video_external"]
 
 
@@ -47,17 +50,35 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         external=False,
         description="Powerful model with excellent temporal consistency. Specializes in maintaining subject identity and detailed motion from a single image.",
     ),
-    "external-runway-gen-3": ModelInfo(
+    "runway-gen-3": ModelInfo(
         family="runway",
         path="gen3a_turbo",
         external=True,
         description="Runway's Gen-3 model accessed via API. Great for dynamic scenes, camera movements, and natural motion. Good balance of quality and generation speed.",
     ),
-    "external-runway-gen-4": ModelInfo(
+    "runway-gen-4": ModelInfo(
         family="runway",
         path="gen4_turbo",
         external=True,
         description="Runway's latest Gen-4 model offering exceptional motion coherence and visual quality. Superior handling of complex animations and realistic physics.",
+    ),
+    "runway-act-two": ModelInfo(
+        family="runway_act",
+        path="act_two",
+        external=True,
+        description="Runway's Act Two model updates a video with reference image. Ideal for enhancing existing footage with new visual elements while maintaining original motion and style.",
+    ),
+    "runway-upscale": ModelInfo(
+        family="runway_upscale",
+        path="upscale_v1",
+        external=True,
+        description="Runway's Upscale model for high-quality video upscaling. Utilizes advanced techniques to enhance video resolution and detail.",
+    ),
+    "runway-gen-4-aleph": ModelInfo(
+        family="runway_aleph",
+        path="gen4_aleph",
+        external=True,
+        description="Runway's Gen-4 Aleph model, takes in video input as well as images and can enhance or change the video. Or even generate new video content based on the input images and video. Ideal for creative video transformations and enhancements.",
     ),
 }
 
@@ -99,7 +120,8 @@ class VideoRequest(BaseModel):
     num_frames: int = 48
     num_inference_steps: int = 25
     seed: int = 42
-    image: str = Field(
+    image: Optional[str] = Field(
+        default=None,
         description="Base64 image string",
         json_schema_extra={
             "contentEncoding": "base64",
@@ -112,6 +134,14 @@ class VideoRequest(BaseModel):
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
+        },
+    )
+    video: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 video string for video input",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "video/*",
         },
     )
 

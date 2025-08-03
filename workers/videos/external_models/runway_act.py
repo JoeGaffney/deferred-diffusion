@@ -10,37 +10,38 @@ from videos.context import VideoContext
 
 def main(context: VideoContext):
     client = RunwayML()
+    # Only 'act_two' model is supported for this context
+    if context.data.model_path not in ["act_two"]:
+        raise ValueError("Only 'act_two' model is supported")
 
-    if context.data.model_path not in ["gen3a_turbo", "gen4_turbo"]:
-        raise ValueError("Only gen3a_turbo and gen4_turbo models are supported")
-
-    # atm only these 16 by 9 or 9 by 16 supported
-    # TODO switch to closest resolution as per the aspect ratio
     image = context.image
     if image is None:
         raise ValueError("Input image is None. Please provide a valid image.")
 
+    video = context.data.video
+    if video is None:
+        raise ValueError("Input video is None. Please provide a valid video.")
+
+    model: Literal["act_two"] = cast(Literal["act_two"], context.data.model_path)
+
+    # TODO switch to closest resolution as per the aspect ratio
     image = resize_image(image, 1, 1.0, 2048, 2048)
-
-    model: Literal["gen3a_turbo", "gen4_turbo"] = cast(Literal["gen3a_turbo", "gen4_turbo"], context.data.model_path)
-    ratio: Literal["1280:768", "1280:720", "768:1280"] = "1280:768"
-    duration: Literal[5, 10] = 5
-    if model == "gen4_turbo":
-        ratio = "1280:720"
-
-    # encode image to base64
     image_uri = f"data:image/png;base64,{pill_to_base64(image)}"
+    ratio: Literal["1280:720", "720:1280", "960:960"] = "1280:720"
 
-    # Create a new image-to-video task using the "gen3a_turbo" model
+    video_uri = f"data:video/mp4;base64,{video}"
+
     logger.info(f"Creating Runway {model} task")
-
     try:
-        task = client.image_to_video.create(
+        task = client.character_performance.create(
             model=model,
-            prompt_image=image_uri,
-            prompt_text=context.data.prompt,
+            character={
+                "type": "image",
+                "uri": image_uri,
+            },
+            body_control=True,
+            reference={"type": "video", "uri": video_uri},
             ratio=ratio,
-            duration=duration,
             seed=context.data.seed,
             content_moderation=ContentModeration(public_figure_threshold="low"),
         ).wait_for_task_output()

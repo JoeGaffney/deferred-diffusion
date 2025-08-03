@@ -113,7 +113,7 @@ def _api_call(node, body: TextRequest):
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), iterations=20)
+    _api_get_call(node, str(parsed.id), iterations=100)
 
 
 def process_text(node):

@@ -91,7 +91,7 @@ def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: i
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=60)
+    _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=100)
 
 
 def process_image(node):

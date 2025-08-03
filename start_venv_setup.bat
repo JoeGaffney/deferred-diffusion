@@ -32,5 +32,7 @@ echo Installing lang SAM...
 pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git --no-deps
 pip install sam2
 
+pip install git+https://github.com/sberbank-ai/Real-ESRGAN.git
+
 echo Virtual environment activated and requirements installed.
 CALL venv\Scripts\activate

@@ -46,7 +46,7 @@ test-it-tests: generate-clients
 	cd it_tests && pytest $(TEST_PATH) -vs
 	cd ..
 
-VERSION ?= 0.2.0
+VERSION ?= 0.3.0
 PROJECT_NAME ?= deferred-diffusion
 create-release: build
 # Define variables

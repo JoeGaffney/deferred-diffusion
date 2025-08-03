@@ -173,7 +173,7 @@ def inpainting_call(context: ImageContext):
         "mask_image": context.mask_image,
         "num_inference_steps": context.data.num_inference_steps,
         "generator": context.generator,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": context.data.guidance_scale * 10,  # range is from 1.5 to 100
         "strength": context.data.strength,
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
