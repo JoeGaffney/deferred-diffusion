@@ -26,5 +26,3 @@ def main(context: ImageContext):
     # Move model to CPU to free GPU memory
     model.model.to("cpu")
     return result
-    model.model.to("cpu")
-    return result
