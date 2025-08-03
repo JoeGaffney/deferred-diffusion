@@ -16,11 +16,21 @@ ModelName: TypeAlias = Literal[
     "runway-gen4-image",
     "flux-kontext-1-pro",
     "flux-1-1-pro",
+    "topazlabs-upscale",
 ]
 
 # Family will map to the model pipeline and usually match the pyhon module name
 ModelFamily: TypeAlias = Literal[
-    "sdxl", "sd3", "flux", "openai", "runway", "real_esrgan", "segment_anything", "depth_anything", "flux_kontext"
+    "sdxl",
+    "sd3",
+    "flux",
+    "openai",
+    "runway",
+    "real_esrgan",
+    "segment_anything",
+    "depth_anything",
+    "flux_kontext",
+    "topazlabs",
 ]
 
 
@@ -119,7 +129,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         family="real_esrgan",
         path="weights/RealESRGAN_x4plus.pth",
         external=False,
-        description="x4 upscaller model based on Real-ESRGAN. Ideal for enhancing image resolution while preserving details and textures. Great for upscaling low-resolution images.",
+        description="x4 upscaler model based on Real-ESRGAN. Ideal for enhancing image resolution while preserving details and textures. Great for upscaling low-resolution images.",
     ),
     "gpt-image-1": ModelInfo(
         family="openai",
@@ -150,6 +160,12 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         auto_divisor=32,
         inpainting=True,
         description="Pro version of FLUX 1.1 with enhanced capabilities. Excellent text rendering, sharp details, and consistent style. Ideal for professional illustrations and design work.",
+    ),
+    "topazlabs-upscale": ModelInfo(
+        family="topazlabs",
+        path="topazlabs/image-upscale",
+        external=True,
+        description="Topaz Labs' advanced image upscaling model. Specializes in enhancing image resolution while preserving fine details and textures, ideal for professional photography and print work.",
     ),
 }
 
