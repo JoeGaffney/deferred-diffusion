@@ -4,14 +4,14 @@ Gizmo {
  inputs 3
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
- addUserKnob {4 model l "Model" M {sd-xl sd-3 flux-1 flux-kontext-1 depth-anything-2 segment-anything-2 sd-x4-upscaler gpt-image-1 runway-gen4-image flux-kontext-1-pro flux-1-1-pro} t "Select the image generation model."}
+ addUserKnob {4 model l "Model" M {sd-xl sd-3 flux-1 flux-kontext-1 depth-anything-2 segment-anything-2 real-esrgan-x4 gpt-image-1 runway-gen4-image flux-kontext-1-pro flux-1-1-pro topazlabs-upscale } t "Select the image generation model."}
  addUserKnob {22 generate l "Generate" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" t "Start image generation with current settings."}
  addUserKnob {1 task_id l "Task ID" -STARTLINE t "ID of the current image generation task."}
  addUserKnob {22 get_task l "Get Task" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)" t "Fetch the latest image for this task."}
  addUserKnob {26 ""}
  addUserKnob {43 prompt l "Prompt" t "Describe the image you want to generate."}
  prompt "Detailed, 8k, photorealistic"
- addUserKnob {43 negative_prompt l "Negative Prompt" t "Describe what to avoid in the image." -STARTLINE}
+ addUserKnob {43 negative_prompt l "Negative" t "Describe what to avoid in the image." -STARTLINE}
  negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
  addUserKnob {26 ""}
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
