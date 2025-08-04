@@ -1,42 +1,26 @@
-FROM pytorch/pytorch:2.7.0-cuda12.6-cudnn9-runtime 
+FROM pytorch/pytorch:2.7.0-cuda12.6-cudnn9-runtime
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies and clean up
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# required for Real-ESRGAN and open-cv
-RUN apt-get update && apt-get install -y libgl1 libglib2.0-0
-
-
-# Install additional dependencies first as they won't change often
-RUN pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git --no-deps --ignore-requires-python
-RUN pip install --no-cache-dir --no-deps sam2 --ignore-requires-python
-RUN pip install --no-cache-dir supervision hydra-core iopath
-
-
-
-# Install optional speedups
+# Upgrade pip and upgrade basic Python packages
 RUN pip install --upgrade pip setuptools wheel
-RUN pip install xformers>=0.0.29
-RUN pip install https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.0.8/flash_attn-2.7.4.post1+cu126torch2.7-cp311-cp311-linux_x86_64.whl
 
-# Install Real-ESRGAN from GitHub
-RUN pip install --no-cache-dir git+https://github.com/JoeGaffney/Real-ESRGAN.git
-
-# Install diffusers from the main branch for time being
+# Install your pinned requirements first
 ARG REBUILD_DATE=2025-08-01
-RUN pip install -U git+https://github.com/huggingface/diffusers.git@main --no-deps
-
-
-# Copy requirements first for better caching
 COPY workers/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY workers/requirements_no_deps.txt .
+RUN pip install --no-cache-dir -r requirements_no_deps.txt --no-deps --ignore-requires-python
 
 # Copy only specific directories instead of everything
 COPY workers/ ./workers/
@@ -46,6 +30,7 @@ COPY assets/ ./assets/
 WORKDIR /app/workers
 
 # Command to run Celery worker
+# Breaks cuda with concurrency
 # CMD ["celery", "-A", "worker", "worker", "--loglevel=info", "--concurrency=2"]
 # Fixes CUDA issues with concurrency
 CMD ["celery", "-A", "worker", "worker", "--loglevel=info", "--pool=threads", "--concurrency=1", "-Q", "gpu,cpu"]

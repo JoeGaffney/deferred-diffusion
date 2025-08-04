@@ -1,6 +1,8 @@
 accelerate
 bitsandbytes
-diffusers
+# diffusers - use main branch for latest features
+# Note: This is a direct link to the main branch of the diffusers repository.
+git+https://github.com/huggingface/diffusers.git@main
 ftfy
 gguf
 imageio
@@ -21,3 +23,4 @@ pytest
 torchao
 cachetools
 replicate
+sam2
