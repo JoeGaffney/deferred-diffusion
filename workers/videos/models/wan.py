@@ -26,7 +26,7 @@ UMT_T5_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
 
-    guf_level = "Q3_K_M" if LOW_VRAM else "Q5_K_M"
+    guf_level = "Q4_K_M" if LOW_VRAM else "Q8_0"
     transformer = get_gguf_model(
         repo_id="QuantStack/Wan2.2-I2V-A14B-GGUF",
         filename=f"HighNoise/Wan2.2-I2V-A14B-HighNoise-{guf_level}.gguf",

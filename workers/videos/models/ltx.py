@@ -18,8 +18,8 @@ from videos.context import VideoContext
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id):
-
-    guf_level = "Q4_K_M" if LOW_VRAM else "Q5_K_M"
+    # NOTE don't actually see much difference in look with Q4 vs Q8
+    guf_level = "Q4_K_M" if LOW_VRAM else "Q8_0"
     transformer = get_gguf_model(
         repo_id="wsbagnsv1/ltxv-13b-0.9.7-distilled-GGUF",
         filename=f"ltxv-13b-0.9.7-distilled-{guf_level}.gguf",
@@ -72,7 +72,30 @@ def image_to_video(context: VideoContext):
         num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
-        guidance_scale=context.data.guidance_scale,
+        guidance_scale=1.0,
+        # guidance_scale=context.data.guidance_scale,
+    ).frames[0]
+
+    processed_path = context.save_video(video)
+    return processed_path
+
+
+def text_to_video(context: VideoContext):
+    pipe = get_pipeline(context.data.model_path)
+
+    width, height = get_16_9_resolution("720p")
+    width = ensure_divisible(width, 32)
+    height = ensure_divisible(height, 32)
+
+    video = pipe.__call__(
+        width=width,
+        height=height,
+        prompt=context.data.prompt,
+        negative_prompt=context.data.negative_prompt,
+        num_inference_steps=context.data.num_inference_steps,
+        num_frames=context.data.num_frames,
+        generator=context.get_generator(),
+        guidance_scale=1.0,
     ).frames[0]
 
     processed_path = context.save_video(video)
@@ -82,4 +105,5 @@ def image_to_video(context: VideoContext):
 def main(context: VideoContext):
     if context.data.image:
         return image_to_video(context)
-    raise ValueError("Image is required for LTX video generation.")
+
+    return text_to_video(context)
