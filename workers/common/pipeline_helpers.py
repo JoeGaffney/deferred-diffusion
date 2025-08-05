@@ -7,12 +7,14 @@ torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix mu
 import gc
 import time
 from collections import OrderedDict
-from functools import wraps
+from functools import lru_cache, wraps
 
 import torch
 from accelerate.hooks import CpuOffload, clear_device_cache, send_to_device
 from cachetools.keys import hashkey
-from transformers import BitsAndBytesConfig, TorchAoConfig
+from diffusers import GGUFQuantizationConfig
+from huggingface_hub import hf_hub_download
+from transformers import BitsAndBytesConfig, T5EncoderModel, TorchAoConfig
 
 from common.logger import logger
 from utils.utils import time_info_decorator
@@ -154,8 +156,27 @@ def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
 
 
 @time_info_decorator
+def get_gguf_model(
+    repo_id: str, filename: str, model_class, subfolder: str = "", config=None, torch_dtype=torch.bfloat16
+):
+    path = hf_hub_download(repo_id=repo_id, filename=filename)
+    args = {}
+    if subfolder != "":
+        args["subfolder"] = subfolder
+    if config:
+        args["config"] = config
+
+    return model_class.from_single_file(
+        path,
+        quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
+        torch_dtype=torch_dtype,
+        **args,
+    )
+
+
+@time_info_decorator
 def get_quantized_model(
-    model_id, subfolder, model_class, target_precision: Literal[4, 8, 16] = 8, torch_dtype=torch.float16
+    model_id, subfolder, model_class, target_precision: Literal[8, 16] = 8, torch_dtype=torch.float16
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -176,17 +197,12 @@ def get_quantized_model(
         logger.warning(f"Quantization disabled for {model_id} subfolder {subfolder}")
         return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype)
 
-    load_in_4bit = target_precision == 4
-    quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit)
+    quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit=False)
 
     # NOTE does not support CPU model offload so using TorchAo for 8bit
-    # quant_config = BitsAndBytesConfig(load_in_8bit=True)  # , llm_int8_enable_fp32_cpu_offload=True)
+    # possibly optium quanto is better
     quant_config = TorchAoConfig("int8_weight_only")
     use_safetensors = False
-    if load_in_4bit:
-        quant_config = BitsAndBytesConfig(
-            load_in_4bit=True, bnb_4bit_quant_type="fp4", bnb_4bit_compute_dtype=torch_dtype
-        )
 
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
@@ -207,3 +223,17 @@ def get_quantized_model(
         logger.info(f"Saved quantized model to {quant_dir}")
 
     return model
+
+
+# Cache this one as used in many pipelines
+@lru_cache(maxsize=1)
+def get_quantized_t5_text_encoder(target_precision) -> T5EncoderModel:
+    T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
+
+    return get_quantized_model(
+        model_id=T5_MODEL_PATH,
+        subfolder="text_encoder_2",
+        model_class=T5EncoderModel,
+        target_precision=target_precision,
+        torch_dtype=torch.bfloat16,
+    )

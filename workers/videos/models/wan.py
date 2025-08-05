@@ -1,3 +1,4 @@
+import safetensors.torch
 import torch
 from diffusers import (
     AutoencoderKLWan,
@@ -10,11 +11,14 @@ from huggingface_hub import hf_hub_download
 from transformers import UMT5EncoderModel
 
 from common.memory import LOW_VRAM
-from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
+from common.pipeline_helpers import (
+    decorator_global_pipeline_cache,
+    get_gguf_model,
+    get_quantized_model,
+)
 from utils.utils import get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
-WAN_TRANSFORMER_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
 UMT_T5_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
 
 
@@ -22,12 +26,22 @@ UMT_T5_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
 
-    # 2.1 use the same transformer for all variants
-    transformer = get_quantized_model(
-        model_id=WAN_TRANSFORMER_MODEL_PATH,
-        subfolder="transformer",
+    guf_level = "Q3_K_M" if LOW_VRAM else "Q5_K_M"
+    transformer = get_gguf_model(
+        repo_id="QuantStack/Wan2.2-I2V-A14B-GGUF",
+        filename=f"HighNoise/Wan2.2-I2V-A14B-HighNoise-{guf_level}.gguf",
         model_class=WanTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 8,
+        subfolder="transformer_2",
+        config=model_id,
+        torch_dtype=torch_dtype,
+    )
+
+    transformer_2 = get_gguf_model(
+        repo_id="QuantStack/Wan2.2-I2V-A14B-GGUF",
+        filename=f"LowNoise/Wan2.2-I2V-A14B-LowNoise-{guf_level}.gguf",
+        model_class=WanTransformer3DModel,
+        subfolder="transformer_2",
+        config=model_id,
         torch_dtype=torch_dtype,
     )
 
@@ -39,37 +53,32 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipelin
         torch_dtype=torch_dtype,
     )
 
+    # NOTE adds more memory overhead
     # vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32)
 
     pipe = WanImageToVideoPipeline.from_pretrained(
         model_id,
         transformer=transformer,
-        transformer_2=None,
+        transformer_2=transformer_2,
         text_encoder=text_encoder,
         # vae=vae,
         torch_dtype=torch_dtype,
     )
+    # pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=8.0)
 
-    # NOTE this can give large speedups
-    # lora_path = hf_hub_download(
-    #     repo_id="Kijai/WanVideo_comfy",
-    #     filename="Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank128_bf16.safetensors",
-    # )
-    # pipe.load_lora_weights(lora_path)
-    # 5b just has one transformer ???
-    # pipe.model_cpu_offload_seq = "text_encoder->image_encoder->transformer->vae"
+    lighting_lora = True
+    if lighting_lora:
+        # NOTE this can give large speedups
+        lora_path = hf_hub_download(
+            repo_id="Kijai/WanVideo_comfy",
+            filename="Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank128_bf16.safetensors",
+        )
 
-    # NOTE there is choices around the schedulers
-    # scheduler = FlowMatchEulerDiscreteScheduler(shift=5.0)
-    # scheduler = UniPCMultistepScheduler(prediction_type="flow_prediction", use_flow_sigmas=True, flow_shift=4.0)
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=4.0)
+        # Load LoRA weights directly
+        pipe.load_lora_weights(lora_path)
 
-    # NOTE works with wan2.1 but not with wan2.2
-    # try:
-    #     pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
-    #     pipe.vae.enable_slicing()
-    # except:
-    #     pass
+    # NOTE shoudl we fuse for offloading?
+    # pipe.fuse_lora()
 
     pipe.enable_model_cpu_offload()
     return pipe
@@ -95,9 +104,10 @@ def main(context: VideoContext):
         negative_prompt=negative_prompt,
         num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
-        guidance_scale=context.data.guidance_scale,
+        # force to 1.0 as is way faster
+        guidance_scale=1.0,  # context.data.guidance_scale,
         generator=context.get_generator(),
     ).frames[0]
 
-    processed_path = context.save_video(output, fps=16)
+    processed_path = context.save_video(output, fps=24)
     return processed_path

@@ -22,6 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY workers/requirements_no_deps.txt .
 RUN pip install --no-cache-dir -r requirements_no_deps.txt --no-deps --ignore-requires-python
 
+RUN pip install --no-cache-dir peft
+
 # Copy only specific directories instead of everything
 COPY workers/ ./workers/
 COPY assets/ ./assets/

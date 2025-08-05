@@ -12,11 +12,10 @@ from common.logger import logger
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
+    get_quantized_t5_text_encoder,
     optimize_pipeline,
 )
 from images.context import ImageContext, PipelineConfig
-
-T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
 
 
 @decorator_global_pipeline_cache
@@ -30,13 +29,7 @@ def get_pipeline(config: PipelineConfig):
         target_precision=8,
         torch_dtype=torch.bfloat16,
     )
-    args["text_encoder_2"] = get_quantized_model(
-        model_id=T5_MODEL_PATH,
-        subfolder="text_encoder_2",
-        model_class=T5EncoderModel,
-        target_precision=8,
-        torch_dtype=torch.bfloat16,
-    )
+    args["text_encoder_2"] = get_quantized_t5_text_encoder(8)
 
     pipe = FluxKontextPipeline.from_pretrained(
         config.model_id,

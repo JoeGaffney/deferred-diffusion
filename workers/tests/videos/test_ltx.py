@@ -25,7 +25,7 @@ def test_image_to_video(model, mode):
                 model=model,
                 image=image_to_base64("../assets/color_v002.png"),
                 prompt="A man with short gray hair plays a red electric guitar.",
-                num_inference_steps=5,
+                num_inference_steps=10,
                 guidance_scale=3.0,
                 num_frames=24,
             )
@@ -55,7 +55,7 @@ def test_video_to_video(model, mode):
                 image=image_to_base64("../assets/act_char_v001.png"),
                 video=image_to_base64("../assets/act_reference_v001.mp4"),
                 prompt="A an old man waving.",
-                num_inference_steps=7,
+                num_inference_steps=10,
                 guidance_scale=3.0,
                 num_frames=24,
             )
