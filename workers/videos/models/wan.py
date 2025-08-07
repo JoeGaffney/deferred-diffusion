@@ -1,4 +1,3 @@
-import safetensors.torch
 import torch
 from diffusers import (
     AutoencoderKLWan,
@@ -8,50 +7,38 @@ from diffusers import (
     WanTransformer3DModel,
 )
 from huggingface_hub import hf_hub_download
-from transformers import UMT5EncoderModel
 
 from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
-    get_gguf_model,
     get_quantized_model,
+    get_quantized_umt5_text_encoder,
 )
 from utils.utils import get_16_9_resolution, resize_image
 from videos.context import VideoContext
-
-UMT_T5_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
 
 
 # NOTE this one is heavy maybe we should not cache it globally
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
 
-    guf_level = "Q4_K_M" if LOW_VRAM else "Q8_0"
-    transformer = get_gguf_model(
-        repo_id="QuantStack/Wan2.2-I2V-A14B-GGUF",
-        filename=f"HighNoise/Wan2.2-I2V-A14B-HighNoise-{guf_level}.gguf",
+    transformer = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer",
         model_class=WanTransformer3DModel,
-        subfolder="transformer_2",
-        config=model_id,
+        target_precision=4 if LOW_VRAM else 4,
         torch_dtype=torch_dtype,
     )
 
-    transformer_2 = get_gguf_model(
-        repo_id="QuantStack/Wan2.2-I2V-A14B-GGUF",
-        filename=f"LowNoise/Wan2.2-I2V-A14B-LowNoise-{guf_level}.gguf",
-        model_class=WanTransformer3DModel,
+    transformer_2 = get_quantized_model(
+        model_id=model_id,
         subfolder="transformer_2",
-        config=model_id,
+        model_class=WanTransformer3DModel,
+        target_precision=4 if LOW_VRAM else 4,
         torch_dtype=torch_dtype,
     )
 
-    text_encoder = get_quantized_model(
-        model_id=UMT_T5_MODEL_PATH,
-        subfolder="text_encoder",
-        model_class=UMT5EncoderModel,
-        target_precision=8,
-        torch_dtype=torch_dtype,
-    )
+    text_encoder = get_quantized_umt5_text_encoder(8)
 
     # NOTE adds more memory overhead
     # vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32)
@@ -66,7 +53,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipelin
     )
     # pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=8.0)
 
-    lighting_lora = True
+    lighting_lora = False
     if lighting_lora:
         # NOTE this can give large speedups
         lora_path = hf_hub_download(
@@ -77,8 +64,14 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipelin
         # Load LoRA weights directly
         pipe.load_lora_weights(lora_path)
 
-    # NOTE shoudl we fuse for offloading?
-    # pipe.fuse_lora()
+        # NOTE shoudl we fuse for offloading?
+        # pipe.fuse_lora()
+
+    try:
+        pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
+        pipe.vae.enable_slicing()
+    except:
+        pass
 
     pipe.enable_model_cpu_offload()
     return pipe

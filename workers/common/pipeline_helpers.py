@@ -1,23 +1,27 @@
-import os
-from typing import Literal
-
-import torch
-
-torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
 import gc
+import os
 import time
 from collections import OrderedDict
 from functools import lru_cache, wraps
+from typing import Literal
 
 import torch
 from accelerate.hooks import CpuOffload, clear_device_cache, send_to_device
 from cachetools.keys import hashkey
 from diffusers import GGUFQuantizationConfig
 from huggingface_hub import hf_hub_download
-from transformers import BitsAndBytesConfig, T5EncoderModel, TorchAoConfig
+from transformers import (
+    BitsAndBytesConfig,
+    T5EncoderModel,
+    TorchAoConfig,
+    UMT5EncoderModel,
+)
 
 from common.logger import logger
 from utils.utils import time_info_decorator
+
+torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
+
 
 # Keep reference to original (if you want to restore later)
 _original_pre_forward = CpuOffload.pre_forward
@@ -155,6 +159,7 @@ def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
     return os.path.normpath(quant_dir)
 
 
+# NOTE: Currently unused – kept for reference in case GGUF support is needed in future
 @time_info_decorator
 def get_gguf_model(
     repo_id: str, filename: str, model_class, subfolder: str = "", config=None, torch_dtype=torch.bfloat16
@@ -176,7 +181,7 @@ def get_gguf_model(
 
 @time_info_decorator
 def get_quantized_model(
-    model_id, subfolder, model_class, target_precision: Literal[8, 16] = 8, torch_dtype=torch.float16
+    model_id, subfolder, model_class, target_precision: Literal[4, 8, 16] = 8, torch_dtype=torch.float16
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -197,12 +202,19 @@ def get_quantized_model(
         logger.warning(f"Quantization disabled for {model_id} subfolder {subfolder}")
         return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype)
 
-    quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit=False)
+    load_in_4bit = target_precision == 4
+    quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit=load_in_4bit)
 
-    # NOTE does not support CPU model offload so using TorchAo for 8bit
-    # possibly optium quanto is better
+    # NOTE possibly optium quanto is better for 8bit
+    # bits and bytes does not offload with 8bit
     quant_config = TorchAoConfig("int8_weight_only")
     use_safetensors = False
+    if load_in_4bit:
+        # Use BitsAndBytesConfig for 4-bit quantization
+        use_safetensors = True
+        quant_config = BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch_dtype
+        )
 
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
@@ -234,6 +246,18 @@ def get_quantized_t5_text_encoder(target_precision) -> T5EncoderModel:
         model_id=T5_MODEL_PATH,
         subfolder="text_encoder_2",
         model_class=T5EncoderModel,
+        target_precision=target_precision,
+        torch_dtype=torch.bfloat16,
+    )
+
+
+def get_quantized_umt5_text_encoder(target_precision) -> UMT5EncoderModel:
+    UMT_T5_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
+
+    return get_quantized_model(
+        model_id=UMT_T5_MODEL_PATH,
+        subfolder="text_encoder",
+        model_class=UMT5EncoderModel,
         target_precision=target_precision,
         torch_dtype=torch.bfloat16,
     )

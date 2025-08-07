@@ -8,7 +8,6 @@ from diffusers.pipelines.ltx.pipeline_ltx_condition import (
 from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
-    get_gguf_model,
     get_quantized_model,
     get_quantized_t5_text_encoder,
 )
@@ -19,11 +18,11 @@ from videos.context import VideoContext
 @decorator_global_pipeline_cache
 def get_pipeline(model_id):
     # NOTE don't actually see much difference in look with Q4 vs Q8
-    guf_level = "Q4_K_M" if LOW_VRAM else "Q8_0"
-    transformer = get_gguf_model(
-        repo_id="wsbagnsv1/ltxv-13b-0.9.7-distilled-GGUF",
-        filename=f"ltxv-13b-0.9.7-distilled-{guf_level}.gguf",
+    transformer = get_quantized_model(
+        model_id,
+        subfolder="transformer",
         model_class=LTXVideoTransformer3DModel,
+        target_precision=4 if LOW_VRAM else 4,
         torch_dtype=torch.bfloat16,
     )
 
@@ -38,7 +37,6 @@ def get_pipeline(model_id):
 
     pipe.vae.enable_tiling()
     pipe.enable_model_cpu_offload()
-
     return pipe
 
 
@@ -73,7 +71,6 @@ def image_to_video(context: VideoContext):
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
         guidance_scale=1.0,
-        # guidance_scale=context.data.guidance_scale,
     ).frames[0]
 
     processed_path = context.save_video(video)
