@@ -2,7 +2,6 @@ from typing import List
 
 import pytest
 
-from common.memory import free_gpu_memory
 from images.context import ImageContext
 from images.schemas import ImageRequest, ModelName
 from images.tasks import model_router_main as main
@@ -38,7 +37,6 @@ def test_inpainting(model, mode):
     )
 
     save_image_and_assert_file_exists(result, output_name)
-    free_gpu_memory()
 
 
 @pytest.mark.parametrize("mode", ["inpainting_alt"])
@@ -61,4 +59,3 @@ def test_inpainting_alt(model, mode):
     )
 
     save_image_and_assert_file_exists(result, output_name)
-    free_gpu_memory()

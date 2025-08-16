@@ -10,6 +10,7 @@ from PIL import Image
 from transformers import T5EncoderModel
 
 from common.logger import logger
+from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -36,7 +37,7 @@ def get_pipeline(config: PipelineConfig):
         **args,
     )
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, offload=LOW_VRAM)
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):

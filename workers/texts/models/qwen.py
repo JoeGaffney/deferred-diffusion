@@ -6,19 +6,19 @@ from qwen_vl_utils import process_vision_info
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 from common.logger import log_pretty, logger
+from common.pipeline_helpers import decorator_global_pipeline_cache
 from texts.context import TextContext
 from utils.utils import load_image_from_base64, time_info_decorator
 
 
-@time_info_decorator
+@decorator_global_pipeline_cache
 def get_pipeline(model_id):
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, device_map="cpu")
-
+    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
     return model
 
 
 @time_info_decorator
-def get_proccesor(model_id):
+def get_processor(model_id):
     # can affect performance could be reduced further
     # ref original
     # min_pixels = 256 * 28 * 28
@@ -35,7 +35,7 @@ def get_proccesor(model_id):
 
 def main(context: TextContext):
     model = get_pipeline(context.data.model_path)
-    processor = get_proccesor(context.data.model_path)
+    processor = get_processor(context.data.model_path)
 
     messages = [message.model_dump() for message in context.data.messages]
     original_messages = copy.deepcopy(messages)
@@ -66,7 +66,6 @@ def main(context: TextContext):
 
     output = ""
     try:
-        model = model.to("cuda")
         inputs = processor(
             text=[text],
             images=image_inputs,
@@ -89,7 +88,6 @@ def main(context: TextContext):
         raise Exception(output)
     finally:
         inputs = inputs.to("cpu")  # Move inputs back to CPU
-        model = model.to("cpu")  # Move model back to CPU
         del inputs, generated_ids, generated_ids_trimmed, output_text, image_inputs, video_inputs
 
     # we keep only the original as we may have altered adding video and image to the last message

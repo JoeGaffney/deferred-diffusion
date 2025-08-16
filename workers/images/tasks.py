@@ -1,6 +1,5 @@
 from PIL import Image
 
-from common.memory import free_gpu_memory
 from images.context import ImageContext
 from images.external_models.flux import main as external_flux_main
 from images.external_models.flux_kontext import main as external_flux_kontext_main
@@ -71,7 +70,6 @@ def router_main(context: ImageContext):
 
 @celery_app.task(name="process_image", queue="gpu")
 def process_image(request_dict):
-    free_gpu_memory()
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
     result = model_router_main(context)

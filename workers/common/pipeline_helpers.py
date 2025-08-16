@@ -18,6 +18,7 @@ from transformers import (
 )
 
 from common.logger import logger
+from common.memory import free_gpu_memory
 from utils.utils import time_info_decorator
 
 torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
@@ -58,7 +59,7 @@ CpuOffload.pre_forward = patched_pre_forward
 
 
 class ModelLRUCache:
-    def __init__(self, max_models=2):
+    def __init__(self, max_models=1):
         self.cache = OrderedDict()
         self.max_models = max_models
         self.hits = 0
@@ -77,8 +78,9 @@ class ModelLRUCache:
 
         # Evict least recently used model if at capacity
         if len(self.cache) >= self.max_models:
-
             self._evict_lru()
+        else:
+            free_gpu_memory()
 
         start = time.time()
         pipeline = loader_fn()
@@ -104,9 +106,14 @@ class ModelLRUCache:
 
     def _cleanup(self, pipeline):
         try:
+            pipeline.to("cpu")
+        except Exception as e:
+            logger.error(f"Error moving pipeline to CPU: {e}")
+
+        try:
             gc.collect()
             del pipeline
-            gc.collect()
+            free_gpu_memory(threshold_percent=1)
         except Exception as e:
             logger.error(f"Pipeline cleanup error: {e}")
 
@@ -120,7 +127,7 @@ class ModelLRUCache:
 
 
 # Global cache
-global_pipeline_cache = ModelLRUCache(max_models=MAX_MODEL_CACHE)
+global_pipeline_cache = ModelLRUCache(max_models=1)
 
 
 def decorator_global_pipeline_cache(func):
@@ -132,12 +139,18 @@ def decorator_global_pipeline_cache(func):
     return wrapper
 
 
-def optimize_pipeline(pipe, disable_safety_checker=True):
+@time_info_decorator
+def optimize_pipeline(pipe, disable_safety_checker=True, offload=True, compile_transformer=False):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
 
-    pipe.enable_model_cpu_offload()
+    if offload:
+        pipe.enable_model_cpu_offload()
+    else:
+        pipe.to("cuda")
+        if compile_transformer:
+            pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
 
     try:
         pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency

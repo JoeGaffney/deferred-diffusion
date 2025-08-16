@@ -13,7 +13,10 @@ def main(context: ImageContext, mode="mask"):
     model = LangSAM(sam_type="sam2.1_hiera_base_plus")
     image_pil = context.color_image.convert("RGB")
     text_prompt = context.data.prompt
+
     results = model.predict([image_pil], [text_prompt], box_threshold=0.3, text_threshold=0.25)
+    model.to("cpu")  # Move model to CPU after inference
+
     results = results[0]
     log_pretty(f"processed_dict", results)
 

@@ -2,7 +2,6 @@ from typing import List
 
 import pytest
 
-from common.memory import free_gpu_memory
 from images.context import ImageContext
 from images.schemas import ImageRequest, ModelName
 from images.tasks import external_model_router_main as main
@@ -40,4 +39,3 @@ def test_image_to_image(model, mode):
     )
 
     save_image_and_assert_file_exists(result, output_name)
-    free_gpu_memory()
