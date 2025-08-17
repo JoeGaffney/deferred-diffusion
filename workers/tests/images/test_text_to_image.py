@@ -10,6 +10,8 @@ from utils.utils import get_16_9_resolution
 
 MODES = ["text_to_image"]
 models: List[ModelName] = ["sd-xl", "sd-3", "flux-1", "flux-1-krea"]
+models: List[ModelName] = ["qwen-image"]
+# models: List[ModelName] = ["flux-1"]
 
 
 @pytest.mark.parametrize("mode", MODES)

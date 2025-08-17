@@ -3,6 +3,7 @@ bitsandbytes
 # diffusers - use main branch for latest features
 # Note: This is a direct link to the main branch of the diffusers repository.
 git+https://github.com/huggingface/diffusers.git@main
+# git+https://github.com/huggingface/diffusers.git@1b48db4c8fe76ffffa7382fd74d9f04d54aa5a16
 ftfy
 gguf
 imageio
@@ -13,7 +14,7 @@ opencv-python
 protobuf
 pydantic
 qwen-vl-utils
-runwayml==3.9.0
+runwayml
 sentencepiece
 transformers
 hf_xet

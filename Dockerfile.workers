@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --upgrade pip setuptools wheel
 
 # Install your pinned requirements first
-ARG REBUILD_DATE=2025-08-01
+ARG REBUILD_DATE=2025-08-17
 COPY workers/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

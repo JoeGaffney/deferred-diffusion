@@ -77,6 +77,9 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
     if context.data.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
+    # This is cheaper for image to image calls
+    model = "gen4_image_turbo"
+
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
     if context.color_image:
@@ -92,10 +95,10 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
-    logger.info(f"Image to image call {context.data.model_path} using {len(reference_images)} images")
+    logger.info(f"Image to image call {model} using {len(reference_images)} images")
     try:
         task = client.text_to_image.create(
-            model=context.data.model_path,
+            model=model,
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             reference_images=reference_images,

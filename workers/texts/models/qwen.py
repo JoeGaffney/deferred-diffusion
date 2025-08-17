@@ -6,15 +6,23 @@ from qwen_vl_utils import process_vision_info
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 from common.logger import log_pretty, logger
-from common.pipeline_helpers import decorator_global_pipeline_cache
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
 from texts.context import TextContext
 from utils.utils import load_image_from_base64, time_info_decorator
 
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id):
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
-    return model
+    model = get_quantized_model(
+        model_id=model_id,
+        subfolder="",
+        model_class=Qwen2_5_VLForConditionalGeneration,
+        target_precision=4,
+        torch_dtype=torch.bfloat16,
+    )
+
+    # model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
+    return model.to("cuda")
 
 
 @time_info_decorator

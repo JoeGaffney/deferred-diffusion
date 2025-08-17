@@ -18,7 +18,7 @@ from transformers import (
 )
 
 from common.logger import logger
-from common.memory import free_gpu_memory
+from common.memory import free_gpu_memory, gpu_memory_usage
 from utils.utils import time_info_decorator
 
 torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
@@ -33,25 +33,7 @@ MAX_MODEL_CACHE = int(os.getenv("MAX_MODEL_CACHE", 2))
 
 @time_info_decorator
 def patched_pre_forward(self, module, *args, **kwargs):
-    target_device = self.execution_device
-    current_device = next(module.parameters()).device
-
-    # Handle previous module offload
-    if self.prev_module_hook is not None:
-        prev_module = self.prev_module_hook.model
-        prev_device = next(prev_module.parameters()).device
-
-        if prev_device != torch.device("cpu"):
-            print(f"Offloading {str(prev_module.__class__.__name__)} from {prev_device} to CPU")
-            self.prev_module_hook.offload()
-            clear_device_cache()
-
-    if current_device == target_device:
-        return args, kwargs
-
-    # Move current module to target device only if needed
-    module.to(target_device)
-    return send_to_device(args, target_device), send_to_device(kwargs, target_device)
+    return _original_pre_forward(self, module, *args, **kwargs)
 
 
 # Apply patch
@@ -161,15 +143,8 @@ def optimize_pipeline(pipe, disable_safety_checker=True, offload=True, compile_t
     if disable_safety_checker:
         pipe.safety_checker = dummy_safety_checker
 
+    gpu_memory_usage()
     return pipe
-
-
-def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
-    quant_bit = "4bit" if load_in_4bit else "8bit"
-    subfolder_name = "default" if subfolder == "" else subfolder
-    hf_home = os.getenv("HF_HOME", "")
-    quant_dir = os.path.join(hf_home, "quantized", model_id, quant_bit, subfolder_name)
-    return os.path.normpath(quant_dir)
 
 
 # NOTE: Currently unused – kept for reference in case GGUF support is needed in future
@@ -190,6 +165,14 @@ def get_gguf_model(
         torch_dtype=torch_dtype,
         **args,
     )
+
+
+def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
+    quant_bit = "4bit" if load_in_4bit else "8bit"
+    subfolder_name = "default" if subfolder == "" else subfolder
+    hf_home = os.getenv("HF_HOME", "")
+    quant_dir = os.path.join(hf_home, "quantized", model_id, quant_bit, subfolder_name)
+    return os.path.normpath(quant_dir)
 
 
 @time_info_decorator
