@@ -6,12 +6,13 @@ from functools import lru_cache, wraps
 from typing import Literal
 
 import torch
-from accelerate.hooks import CpuOffload, clear_device_cache, send_to_device
+from accelerate.hooks import CpuOffload
 from cachetools.keys import hashkey
 from diffusers import GGUFQuantizationConfig
 from huggingface_hub import hf_hub_download
 from transformers import (
     BitsAndBytesConfig,
+    Qwen2_5_VLForConditionalGeneration,
     T5EncoderModel,
     TorchAoConfig,
     UMT5EncoderModel,
@@ -122,7 +123,7 @@ def decorator_global_pipeline_cache(func):
 
 
 @time_info_decorator
-def optimize_pipeline(pipe, disable_safety_checker=True, offload=True, compile_transformer=False):
+def optimize_pipeline(pipe, disable_safety_checker=True, offload=True, vae_tiling=True):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
@@ -131,14 +132,13 @@ def optimize_pipeline(pipe, disable_safety_checker=True, offload=True, compile_t
         pipe.enable_model_cpu_offload()
     else:
         pipe.to("cuda")
-        if compile_transformer:
-            pipe.transformer = torch.compile(pipe.transformer, mode="reduce-overhead")
 
-    try:
-        pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
-        pipe.vae.enable_slicing()
-    except:
-        pass  # VAE tiling is not available for all models
+    if vae_tiling:
+        try:
+            pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
+            pipe.vae.enable_slicing()
+        except:
+            pass  # VAE tiling is not available for all models
 
     if disable_safety_checker:
         pipe.safety_checker = dummy_safety_checker
@@ -254,6 +254,16 @@ def get_quantized_umt5_text_encoder(target_precision) -> UMT5EncoderModel:
         model_id=UMT_T5_MODEL_PATH,
         subfolder="text_encoder",
         model_class=UMT5EncoderModel,
+        target_precision=target_precision,
+        torch_dtype=torch.bfloat16,
+    )
+
+
+def get_quantized_qwen_2_5_text_encoder(target_precision) -> Qwen2_5_VLForConditionalGeneration:
+    return get_quantized_model(
+        model_id="Qwen/Qwen2.5-VL-7B-Instruct",
+        subfolder="",
+        model_class=Qwen2_5_VLForConditionalGeneration,
         target_precision=target_precision,
         torch_dtype=torch.bfloat16,
     )

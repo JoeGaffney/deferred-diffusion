@@ -42,6 +42,7 @@ class ModelInfo(BaseModel):
     path: str
     external: bool
     inpainting_path: Optional[str] = None
+    edit_path: Optional[str] = None
     auto_divisor: int = Field(
         default=1,
         ge=1,
@@ -129,6 +130,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
     "qwen-image": ModelInfo(
         family="qwen",
         path="ovedrive/qwen-image-4bit",  # path="Qwen/Qwen-Image",
+        edit_path="ovedrive/qwen-image-edit-4bit",
         external=False,
         auto_divisor=16,
         description="Qwen model specializes in generating high-quality images from textual descriptions. It excels at understanding nuanced prompts and delivering detailed visuals.",
@@ -326,6 +328,14 @@ class ImageRequest(BaseModel):
         inpainting_path = MODEL_CONFIG[self.model].inpainting_path
         if inpainting_path:
             return inpainting_path
+        return self.model_path
+
+    @property
+    def model_path_edit(self) -> str:
+        """Get the edit model path if available, otherwise normal."""
+        edit_path = MODEL_CONFIG[self.model].edit_path
+        if edit_path:
+            return edit_path
         return self.model_path
 
     @property

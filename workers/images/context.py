@@ -91,6 +91,8 @@ class ImageContext:
         model_id = self.data.model_path
         if generation_mode == "img_to_img_inpainting":
             model_id = self.data.model_path_inpainting
+        elif generation_mode == "img_to_img" and self.data.model_path_edit:
+            model_id = self.data.model_path_edit
 
         return PipelineConfig(
             model_id=model_id,
