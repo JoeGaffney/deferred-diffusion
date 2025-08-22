@@ -9,7 +9,7 @@ from transformers import Qwen2_5_VLForConditionalGeneration
 @pytest.fixture(
     params=[
         BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16),
-        # TorchAoConfig("int8_weight_only"),
+        TorchAoConfig("int8_weight_only"),
     ]
 )
 def quant_config(request):
@@ -34,10 +34,10 @@ def test_quantized_model_warmup(quant_config):
     print(str(quant_config))
     print_gpu_memory_usage("Before moving to GPU")
 
-    text_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        "Qwen/Qwen2.5-VL-7B-Instruct", quantization_config=quant_config, torch_dtype=torch_dtype
-    )
-    print_gpu_memory_usage("After loading text model")
+    # text_model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+    #     "Qwen/Qwen2.5-VL-7B-Instruct", quantization_config=quant_config, torch_dtype=torch_dtype
+    # )
+    # print_gpu_memory_usage("After loading text model")
 
     model.to("cuda")
     print_gpu_memory_usage("After moving to GPU")

@@ -67,7 +67,7 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
             parsed = texts_get.sync(id, client=client)
             if not isinstance(parsed, TextResponse):
                 break
-            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED"]:
+            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
                 break
 
             def progress_update():

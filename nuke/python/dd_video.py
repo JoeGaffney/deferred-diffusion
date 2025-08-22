@@ -40,7 +40,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             parsed = videos_get.sync(id, client=client)
             if not isinstance(parsed, VideoResponse):
                 break
-            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED"]:
+            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
                 break
 
             def progress_update():

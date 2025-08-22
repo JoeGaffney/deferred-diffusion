@@ -42,7 +42,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             if not isinstance(parsed, ImageResponse):
                 break
 
-            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED"]:
+            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
                 break
 
             def progress_update():
