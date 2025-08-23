@@ -91,15 +91,18 @@ def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048)
     target_width = orig_width * scale
     target_height = orig_height * scale
 
-    # Fit inside max bounds while preserving aspect ratio
-    scale_factor = min(max_width / target_width, max_height / target_height, 1.0)
-    target_width *= scale_factor
-    target_height *= scale_factor
+    # simple rounding to nearest divisible
+    width = ensure_divisible(min(target_width, max_width), division)
+    height = ensure_divisible(min(target_height, max_height), division)
 
-    # Round down to divisible size, anchoring width
-    width = int(math.floor(target_width / division) * division)
-    height = int(width / aspect_ratio)
-    height = int(math.floor(height / division) * division)
+    # # Fit inside max bounds while preserving aspect ratio
+    # scale_factor = min(max_width / target_width, max_height / target_height, 1.0)
+    # target_width *= scale_factor
+    # target_height *= scale_factor
+
+    # # Round BOTH dimensions down to divisible sizes
+    # width = int(math.floor(target_width / division) * division)
+    # height = int(math.floor(target_height / division) * division)
 
     # Final check: skip resize if not needed
     if (width, height) == image.size:
@@ -107,7 +110,7 @@ def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048)
         return image
 
     logger.info(f"Resizing from {image.size} to ({width}, {height}) (div/{division})")
-    return image.resize((width, height))
+    return image.resize((width, height), Image.Resampling.LANCZOS)
 
 
 def load_image_from_base64(base64_bytes: str) -> Image.Image:

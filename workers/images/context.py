@@ -48,20 +48,14 @@ class ImageContext:
     def __init__(self, data: ImageRequest):
         self.data = data
         self.model = data.model
-        self.orig_height = copy.copy(data.height)
-        self.orig_width = copy.copy(data.width)
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
 
         # Round down to nearest multiple of the eg. 8, 16, 32, etc.
-        self.division = data.model_divisor
-        self.width = ensure_divisible(copy.copy(data.width), self.division)
-        self.height = ensure_divisible(copy.copy(data.height), self.division)
+        self.division = 1  # data.model_divisor
+        self.width = copy.copy(data.width)
+        self.height = copy.copy(data.height)
         self.color_image = load_image_if_exists(data.image)
         if self.color_image:
-            self.color_image = resize_image(self.color_image, self.division, 1.0, 2048, 2048)
-            self.orig_width, self.orig_height = self.color_image.size
-
-            # NOTE base width and height now become the color image size masks and contolnet images are resized to this
             self.width, self.height = self.color_image.size
 
         # add our input mask image
@@ -73,6 +67,15 @@ class ImageContext:
         # Initialize control nets and adapters
         self.control_nets = ControlNets(data.controlnets, self.data.model_family, self.width, self.height)
         self.adapters = Adapters(data.ip_adapters, self.data.model_family, self.width, self.height)
+
+    def ensure_divisible(self, value: int):
+        # Adjust width and height to be divisible by the specified value
+        self.width = ensure_divisible(self.width, value)
+        self.height = ensure_divisible(self.height, value)
+        if self.mask_image:
+            self.mask_image = self.mask_image.resize([self.width, self.height])
+        if self.color_image:
+            self.color_image = self.color_image.resize([self.width, self.height])
 
     def get_generation_mode(self) -> Literal["text_to_image", "img_to_img", "img_to_img_inpainting"]:
         """Get generation mode, can be overridden by specific models."""

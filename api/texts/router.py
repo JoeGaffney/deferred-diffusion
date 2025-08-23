@@ -16,7 +16,7 @@ router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify
 
 
 @router.post("", response_model=TextCreateResponse, operation_id="texts_create")
-async def create(request: TextRequest, response: Response):
+def create(request: TextRequest, response: Response):
     try:
         result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
         response.headers["Location"] = f"/texts/{result.id}"
@@ -26,7 +26,7 @@ async def create(request: TextRequest, response: Response):
 
 
 @router.get("/{id}", response_model=TextResponse, operation_id="texts_get")
-async def get(id: UUID):
+def get(id: UUID):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields

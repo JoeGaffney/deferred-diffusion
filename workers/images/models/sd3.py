@@ -146,6 +146,8 @@ def inpainting_call(context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
+    context.ensure_divisible(16)
+
     mode = "img_to_img"
     if context.data.mask:
         mode = "img_to_img_inpainting"

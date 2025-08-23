@@ -43,18 +43,8 @@ class ModelInfo(BaseModel):
     external: bool
     inpainting_path: Optional[str] = None
     edit_path: Optional[str] = None
-    auto_divisor: int = Field(
-        default=1,
-        ge=1,
-        le=64,
-        description="Divisor for image dimensions. If above 1, the image dimensions will be adjusted to be divisible by this value.",
-    )
-    controlnets: bool = Field(default=False, description="Whether the model supports ControlNets.")
-    adapters: bool = Field(default=False, description="Whether the model supports IP Adapters.")
-    inpainting: bool = Field(
-        default=False,
-        description="Whether the model supports inpainting. If true, the inpainting path will be used for inpainting tasks.",
-    )
+    references: bool = Field(default=False, description="Supports image references as input")
+
     description: Optional[str] = None
 
     def to_doc_format(self, model_name: str) -> str:
@@ -69,10 +59,7 @@ class ModelInfo(BaseModel):
 
         doc += f"- **Family:** {self.family}\n"
         doc += f"- **External API:** {'Yes' if self.external else 'No'}\n"
-        doc += f"- **Auto Divisor:** {self.auto_divisor}\n"
-        doc += f"- **ControlNets:** {'✓' if self.controlnets else '✗'}\n"
-        doc += f"- **IP Adapters:** {'✓' if self.adapters else '✗'}\n"
-        doc += f"- **Inpainting:** {'✓' if self.inpainting else '✗'}\n"
+        doc += f"- **References:** {'✓' if self.references else '✗'}\n"
 
         doc += "\n"
         return doc
@@ -84,20 +71,13 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="SG161222/RealVisXL_V4.0",
         inpainting_path="OzzyGT/RealVisXL_V4.0_inpainting",
         external=False,
-        auto_divisor=8,
-        controlnets=True,
-        adapters=True,
-        inpainting=True,
+        references=True,
         description="Stable Diffusion XL variant supports the most conteol nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
     ),
     "sd-3": ModelInfo(
         family="sd3",
         path="stabilityai/stable-diffusion-3.5-large",
         external=False,
-        auto_divisor=16,
-        controlnets=False,
-        adapters=False,
-        inpainting=True,
         description="Stable Diffusion 3.5 offers superior prompt understanding and composition. Excels at complex scenes, concept art, and handling multiple subjects with accurate interactions.",
     ),
     "flux-1": ModelInfo(
@@ -105,20 +85,14 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="black-forest-labs/FLUX.1-dev",
         inpainting_path="black-forest-labs/FLUX.1-Fill-dev",
         external=False,
-        auto_divisor=32,
-        controlnets=True,
-        adapters=True,
-        inpainting=True,
+        references=True,
         description="FLUX.1 delivers exceptional text rendering and coherent scene composition. Specializes in illustrations with text elements, UI mockups, and detailed technical imagery.",
     ),
     "flux-1-krea": ModelInfo(
         family="flux",
         path="black-forest-labs/FLUX.1-Krea-dev",
         external=False,
-        auto_divisor=32,
-        controlnets=True,
-        adapters=True,
-        inpainting=True,
+        references=True,
         description="FLUX Krea model is flux-1 dev trained with opinions from krea for more photorealistic results.",
     ),
     "flux-kontext-1": ModelInfo(
@@ -132,7 +106,6 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="ovedrive/qwen-image-4bit",  # path="Qwen/Qwen-Image",
         edit_path="ovedrive/qwen-image-edit-4bit",
         external=False,
-        auto_divisor=16,
         description="Qwen model specializes in generating high-quality images from textual descriptions. It excels at understanding nuanced prompts and delivering detailed visuals.",
     ),
     "depth-anything-2": ModelInfo(
@@ -157,15 +130,14 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         family="openai",
         path="gpt-image-1",
         external=True,
-        adapters=True,
-        inpainting=True,
+        references=True,
         description="OpenAI's advanced image generation model with exceptional understanding of complex prompts. Excels at photorealistic imagery, accurate object rendering, and following detailed instructions.",
     ),
     "runway-gen4-image": ModelInfo(
         family="runway",
         path="gen4_image",
         external=True,
-        adapters=True,
+        references=True,
         description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combinging multiple references into a single, cohesive image.",
     ),
     "flux-kontext-1-pro": ModelInfo(
@@ -179,8 +151,6 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
         path="black-forest-labs/flux-1.1-pro",
         inpainting_path="black-forest-labs/flux-fill-pro",
         external=True,
-        auto_divisor=32,
-        inpainting=True,
         description="Pro version of FLUX 1.1 with enhanced capabilities. Excellent text rendering, sharp details, and consistent style. Ideal for professional illustrations and design work.",
     ),
     "topazlabs-upscale": ModelInfo(
@@ -193,23 +163,31 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
 
 
 def generate_model_docs():
-    docs = "Generate images using various diffusion models.\n\n"
+    docs = """ # Generate images using various diffusion models.
+- External models are processed through their respective APIs.
+- Auto Divisor ensures image dimensions are divisible by the specified value.
+- ControlNets and IP-Adapters are unified as **references**:
+- `style`, `face`, `depth`, `canny`, `pose`, etc.
+- These guide the generation but do not change the base mode.
+- Guidance Scale controls how strongly the prompt influences the output. Lower values often produce more realism, higher values produce more stylization.
+- Image generation mode is chosen automatically:
+1. If `mask` is provided → routed to **inpainting** (if supported).
+2. Else if `image` is provided →
+    - If `prefer_edit=True` and the model supports it → **edit**.
+    - Otherwise → **image-to-image**.
+3. If neither `image` nor `mask` is provided → **text-to-image**.
+- ⚠ Some models always require an input image:
+- Super-resolution models (e.g. ESRGAN, Topaz)
+- Enhancement models (upscalers, denoisers)
+- Depth/segmentation extractors
+Requests without an image for these models will raise an error.
+"""
 
     # List all models alphabetically without family grouping
     docs += "# Available Models\n\n"
 
     for model_name, model_info in MODEL_CONFIG.items():
         docs += model_info.to_doc_format(model_name)
-
-    # Add notes
-    docs += "# Notes \n"
-    docs += "- External models are processed through their respective APIs.\n"
-    docs += "- Auto Divisor ensures image dimensions are divisible by the specified value.\n"
-    docs += "- ControlNets allow for controling structure and placement.\n"
-    docs += "- IP Adapters guide the image prompt with images - for style and visual reference.\n"
-    docs += "- Guidance Scale controls the strength of the prompt influence on the image generation. This can have a different effect with each model, but general rule of thumb is lower values produce more realism.\n"
-    docs += "- If there is no image the models will do a text-to-image generation, if there is an image it will do an image-to-image generation.\n"
-    docs += "- If a mask is provided and the model supports inpainting, it will use the mask to guide the inpainting process.\n"
 
     return docs
 
@@ -273,6 +251,32 @@ class IpAdapterModel(BaseModel):
     )
 
 
+class References(BaseModel):
+    mode: Literal[
+        "style",
+        "face",
+        "depth",
+        "canny",
+        "pose",
+    ]
+    strength: float = 0.5
+    image: str = Field(
+        description="Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
+    mask: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 image string",
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    )
+
+
 class ImageRequest(BaseModel):
     model: ModelName
     prompt: str = Field(
@@ -281,7 +285,7 @@ class ImageRequest(BaseModel):
         json_schema_extra={"format": "multi_line"},
     )
     negative_prompt: str = Field(
-        default="worst quality, inconsistent motion, blurry, jittery, distorted",
+        default="worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes",
         description="Negative prompt text",
         json_schema_extra={"format": "multi_line"},
     )
@@ -299,6 +303,10 @@ class ImageRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
+    prefer_edit: bool = Field(
+        default=True,
+        description="Whether to prefer using the edit model path if available.",
+    )
     mask: Optional[str] = Field(
         default=None,
         description="Optional Base64 image string",
@@ -307,6 +315,7 @@ class ImageRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
+    references: list[References] = []
     ip_adapters: list[IpAdapterModel] = []
     controlnets: list[ControlNetSchema] = []
 
@@ -317,10 +326,6 @@ class ImageRequest(BaseModel):
     @property
     def model_path(self) -> str:
         return MODEL_CONFIG[self.model].path
-
-    @property
-    def model_divisor(self) -> int:
-        return MODEL_CONFIG[self.model].auto_divisor
 
     @property
     def model_path_inpainting(self) -> str:

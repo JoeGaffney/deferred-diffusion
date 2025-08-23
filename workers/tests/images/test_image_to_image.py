@@ -13,7 +13,6 @@ from tests.utils import (
 
 MODES = ["image_to_image"]
 models: List[ModelName] = ["sd-xl", "sd-3", "flux-1", "flux-kontext-1", "qwen-image"]
-# models: List[ModelName] = ["qwen-image"]
 
 
 @pytest.mark.parametrize("mode", MODES)

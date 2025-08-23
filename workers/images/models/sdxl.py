@@ -161,6 +161,7 @@ def inpainting_call(context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
+    context.ensure_divisible(16)
     mode = context.get_generation_mode()
 
     if mode == "text_to_image":

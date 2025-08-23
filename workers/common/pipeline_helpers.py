@@ -50,6 +50,9 @@ class ModelLRUCache:
         self.evictions = 0
 
     def get_or_load(self, key, loader_fn):
+        # Ensure we have enough free GPU memory before loading a new model
+        free_gpu_memory()
+
         if key in self.cache:
             # Move to end (most recently used position)
             self.cache.move_to_end(key)
@@ -62,8 +65,6 @@ class ModelLRUCache:
         # Evict least recently used model if at capacity
         if len(self.cache) >= self.max_models:
             self._evict_lru()
-        else:
-            free_gpu_memory()
 
         start = time.time()
         pipeline = loader_fn()
