@@ -92,8 +92,8 @@ def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048)
     target_height = orig_height * scale
 
     # simple rounding to nearest divisible
-    width = ensure_divisible(min(target_width, max_width), division)
-    height = ensure_divisible(min(target_height, max_height), division)
+    width = int(ensure_divisible(min(target_width, max_width), division))
+    height = int(ensure_divisible(min(target_height, max_height), division))
 
     # # Fit inside max bounds while preserving aspect ratio
     # scale_factor = min(max_width / target_width, max_height / target_height, 1.0)

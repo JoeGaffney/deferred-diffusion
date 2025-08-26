@@ -1,9 +1,7 @@
 accelerate
 bitsandbytes
-# diffusers - use main branch for latest features
-# Note: This is a direct link to the main branch of the diffusers repository.
-# git+https://github.com/huggingface/diffusers.git@1b48db4c8fe76ffffa7382fd74d9f04d54aa5a16
-git+https://github.com/huggingface/diffusers.git@main
+# Note: we take recent commits from diffusers for latest features
+git+https://github.com/huggingface/diffusers.git@0d1c5b0c3efd89c5b677d232358228e7f2792927
 ftfy
 gguf
 imageio

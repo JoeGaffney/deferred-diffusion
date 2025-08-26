@@ -40,32 +40,38 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipelin
 
     text_encoder = get_quantized_umt5_text_encoder(8)
 
-    # NOTE adds more memory overhead
-    # vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32)
-
     pipe = WanImageToVideoPipeline.from_pretrained(
         model_id,
         transformer=transformer,
         transformer_2=transformer_2,
         text_encoder=text_encoder,
-        # vae=vae,
+        # NOTE adds more memory overhead
+        vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
     )
+
     # pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=8.0)
 
-    lighting_lora = False
+    lighting_lora = True
     if lighting_lora:
-        # NOTE this can give large speedups
-        lora_path = hf_hub_download(
-            repo_id="Kijai/WanVideo_comfy",
-            filename="Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank128_bf16.safetensors",
+        pipe.load_lora_weights(
+            "Kijai/WanVideo_comfy",
+            weight_name="Wan22-Lightning/Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
+            adapter_name="lightning",
+        )
+        kwargs = {}
+        kwargs["load_into_transformer_2"] = True
+        pipe.load_lora_weights(
+            "Kijai/WanVideo_comfy",
+            weight_name="Wan22-Lightning/Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors",
+            adapter_name="lightning_2",
+            **kwargs
         )
 
-        # Load LoRA weights directly
-        pipe.load_lora_weights(lora_path)
-
-        # NOTE shoudl we fuse for offloading?
-        # pipe.fuse_lora()
+        pipe.set_adapters(["lightning", "lightning_2"], adapter_weights=[1.0, 1.0])
+        # pipe.fuse_lora(adapter_names=["lightning"], lora_scale=1.0, components=["transformer"])
+        # pipe.fuse_lora(adapter_names=["lightning_2"], lora_scale=1.0, components=["transformer_2"])
+        # pipe.unload_lora_weights()
 
     try:
         pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
@@ -95,12 +101,13 @@ def main(context: VideoContext):
         image=image,
         prompt=context.data.prompt,
         negative_prompt=negative_prompt,
-        num_inference_steps=context.data.num_inference_steps,
+        num_inference_steps=4,
         num_frames=context.data.num_frames,
         # force to 1.0 as is way faster
-        guidance_scale=1.0,  # context.data.guidance_scale,
+        guidance_scale=1.0,
+        guidance_scale_2=1.0,
         generator=context.get_generator(),
     ).frames[0]
 
-    processed_path = context.save_video(output, fps=24)
+    processed_path = context.save_video(output, fps=16)
     return processed_path
