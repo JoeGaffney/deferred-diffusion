@@ -15,7 +15,7 @@ models: List[ModelName] = ["wan-2-2"]
 
 @pytest.mark.parametrize("mode", ["text_to_video"])
 @pytest.mark.parametrize("model", models)
-@pytest.mark.parametrize("seed", [1])
+@pytest.mark.parametrize("seed", range(1, 4))
 def test_text_to_video(model, mode, seed):
     output_name = setup_output_file(model, mode, suffix=f"_{seed}", extension="mp4")
 

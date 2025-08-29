@@ -45,10 +45,10 @@ def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPip
         transformer=transformer,
         transformer_2=transformer_2,
         text_encoder=text_encoder,
-        # vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
+        vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
     )
-    # pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=8.0)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     try:
         pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
@@ -85,10 +85,10 @@ def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
         transformer=transformer,
         transformer_2=transformer_2,
         text_encoder=text_encoder,
-        # vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
+        vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
     )
-    # pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=8.0)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     try:
         pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
@@ -114,9 +114,8 @@ def text_to_video(context: VideoContext):
         height=height,
         prompt=context.data.prompt,
         negative_prompt=negative_prompt,
-        num_inference_steps=4,
+        num_inference_steps=8,
         num_frames=context.data.num_frames,
-        # force to 1.0 as is way faster
         guidance_scale=1.0,
         guidance_scale_2=1.0,
         generator=context.get_generator(),
@@ -127,13 +126,12 @@ def text_to_video(context: VideoContext):
 
 
 def main(context: VideoContext):
-    # pipe = get_pipeline(model_id=context.data.model_path)
-    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
     image = context.image
     if image is None:
         return text_to_video(context)
         raise ValueError("Image not found. Please provide a valid image path.")
 
+    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
     width, height = get_16_9_resolution("720p")
     image = resize_image(image, 16, 1.0, width, height)
 
@@ -146,9 +144,8 @@ def main(context: VideoContext):
         image=image,
         prompt=context.data.prompt,
         negative_prompt=negative_prompt,
-        num_inference_steps=4,
+        num_inference_steps=8,
         num_frames=context.data.num_frames,
-        # force to 1.0 as is way faster
         guidance_scale=1.0,
         guidance_scale_2=1.0,
         generator=context.get_generator(),
