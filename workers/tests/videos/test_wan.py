@@ -13,7 +13,6 @@ MODES = ["image_to_video"]
 models: List[ModelName] = ["wan-2-2"]
 
 
-@pytest.mark.skip(reason="WAN tests are flaky and sometimes timeout on CI")
 @pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize("model", models)
 def test_image_to_video(model, mode):

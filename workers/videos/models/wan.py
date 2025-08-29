@@ -11,6 +11,7 @@ from huggingface_hub import hf_hub_download
 from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
+    get_gguf_model,
     get_quantized_model,
     get_quantized_umt5_text_encoder,
 )
@@ -18,10 +19,8 @@ from utils.utils import get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
 
-# NOTE this one is heavy maybe we should not cache it globally
 @decorator_global_pipeline_cache
-def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
-
+def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
     transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
@@ -45,33 +44,10 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipelin
         transformer=transformer,
         transformer_2=transformer_2,
         text_encoder=text_encoder,
-        # NOTE adds more memory overhead
-        vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
+        # vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
     )
-
     # pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=8.0)
-
-    lighting_lora = True
-    if lighting_lora:
-        pipe.load_lora_weights(
-            "Kijai/WanVideo_comfy",
-            weight_name="Wan22-Lightning/Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors",
-            adapter_name="lightning",
-        )
-        kwargs = {}
-        kwargs["load_into_transformer_2"] = True
-        pipe.load_lora_weights(
-            "Kijai/WanVideo_comfy",
-            weight_name="Wan22-Lightning/Wan2.2-Lightning_I2V-A14B-4steps-lora_LOW_fp16.safetensors",
-            adapter_name="lightning_2",
-            **kwargs
-        )
-
-        pipe.set_adapters(["lightning", "lightning_2"], adapter_weights=[1.0, 1.0])
-        # pipe.fuse_lora(adapter_names=["lightning"], lora_scale=1.0, components=["transformer"])
-        # pipe.fuse_lora(adapter_names=["lightning_2"], lora_scale=1.0, components=["transformer_2"])
-        # pipe.unload_lora_weights()
 
     try:
         pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
@@ -84,7 +60,8 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipelin
 
 
 def main(context: VideoContext):
-    pipe = get_pipeline(model_id=context.data.model_path)
+    # pipe = get_pipeline(model_id=context.data.model_path)
+    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
     image = context.image
     if image is None:
         raise ValueError("Image not found. Please provide a valid image path.")
