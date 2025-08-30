@@ -52,7 +52,11 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         # "raw": True,
     }
 
-    output = replicate.run(context.data.model_path, input=payload)
+    try:
+        output = replicate.run(context.data.model_path, input=payload)
+    except Exception as e:
+        raise RuntimeError(f"Error calling Replicate API: {e}")
+
     return process_replicate_output(output)
 
 
@@ -71,7 +75,11 @@ def inpainting_call(context: ImageContext) -> Image.Image:
         "seed": context.data.seed,
     }
 
-    output = replicate.run(context.data.model_path_inpainting, input=payload)
+    try:
+        output = replicate.run(context.data.model_path_inpainting, input=payload)
+    except Exception as e:
+        raise RuntimeError(f"Error calling Replicate API: {e}")
+
     return process_replicate_output(output)
 
 

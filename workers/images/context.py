@@ -18,32 +18,6 @@ from utils.utils import (
 )
 
 
-class PipelineConfig(BaseModel):
-    model_id: str
-    model_family: ModelFamily
-    ip_adapter_models: Tuple[str, ...]
-    ip_adapter_subfolders: Tuple[str, ...]
-    ip_adapter_weights: Tuple[str, ...]
-    ip_adapter_image_encoder_model: str
-    ip_adapter_image_encoder_subfolder: str
-
-    class Config:
-        frozen = True  # Makes the model immutable/hashable
-        arbitrary_types_allowed = True  # Needed for torch.dtype
-
-    def __hash__(self):
-        return hash(
-            (
-                self.model_id,
-                self.ip_adapter_models,
-                self.ip_adapter_subfolders,
-                self.ip_adapter_weights,
-                self.ip_adapter_image_encoder_model,
-                self.ip_adapter_image_encoder_subfolder,
-            )
-        )
-
-
 class ImageContext:
     def __init__(self, data: ImageRequest):
         self.data = data
@@ -65,8 +39,8 @@ class ImageContext:
             self.mask_image = self.mask_image.resize([self.width, self.height])
 
         # Initialize control nets and adapters
-        self.control_nets = ControlNets(data.controlnets, self.data.model_family, self.width, self.height)
-        self.adapters = Adapters(data.ip_adapters, self.data.model_family, self.width, self.height)
+        self.control_nets = ControlNets(data.references, self.data.model_family, self.width, self.height)
+        self.adapters = Adapters(data.references, self.data.model_family, self.width, self.height)
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value
@@ -86,27 +60,6 @@ class ImageContext:
         else:
             return "img_to_img"
 
-    def get_pipeline_config(self) -> PipelineConfig:
-        adapter_config = self.adapters.get_pipeline_config()
-
-        # check if we should use inpainting model
-        generation_mode = self.get_generation_mode()
-        model_id = self.data.model_path
-        if generation_mode == "img_to_img_inpainting":
-            model_id = self.data.model_path_inpainting
-        elif generation_mode == "img_to_img" and self.data.model_path_edit:
-            model_id = self.data.model_path_edit
-
-        return PipelineConfig(
-            model_id=model_id,
-            model_family=self.data.model_family,
-            ip_adapter_models=adapter_config.get("models", ()),
-            ip_adapter_subfolders=adapter_config.get("subfolders", ()),
-            ip_adapter_weights=adapter_config.get("weights", ()),
-            ip_adapter_image_encoder_model=adapter_config.get("image_encoder_model", ""),
-            ip_adapter_image_encoder_subfolder=adapter_config.get("image_encoder_subfolder", ""),
-        )
-
     def get_quality(self) -> Literal["low", "medium", "high"]:
         """Get quality setting based on number of inference steps."""
         if self.data.num_inference_steps < 20:
@@ -125,6 +78,15 @@ class ImageContext:
 
     def cleanup(self):
         self.control_nets.cleanup()
+
+    def get_reference_images(self) -> list:
+        result = []
+        for references in self.data.references:
+            image = load_image_if_exists(references.image)
+            if image:
+                result.append(image)
+
+        return result
 
     # NOTE could be moved to utils
     def save_image(self, image):

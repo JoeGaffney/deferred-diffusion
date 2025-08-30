@@ -19,15 +19,15 @@ from common.pipeline_helpers import (
     get_quantized_qwen_2_5_text_encoder,
     optimize_pipeline,
 )
-from images.context import ImageContext, PipelineConfig
+from images.context import ImageContext
 
 
 @decorator_global_pipeline_cache
-def get_pipeline(config: PipelineConfig):
+def get_pipeline(model_id):
     args = {}
 
     args["transformer"] = get_quantized_model(
-        model_id=config.model_id,
+        model_id=model_id,
         subfolder="transformer",
         model_class=QwenImageTransformer2DModel,
         target_precision=16,
@@ -56,7 +56,7 @@ def get_pipeline(config: PipelineConfig):
     args["scheduler"] = FlowMatchEulerDiscreteScheduler.from_config(scheduler_config)
 
     pipe = QwenImagePipeline.from_pretrained(
-        config.model_id,
+        model_id,
         torch_dtype=torch.bfloat16,
         **args,
     )
@@ -67,11 +67,11 @@ def get_pipeline(config: PipelineConfig):
 
 
 @decorator_global_pipeline_cache
-def get_edit_pipeline(config: PipelineConfig):
+def get_edit_pipeline(model_id):
     args = {}
 
     args["transformer"] = get_quantized_model(
-        model_id=config.model_id,
+        model_id=model_id,
         subfolder="transformer",
         model_class=QwenImageTransformer2DModel,
         target_precision=16,
@@ -111,7 +111,7 @@ def get_edit_pipeline(config: PipelineConfig):
 
 
 def text_to_image_call(context: ImageContext):
-    pipe = get_pipeline(context.get_pipeline_config())
+    pipe = get_pipeline(context.data.model_path)
 
     args = {
         "width": context.width,
@@ -123,7 +123,6 @@ def text_to_image_call(context: ImageContext):
         "true_cfg_scale": 1.0,
     }
 
-    logger.info(f"Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
@@ -131,7 +130,7 @@ def text_to_image_call(context: ImageContext):
 
 
 def image_to_image_call(context: ImageContext):
-    pipe = QwenImageImg2ImgPipeline.from_pipe(get_pipeline(context.get_pipeline_config()))
+    pipe = QwenImageImg2ImgPipeline.from_pipe(get_pipeline(context.data.model_path))
 
     args = {
         "width": context.width,
@@ -145,7 +144,6 @@ def image_to_image_call(context: ImageContext):
         "true_cfg_scale": 1.0,
     }
 
-    logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
@@ -153,7 +151,7 @@ def image_to_image_call(context: ImageContext):
 
 
 def image_edit_call(context: ImageContext):
-    pipe = get_edit_pipeline(context.get_pipeline_config())
+    pipe = get_edit_pipeline(context.data.model_path_image_to_image)
 
     args = {
         "width": context.width,
@@ -166,7 +164,6 @@ def image_edit_call(context: ImageContext):
         "true_cfg_scale": 1.0,
     }
 
-    logger.info(f"Image edit call {args}")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
@@ -174,7 +171,7 @@ def image_edit_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    pipe = QwenImageInpaintPipeline.from_pipe(context.get_pipeline_config())
+    pipe = QwenImageInpaintPipeline.from_pipe(context.data.model_path)
 
     args = {
         "width": context.width,
@@ -190,7 +187,6 @@ def inpainting_call(context: ImageContext):
         "true_cfg_scale": 1.0,
     }
 
-    logger.info(f"Inpainting call {args}")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 

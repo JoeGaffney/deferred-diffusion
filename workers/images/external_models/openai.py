@@ -28,7 +28,7 @@ def text_to_image_call(context: ImageContext):
     logger.info(f"Text to image call {context.data.model_path}")
     result = client.images.generate(
         model=context.data.model_path,
-        quality=context.get_quality(),
+        quality="high",
         prompt=context.data.prompt,
         size=get_size(context),
     )
@@ -53,10 +53,9 @@ def image_to_image_call(context: ImageContext):
     if context.color_image:
         reference_images.append(convert_pil_to_bytes(context.color_image))
 
-    if context.adapters.is_enabled():
-        for current in context.adapters.get_images():
-            if current is not None:
-                reference_images.append(convert_pil_to_bytes(current))
+    for current in context.get_reference_images():
+        if current is not None:
+            reference_images.append(convert_pil_to_bytes(current))
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
@@ -65,7 +64,7 @@ def image_to_image_call(context: ImageContext):
 
     result = client.images.edit(
         model=context.data.model_path,
-        quality=context.get_quality(),
+        quality="high",
         prompt=context.data.prompt,
         size=get_size(context),  # type: ignore type hints wrong
         image=reference_images,
@@ -94,14 +93,18 @@ def inpainting_call(context: ImageContext):
 
     converted_mask = convert_mask_for_inpainting(context.mask_image)
 
-    result = client.images.edit(
-        model=context.data.model_path,
-        quality=context.get_quality(),
-        prompt=context.data.prompt,
-        size=get_size(context),  # type: ignore type hints wrong
-        image=[convert_pil_to_bytes(context.color_image)],
-        mask=convert_pil_to_bytes(converted_mask),
-    )
+    try:
+        result = client.images.edit(
+            model=context.data.model_path,
+            quality="high",
+            prompt=context.data.prompt,
+            size=get_size(context),  # type: ignore type hints wrong
+            image=[convert_pil_to_bytes(context.color_image)],
+            mask=convert_pil_to_bytes(converted_mask),
+        )
+    except Exception as e:
+        raise RuntimeError(f"Error calling OpenAI API: {e}")
+
     if result.data is None:
         raise ValueError("No image data returned from OpenAI API")
 
@@ -119,7 +122,7 @@ def main(context: ImageContext) -> Image.Image:
     mode = context.get_generation_mode()
 
     if mode == "text_to_image":
-        if context.adapters.is_enabled():
+        if len(context.get_reference_images()) > 0:
             return image_to_image_call(context)
         return text_to_image_call(context)
     elif mode == "img_to_img":

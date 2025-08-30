@@ -49,8 +49,6 @@ def get_size(
 
 def text_to_image_call(context: ImageContext) -> Image.Image:
     client = RunwayML()
-
-    logger.info(f"Text to image call {context.data.model_path}")
     if context.data.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
@@ -86,16 +84,13 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         fixed_image = fix_aspect_ratio(context.color_image)
         reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
 
-    if context.adapters.is_enabled():
-        for current in context.adapters.get_images():
-            if current:
-                fixed_image = fix_aspect_ratio(current)
-                reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
+    for current in context.get_reference_images():
+        fixed_image = fix_aspect_ratio(current)
+        reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
-    logger.info(f"Image to image call {model} using {len(reference_images)} images")
     try:
         task = client.text_to_image.create(
             model=model,
@@ -117,7 +112,7 @@ def main(context: ImageContext) -> Image.Image:
     mode = context.get_generation_mode()
 
     if mode == "text_to_image":
-        if context.adapters.is_enabled():
+        if context.get_reference_images() != []:
             return image_to_image_call(context)
         return text_to_image_call(context)
     elif mode == "img_to_img":

@@ -25,7 +25,6 @@ def test_models(mode):
                 prompt="Person, house, tree, flowers",
                 strength=0.5,
                 guidance_scale=5,
-                controlnets=[],
             )
         )
     )

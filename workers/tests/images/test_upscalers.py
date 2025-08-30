@@ -12,7 +12,9 @@ from tests.utils import (
 )
 
 MODES = ["upscale_image"]
-models: List[ModelName] = ["real-esrgan-x4", "topazlabs-upscale"]
+models: List[ModelName] = ["real-esrgan-x4"]
+models_external: List[ModelName] = ["topazlabs-upscale"]
+models.extend(models_external)
 
 
 @pytest.mark.parametrize("mode", MODES)

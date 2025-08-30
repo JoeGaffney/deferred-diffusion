@@ -10,10 +10,7 @@ from typing import List, Literal, Optional
 
 import nuke
 
-from generated.api_client.models.control_net_schema import ControlNetSchema
-from generated.api_client.models.control_net_schema_model import ControlNetSchemaModel
-from generated.api_client.models.ip_adapter_model import IpAdapterModel
-from generated.api_client.models.ip_adapter_model_model import IpAdapterModelModel
+from generated.api_client.models.references import References, ReferencesMode
 from generated.api_client.types import UNSET
 
 NODE_CONTROLNET = "dd_controlnet"
@@ -305,36 +302,12 @@ def node_to_base64(input_node, current_frame):
     return result
 
 
-def get_control_nets(node) -> list[ControlNetSchema]:
+def get_references(node) -> list[References]:
     if node is None:
         return []
 
     current_frame = nuke.frame()
-    valid_inputs = find_nodes_of_type(node, "dd_controlnet")
-    result = []
-    for current in valid_inputs:
-
-        image_node = current.input(0)
-        image = node_to_base64(image_node, current_frame)
-        if image is None:
-            continue
-
-        tmp = ControlNetSchema(
-            model=ControlNetSchemaModel(get_node_value(current, "model", "depth", mode="value")),
-            image=image,
-            conditioning_scale=get_node_value(current, "conditioning_scale", UNSET, return_type=float, mode="value"),
-        )
-        result.append(tmp)
-
-    return result
-
-
-def get_ip_adapters(node) -> list[IpAdapterModel]:
-    if node is None:
-        return []
-
-    current_frame = nuke.frame()
-    valid_inputs = find_nodes_of_type(node, "dd_adapter")
+    valid_inputs = find_nodes_of_type(node, "dd_reference")
 
     result = []
     for current in valid_inputs:
@@ -347,12 +320,11 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
         mask_node = current.input(1)
         mask = node_to_base64(mask_node, current_frame)
 
-        tmp = IpAdapterModel(
-            model=IpAdapterModelModel(get_node_value(current, "model", "style", mode="value")),
+        tmp = References(
+            mode=ReferencesMode(get_node_value(current, "mode", "style", mode="value")),
+            strength=get_node_value(current, "strength", UNSET, return_type=float, mode="value"),
             image=image,
             mask=mask,
-            scale=get_node_value(current, "scale", UNSET, return_type=float, mode="value"),
-            scale_layers=get_node_value(current, "scale_layers", "all", mode="value"),
         )
 
         result.append(tmp)

@@ -63,6 +63,8 @@ def create_dd_text_node():
 def _api_get_call(node, id, iterations=1, sleep_time=5):
     set_node_info(node, "PENDING", "")
     for count in range(1, iterations + 1):
+        time.sleep(sleep_time)
+
         try:
             parsed = texts_get.sync(id, client=client)
             if not isinstance(parsed, TextResponse):
@@ -75,7 +77,6 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
                     set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
-            time.sleep(sleep_time)
         except Exception as e:
 
             def handle_error(error=e):

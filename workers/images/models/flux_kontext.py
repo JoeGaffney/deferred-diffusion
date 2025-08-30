@@ -16,15 +16,15 @@ from common.pipeline_helpers import (
     get_quantized_t5_text_encoder,
     optimize_pipeline,
 )
-from images.context import ImageContext, PipelineConfig
+from images.context import ImageContext
 
 
 @decorator_global_pipeline_cache
-def get_pipeline(config: PipelineConfig):
+def get_pipeline(model_id):
     args = {}
 
     args["transformer"] = get_quantized_model(
-        model_id=config.model_id,
+        model_id=model_id,
         subfolder="transformer",
         model_class=FluxTransformer2DModel,
         target_precision=8,
@@ -33,7 +33,7 @@ def get_pipeline(config: PipelineConfig):
     args["text_encoder_2"] = get_quantized_t5_text_encoder(8)
 
     pipe = FluxKontextPipeline.from_pretrained(
-        config.model_id,
+        model_id,
         torch_dtype=torch.bfloat16,
         **args,
     )
@@ -42,7 +42,7 @@ def get_pipeline(config: PipelineConfig):
 
 
 def image_to_image_call(context: ImageContext):
-    pipe = get_pipeline(context.get_pipeline_config())
+    pipe = get_pipeline(context.data.model_path)
 
     args = {
         "width": context.width,
@@ -55,7 +55,6 @@ def image_to_image_call(context: ImageContext):
         # "max_area": 1024**2,
     }
 
-    logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 

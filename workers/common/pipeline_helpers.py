@@ -109,9 +109,22 @@ class ModelLRUCache:
             "current_cache_size": len(self.cache),
         }
 
+    def clear(self):
+        """Clean up all pipelines and clear the cache without triggering eviction logic."""
+        for _, pipeline in list(self.cache.items()):
+            self._cleanup(pipeline)
+        self.cache.clear()
+        self.hits = 0
+        self.misses = 0
+        self.evictions = 0
+
 
 # Global cache
 global_pipeline_cache = ModelLRUCache(max_models=1)
+
+
+def clear_global_pipeline_cache():
+    global_pipeline_cache.clear()
 
 
 def decorator_global_pipeline_cache(func):

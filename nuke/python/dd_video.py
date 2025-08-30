@@ -35,6 +35,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
     set_node_info(node, "PENDING", "")
 
     for count in range(1, iterations + 1):
+        time.sleep(sleep_time)
 
         try:
             parsed = videos_get.sync(id, client=client)
@@ -48,7 +49,6 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
                     set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
-            time.sleep(sleep_time)
         except Exception as e:
 
             def handle_error(error=e):
@@ -141,4 +141,4 @@ def get_video(node):
             raise ValueError("Task ID is required to get the video.")
 
         output_video_path = get_output_path(node, movie=True)
-        _api_get_call(node, task_id, output_video_path, current_frame, iterations=1, sleep_time=5)
+        _api_get_call(node, task_id, output_video_path, current_frame, iterations=1, sleep_time=0)

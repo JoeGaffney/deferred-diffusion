@@ -17,5 +17,9 @@ def main(context: ImageContext) -> Image.Image:
         "face_enhancement": False,
     }
 
-    output = replicate.run(context.data.model_path, input=payload)
+    try:
+        output = replicate.run(context.data.model_path, input=payload)
+    except Exception as e:
+        raise RuntimeError(f"Error calling Replicate API: {e}")
+
     return process_replicate_output(output)

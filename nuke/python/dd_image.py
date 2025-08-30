@@ -11,10 +11,9 @@ from generated.api_client.models.image_response import ImageResponse
 from generated.api_client.types import UNSET
 from utils import (
     base64_to_file,
-    get_control_nets,
-    get_ip_adapters,
     get_node_value,
     get_output_path,
+    get_references,
     node_to_base64,
     nuke_error_handling,
     polling_message,
@@ -36,6 +35,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
     set_node_info(node, "PENDING", "")
 
     for count in range(1, iterations + 1):
+        time.sleep(sleep_time)
 
         try:
             parsed = images_get.sync(id, client=client)
@@ -50,7 +50,6 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
                     set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
-            time.sleep(sleep_time)
         except Exception as e:
 
             def handle_error(error=e):
@@ -124,8 +123,7 @@ def process_image(node):
             strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),
             width=int(width_height[0]),
             height=int(width_height[1]),
-            controlnets=get_control_nets(aux_node),
-            ip_adapters=get_ip_adapters(aux_node),
+            references=get_references(aux_node),
         )
         _api_call(node, body, output_image_path, current_frame)
 
@@ -140,4 +138,4 @@ def get_image(node):
             raise ValueError("Task ID is required to get the image.")
 
         output_image_path = get_output_path(node, movie=False)
-        _api_get_call(node, task_id, output_image_path, current_frame, iterations=1, sleep_time=5)
+        _api_get_call(node, task_id, output_image_path, current_frame, iterations=1, sleep_time=0)

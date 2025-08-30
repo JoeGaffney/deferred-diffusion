@@ -1,14 +1,53 @@
-from typing import Dict
+from typing import Dict, Literal, Tuple
 
 from diffusers.image_processor import IPAdapterMaskProcessor
+from openai import BaseModel
 from PIL import Image
+from pydantic import Field
 
 from common.exceptions import IPAdapterConfigError
 from common.logger import logger
-from images.schemas import IpAdapterModel, IpAdapterModelConfig, ModelFamily
+from images.schemas import ModelFamily, References
 from utils.utils import load_image_if_exists
 
 processor = IPAdapterMaskProcessor()
+
+
+class AdapterPipelineConfig(BaseModel):
+    ip_adapter_models: Tuple[str, ...]
+    ip_adapter_subfolders: Tuple[str, ...]
+    ip_adapter_weights: Tuple[str, ...]
+    ip_adapter_image_encoder_model: str
+    ip_adapter_image_encoder_subfolder: str
+
+    class Config:
+        frozen = True  # Makes the model immutable/hashable
+        arbitrary_types_allowed = True  # Needed for torch.dtype
+
+    def __hash__(self):
+        return hash(
+            (
+                self.ip_adapter_subfolders,
+                self.ip_adapter_weights,
+                self.ip_adapter_image_encoder_model,
+                self.ip_adapter_image_encoder_subfolder,
+            )
+        )
+
+
+class IpAdapterModelConfig(BaseModel):
+    model: str = Field(
+        description="The model name for the IP adapter.",
+    )
+    subfolder: str = Field(
+        description="The subfolder where the IP adapter model is stored.",
+    )
+    weight_name: str = Field(
+        description="The weight name for the IP adapter model.",
+    )
+    image_encoder: bool = Field(description="Whether to use the image encoder for the IP adapter model.")
+    image_encoder_subfolder: str = Field(description="The subfolder where the image encoder model is stored.")
+
 
 generic_ip_adapter_model = IpAdapterModelConfig(
     model="default",
@@ -65,17 +104,6 @@ IP_ADAPTER_MODEL_CONFIG: Dict[ModelFamily, Dict[str, IpAdapterModelConfig]] = {
             image_encoder_subfolder="openai/clip-vit-large-patch14",
         ),
     },
-    # openai and runway is a special case, it uses just the images and not the model - but we still use the same ipdapter flow for parity
-    "openai": {
-        "style": generic_ip_adapter_model,
-        "style-plus": generic_ip_adapter_model,
-        "face": generic_ip_adapter_model,
-    },
-    "runway": {
-        "style": generic_ip_adapter_model,
-        "style-plus": generic_ip_adapter_model,
-        "face": generic_ip_adapter_model,
-    },
 }
 
 
@@ -92,13 +120,10 @@ def get_ip_adapter_config(model_family: ModelFamily, adapter_type: str) -> IpAda
 
 
 class IpAdapter:
-    def __init__(self, data: IpAdapterModel, model_family: ModelFamily, width, height):
-        self.config = get_ip_adapter_config(model_family, data.model)
-        self.scale = data.scale
-        self.scale_layers = data.scale_layers
+    def __init__(self, data: References, model_family: ModelFamily, width, height):
+        self.config = get_ip_adapter_config(model_family, data.mode)
+        self.scale = data.strength
         self.model = self.config.model
-        if model_family == "flux":
-            self.scale_layers = "default"
 
         self.image = load_image_if_exists(data.image)
 
@@ -116,22 +141,6 @@ class IpAdapter:
             self.mask_image = self.mask_image.convert("L")
 
     def get_scale_layers(self):
-
-        # NOTE see https://huggingface.co/docs/diffusers/en/using-diffusers/ip_adapter#style--layout-control
-        if self.scale_layers == "style":
-            return {
-                "up": {"block_0": [0.0, self.scale, 0.0]},
-            }
-        elif self.scale_layers == "style_and_layout":
-            return {
-                "down": {"block_2": [0.0, self.scale]},
-                "up": {"block_0": [0.0, self.scale, 0.0]},
-            }
-        elif self.scale_layers == "layout":
-            return {
-                "down": {"block_2": [0.0, self.scale]},
-            }
-
         return self.scale
 
     def get_mask(self):
@@ -139,7 +148,7 @@ class IpAdapter:
 
 
 class Adapters:
-    def __init__(self, adapters: list[IpAdapterModel], model_family: ModelFamily, width, height):
+    def __init__(self, adapters: list[References], model_family: ModelFamily, width, height):
         self.adapters: list[IpAdapter] = []
 
         # Handle initialization errors and create valid adapters
@@ -207,3 +216,14 @@ class Adapters:
         else:
             pipe.set_ip_adapter_scale(scales)
         return pipe
+
+    def get_adapter_pipeline_config(self) -> AdapterPipelineConfig:
+        adapter_config = self.get_pipeline_config()
+
+        return AdapterPipelineConfig(
+            ip_adapter_models=adapter_config.get("models", ()),
+            ip_adapter_subfolders=adapter_config.get("subfolders", ()),
+            ip_adapter_weights=adapter_config.get("weights", ()),
+            ip_adapter_image_encoder_model=adapter_config.get("image_encoder_model", ""),
+            ip_adapter_image_encoder_subfolder=adapter_config.get("image_encoder_subfolder", ""),
+        )

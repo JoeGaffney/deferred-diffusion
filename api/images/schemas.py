@@ -42,7 +42,7 @@ class ModelInfo(BaseModel):
     path: str
     external: bool
     inpainting_path: Optional[str] = None
-    edit_path: Optional[str] = None
+    image_to_image_path: Optional[str] = None
     references: bool = Field(default=False, description="Supports image references as input")
 
     description: Optional[str] = None
@@ -104,7 +104,7 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
     "qwen-image": ModelInfo(
         family="qwen",
         path="ovedrive/qwen-image-4bit",  # path="Qwen/Qwen-Image",
-        edit_path="ovedrive/qwen-image-edit-4bit",
+        image_to_image_path="ovedrive/qwen-image-edit-4bit",
         external=False,
         description="Qwen model specializes in generating high-quality images from textual descriptions. It excels at understanding nuanced prompts and delivering detailed visuals.",
     ),
@@ -172,9 +172,7 @@ def generate_model_docs():
 - Guidance Scale controls how strongly the prompt influences the output. Lower values often produce more realism, higher values produce more stylization.
 - Image generation mode is chosen automatically:
 1. If `mask` is provided → routed to **inpainting** (if supported).
-2. Else if `image` is provided →
-    - If `prefer_edit=True` and the model supports it → **edit**.
-    - Otherwise → **image-to-image**.
+2. Else if `image` is provided → **image-to-image**.
 3. If neither `image` nor `mask` is provided → **text-to-image**.
 - ⚠ Some models always require an input image:
 - Super-resolution models (e.g. ESRGAN, Topaz)
@@ -196,69 +194,8 @@ Requests without an image for these models will raise an error.
 TaskName: TypeAlias = Literal["process_image", "process_image_external"]
 
 
-class IpAdapterModelConfig(BaseModel):
-    model: str = Field(
-        description="The model name for the IP adapter.",
-    )
-    subfolder: str = Field(
-        description="The subfolder where the IP adapter model is stored.",
-    )
-    weight_name: str = Field(
-        description="The weight name for the IP adapter model.",
-    )
-    image_encoder: bool = Field(description="Whether to use the image encoder for the IP adapter model.")
-    image_encoder_subfolder: str = Field(description="The subfolder where the image encoder model is stored.")
-
-
-class ControlNetSchema(BaseModel):
-    model: Literal[
-        "pose",
-        "depth",
-        "canny",
-    ]
-    conditioning_scale: float = 0.5
-    image: str = Field(
-        description="Base64 image string",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/png, image/jpg, image/jpeg",  # Or "image/*" if you accept multiple formats
-        },
-    )
-
-
-class IpAdapterModel(BaseModel):
-    model: Literal[
-        "style",
-        "style-plus",
-        "face",
-    ]
-    scale: float = 0.5
-    scale_layers: str = "all"
-    image: str = Field(
-        description="Base64 image string",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
-    )
-    mask: Optional[str] = Field(
-        default=None,
-        description="Optional Base64 image string",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
-    )
-
-
 class References(BaseModel):
-    mode: Literal[
-        "style",
-        "face",
-        "depth",
-        "canny",
-        "pose",
-    ]
+    mode: Literal["style", "style-plus", "face", "depth", "canny", "pose"]
     strength: float = 0.5
     image: str = Field(
         description="Base64 image string",
@@ -303,10 +240,6 @@ class ImageRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    prefer_edit: bool = Field(
-        default=True,
-        description="Whether to prefer using the edit model path if available.",
-    )
     mask: Optional[str] = Field(
         default=None,
         description="Optional Base64 image string",
@@ -316,8 +249,6 @@ class ImageRequest(BaseModel):
         },
     )
     references: list[References] = []
-    ip_adapters: list[IpAdapterModel] = []
-    controlnets: list[ControlNetSchema] = []
 
     @property
     def model_family(self) -> ModelFamily:
@@ -336,11 +267,11 @@ class ImageRequest(BaseModel):
         return self.model_path
 
     @property
-    def model_path_edit(self) -> str:
-        """Get the edit model path if available, otherwise normal."""
-        edit_path = MODEL_CONFIG[self.model].edit_path
-        if edit_path:
-            return edit_path
+    def model_path_image_to_image(self) -> str:
+        """Get the image-to-image model path if available, otherwise normal."""
+        image_to_image_path = MODEL_CONFIG[self.model].image_to_image_path
+        if image_to_image_path:
+            return image_to_image_path
         return self.model_path
 
     @property

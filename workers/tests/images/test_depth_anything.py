@@ -28,7 +28,6 @@ def test_models(mode):
                 guidance_scale=5,
                 width=width,
                 height=height,
-                controlnets=[],
             )
         )
     )
