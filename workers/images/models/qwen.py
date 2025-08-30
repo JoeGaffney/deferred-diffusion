@@ -171,7 +171,7 @@ def image_edit_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    pipe = QwenImageInpaintPipeline.from_pipe(context.data.model_path)
+    pipe = QwenImageInpaintPipeline.from_pipe(get_pipeline(context.data.model_path))
 
     args = {
         "width": context.width,

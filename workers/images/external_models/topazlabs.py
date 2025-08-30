@@ -1,7 +1,6 @@
-import replicate
 from PIL import Image
 
-from common.replicate_helpers import process_replicate_output
+from common.replicate_helpers import process_replicate_image_output, replicate_run
 from images.context import ImageContext
 from utils.utils import convert_pil_to_bytes
 
@@ -17,9 +16,6 @@ def main(context: ImageContext) -> Image.Image:
         "face_enhancement": False,
     }
 
-    try:
-        output = replicate.run(context.data.model_path, input=payload)
-    except Exception as e:
-        raise RuntimeError(f"Error calling Replicate API: {e}")
+    output = replicate_run(context.data.model_path, payload)
 
-    return process_replicate_output(output)
+    return process_replicate_image_output(output)

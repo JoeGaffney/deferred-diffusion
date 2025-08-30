@@ -5,9 +5,20 @@ from PIL import Image, ImageOps
 from runwayml import RunwayML
 from runwayml.types.text_to_image_create_params import ContentModeration, ReferenceImage
 
-from common.logger import logger
 from images.context import ImageContext
 from utils.utils import pill_to_base64
+
+
+def process_runway_image_output(output: str) -> Image.Image:
+    if not isinstance(output, str):
+        raise ValueError(f"Expected output from Runway to be a URL string, got {type(output)} {str(output)}")
+
+    try:
+        processed_image = load_image(output)
+    except Exception as e:
+        raise ValueError(f"Failed to process image from Runway: {str(e)} {output}")
+
+    return processed_image
 
 
 def fix_aspect_ratio(img: Image.Image, safety_margin: float = 0.02) -> Image.Image:
@@ -64,7 +75,7 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
         raise RuntimeError(f"Error calling RunwayML API: {e}")
 
     if task.status == "SUCCEEDED" and task.output and len(task.output) > 0:
-        return load_image(task.output[0])
+        return process_runway_image_output(task.output[0])
 
     raise Exception(f"Task failed: {task}")
 
@@ -103,7 +114,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         raise RuntimeError(f"Error calling RunwayML API: {e}")
 
     if task.status == "SUCCEEDED" and task.output and len(task.output) > 0:
-        return load_image(task.output[0])
+        return process_runway_image_output(task.output[0])
 
     raise Exception(f"Task failed: {task}")
 

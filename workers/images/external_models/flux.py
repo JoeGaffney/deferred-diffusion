@@ -3,7 +3,7 @@ from typing import Literal
 import replicate
 from PIL import Image
 
-from common.replicate_helpers import process_replicate_output
+from common.replicate_helpers import process_replicate_image_output, replicate_run
 from images.context import ImageContext
 from utils.utils import convert_pil_to_bytes
 
@@ -31,8 +31,9 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
         "raw": True,
     }
 
-    output = replicate.run(context.data.model_path, input=payload)
-    return process_replicate_output(output)
+    output = replicate_run(context.data.model_path, payload)
+
+    return process_replicate_image_output(output)
 
 
 def image_to_image_call(context: ImageContext) -> Image.Image:
@@ -52,12 +53,9 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         # "raw": True,
     }
 
-    try:
-        output = replicate.run(context.data.model_path, input=payload)
-    except Exception as e:
-        raise RuntimeError(f"Error calling Replicate API: {e}")
+    output = replicate_run(context.data.model_path, payload)
 
-    return process_replicate_output(output)
+    return process_replicate_image_output(output)
 
 
 def inpainting_call(context: ImageContext) -> Image.Image:
@@ -75,12 +73,9 @@ def inpainting_call(context: ImageContext) -> Image.Image:
         "seed": context.data.seed,
     }
 
-    try:
-        output = replicate.run(context.data.model_path_inpainting, input=payload)
-    except Exception as e:
-        raise RuntimeError(f"Error calling Replicate API: {e}")
+    output = replicate_run(context.data.model_path, payload)
 
-    return process_replicate_output(output)
+    return process_replicate_image_output(output)
 
 
 def main(context: ImageContext) -> Image.Image:

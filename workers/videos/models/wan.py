@@ -12,7 +12,6 @@ from huggingface_hub import hf_hub_download
 from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
-    get_gguf_model,
     get_quantized_model,
     get_quantized_umt5_text_encoder,
 )
@@ -129,7 +128,6 @@ def main(context: VideoContext):
     image = context.image
     if image is None:
         return text_to_video(context)
-        raise ValueError("Image not found. Please provide a valid image path.")
 
     pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
     width, height = get_16_9_resolution("720p")

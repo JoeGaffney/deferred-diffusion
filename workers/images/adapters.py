@@ -1,9 +1,8 @@
 from typing import Dict, Literal, Tuple
 
 from diffusers.image_processor import IPAdapterMaskProcessor
-from openai import BaseModel
 from PIL import Image
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from common.exceptions import IPAdapterConfigError
 from common.logger import logger
