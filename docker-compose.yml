@@ -43,8 +43,10 @@ services:
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
-      - MAX_MODEL_CACHE=2 # Maximum number of models to cache in memory
+      - MAX_MODEL_CACHE=1 # Maximum number of models to cache in memory
       - LOW_VRAM=0 # Set to true to enable low VRAM mode
+      - HF_ENABLE_PARALLEL_LOADING=yes
+      # - HF_HUB_DISABLE_XET=1 # Disable X-ET headers for Hugging Face Hub
     depends_on:
       - redis
       - api

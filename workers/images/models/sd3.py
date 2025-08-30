@@ -10,39 +10,34 @@ from PIL import Image
 from transformers import T5EncoderModel
 
 from common.logger import logger
+from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
+    get_quantized_t5_text_encoder,
     optimize_pipeline,
 )
-from images.context import ImageContext, PipelineConfig
-
-T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
+from images.context import ImageContext
 
 
 @decorator_global_pipeline_cache
-def get_pipeline(config: PipelineConfig):
+def get_pipeline(model_id):
     args = {"torch_dtype": torch.bfloat16, "use_safetensors": True}
     args["transformer"] = get_quantized_model(
-        model_id=config.model_id,
+        model_id=model_id,
         subfolder="transformer",
         model_class=SD3Transformer2DModel,
         target_precision=8,
         torch_dtype=torch.bfloat16,
     )
-    args["text_encoder_3"] = get_quantized_model(
-        model_id=T5_MODEL_PATH,
-        subfolder="text_encoder_2",  # this is correct as we are loading the T5 encoder from the Flux model
-        model_class=T5EncoderModel,
-        target_precision=8,
-        torch_dtype=torch.bfloat16,
-    )
+    args["text_encoder_3"] = get_quantized_t5_text_encoder(8)
+
     pipe = StableDiffusion3Pipeline.from_pretrained(
-        config.model_id,
+        model_id,
         **args,
     )
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, offload=LOW_VRAM)
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
@@ -54,16 +49,14 @@ def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
 
 
 def text_to_image_call(context: ImageContext):
-    def get_text_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-        args = {}
-        if controlnets != []:
-            args["controlnet"] = controlnets
+    pipe_args = {}
+    controlnets = context.control_nets.get_loaded_controlnets()
+    if controlnets != []:
+        pipe_args["controlnet"] = controlnets
 
-        return AutoPipelineForText2Image.from_pipe(
-            get_pipeline(pipeline_config), requires_safety_checker=False, **args
-        )
-
-    pipe = get_text_pipeline(context.get_pipeline_config(), controlnets=context.control_nets.get_loaded_controlnets())
+    pipe = AutoPipelineForText2Image.from_pipe(
+        get_pipeline(context.data.model_path), requires_safety_checker=False, **pipe_args
+    )
 
     args = {
         "width": context.width,
@@ -76,7 +69,6 @@ def text_to_image_call(context: ImageContext):
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
-    logger.info(f"Text to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
@@ -84,16 +76,14 @@ def text_to_image_call(context: ImageContext):
 
 
 def image_to_image_call(context: ImageContext):
-    def get_image_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-        args = {}
-        if controlnets != []:
-            args["controlnet"] = controlnets
+    pipe_args = {}
+    controlnets = context.control_nets.get_loaded_controlnets()
+    if controlnets != []:
+        pipe_args["controlnet"] = controlnets
 
-        return AutoPipelineForImage2Image.from_pipe(
-            get_pipeline(pipeline_config), requires_safety_checker=False, **args
-        )
-
-    pipe = get_image_pipeline(context.get_pipeline_config(), controlnets=context.control_nets.get_loaded_controlnets())
+    pipe = AutoPipelineForImage2Image.from_pipe(
+        get_pipeline(context.data.model_path), requires_safety_checker=False, **pipe_args
+    )
 
     args = {
         "width": context.width,
@@ -109,7 +99,6 @@ def image_to_image_call(context: ImageContext):
 
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
-    logger.info(f"Image to image call {args}")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
@@ -117,18 +106,15 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    def get_inpainting_pipeline(pipeline_config: PipelineConfig, controlnets=[]):
-        args = {}
-        if controlnets != []:
-            args["controlnet"] = controlnets
+    pipe_args = {}
+    controlnets = context.control_nets.get_loaded_controlnets()
+    if controlnets != []:
+        pipe_args["controlnet"] = controlnets
 
-        return AutoPipelineForInpainting.from_pipe(
-            get_pipeline(pipeline_config), requires_safety_checker=False, **args
-        )
-
-    pipe = get_inpainting_pipeline(
-        context.get_pipeline_config(), controlnets=context.control_nets.get_loaded_controlnets()
+    pipe = AutoPipelineForInpainting.from_pipe(
+        get_pipeline(context.data.model_path), requires_safety_checker=False, **pipe_args
     )
+
     args = {
         "width": context.width,
         "height": context.height,
@@ -143,7 +129,6 @@ def inpainting_call(context: ImageContext):
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
-    logger.info(f"Inpainting call {args}")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
@@ -151,6 +136,8 @@ def inpainting_call(context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
+    context.ensure_divisible(16)
+
     mode = "img_to_img"
     if context.data.mask:
         mode = "img_to_img_inpainting"

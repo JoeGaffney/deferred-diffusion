@@ -2,7 +2,6 @@ from typing import List
 
 import pytest
 
-from common.memory import free_gpu_memory
 from images.context import ImageContext
 from images.schemas import ImageRequest, ModelName
 from images.tasks import model_router_main as main
@@ -10,8 +9,13 @@ from tests.utils import save_image_and_assert_file_exists, setup_output_file
 from utils.utils import get_16_9_resolution
 
 MODES = ["text_to_image"]
-models: List[ModelName] = ["sd-xl", "sd-3", "flux-1"]
-# models: List[ModelName] = ["sd-3"]
+models: List[ModelName] = ["sd-xl", "sd-3", "flux-1", "flux-1-krea", "qwen-image"]
+models_external: List[ModelName] = [
+    "flux-1-1-pro",
+    "gpt-image-1",
+    "runway-gen4-image",
+]
+models.extend(models_external)
 
 
 @pytest.mark.parametrize("mode", MODES)
@@ -30,11 +34,9 @@ def test_text_to_image(model, mode):
                 guidance_scale=3.5,
                 width=width,
                 height=height,
-                controlnets=[],
                 num_inference_steps=15,
             )
         )
     )
 
     save_image_and_assert_file_exists(result, output_name)
-    free_gpu_memory()

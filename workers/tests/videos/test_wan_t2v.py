@@ -4,30 +4,30 @@ from typing import List
 
 import pytest
 
-from common.memory import free_gpu_memory
 from tests.utils import image_to_base64, setup_output_file
 from videos.context import VideoContext
 from videos.schemas import ModelName, VideoRequest
 from videos.tasks import model_router_main as main
 
-MODES = ["image_to_video"]
-models: List[ModelName] = ["wan-2-1"]
+MODES = ["text_to_video"]
+models: List[ModelName] = ["wan-2-2"]
 
 
-@pytest.mark.parametrize("mode", MODES)
+@pytest.mark.parametrize("mode", ["text_to_video"])
 @pytest.mark.parametrize("model", models)
-def test_image_to_video(model, mode):
-    output_name = setup_output_file(model, mode, extension="mp4")
+@pytest.mark.parametrize("seed", range(1, 4))
+def test_text_to_video(model, mode, seed):
+    output_name = setup_output_file(model, mode, suffix=f"_{seed}", extension="mp4")
 
     result = main(
         VideoContext(
             VideoRequest(
                 model=model,
-                image=image_to_base64("../assets/color_v002.png"),
-                prompt="A man with short gray hair plays a red electric guitar. Looking at the camera.",
-                num_inference_steps=6,
+                prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
+                num_inference_steps=10,
                 guidance_scale=3.0,
                 num_frames=24,
+                seed=seed,
             )
         )
     )
@@ -40,4 +40,3 @@ def test_image_to_video(model, mode):
 
     # Check if the output file is a valid video file
     assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
-    free_gpu_memory()

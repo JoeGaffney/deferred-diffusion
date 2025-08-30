@@ -48,7 +48,7 @@ def test_get_ltx(api_client):
     )
     image_id = create_video(api_client, body)
 
-    response = videos_get.sync_detailed(id=image_id, client=api_client, wait=True)
+    response = videos_get.sync_detailed(id=image_id, client=api_client)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None

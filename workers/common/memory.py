@@ -32,31 +32,32 @@ def _get_gpu_memory_usage():
 
     total = total / 1e9
     usage_percent = (used / total) * 100
+    allocated_percent = (allocated / total) * 100
 
-    return (
-        total,
-        used,
-        reserved,
-        allocated,
-        usage_percent,
-    )
+    return (total, used, reserved, allocated, usage_percent, allocated_percent)
 
 
 def _get_gpu_memory_usage_pretty():
-    total, used, reserved, allocated, usage_percent = _get_gpu_memory_usage()
+    total, used, reserved, allocated, usage_percent, allocated_percent = _get_gpu_memory_usage()
 
     return (
         f"GPU Memory Usage: {used:.2f}GB / {total:.2f}GB,  "
         f"Reserved: {reserved:.2f}GB, "
         f"Allocated: {allocated:.2f}GB, "
-        f"Usage: {usage_percent:.2f}%"
+        f"Usage: {usage_percent:.2f}%, "
+        f"Allocated Percent: {allocated_percent:.2f}%"
     )
 
 
 def _should_free_gpu_memory(threshold_percent: float = 1):
-    total, used, reserved, allocated, usage_percent = _get_gpu_memory_usage()
-    logger.warning(f"{_get_gpu_memory_usage_pretty()}")
-    return usage_percent > threshold_percent
+    total, used, reserved, allocated, usage_percent, allocated_percent = _get_gpu_memory_usage()
+    logger.info(f"{_get_gpu_memory_usage_pretty()}")
+    return allocated_percent > threshold_percent
+
+
+def gpu_memory_usage():
+    logger.info(f"{_get_gpu_memory_usage_pretty()}")
+    # logger.info(torch.cuda.memory_summary())
 
 
 def free_gpu_memory(threshold_percent: float = 25):

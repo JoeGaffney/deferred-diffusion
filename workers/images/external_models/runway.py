@@ -5,9 +5,20 @@ from PIL import Image, ImageOps
 from runwayml import RunwayML
 from runwayml.types.text_to_image_create_params import ContentModeration, ReferenceImage
 
-from common.logger import logger
 from images.context import ImageContext
 from utils.utils import pill_to_base64
+
+
+def process_runway_image_output(output: str) -> Image.Image:
+    if not isinstance(output, str):
+        raise ValueError(f"Expected output from Runway to be a URL string, got {type(output)} {str(output)}")
+
+    try:
+        processed_image = load_image(output)
+    except Exception as e:
+        raise ValueError(f"Failed to process image from Runway: {str(e)} {output}")
+
+    return processed_image
 
 
 def fix_aspect_ratio(img: Image.Image, safety_margin: float = 0.02) -> Image.Image:
@@ -49,8 +60,6 @@ def get_size(
 
 def text_to_image_call(context: ImageContext) -> Image.Image:
     client = RunwayML()
-
-    logger.info(f"Text to image call {context.data.model_path}")
     if context.data.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
@@ -66,7 +75,7 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
         raise RuntimeError(f"Error calling RunwayML API: {e}")
 
     if task.status == "SUCCEEDED" and task.output and len(task.output) > 0:
-        return load_image(task.output[0])
+        return process_runway_image_output(task.output[0])
 
     raise Exception(f"Task failed: {task}")
 
@@ -77,25 +86,25 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
     if context.data.model_path != "gen4_image":
         raise ValueError("Only gen4_image model is supported")
 
+    # This is cheaper for image to image calls
+    model = "gen4_image_turbo"
+
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
     if context.color_image:
         fixed_image = fix_aspect_ratio(context.color_image)
         reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
 
-    if context.adapters.is_enabled():
-        for current in context.adapters.get_images():
-            if current:
-                fixed_image = fix_aspect_ratio(current)
-                reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
+    for current in context.get_reference_images():
+        fixed_image = fix_aspect_ratio(current)
+        reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
-    logger.info(f"Image to image call {context.data.model_path} using {len(reference_images)} images")
     try:
         task = client.text_to_image.create(
-            model=context.data.model_path,
+            model=model,
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             reference_images=reference_images,
@@ -105,7 +114,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         raise RuntimeError(f"Error calling RunwayML API: {e}")
 
     if task.status == "SUCCEEDED" and task.output and len(task.output) > 0:
-        return load_image(task.output[0])
+        return process_runway_image_output(task.output[0])
 
     raise Exception(f"Task failed: {task}")
 
@@ -114,7 +123,7 @@ def main(context: ImageContext) -> Image.Image:
     mode = context.get_generation_mode()
 
     if mode == "text_to_image":
-        if context.adapters.is_enabled():
+        if context.get_reference_images() != []:
             return image_to_image_call(context)
         return text_to_image_call(context)
     elif mode == "img_to_img":

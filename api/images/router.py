@@ -19,7 +19,7 @@ router = APIRouter(
 
 
 @router.post("", response_model=ImageCreateResponse, operation_id="images_create", description=generate_model_docs())
-async def create(request: ImageRequest, response: Response):
+def create(request: ImageRequest, response: Response):
     try:
         result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
         response.headers["Location"] = f"/images/{result.id}"
@@ -29,7 +29,7 @@ async def create(request: ImageRequest, response: Response):
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
-async def get(id: UUID):
+def get(id: UUID):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields

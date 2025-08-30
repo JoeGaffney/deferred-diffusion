@@ -4,7 +4,7 @@ import pytest
 
 from images.context import ImageContext
 from images.models.sdxl import main
-from images.schemas import ControlNetSchema, ImageRequest, IpAdapterModel, ModelName
+from images.schemas import ImageRequest, ModelName, References
 from tests.utils import (
     image_to_base64,
     save_image_and_assert_file_exists,
@@ -41,12 +41,15 @@ model: ModelName = "sd-xl"
 
 
 @pytest.mark.parametrize("mode", ["text_to_image"])
-def test_models_with_control_nets(mode):
-    """Test models with control nets."""
-    output_name = setup_output_file(model, mode, "_controlnet")
+def test_models_with_canny(mode):
+    output_name = setup_output_file(model, mode, "_canny")
     width, height = get_16_9_resolution("540p")
-    controlnets = [
-        ControlNetSchema(model="canny", image=image_to_base64("../assets/canny_v001.png"), conditioning_scale=0.5)
+    references = [
+        References(
+            mode="canny",
+            image=image_to_base64("../assets/canny_v001.png"),
+            strength=0.5,
+        )
     ]
 
     # Delete existing file if it exists
@@ -62,7 +65,7 @@ def test_models_with_control_nets(mode):
                 guidance_scale=5,
                 width=width,
                 height=height,
-                controlnets=controlnets,
+                references=references,
             )
         ),
     )
@@ -73,7 +76,7 @@ def test_models_with_control_nets(mode):
 @pytest.mark.parametrize("mode", ["text_to_image"])
 def test_style(mode):
     """Test models with style adapter."""
-    output_name = setup_output_file(model, mode, "_style_adapter")
+    output_name = setup_output_file(model, mode, "_style")
     width, height = get_16_9_resolution("540p")
 
     result = main(
@@ -86,9 +89,12 @@ def test_style(mode):
                 guidance_scale=5,
                 width=width,
                 height=height,
-                controlnets=[],
-                ip_adapters=[
-                    IpAdapterModel(image=image_to_base64("../assets/style_v001.jpeg"), model="style", scale=0.5)
+                references=[
+                    References(
+                        mode="style",
+                        image=image_to_base64("../assets/style_v001.jpeg"),
+                        strength=0.5,
+                    )
                 ],
             )
         )
@@ -100,7 +106,7 @@ def test_style(mode):
 @pytest.mark.parametrize("mode", ["text_to_image"])
 def test_face(mode):
     """Test models with face adapter."""
-    output_name = setup_output_file(model, mode, "_face_adapter")
+    output_name = setup_output_file(model, mode, "_face")
     width, height = get_16_9_resolution("540p")
 
     result = main(
@@ -113,10 +119,17 @@ def test_face(mode):
                 guidance_scale=5,
                 width=width,
                 height=height,
-                controlnets=[],
-                ip_adapters=[
-                    IpAdapterModel(image=image_to_base64("../assets/style_v001.jpeg"), model="style", scale=0.5),
-                    IpAdapterModel(image=image_to_base64("../assets/face_v001.jpeg"), model="face", scale=0.5),
+                references=[
+                    References(
+                        mode="style",
+                        image=image_to_base64("../assets/style_v001.jpeg"),
+                        strength=0.5,
+                    ),
+                    References(
+                        mode="face",
+                        image=image_to_base64("../assets/face_v001.jpeg"),
+                        strength=0.5,
+                    ),
                 ],
             )
         )

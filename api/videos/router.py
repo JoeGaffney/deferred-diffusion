@@ -17,7 +17,7 @@ router = APIRouter(prefix="/videos", tags=["Videos"], dependencies=[Depends(veri
 
 
 @router.post("", response_model=VideoCreateResponse, operation_id="videos_create", description=generate_model_docs())
-async def create(request: VideoRequest, response: Response):
+def create(request: VideoRequest, response: Response):
     try:
         result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
         response.headers["Location"] = f"/videos/{result.id}"
@@ -27,7 +27,7 @@ async def create(request: VideoRequest, response: Response):
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
-async def get(id: UUID):
+def get(id: UUID):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields

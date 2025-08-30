@@ -6,7 +6,7 @@ from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
 
 from common.exceptions import ControlNetConfigError
 from common.logger import logger
-from images.schemas import ControlNetSchema, ModelFamily
+from images.schemas import ModelFamily, References
 from utils.utils import load_image_if_exists
 
 
@@ -53,9 +53,9 @@ def get_controlnet_model(model_family: ModelFamily, controlnet_model: str) -> st
 
 
 class ControlNet:
-    def __init__(self, data: ControlNetSchema, model_family: ModelFamily, width, height):
-        self.model = get_controlnet_model(model_family, data.model)
-        self.conditioning_scale = data.conditioning_scale
+    def __init__(self, data: References, model_family: ModelFamily, width, height):
+        self.model = get_controlnet_model(model_family, data.mode)
+        self.conditioning_scale = data.strength
         self.image = load_image_if_exists(data.image)
 
         if self.conditioning_scale < 0.01:
@@ -76,7 +76,7 @@ class ControlNet:
 
 
 class ControlNets:
-    def __init__(self, control_nets: list[ControlNetSchema], model_family: ModelFamily, width, height):
+    def __init__(self, control_nets: list[References], model_family: ModelFamily, width, height):
         self.control_nets: list[ControlNet] = []
 
         # Handle initialization errors and create valid control nets

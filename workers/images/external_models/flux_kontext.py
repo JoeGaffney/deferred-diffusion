@@ -1,7 +1,6 @@
-import replicate
 from PIL import Image
 
-from common.replicate_helpers import process_replicate_output
+from common.replicate_helpers import process_replicate_image_output, replicate_run
 from images.context import ImageContext
 from utils.utils import convert_pil_to_bytes
 
@@ -18,5 +17,6 @@ def main(context: ImageContext) -> Image.Image:
         "seed": context.data.seed,
     }
 
-    output = replicate.run(context.data.model_path, input=payload)
-    return process_replicate_output(output)
+    output = replicate_run(context.data.model_path, payload)
+
+    return process_replicate_image_output(output)

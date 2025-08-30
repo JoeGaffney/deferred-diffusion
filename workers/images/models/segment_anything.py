@@ -3,6 +3,7 @@ from lang_sam import LangSAM
 from PIL import Image, ImageChops
 
 from common.logger import log_pretty, logger
+from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
 
 
@@ -10,10 +11,16 @@ def main(context: ImageContext, mode="mask"):
     if context.color_image is None:
         raise ValueError("No image provided")
 
+    clear_global_pipeline_cache()
     model = LangSAM(sam_type="sam2.1_hiera_base_plus")
     image_pil = context.color_image.convert("RGB")
     text_prompt = context.data.prompt
+
     results = model.predict([image_pil], [text_prompt], box_threshold=0.3, text_threshold=0.25)
+    # model.to("cpu")  # Move model to CPU after inference
+    model.sam.model.to("cpu")
+    model.gdino.model.to("cpu")
+
     results = results[0]
     log_pretty(f"processed_dict", results)
 

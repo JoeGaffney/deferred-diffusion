@@ -1,6 +1,5 @@
 from PIL import Image
 
-from common.memory import free_gpu_memory
 from images.context import ImageContext
 from images.external_models.flux import main as external_flux_main
 from images.external_models.flux_kontext import main as external_flux_kontext_main
@@ -10,6 +9,7 @@ from images.external_models.topazlabs import main as external_topazlabs_main
 from images.models.depth_anything import main as depth_anything_main
 from images.models.flux import main as flux_main
 from images.models.flux_kontext import main as flux_kontext_main
+from images.models.qwen import main as qwen_main
 from images.models.real_esrgan import main as real_esrgan_main
 from images.models.sd3 import main as sd3_main
 from images.models.sdxl import main as sdxl_main
@@ -42,6 +42,8 @@ def model_router_main(context: ImageContext):
         return depth_anything_main(context)
     elif family == "segment_anything":
         return segment_anything_main(context)
+    elif family == "qwen":
+        return qwen_main(context)
     else:
         raise ValueError(f"Unsupported model family: {family}")
 
@@ -71,7 +73,6 @@ def router_main(context: ImageContext):
 
 @celery_app.task(name="process_image", queue="gpu")
 def process_image(request_dict):
-    free_gpu_memory()
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
     result = model_router_main(context)

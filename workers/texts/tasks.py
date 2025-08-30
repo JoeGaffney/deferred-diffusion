@@ -8,7 +8,6 @@ from worker import celery_app
 
 @celery_app.task(name="process_text", queue="gpu")
 def process_text(request_dict):
-    free_gpu_memory()
     request = TextRequest.model_validate(request_dict)
     context = TextContext(request)
     family = context.data.model_family
@@ -20,7 +19,6 @@ def process_text(request_dict):
         raise ValueError(f"Unsupported model: {request.model}")
 
     # Free GPU memory after processing
-    free_gpu_memory(threshold_percent=1)
     return TextWorkerResponse(
         response=result.get("response", ""), chain_of_thought=result.get("chain_of_thought", [])
     ).model_dump()

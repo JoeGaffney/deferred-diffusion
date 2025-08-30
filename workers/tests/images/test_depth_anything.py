@@ -1,31 +1,33 @@
 import pytest
 
 from images.context import ImageContext
-from images.models.segment_anything import main
+from images.models.depth_anything import main
 from images.schemas import ImageRequest, ModelName
 from tests.utils import (
     image_to_base64,
     save_image_and_assert_file_exists,
     setup_output_file,
 )
+from utils.utils import get_16_9_resolution
 
-model: ModelName = "segment-anything-2"
+model: ModelName = "depth-anything-2"
 
 
-@pytest.mark.parametrize("mode", ["mask"])
+@pytest.mark.parametrize("mode", ["depth"])
 def test_models(mode):
-    """Test models."""
     output_name = setup_output_file(model, mode)
+    width, height = get_16_9_resolution("540p")
 
     result = main(
         ImageContext(
             ImageRequest(
                 model=model,
-                image=image_to_base64("../assets/style_v001.jpeg"),
-                prompt="Person, house, tree, flowers",
+                image=image_to_base64("../assets/color_v001.jpeg"),
+                prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,
                 guidance_scale=5,
-                controlnets=[],
+                width=width,
+                height=height,
             )
         )
     )

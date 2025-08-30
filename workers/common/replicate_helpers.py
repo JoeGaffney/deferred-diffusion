@@ -1,11 +1,21 @@
 from typing import Any
 
+import replicate
 from diffusers.utils import load_image
 from PIL import Image
 from replicate.helpers import FileOutput
 
 
-def process_replicate_output(output: Any) -> Image.Image:
+def replicate_run(model_path: str, payload: dict) -> Any:
+    try:
+        output = replicate.run(model_path, input=payload)
+    except Exception as e:
+        raise RuntimeError(f"Error calling Replicate API: {e}")
+
+    return output
+
+
+def process_replicate_image_output(output: Any) -> Image.Image:
     if not isinstance(output, FileOutput):
         raise ValueError(f"Expected output from replicate to be FileOutput, got {type(output)} {str(output)}")
 
