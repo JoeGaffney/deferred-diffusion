@@ -1,6 +1,5 @@
 from typing import Literal
 
-import replicate
 from PIL import Image
 
 from common.replicate_helpers import process_replicate_image_output, replicate_run
@@ -31,7 +30,7 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
         "raw": True,
     }
 
-    output = replicate_run(context.data.model_path, payload)
+    output = replicate_run("black-forest-labs/flux-1.1-pro", payload)
 
     return process_replicate_image_output(output)
 
@@ -53,7 +52,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         # "raw": True,
     }
 
-    output = replicate_run(context.data.model_path, payload)
+    output = replicate_run("black-forest-labs/flux-1.1-pro", payload)
 
     return process_replicate_image_output(output)
 
@@ -73,7 +72,7 @@ def inpainting_call(context: ImageContext) -> Image.Image:
         "seed": context.data.seed,
     }
 
-    output = replicate_run(context.data.model_path_inpainting, payload)
+    output = replicate_run("black-forest-labs/flux-fill-pro", payload)
 
     return process_replicate_image_output(output)
 

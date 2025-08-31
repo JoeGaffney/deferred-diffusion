@@ -60,12 +60,10 @@ def get_size(
 
 def text_to_image_call(context: ImageContext) -> Image.Image:
     client = RunwayML()
-    if context.data.model_path != "gen4_image":
-        raise ValueError("Only gen4_image model is supported")
 
     try:
         task = client.text_to_image.create(
-            model=context.data.model_path,
+            model="gen4_image",
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             seed=context.data.seed,
@@ -83,12 +81,6 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
 def image_to_image_call(context: ImageContext) -> Image.Image:
     client = RunwayML()
 
-    if context.data.model_path != "gen4_image":
-        raise ValueError("Only gen4_image model is supported")
-
-    # This is cheaper for image to image calls
-    model = "gen4_image_turbo"
-
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
     if context.color_image:
@@ -104,7 +96,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
 
     try:
         task = client.text_to_image.create(
-            model=model,
+            model="gen4_image_turbo",
             prompt_text=context.data.prompt,
             ratio=get_size(context),
             reference_images=reference_images,

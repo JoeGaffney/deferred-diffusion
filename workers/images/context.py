@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from common.logger import logger
 from images.adapters import Adapters
 from images.control_nets import ControlNets
-from images.schemas import ImageRequest, ModelFamily
+from images.schemas import ImageRequest
 from utils.utils import (
     ensure_divisible,
     get_tmp_dir,
@@ -39,8 +39,8 @@ class ImageContext:
             self.mask_image = self.mask_image.resize([self.width, self.height])
 
         # Initialize control nets and adapters
-        self.control_nets = ControlNets(data.references, self.data.model_family, self.width, self.height)
-        self.adapters = Adapters(data.references, self.data.model_family, self.width, self.height)
+        self.control_nets = ControlNets(data.references, self.data.model, self.width, self.height)
+        self.adapters = Adapters(data.references, self.data.model, self.width, self.height)
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value

@@ -17,6 +17,6 @@ def main(context: ImageContext) -> Image.Image:
         "seed": context.data.seed,
     }
 
-    output = replicate_run(context.data.model_path, payload)
+    output = replicate_run("black-forest-labs/flux-kontext-pro", payload)
 
     return process_replicate_image_output(output)

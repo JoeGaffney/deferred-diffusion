@@ -55,7 +55,7 @@ def text_to_image_call(context: ImageContext):
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForText2Image.from_pipe(
-        get_pipeline(context.data.model_path), requires_safety_checker=False, **pipe_args
+        get_pipeline("stabilityai/stable-diffusion-3.5-large"), requires_safety_checker=False, **pipe_args
     )
 
     args = {
@@ -82,7 +82,7 @@ def image_to_image_call(context: ImageContext):
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForImage2Image.from_pipe(
-        get_pipeline(context.data.model_path), requires_safety_checker=False, **pipe_args
+        get_pipeline("stabilityai/stable-diffusion-3.5-large"), requires_safety_checker=False, **pipe_args
     )
 
     args = {
@@ -112,7 +112,7 @@ def inpainting_call(context: ImageContext):
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForInpainting.from_pipe(
-        get_pipeline(context.data.model_path), requires_safety_checker=False, **pipe_args
+        get_pipeline("stabilityai/stable-diffusion-3.5-large"), requires_safety_checker=False, **pipe_args
     )
 
     args = {

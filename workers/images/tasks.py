@@ -1,9 +1,9 @@
+import importlib
+
 from PIL import Image
 
 from images.context import ImageContext
-
-# model handler imports are moved to inside each task to avoid heavy import-time work
-from images.schemas import EXTERNAL_MODELS, ImageRequest, ImageWorkerResponse
+from images.schemas import ImageRequest, ImageWorkerResponse
 from utils.utils import pil_to_base64
 from worker import celery_app
 
@@ -22,20 +22,38 @@ def validate_request_and_context(request_dict):
     return context
 
 
-def router_main(request: ImageRequest):
-    """Enqueue the explicit per-model celery task using the ImageRequest.
+def model_router_main(context: ImageContext) -> Image.Image:
+    """Route to the specific model implementation by concrete model name.
 
-    Calls the celery task registered under the user-facing model name and
-    returns the AsyncResult.
+    Lazy-imports the module/attribute that the corresponding celery task would call.
     """
-    # model names are registered as celery task names (e.g. "flux-1", "sd-xl")
-    task_name = request.model
-    queue = request.task_queue
+    model = context.data.model
 
-    # serialize the ImageRequest for the task
-    task = celery_app.signature(task_name, args=(request.model_dump(),), queue=queue)
-    async_result = task.apply_async()
-    return async_result
+    MODEL_NAME_TO_CALLABLE = {
+        "sd-xl": ("images.models.sdxl", "main"),
+        "sd-3": ("images.models.sd3", "main"),
+        "flux-1": ("images.models.flux", "main"),
+        "flux-1-krea": ("images.models.flux", "main_krea"),
+        "flux-kontext-1": ("images.models.flux_kontext", "main"),
+        "qwen-image": ("images.models.qwen", "main"),
+        "depth-anything-2": ("images.models.depth_anything", "main"),
+        "segment-anything-2": ("images.models.segment_anything", "main"),
+        "real-esrgan-x4": ("images.models.real_esrgan", "main"),
+        # external implementations (match celery task targets)
+        "gpt-image-1": ("images.external_models.openai", "main"),
+        "runway-gen4-image": ("images.external_models.runway", "main"),
+        "flux-kontext-1-pro": ("images.external_models.flux_kontext", "main"),
+        "flux-1-1-pro": ("images.external_models.flux", "main"),
+        "topazlabs-upscale": ("images.external_models.topazlabs", "main"),
+    }
+
+    if model not in MODEL_NAME_TO_CALLABLE:
+        raise ValueError(f"No direct model implementation mapped for model '{model}'")
+
+    module_path, attr = MODEL_NAME_TO_CALLABLE[model]
+    mod = importlib.import_module(module_path)
+    main_fn = getattr(mod, attr)
+    return main_fn(context)
 
 
 # Explicit internal model tasks (lazy-import model implementation inside each task)
@@ -59,7 +77,7 @@ def flux_1(request_dict):
 
 @celery_app.task(name="flux-1-krea", queue="gpu")
 def flux_1_krea(request_dict):
-    from images.models.flux import main
+    from images.models.flux import main_krea as main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

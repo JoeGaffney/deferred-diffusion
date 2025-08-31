@@ -42,7 +42,7 @@ def get_pipeline(model_id):
 
 
 def image_to_image_call(context: ImageContext):
-    pipe = get_pipeline(context.data.model_path)
+    pipe = get_pipeline("black-forest-labs/FLUX.1-Kontext-dev")
 
     args = {
         "width": context.width,

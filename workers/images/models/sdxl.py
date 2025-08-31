@@ -81,7 +81,7 @@ def text_to_image_call(context: ImageContext):
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForText2Image.from_pipe(
-        get_pipeline(context.data.model_path, context.adapters.get_adapter_pipeline_config()),
+        get_pipeline("SG161222/RealVisXL_V4.0", context.adapters.get_adapter_pipeline_config()),
         requires_safety_checker=False,
         **pipe_args,
     )
@@ -110,7 +110,7 @@ def image_to_image_call(context: ImageContext):
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForImage2Image.from_pipe(
-        get_pipeline(context.data.model_path, context.adapters.get_adapter_pipeline_config()),
+        get_pipeline("SG161222/RealVisXL_V4.0", context.adapters.get_adapter_pipeline_config()),
         requires_safety_checker=False,
         **pipe_args,
     )
@@ -136,7 +136,7 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    pipe = get_inpainting_pipeline(context.data.model_path_inpainting, variant="fp16")
+    pipe = get_inpainting_pipeline("OzzyGT/RealVisXL_V4.0_inpainting", variant="fp16")
 
     args = {
         "width": context.width,

@@ -18,7 +18,7 @@ def main(context: ImageContext):
     # keep with our other models
     # MODEL_PATH = "weights/RealESRGAN_x4plus.pth"
     hf_home = os.getenv("HF_HOME", "")
-    model_path = os.path.join(hf_home, context.data.model_path)
+    model_path = os.path.join(hf_home, "weights/RealESRGAN_x4plus.pth")
     model.load_weights(model_path, download=True)
 
     result = model.predict(context.color_image)

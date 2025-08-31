@@ -111,7 +111,7 @@ def get_edit_pipeline(model_id):
 
 
 def text_to_image_call(context: ImageContext):
-    pipe = get_pipeline(context.data.model_path)
+    pipe = get_pipeline("ovedrive/qwen-image-4bit")
 
     args = {
         "width": context.width,
@@ -130,7 +130,7 @@ def text_to_image_call(context: ImageContext):
 
 
 def image_to_image_call(context: ImageContext):
-    pipe = QwenImageImg2ImgPipeline.from_pipe(get_pipeline(context.data.model_path))
+    pipe = QwenImageImg2ImgPipeline.from_pipe(get_pipeline("ovedrive/qwen-image-4bit"))
 
     args = {
         "width": context.width,
@@ -151,7 +151,7 @@ def image_to_image_call(context: ImageContext):
 
 
 def image_edit_call(context: ImageContext):
-    pipe = get_edit_pipeline(context.data.model_path_image_to_image)
+    pipe = get_edit_pipeline("ovedrive/qwen-image-edit-4bit")
 
     args = {
         "width": context.width,
@@ -171,7 +171,7 @@ def image_edit_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    pipe = QwenImageInpaintPipeline.from_pipe(get_pipeline(context.data.model_path))
+    pipe = QwenImageInpaintPipeline.from_pipe(get_pipeline("ovedrive/qwen-image-4bit"))
 
     args = {
         "width": context.width,
@@ -200,8 +200,8 @@ def main(context: ImageContext) -> Image.Image:
         return text_to_image_call(context)
     elif mode == "img_to_img":
         return image_edit_call(context)
-        # do we allow image to image with strength?
-        return image_to_image_call(context)
+        # NOTE do we allow image to image with strength?
+        # return image_to_image_call(context)
     elif mode == "img_to_img_inpainting":
         return inpainting_call(context)
 
