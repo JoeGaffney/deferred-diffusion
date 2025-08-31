@@ -19,6 +19,7 @@ ModelName: TypeAlias = Literal[
     "flux-kontext-1-pro",
     "flux-1-1-pro",
     "topazlabs-upscale",
+    "google-gemini-2-5",
 ]
 
 # External-only model names (convenience alias)
@@ -28,13 +29,9 @@ ModelNameExternal: TypeAlias = Literal[
     "flux-kontext-1-pro",
     "flux-1-1-pro",
     "topazlabs-upscale",
+    "google-gemini-2-5",
 ]
 
-# Task names used for routing
-TaskName: TypeAlias = Literal["process_image", "process_image_external"]
-
-# No ModelInfo or ModelFamily here: workers control model paths/weights and implementation.
-# Lightweight MODEL_META (below) is the single source of truth for docs/routing.
 
 # Lightweight metadata for documentation and routing only.
 # Workers are responsible for model paths, weights and other infra details.
@@ -43,7 +40,6 @@ MODEL_META: Dict[ModelName, Dict[str, Any]] = {
         "external": False,
         "family": "sdxl",
         "path": "SG161222/RealVisXL_V4.0",
-        "inpainting_path": "OzzyGT/RealVisXL_V4.0_inpainting",
         "references": True,
         "description": "Stable Diffusion XL variant that supports adapters and inpainting. High-quality, detailed images for complex prompts.",
     },
@@ -57,7 +53,6 @@ MODEL_META: Dict[ModelName, Dict[str, Any]] = {
         "external": False,
         "family": "flux",
         "path": "black-forest-labs/FLUX.1-dev",
-        "inpainting_path": "black-forest-labs/FLUX.1-Fill-dev",
         "references": True,
         "description": "FLUX.1 specializes in text rendering and coherent scene composition, great for illustrations and UI mockups.",
     },
@@ -78,7 +73,6 @@ MODEL_META: Dict[ModelName, Dict[str, Any]] = {
         "external": False,
         "family": "qwen",
         "path": "ovedrive/qwen-image-4bit",
-        "image_to_image_path": "ovedrive/qwen-image-edit-4bit",
         "description": "Qwen image model optimized for nuanced prompt understanding and detailed outputs.",
     },
     "depth-anything-2": {
@@ -123,7 +117,6 @@ MODEL_META: Dict[ModelName, Dict[str, Any]] = {
         "external": True,
         "family": "flux",
         "path": "black-forest-labs/flux-1.1-pro",
-        "inpainting_path": "black-forest-labs/flux-fill-pro",
         "description": "Flux 1.1 pro via API: improved text rendering and professional quality outputs.",
     },
     "topazlabs-upscale": {
@@ -132,6 +125,12 @@ MODEL_META: Dict[ModelName, Dict[str, Any]] = {
         "path": "topazlabs/image-upscale",
         "description": "Topaz Labs API-based upscaler focused on photographic detail preservation.",
     },
+    "google-gemini-2-5": {
+        "external": True,
+        "family": "google",
+        "path": "google/gemini-2.5-flash-image",
+        "description": "Google Gemini 2-5 Flash Image model for advanced image generation and editing tasks. Will use nano-bannana for editing.",
+    },
 }
 
 # Derive external models from MODEL_META to keep a single source of truth
@@ -139,22 +138,11 @@ EXTERNAL_MODELS = {name for name, meta in MODEL_META.items() if meta.get("extern
 
 
 def generate_model_docs() -> str:
-    """Generate a brief documentation string listing available models and metadata.
-
-    Shows family/path/inpainting/image-to-image when available; still informational
-    only — the workers are the source of truth for actual implementation.
-    """
     docs = "# Available Models\n\nThis document lists the available model names and a short, informational description. Paths and families are informational only; workers control the real implementation.\n\n"
     for model_name, meta in MODEL_META.items():
         docs += f"## {model_name}\n\n{meta.get('description','')}\n\n"
         if meta.get("path"):
             docs += f"- **Path hint:** `{meta.get('path')}`\n"
-        if meta.get("inpainting_path"):
-            docs += f"- **Inpainting path hint:** `{meta.get('inpainting_path')}`\n"
-        if meta.get("image_to_image_path"):
-            docs += f"- **Image-to-image path hint:** `{meta.get('image_to_image_path')}`\n"
-        if meta.get("family"):
-            docs += f"- **Family:** {meta.get('family')}\n"
         docs += f"- **External API:** {'Yes' if meta.get('external') else 'No'}\n"
         docs += f"- **References:** {'✓' if meta.get('references') else '✗'}\n\n"
     return docs

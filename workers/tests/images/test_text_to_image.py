@@ -14,6 +14,7 @@ models_external: List[ModelName] = [
     "flux-1-1-pro",
     "gpt-image-1",
     "runway-gen4-image",
+    "google-gemini-2-5",
 ]
 models.extend(models_external)
 
