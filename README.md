@@ -56,7 +56,6 @@ We try to use plural to adhere to REST best practices.
 │── /images # Grouped by results type
 │ ├── models/ # ✅ AI models (ML/DL models, weights, configs)
 │ ├── external_models/ # ✅ external AI models
-| |── api_schemas.py # symlink ?
 │ ├── schemas.py # ✅ Pydantic schemas (data validation)
 │ ├── context.py # ✅ Business logic layer
 │ ├── tasks.py # ✅ Celery task

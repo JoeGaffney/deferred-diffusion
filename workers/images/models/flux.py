@@ -85,14 +85,14 @@ def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
     return pipe, args
 
 
-def text_to_image_call(context: ImageContext):
+def text_to_image_call(context: ImageContext, model_id):
     pipe_args = {}
     controlnets = context.control_nets.get_loaded_controlnets()
     if controlnets != []:
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForText2Image.from_pipe(
-        get_pipeline(context.data.model_path, context.adapters.get_adapter_pipeline_config()),
+        get_pipeline(model_id, context.adapters.get_adapter_pipeline_config()),
         requires_safety_checker=False,
         **pipe_args,
     )
@@ -113,14 +113,14 @@ def text_to_image_call(context: ImageContext):
     return processed_image
 
 
-def image_to_image_call(context: ImageContext):
+def image_to_image_call(context: ImageContext, model_id):
     pipe_args = {}
     controlnets = context.control_nets.get_loaded_controlnets()
     if controlnets != []:
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForImage2Image.from_pipe(
-        get_pipeline(context.data.model_path, context.adapters.get_adapter_pipeline_config()),
+        get_pipeline(model_id, context.adapters.get_adapter_pipeline_config()),
         requires_safety_checker=False,
         **pipe_args,
     )
@@ -144,8 +144,8 @@ def image_to_image_call(context: ImageContext):
     return processed_image
 
 
-def inpainting_call(context: ImageContext):
-    pipe = get_inpainting_pipeline(context.data.model_path_inpainting)
+def inpainting_call(context: ImageContext, model_id):
+    pipe = get_inpainting_pipeline(model_id)
 
     args = {
         "width": context.width,
@@ -166,14 +166,18 @@ def inpainting_call(context: ImageContext):
     return processed_image
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext, model_id="black-forest-labs/FLUX.1-dev") -> Image.Image:
     mode = context.get_generation_mode()
 
     if mode == "text_to_image":
-        return text_to_image_call(context)
+        return text_to_image_call(context, model_id=model_id)
     elif mode == "img_to_img":
-        return image_to_image_call(context)
+        return image_to_image_call(context, model_id=model_id)
     elif mode == "img_to_img_inpainting":
-        return inpainting_call(context)
+        return inpainting_call(context, model_id="black-forest-labs/FLUX.1-Fill-dev")
 
     raise ValueError(f"Unknown mode: {mode}")
+
+
+def main_krea(context: ImageContext, model_id="black-forest-labs/FLUX.1-Krea-dev") -> Image.Image:
+    return main(context, model_id=model_id)

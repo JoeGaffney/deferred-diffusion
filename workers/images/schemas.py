@@ -21,177 +21,143 @@ ModelName: TypeAlias = Literal[
     "topazlabs-upscale",
 ]
 
-# Family will map to the model pipeline and usually match the pyhon module name
-ModelFamily: TypeAlias = Literal[
-    "sdxl",
-    "sd3",
-    "flux",
-    "qwen",
-    "openai",
-    "runway",
-    "real_esrgan",
-    "segment_anything",
-    "depth_anything",
-    "flux_kontext",
-    "topazlabs",
+# External-only model names (convenience alias)
+ModelNameExternal: TypeAlias = Literal[
+    "gpt-image-1",
+    "runway-gen4-image",
+    "flux-kontext-1-pro",
+    "flux-1-1-pro",
+    "topazlabs-upscale",
 ]
 
+# Task names used for routing
+TaskName: TypeAlias = Literal["process_image", "process_image_external"]
 
-class ModelInfo(BaseModel):
-    family: ModelFamily
-    path: str
-    external: bool
-    inpainting_path: Optional[str] = None
-    image_to_image_path: Optional[str] = None
-    references: bool = Field(default=False, description="Supports image references as input")
+# No ModelInfo or ModelFamily here: workers control model paths/weights and implementation.
+# Lightweight MODEL_META (below) is the single source of truth for docs/routing.
 
-    description: Optional[str] = None
-
-    def to_doc_format(self, model_name: str) -> str:
-        """Generate documentation for this model"""
-        doc = f"## {model_name}\n\n"
-        doc += f"{self.description}\n"
-
-        doc += f"- **Path:** `{self.path}`\n"
-
-        if self.inpainting_path:
-            doc += f"- **Inpainting Path:** `{self.inpainting_path}`\n"
-
-        doc += f"- **Family:** {self.family}\n"
-        doc += f"- **External API:** {'Yes' if self.external else 'No'}\n"
-        doc += f"- **References:** {'✓' if self.references else '✗'}\n"
-
-        doc += "\n"
-        return doc
-
-
-MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
-    "sd-xl": ModelInfo(
-        family="sdxl",
-        path="SG161222/RealVisXL_V4.0",
-        inpainting_path="OzzyGT/RealVisXL_V4.0_inpainting",
-        external=False,
-        references=True,
-        description="Stable Diffusion XL variant supports the most conteol nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
-    ),
-    "sd-3": ModelInfo(
-        family="sd3",
-        path="stabilityai/stable-diffusion-3.5-large",
-        external=False,
-        description="Stable Diffusion 3.5 offers superior prompt understanding and composition. Excels at complex scenes, concept art, and handling multiple subjects with accurate interactions.",
-    ),
-    "flux-1": ModelInfo(
-        family="flux",
-        path="black-forest-labs/FLUX.1-dev",
-        inpainting_path="black-forest-labs/FLUX.1-Fill-dev",
-        external=False,
-        references=True,
-        description="FLUX.1 delivers exceptional text rendering and coherent scene composition. Specializes in illustrations with text elements, UI mockups, and detailed technical imagery.",
-    ),
-    "flux-1-krea": ModelInfo(
-        family="flux",
-        path="black-forest-labs/FLUX.1-Krea-dev",
-        external=False,
-        references=True,
-        description="FLUX Krea model is flux-1 dev trained with opinions from krea for more photorealistic results.",
-    ),
-    "flux-kontext-1": ModelInfo(
-        family="flux_kontext",
-        path="black-forest-labs/FLUX.1-Kontext-dev",
-        external=False,
-        description="FLUX Kontext model optimized for contextual understanding. Ideal for scene continuation, thematically consistent series, and context-aware image generation.",
-    ),
-    "qwen-image": ModelInfo(
-        family="qwen",
-        path="ovedrive/qwen-image-4bit",  # path="Qwen/Qwen-Image",
-        image_to_image_path="ovedrive/qwen-image-edit-4bit",
-        external=False,
-        description="Qwen model specializes in generating high-quality images from textual descriptions. It excels at understanding nuanced prompts and delivering detailed visuals.",
-    ),
-    "depth-anything-2": ModelInfo(
-        family="depth_anything",
-        path="depth-anything/Depth-Anything-V2-Large-hf",
-        external=False,
-        description="Advanced depth estimation model. Creates high-quality depth maps from any image for 3D visualization, AR applications, and as input for ControlNet pipelines.",
-    ),
-    "segment-anything-2": ModelInfo(
-        family="segment_anything",
-        path="sam2.1_hiera_base_plus",
-        external=False,
-        description="State-of-the-art image segmentation model. Precisely identifies and segments objects, people, and features for compositing, editing, and analysis.",
-    ),
-    "real-esrgan-x4": ModelInfo(
-        family="real_esrgan",
-        path="weights/RealESRGAN_x4plus.pth",
-        external=False,
-        description="x4 upscaler model based on Real-ESRGAN. Ideal for enhancing image resolution while preserving details and textures. Great for upscaling low-resolution images.",
-    ),
-    "gpt-image-1": ModelInfo(
-        family="openai",
-        path="gpt-image-1",
-        external=True,
-        references=True,
-        description="OpenAI's advanced image generation model with exceptional understanding of complex prompts. Excels at photorealistic imagery, accurate object rendering, and following detailed instructions.",
-    ),
-    "runway-gen4-image": ModelInfo(
-        family="runway",
-        path="gen4_image",
-        external=True,
-        references=True,
-        description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combinging multiple references into a single, cohesive image.",
-    ),
-    "flux-kontext-1-pro": ModelInfo(
-        family="flux_kontext",
-        path="black-forest-labs/flux-kontext-pro",
-        external=True,
-        description="Professional version of FLUX Kontext accessed via API. Offers superior contextual awareness for creating coherent image sequences and variations with consistent themes.",
-    ),
-    "flux-1-1-pro": ModelInfo(
-        family="flux",
-        path="black-forest-labs/flux-1.1-pro",
-        inpainting_path="black-forest-labs/flux-fill-pro",
-        external=True,
-        description="Pro version of FLUX 1.1 with enhanced capabilities. Excellent text rendering, sharp details, and consistent style. Ideal for professional illustrations and design work.",
-    ),
-    "topazlabs-upscale": ModelInfo(
-        family="topazlabs",
-        path="topazlabs/image-upscale",
-        external=True,
-        description="Topaz Labs' advanced image upscaling model. Specializes in enhancing image resolution while preserving fine details and textures, ideal for professional photography and print work.",
-    ),
+# Lightweight metadata for documentation and routing only.
+# Workers are responsible for model paths, weights and other infra details.
+MODEL_META: Dict[ModelName, Dict[str, Any]] = {
+    "sd-xl": {
+        "external": False,
+        "family": "sdxl",
+        "path": "SG161222/RealVisXL_V4.0",
+        "inpainting_path": "OzzyGT/RealVisXL_V4.0_inpainting",
+        "references": True,
+        "description": "Stable Diffusion XL variant that supports adapters and inpainting. High-quality, detailed images for complex prompts.",
+    },
+    "sd-3": {
+        "external": False,
+        "family": "sd3",
+        "path": "stabilityai/stable-diffusion-3.5-large",
+        "description": "Stable Diffusion 3.5 with improved prompt understanding and composition.",
+    },
+    "flux-1": {
+        "external": False,
+        "family": "flux",
+        "path": "black-forest-labs/FLUX.1-dev",
+        "inpainting_path": "black-forest-labs/FLUX.1-Fill-dev",
+        "references": True,
+        "description": "FLUX.1 specializes in text rendering and coherent scene composition, great for illustrations and UI mockups.",
+    },
+    "flux-1-krea": {
+        "external": False,
+        "family": "flux",
+        "path": "black-forest-labs/FLUX.1-Krea-dev",
+        "references": True,
+        "description": "Krea-opinion variant of FLUX.1 that biases toward photorealism.",
+    },
+    "flux-kontext-1": {
+        "external": False,
+        "family": "flux_kontext",
+        "path": "black-forest-labs/FLUX.1-Kontext-dev",
+        "description": "Context-aware FLUX model for scene continuation and thematically consistent generations.",
+    },
+    "qwen-image": {
+        "external": False,
+        "family": "qwen",
+        "path": "ovedrive/qwen-image-4bit",
+        "image_to_image_path": "ovedrive/qwen-image-edit-4bit",
+        "description": "Qwen image model optimized for nuanced prompt understanding and detailed outputs.",
+    },
+    "depth-anything-2": {
+        "external": False,
+        "family": "depth_anything",
+        "path": "depth-anything/Depth-Anything-V2-Large-hf",
+        "description": "Depth estimation model producing high-quality depth maps for 3D and ControlNet use.",
+    },
+    "segment-anything-2": {
+        "external": False,
+        "family": "segment_anything",
+        "path": "sam2.1_hiera_base_plus",
+        "description": "State-of-the-art segmentation model for object and feature extraction.",
+    },
+    "real-esrgan-x4": {
+        "external": False,
+        "family": "real_esrgan",
+        "path": "weights/RealESRGAN_x4plus.pth",
+        "description": "Real-ESRGAN x4 upscaler for improving image resolution while preserving detail.",
+    },
+    "gpt-image-1": {
+        "external": True,
+        "family": "openai",
+        "path": "gpt-image-1",
+        "references": True,
+        "description": "OpenAI's image API for high-fidelity, instruction-following image generation.",
+    },
+    "runway-gen4-image": {
+        "external": True,
+        "family": "runway",
+        "path": "gen4_image",
+        "references": True,
+        "description": "Runway Gen-4 image model delivering coherent, high-quality images via API.",
+    },
+    "flux-kontext-1-pro": {
+        "external": True,
+        "family": "flux_kontext",
+        "path": "black-forest-labs/flux-kontext-pro",
+        "description": "Pro (API) version of FLUX Kontext with enhanced contextual capabilities.",
+    },
+    "flux-1-1-pro": {
+        "external": True,
+        "family": "flux",
+        "path": "black-forest-labs/flux-1.1-pro",
+        "inpainting_path": "black-forest-labs/flux-fill-pro",
+        "description": "Flux 1.1 pro via API: improved text rendering and professional quality outputs.",
+    },
+    "topazlabs-upscale": {
+        "external": True,
+        "family": "topazlabs",
+        "path": "topazlabs/image-upscale",
+        "description": "Topaz Labs API-based upscaler focused on photographic detail preservation.",
+    },
 }
 
+# Derive external models from MODEL_META to keep a single source of truth
+EXTERNAL_MODELS = {name for name, meta in MODEL_META.items() if meta.get("external")}
 
-def generate_model_docs():
-    docs = """ # Generate images using various diffusion models.
-- External models are processed through their respective APIs.
-- Auto Divisor ensures image dimensions are divisible by the specified value.
-- ControlNets and IP-Adapters are unified as **references**:
-- `style`, `face`, `depth`, `canny`, `pose`, etc.
-- These guide the generation but do not change the base mode.
-- Guidance Scale controls how strongly the prompt influences the output. Lower values often produce more realism, higher values produce more stylization.
-- Image generation mode is chosen automatically:
-1. If `mask` is provided → routed to **inpainting** (if supported).
-2. Else if `image` is provided → **image-to-image**.
-3. If neither `image` nor `mask` is provided → **text-to-image**.
-- ⚠ Some models always require an input image:
-- Super-resolution models (e.g. ESRGAN, Topaz)
-- Enhancement models (upscalers, denoisers)
-- Depth/segmentation extractors
-Requests without an image for these models will raise an error.
-"""
 
-    # List all models alphabetically without family grouping
-    docs += "# Available Models\n\n"
+def generate_model_docs() -> str:
+    """Generate a brief documentation string listing available models and metadata.
 
-    for model_name, model_info in MODEL_CONFIG.items():
-        docs += model_info.to_doc_format(model_name)
-
+    Shows family/path/inpainting/image-to-image when available; still informational
+    only — the workers are the source of truth for actual implementation.
+    """
+    docs = "# Available Models\n\nThis document lists the available model names and a short, informational description. Paths and families are informational only; workers control the real implementation.\n\n"
+    for model_name, meta in MODEL_META.items():
+        docs += f"## {model_name}\n\n{meta.get('description','')}\n\n"
+        if meta.get("path"):
+            docs += f"- **Path hint:** `{meta.get('path')}`\n"
+        if meta.get("inpainting_path"):
+            docs += f"- **Inpainting path hint:** `{meta.get('inpainting_path')}`\n"
+        if meta.get("image_to_image_path"):
+            docs += f"- **Image-to-image path hint:** `{meta.get('image_to_image_path')}`\n"
+        if meta.get("family"):
+            docs += f"- **Family:** {meta.get('family')}\n"
+        docs += f"- **External API:** {'Yes' if meta.get('external') else 'No'}\n"
+        docs += f"- **References:** {'✓' if meta.get('references') else '✗'}\n\n"
     return docs
-
-
-# External models are non-local models processed by external services
-TaskName: TypeAlias = Literal["process_image", "process_image_external"]
 
 
 class References(BaseModel):
@@ -251,36 +217,13 @@ class ImageRequest(BaseModel):
     references: list[References] = []
 
     @property
-    def model_family(self) -> ModelFamily:
-        return MODEL_CONFIG[self.model].family
-
-    @property
-    def model_path(self) -> str:
-        return MODEL_CONFIG[self.model].path
-
-    @property
-    def model_path_inpainting(self) -> str:
-        """Get the inpainting model path if available, otherwise normal."""
-        inpainting_path = MODEL_CONFIG[self.model].inpainting_path
-        if inpainting_path:
-            return inpainting_path
-        return self.model_path
-
-    @property
-    def model_path_image_to_image(self) -> str:
-        """Get the image-to-image model path if available, otherwise normal."""
-        image_to_image_path = MODEL_CONFIG[self.model].image_to_image_path
-        if image_to_image_path:
-            return image_to_image_path
-        return self.model_path
-
-    @property
     def external_model(self) -> bool:
-        return MODEL_CONFIG[self.model].external
+        """Determine if a model is external purely by model name."""
+        return self.model in EXTERNAL_MODELS
 
     @property
-    def task_name(self) -> TaskName:
-        return "process_image_external" if self.external_model else "process_image"
+    def task_name(self) -> ModelName:
+        return self.model
 
     @property
     def task_queue(self) -> str:
