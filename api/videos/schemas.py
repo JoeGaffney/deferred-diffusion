@@ -1,10 +1,24 @@
-from typing import Dict, Literal, Optional, TypeAlias
+from typing import Dict, Literal, Optional, TypeAlias, Union, get_args
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
 
+ModelNameLocal: TypeAlias = Literal["ltx-video", "wan-2-1", "wan-2-2"]
+
+# External-only model names (convenience alias)
+ModelNameExternal: TypeAlias = Literal[
+    "runway-gen-3",
+    "runway-gen-4",
+    "runway-act-two",
+    "runway-upscale",
+    "runway-gen-4-aleph",
+]
+
+
+# User facing choice
 ModelName: TypeAlias = Literal[
     "ltx-video",
+    "wan-2-1",
     "wan-2-2",
     "runway-gen-3",
     "runway-gen-4",
@@ -12,14 +26,10 @@ ModelName: TypeAlias = Literal[
     "runway-upscale",
     "runway-gen-4-aleph",
 ]
-ModelFamily: TypeAlias = Literal["ltx", "wan", "runway", "runway_act", "runway_upscale", "runway_aleph"]
-TaskName: TypeAlias = Literal["process_video", "process_video_external"]
 
 
 class ModelInfo(BaseModel):
-    family: ModelFamily
     path: str
-    external: bool
     description: Optional[str] = None
 
     def to_doc_format(self, model_name: str) -> str:
@@ -30,54 +40,45 @@ class ModelInfo(BaseModel):
             doc += f"{self.description}\n\n"
 
         doc += f"- **Path:** `{self.path}`\n"
-        doc += f"- **Family:** {self.family}\n"
-        doc += f"- **External API:** {'Yes' if self.external else 'No'}\n"
 
         doc += "\n"
         return doc
 
 
-MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
+MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
     "ltx-video": ModelInfo(
-        family="ltx",
         path="Lightricks/LTX-Video-0.9.7-distilled",
-        external=False,
         description="Fast but more limted video generation model. Good for quick iterations and less complex scenes.",
     ),
+    "wan-2-1": ModelInfo(
+        path="Wan-AI/Wan2.1-I2V-A14B-Diffusers",
+        description="Previous version of Wan 2.2, still strong performance but slightly less temporal consistency.",
+    ),
     "wan-2-2": ModelInfo(
-        family="wan",
         path="Wan-AI/Wan2.2-I2V-A14B-Diffusers",
-        external=False,
         description="Powerful model with excellent temporal consistency. Specializes in maintaining subject identity and detailed motion from a single image.",
     ),
+}
+
+MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "runway-gen-3": ModelInfo(
-        family="runway",
         path="gen3a_turbo",
-        external=True,
         description="Runway's Gen-3 model accessed via API. Great for dynamic scenes, camera movements, and natural motion. Good balance of quality and generation speed.",
     ),
     "runway-gen-4": ModelInfo(
-        family="runway",
         path="gen4_turbo",
-        external=True,
         description="Runway's latest Gen-4 model offering exceptional motion coherence and visual quality. Superior handling of complex animations and realistic physics.",
     ),
     "runway-act-two": ModelInfo(
-        family="runway_act",
         path="act_two",
-        external=True,
         description="Runway's Act Two model updates a video with reference image. Ideal for enhancing existing footage with new visual elements while maintaining original motion and style.",
     ),
     "runway-upscale": ModelInfo(
-        family="runway_upscale",
         path="upscale_v1",
-        external=True,
         description="Runway's Upscale model for high-quality video upscaling. Utilizes advanced techniques to enhance video resolution and detail.",
     ),
     "runway-gen-4-aleph": ModelInfo(
-        family="runway_aleph",
         path="gen4_aleph",
-        external=True,
         description="Runway's Gen-4 Aleph model, takes in video input as well as images and can enhance or change the video. Or even generate new video content based on the input images and video. Ideal for creative video transformations and enhancements.",
     ),
 }
@@ -85,21 +86,15 @@ MODEL_CONFIG: Dict[ModelName, ModelInfo] = {
 
 def generate_model_docs():
     """Generate documentation about available video models"""
-    docs = "Generate videos using various diffusion models.\n\n"
+    docs = "# Generate videos using various diffusion models.\n\n"
 
-    # List all models alphabetically
-    docs += "# Available Models\n\n"
-
-    for model_name, model_info in sorted(MODEL_CONFIG.items()):
+    docs += "# Local Models\n\n"
+    for model_name, model_info in sorted(MODEL_META_LOCAL.items()):
         docs += model_info.to_doc_format(model_name)
 
-    # Add notes section
-    docs += "# Notes\n\n"
-    docs += "- External models are processed through their respective APIs\n"
-    docs += "- Local models run on your GPU infrastructure\n"
-    docs += "- For best results with image-to-video generation:\n"
-    docs += "  - Use high-quality input images\n"
-    docs += "  - Keep prompts consistent with the visual content\n"
+    docs += "# External Models\n\n"
+    for model_name, model_info in sorted(MODEL_META_EXTERNAL.items()):
+        docs += model_info.to_doc_format(model_name)
 
     return docs
 
@@ -146,23 +141,14 @@ class VideoRequest(BaseModel):
     )
 
     @property
-    def model_family(self) -> ModelFamily:
-        return MODEL_CONFIG[self.model].family
-
-    @property
-    def model_path(self) -> str:
-        return MODEL_CONFIG[self.model].path
-
-    @property
     def external_model(self) -> bool:
-        return MODEL_CONFIG[self.model].external
+        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
+
+        return self.model in _MODEL_EXTERNAL_VALUES
 
     @property
-    def task_name(self) -> TaskName:
-        """Determines the appropriate task name based on request characteristics."""
-        if self.external_model:
-            return "process_video_external"
-        return "process_video"
+    def task_name(self) -> ModelName:
+        return self.model
 
     @property
     def task_queue(self) -> str:
