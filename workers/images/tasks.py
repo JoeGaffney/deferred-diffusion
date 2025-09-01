@@ -33,7 +33,7 @@ def model_router_main(context: ImageContext) -> Image.Image:
         "sd-xl": ("images.models.sdxl", "main"),
         "sd-3": ("images.models.sd3", "main"),
         "flux-1": ("images.models.flux", "main"),
-        "flux-1-krea": ("images.models.flux", "main_krea"),
+        "flux-1-krea": ("images.models.flux", "main"),
         "flux-kontext-1": ("images.models.flux_kontext", "main"),
         "qwen-image": ("images.models.qwen", "main"),
         "depth-anything-2": ("images.models.depth_anything", "main"),
@@ -78,7 +78,7 @@ def flux_1(request_dict):
 
 @celery_app.task(name="flux-1-krea", queue="gpu")
 def flux_1_krea(request_dict):
-    from images.models.flux import main_krea as main
+    from images.models.flux import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

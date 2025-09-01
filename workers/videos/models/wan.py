@@ -20,7 +20,7 @@ from videos.context import VideoContext
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
+def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
     transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
@@ -29,13 +29,15 @@ def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPip
         torch_dtype=torch_dtype,
     )
 
-    transformer_2 = get_quantized_model(
-        model_id=model_id,
-        subfolder="transformer_2",
-        model_class=WanTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 4,
-        torch_dtype=torch_dtype,
-    )
+    transformer_2 = None
+    if wan_2_1:
+        transformer_2 = get_quantized_model(
+            model_id=model_id,
+            subfolder="transformer_2",
+            model_class=WanTransformer3DModel,
+            target_precision=4 if LOW_VRAM else 4,
+            torch_dtype=torch_dtype,
+        )
 
     text_encoder = get_quantized_umt5_text_encoder(8)
 
@@ -55,12 +57,17 @@ def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPip
     except:
         pass
 
-    pipe.enable_model_cpu_offload()
+    if LOW_VRAM or wan_2_1:
+        # Wan T2V models are large, so use CPU offload if low VRAM
+        pipe.enable_model_cpu_offload()
+    else:
+        pipe.to("cuda")
+
     return pipe
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
+def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> WanPipeline:
     transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
@@ -69,13 +76,15 @@ def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
         torch_dtype=torch_dtype,
     )
 
-    transformer_2 = get_quantized_model(
-        model_id=model_id,
-        subfolder="transformer_2",
-        model_class=WanTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 4,
-        torch_dtype=torch_dtype,
-    )
+    transformer_2 = None
+    if wan_2_1:
+        transformer_2 = get_quantized_model(
+            model_id=model_id,
+            subfolder="transformer_2",
+            model_class=WanTransformer3DModel,
+            target_precision=4 if LOW_VRAM else 4,
+            torch_dtype=torch_dtype,
+        )
 
     text_encoder = get_quantized_umt5_text_encoder(8)
 
@@ -95,12 +104,22 @@ def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
     except:
         pass
 
-    pipe.enable_model_cpu_offload()
+    if LOW_VRAM or wan_2_1:
+        # Wan T2V models are large, so use CPU offload if low VRAM
+        pipe.enable_model_cpu_offload()
+    else:
+        pipe.to("cuda")
+
     return pipe
 
 
 def text_to_video(context: VideoContext):
-    pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers")
+
+    if context.data.model == "wan-2-1":
+        pipe = get_pipeline_t2v(model_id="magespace/Wan2.1-T2V-14B-Lightning-Diffusers", wan_2_1=False)
+    else:
+        pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers", wan_2_1=True)
+
     width, height = get_16_9_resolution("480p")
     width = ensure_divisible(width, 16)
     height = ensure_divisible(height, 16)
@@ -113,10 +132,10 @@ def text_to_video(context: VideoContext):
         height=height,
         prompt=context.data.prompt,
         negative_prompt=negative_prompt,
-        num_inference_steps=8,
+        num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
         guidance_scale=1.0,
-        guidance_scale_2=1.0,
+        # guidance_scale_2=1.0,
         generator=context.get_generator(),
     ).frames[0]
 
@@ -129,7 +148,11 @@ def main(context: VideoContext):
     if image is None:
         return text_to_video(context)
 
-    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
+    if context.data.model == "wan-2-1":
+        pipe = get_pipeline_i2v(model_id="magespace/Wan2.1-I2V-14B-480P-Lightning-Diffusers", wan_2_1=False)
+    else:
+        pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers", wan_2_1=True)
+
     width, height = get_16_9_resolution("720p")
     image = resize_image(image, 16, 1.0, width, height)
 
@@ -142,10 +165,10 @@ def main(context: VideoContext):
         image=image,
         prompt=context.data.prompt,
         negative_prompt=negative_prompt,
-        num_inference_steps=8,
+        num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
         guidance_scale=1.0,
-        guidance_scale_2=1.0,
+        # guidance_scale_2=1.0,
         generator=context.get_generator(),
     ).frames[0]
 

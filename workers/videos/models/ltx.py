@@ -41,7 +41,7 @@ def get_pipeline(model_id):
 
 
 def image_to_video(context: VideoContext):
-    pipe = get_pipeline(context.data.model_path)
+    pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
     width, height = get_16_9_resolution("720p")
     image = context.image
@@ -78,7 +78,7 @@ def image_to_video(context: VideoContext):
 
 
 def text_to_video(context: VideoContext):
-    pipe = get_pipeline(context.data.model_path)
+    pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
     width, height = get_16_9_resolution("720p")
     width = ensure_divisible(width, 32)

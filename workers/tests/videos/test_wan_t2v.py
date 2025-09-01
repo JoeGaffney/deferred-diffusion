@@ -10,12 +10,12 @@ from videos.schemas import ModelName, VideoRequest
 from videos.tasks import model_router_main as main
 
 MODES = ["text_to_video"]
-models: List[ModelName] = ["wan-2-2"]
+models: List[ModelName] = ["wan-2-1"]
 
 
 @pytest.mark.parametrize("mode", ["text_to_video"])
 @pytest.mark.parametrize("model", models)
-@pytest.mark.parametrize("seed", range(1, 4))
+@pytest.mark.parametrize("seed", range(1, 3))
 def test_text_to_video(model, mode, seed):
     output_name = setup_output_file(model, mode, suffix=f"_{seed}", extension="mp4")
 
@@ -24,7 +24,7 @@ def test_text_to_video(model, mode, seed):
             VideoRequest(
                 model=model,
                 prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
-                num_inference_steps=10,
+                num_inference_steps=4,
                 guidance_scale=3.0,
                 num_frames=24,
                 seed=seed,

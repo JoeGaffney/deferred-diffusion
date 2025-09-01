@@ -166,8 +166,12 @@ def inpainting_call(context: ImageContext, model_id):
     return processed_image
 
 
-def main(context: ImageContext, model_id="black-forest-labs/FLUX.1-dev") -> Image.Image:
+def main(context: ImageContext) -> Image.Image:
     mode = context.get_generation_mode()
+
+    model_id = "black-forest-labs/FLUX.1-dev"
+    if context.data.model == "flux-1-krea":
+        model_id = "black-forest-labs/FLUX.1-Krea-dev"
 
     if mode == "text_to_image":
         return text_to_image_call(context, model_id=model_id)
@@ -177,7 +181,3 @@ def main(context: ImageContext, model_id="black-forest-labs/FLUX.1-dev") -> Imag
         return inpainting_call(context, model_id="black-forest-labs/FLUX.1-Fill-dev")
 
     raise ValueError(f"Unknown mode: {mode}")
-
-
-def main_krea(context: ImageContext, model_id="black-forest-labs/FLUX.1-Krea-dev") -> Image.Image:
-    return main(context, model_id=model_id)
