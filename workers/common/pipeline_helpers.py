@@ -251,7 +251,7 @@ def get_quantized_model(
 
 
 # Cache this one as used in many pipelines
-@lru_cache(maxsize=1)
+# @lru_cache(maxsize=1)
 def get_quantized_t5_text_encoder(target_precision) -> T5EncoderModel:
     T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
 
