@@ -57,8 +57,8 @@ def set_node_info(node, status, message):
 
 
 def polling_message(count, iterations, sleep_time):
-    remaining = (iterations - count) * sleep_time
-    return f"⏳ {count}/{iterations} • ≤{remaining}s left"
+    current_time = count * sleep_time
+    return f"🔄 {count}/{iterations} • {current_time}s"
 
 
 @contextmanager

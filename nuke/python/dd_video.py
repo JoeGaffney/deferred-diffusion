@@ -2,6 +2,7 @@ import os
 import time
 
 import nuke
+from httpcore import RemoteProtocolError
 
 from config import client
 from generated.api_client.api.videos import videos_create, videos_get
@@ -44,11 +45,12 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
                 break
 
-            def progress_update():
-                if isinstance(parsed, VideoResponse):
-                    set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
+            def progress_update(parsed=parsed, count=count):
+                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
+        except RemoteProtocolError:
+            continue  # Retry on protocol errors attempt again
         except Exception as e:
 
             def handle_error(error=e):

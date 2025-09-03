@@ -2,6 +2,7 @@ import json
 import time
 
 import nuke
+from httpx import RemoteProtocolError
 
 from config import client
 from generated.api_client.api.texts import texts_create, texts_get
@@ -72,11 +73,15 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
             if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
                 break
 
-            def progress_update():
-                if isinstance(parsed, TextResponse):
-                    set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
+            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
+                break
+
+            def progress_update(parsed=parsed, count=count):
+                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
+        except RemoteProtocolError:
+            continue  # Retry on protocol errors attempt again
         except Exception as e:
 
             def handle_error(error=e):

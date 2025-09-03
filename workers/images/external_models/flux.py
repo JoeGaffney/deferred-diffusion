@@ -30,7 +30,7 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
         "raw": True,
     }
 
-    output = replicate_run("black-forest-labs/flux-1.1-pro", payload)
+    output = replicate_run("black-forest-labs/flux-1.1-pro-ultra", payload)
 
     return process_replicate_image_output(output)
 
@@ -49,10 +49,10 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         "safety_tolerance": 6,
         "seed": context.data.seed,
         "aspect_ratio": get_size(context),
-        # "raw": True,
+        "raw": True,
     }
 
-    output = replicate_run("black-forest-labs/flux-1.1-pro", payload)
+    output = replicate_run("black-forest-labs/flux-1.1-pro-ultra", payload)
 
     return process_replicate_image_output(output)
 
