@@ -10,7 +10,7 @@ from videos.schemas import ModelName, VideoRequest
 from videos.tasks import model_router_main as main
 
 MODES = ["text_to_video"]
-models: List[ModelName] = ["wan-2-1"]
+models: List[ModelName] = ["wan-2-2"]
 
 
 @pytest.mark.parametrize("mode", ["text_to_video"])
@@ -23,7 +23,8 @@ def test_text_to_video(model, mode, seed):
         VideoContext(
             VideoRequest(
                 model=model,
-                prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
+                # prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
+                prompt="Two anthropomorphic cats in comfy boxing gear and bright gloves fight intensely on a spotlighted stage.",
                 num_inference_steps=4,
                 guidance_scale=3.0,
                 num_frames=24,

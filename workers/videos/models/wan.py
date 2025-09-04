@@ -44,10 +44,40 @@ def get_pipeline_text_encoder(torch_dtype=torch.float16):
         @lru_cache(maxsize=5)
         @time_info_decorator
         @torch.no_grad()
-        def encode(self, prompt):
-            input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.model.device)
-            embeds = self.model(input_ids).last_hidden_state
-            return embeds
+        def encode(self, prompt, max_sequence_length=256):
+            device = self.model.device
+            dtype = self.model.dtype
+
+            text_inputs = self.tokenizer(  # type: ignore
+                prompt,
+                padding="max_length",
+                max_length=max_sequence_length,
+                truncation=True,
+                add_special_tokens=True,
+                return_attention_mask=True,
+                return_tensors="pt",
+            )
+            text_input_ids, mask = text_inputs.input_ids, text_inputs.attention_mask
+            seq_lens = mask.gt(0).sum(dim=1).long()
+
+            prompt_embeds = self.model(text_input_ids.to(device), mask.to(device)).last_hidden_state
+            prompt_embeds = prompt_embeds.to(dtype=dtype, device=device)
+            prompt_embeds = [u[:v] for u, v in zip(prompt_embeds, seq_lens)]
+            prompt_embeds = torch.stack(
+                [torch.cat([u, u.new_zeros(max_sequence_length - u.size(0), u.size(1))]) for u in prompt_embeds], dim=0
+            )
+
+            # ALTERNATIVE: (slightly different behavior for padding tokens)
+            # input_ids = text_inputs.input_ids.to(device)
+            # attention_mask = text_inputs.attention_mask.to(device)
+
+            # outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+            # prompt_embeds = outputs.last_hidden_state.to(dtype=dtype, device=device)
+
+            # # zero out embeddings for padded tokens to match pipeline behavior
+            # prompt_embeds = prompt_embeds * attention_mask.unsqueeze(-1).to(dtype)
+
+            return prompt_embeds
 
     return TextEncoderWrapper(text_encoder, tokenizer)
 
@@ -80,6 +110,7 @@ def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
         tokenizer=None,
         vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
+        # boundary_ratio=0.0,
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
