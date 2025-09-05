@@ -1,9 +1,6 @@
-from functools import lru_cache
-
 import torch
 from diffusers import (
     AutoencoderKLWan,
-    FlowMatchEulerDiscreteScheduler,
     UniPCMultistepScheduler,
     WanImageToVideoPipeline,
     WanPipeline,
@@ -17,90 +14,12 @@ from common.pipeline_helpers import (
     get_quantized_model,
     time_info_decorator,
 )
+from common.text_encoders import get_pipeline_wan_text_encoder
 from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
 # Wan gives better results with a default negative prompt
 negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
-
-
-# @time_info_decorator
-# @lru_cache(maxsize=1)
-# def get_pipeline_text_encoder(torch_dtype=torch.float16):
-#     model_id = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
-
-#     tokenizer = AutoTokenizer.from_pretrained(model_id, subfolder="tokenizer")
-#     text_encoder = UMT5EncoderModel.from_pretrained(
-#         model_id,
-#         subfolder="text_encoder",
-#         torch_dtype=torch_dtype,
-#     ).to("cpu")
-
-#     class TextEncoderWrapper:
-#         def __init__(self, model: UMT5EncoderModel, tokenizer: AutoTokenizer):
-#             self.model = model
-#             self.tokenizer = tokenizer
-
-#         @lru_cache(maxsize=5)
-#         @time_info_decorator
-#         @torch.no_grad()
-#         def encode(self, prompt, max_sequence_length=256):
-#             device = self.model.device
-#             dtype = self.model.dtype
-
-#             text_inputs = self.tokenizer(  # type: ignore
-#                 prompt,
-#                 padding="max_length",
-#                 max_length=max_sequence_length,
-#                 truncation=True,
-#                 add_special_tokens=True,
-#                 return_attention_mask=True,
-#                 return_tensors="pt",
-#             )
-#             input_ids = text_inputs.input_ids.to(device)
-#             attention_mask = text_inputs.attention_mask.to(device)
-
-#             outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-#             prompt_embeds = outputs.last_hidden_state.to(dtype=dtype, device=device)
-#             prompt_embeds = prompt_embeds * attention_mask.unsqueeze(-1).to(dtype)
-
-#             return prompt_embeds
-
-#     return TextEncoderWrapper(text_encoder, tokenizer)
-
-@lru_cache(maxsize=1)
-def get_pipeline_wan_text_encoder(torch_dtype=torch.float16):
-    model_id = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
-
-    pipe = WanPipeline.from_pretrained(
-        model_id,
-        transformer=None,
-        transformer_2=None,
-        vae=None
-        torch_dtype=torch.float16,
-    ).to("cpu")
-    
-    class TextEncoderWrapper:
-        def __init__(self, pipe: WanPipeline):
-            self.pipe = pipe
-
-        @time_info_decorator
-        @lru_cache(maxsize=5)
-        def encode(self, prompt, max_sequence_length=256):
-
-            device = self.pipe.device
-            dtype = self.pipe.dtype
-
-            prompt_embeds, _ = self.pipe.encode_prompt(
-                prompt=prompt,
-                do_classifier_free_guidance=False,
-                num_videos_per_prompt=1,
-                max_sequence_length=256,
-                device=device,
-            )
-            return prompt_embeds
-
-    return TextEncoderWrapper(pipe)
 
 
 @decorator_global_pipeline_cache
@@ -217,9 +136,6 @@ def text_to_video(context: VideoContext):
         guidance_scale=1.0,
         generator=context.get_generator(),
     ).frames[0]
-
-    # NOTE maybe manually clear cuda cache here
-    # del prompt_embeds, negative_prompt_embeds
 
     processed_path = context.save_video(output, fps=16)
     return processed_path

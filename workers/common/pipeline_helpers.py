@@ -286,35 +286,3 @@ def get_quantized_qwen_2_5_text_encoder(target_precision) -> Qwen2_5_VLForCondit
         target_precision=target_precision,
         torch_dtype=torch.bfloat16,
     )
-
-
-class TextEncoderManager:
-    def __init__(self, model_id, device="cpu"):
-        self.torch_dtype = torch.float16
-        self.device = device
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
-        self.model = AutoModel.from_pretrained(model_id, torch_dtype=self.torch_dtype).to(device)
-
-    @lru_cache(maxsize=10)
-    @torch.no_grad()
-    def encode(self, prompt: str):
-        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.device)
-        embeds = self.model(input_ids).last_hidden_state
-        return embeds
-
-
-@time_info_decorator
-@lru_cache(maxsize=3)
-def get_text_encoder_manager(model_id, device="cpu"):
-    return TextEncoderManager(model_id, device=device)
-
-
-# Example usage
-# encoder = get_text_encoder_manager("openai/clip-vit-large-patch14", device="cpu")
-
-# prompt_embeds = encoder.encode("A beautiful landscape")
-# negative_embeds = encoder.encode("low quality, blurry")
-
-# # Feed directly into a diffusers pipeline
-# pipe = your_diffusers_pipeline  # already loaded on GPU
-# output = pipe(prompt_embeds=prompt_embeds.to("cuda"), negative_prompt_embeds=negative_embeds.to("cuda"))
