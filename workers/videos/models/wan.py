@@ -24,62 +24,83 @@ from videos.context import VideoContext
 negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
 
 
-@time_info_decorator
+# @time_info_decorator
+# @lru_cache(maxsize=1)
+# def get_pipeline_text_encoder(torch_dtype=torch.float16):
+#     model_id = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
+
+#     tokenizer = AutoTokenizer.from_pretrained(model_id, subfolder="tokenizer")
+#     text_encoder = UMT5EncoderModel.from_pretrained(
+#         model_id,
+#         subfolder="text_encoder",
+#         torch_dtype=torch_dtype,
+#     ).to("cpu")
+
+#     class TextEncoderWrapper:
+#         def __init__(self, model: UMT5EncoderModel, tokenizer: AutoTokenizer):
+#             self.model = model
+#             self.tokenizer = tokenizer
+
+#         @lru_cache(maxsize=5)
+#         @time_info_decorator
+#         @torch.no_grad()
+#         def encode(self, prompt, max_sequence_length=256):
+#             device = self.model.device
+#             dtype = self.model.dtype
+
+#             text_inputs = self.tokenizer(  # type: ignore
+#                 prompt,
+#                 padding="max_length",
+#                 max_length=max_sequence_length,
+#                 truncation=True,
+#                 add_special_tokens=True,
+#                 return_attention_mask=True,
+#                 return_tensors="pt",
+#             )
+#             input_ids = text_inputs.input_ids.to(device)
+#             attention_mask = text_inputs.attention_mask.to(device)
+
+#             outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+#             prompt_embeds = outputs.last_hidden_state.to(dtype=dtype, device=device)
+#             prompt_embeds = prompt_embeds * attention_mask.unsqueeze(-1).to(dtype)
+
+#             return prompt_embeds
+
+#     return TextEncoderWrapper(text_encoder, tokenizer)
+
 @lru_cache(maxsize=1)
-def get_pipeline_text_encoder(torch_dtype=torch.float16):
+def get_pipeline_wan_text_encoder(torch_dtype=torch.float16):
     model_id = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
 
-    tokenizer = AutoTokenizer.from_pretrained(model_id, subfolder="tokenizer")
-    text_encoder = UMT5EncoderModel.from_pretrained(
+    pipe = WanPipeline.from_pretrained(
         model_id,
-        subfolder="text_encoder",
-        torch_dtype=torch_dtype,
+        transformer=None,
+        transformer_2=None,
+        vae=None
+        torch_dtype=torch.float16,
     ).to("cpu")
-
+    
     class TextEncoderWrapper:
-        def __init__(self, model: UMT5EncoderModel, tokenizer: AutoTokenizer):
-            self.model = model
-            self.tokenizer = tokenizer
+        def __init__(self, pipe: WanPipeline):
+            self.pipe = pipe
 
-        @lru_cache(maxsize=5)
         @time_info_decorator
-        @torch.no_grad()
+        @lru_cache(maxsize=5)
         def encode(self, prompt, max_sequence_length=256):
-            device = self.model.device
-            dtype = self.model.dtype
 
-            text_inputs = self.tokenizer(  # type: ignore
-                prompt,
-                padding="max_length",
-                max_length=max_sequence_length,
-                truncation=True,
-                add_special_tokens=True,
-                return_attention_mask=True,
-                return_tensors="pt",
+            device = self.pipe.device
+            dtype = self.pipe.dtype
+
+            prompt_embeds, _ = self.pipe.encode_prompt(
+                prompt=prompt,
+                do_classifier_free_guidance=False,
+                num_videos_per_prompt=1,
+                max_sequence_length=256,
+                device=device,
             )
-            text_input_ids, mask = text_inputs.input_ids, text_inputs.attention_mask
-            seq_lens = mask.gt(0).sum(dim=1).long()
-
-            prompt_embeds = self.model(text_input_ids.to(device), mask.to(device)).last_hidden_state
-            prompt_embeds = prompt_embeds.to(dtype=dtype, device=device)
-            prompt_embeds = [u[:v] for u, v in zip(prompt_embeds, seq_lens)]
-            prompt_embeds = torch.stack(
-                [torch.cat([u, u.new_zeros(max_sequence_length - u.size(0), u.size(1))]) for u in prompt_embeds], dim=0
-            )
-
-            # ALTERNATIVE: (slightly different behavior for padding tokens)
-            # input_ids = text_inputs.input_ids.to(device)
-            # attention_mask = text_inputs.attention_mask.to(device)
-
-            # outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-            # prompt_embeds = outputs.last_hidden_state.to(dtype=dtype, device=device)
-
-            # # zero out embeddings for padded tokens to match pipeline behavior
-            # prompt_embeds = prompt_embeds * attention_mask.unsqueeze(-1).to(dtype)
-
             return prompt_embeds
 
-    return TextEncoderWrapper(text_encoder, tokenizer)
+    return TextEncoderWrapper(pipe)
 
 
 @decorator_global_pipeline_cache
@@ -110,7 +131,6 @@ def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
         tokenizer=None,
         vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
-        # boundary_ratio=0.0,
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
@@ -154,10 +174,10 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
         transformer_2=transformer_2,
         text_encoder=None,
         tokenizer=None,
-        vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
+        # vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
     )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
+    # pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     try:
         pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
@@ -174,7 +194,7 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
 
 
 def text_to_video(context: VideoContext):
-    text_encoder_pipe = get_pipeline_text_encoder()
+    text_encoder_pipe = get_pipeline_wan_text_encoder()
     prompt_embeds = text_encoder_pipe.encode(context.data.prompt)
     negative_prompt_embeds = text_encoder_pipe.encode(negative_prompt)
 
@@ -210,7 +230,7 @@ def main(context: VideoContext):
     if image is None:
         return text_to_video(context)
 
-    text_encoder_pipe = get_pipeline_text_encoder()
+    text_encoder_pipe = get_pipeline_wan_text_encoder()
     prompt_embeds = text_encoder_pipe.encode(context.data.prompt)
     negative_prompt_embeds = text_encoder_pipe.encode(negative_prompt)
 
