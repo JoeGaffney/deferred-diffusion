@@ -11,8 +11,8 @@ from diffusers import (
 )
 from PIL import Image
 
+from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
 from common.logger import logger
-from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -63,7 +63,7 @@ def get_pipeline(model_id):
     pipe.load_lora_weights(
         "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Lightning-8steps-V1.1-bf16.safetensors"
     )
-    return optimize_pipeline(pipe, offload=LOW_VRAM)
+    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 @decorator_global_pipeline_cache
@@ -107,7 +107,7 @@ def get_edit_pipeline(model_id):
     pipe.load_lora_weights(
         "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Lightning-8steps-V1.1-bf16.safetensors"
     )
-    return optimize_pipeline(pipe, offload=LOW_VRAM)
+    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 def text_to_image_call(context: ImageContext):

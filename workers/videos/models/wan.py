@@ -6,14 +6,9 @@ from diffusers import (
     WanPipeline,
     WanTransformer3DModel,
 )
-from transformers import AutoTokenizer, UMT5EncoderModel
 
-from common.memory import LOW_VRAM
-from common.pipeline_helpers import (
-    decorator_global_pipeline_cache,
-    get_quantized_model,
-    time_info_decorator,
-)
+from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
 from common.text_encoders import get_pipeline_wan_text_encoder
 from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
@@ -28,7 +23,7 @@ def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
         model_id=model_id,
         subfolder="transformer",
         model_class=WanTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 4,
+        target_precision=VIDEO_TRANSFORMER_PRECISION,
         torch_dtype=torch_dtype,
     )
 
@@ -38,7 +33,7 @@ def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
             model_id=model_id,
             subfolder="transformer_2",
             model_class=WanTransformer3DModel,
-            target_precision=4 if LOW_VRAM else 4,
+            target_precision=VIDEO_TRANSFORMER_PRECISION,
             torch_dtype=torch_dtype,
         )
 
@@ -59,7 +54,7 @@ def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
     except:
         pass
 
-    if LOW_VRAM:
+    if VIDEO_CPU_OFFLOAD:
         pipe.enable_model_cpu_offload()
     else:
         pipe.to("cuda")
@@ -73,7 +68,7 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
         model_id=model_id,
         subfolder="transformer",
         model_class=WanTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 4,
+        target_precision=VIDEO_TRANSFORMER_PRECISION,
         torch_dtype=torch_dtype,
     )
 
@@ -83,7 +78,7 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
             model_id=model_id,
             subfolder="transformer_2",
             model_class=WanTransformer3DModel,
-            target_precision=4 if LOW_VRAM else 4,
+            target_precision=VIDEO_TRANSFORMER_PRECISION,
             torch_dtype=torch_dtype,
         )
 
@@ -104,7 +99,7 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
     except:
         pass
 
-    if LOW_VRAM:
+    if VIDEO_CPU_OFFLOAD:
         pipe.enable_model_cpu_offload()
     else:
         pipe.to("cuda")
@@ -129,8 +124,8 @@ def text_to_video(context: VideoContext):
     output = pipe(
         width=width,
         height=height,
-        prompt_embeds=prompt_embeds.to("cuda"),
-        negative_prompt_embeds=negative_prompt_embeds.to("cuda"),
+        prompt_embeds=prompt_embeds,
+        negative_prompt_embeds=negative_prompt_embeds,
         num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
         guidance_scale=1.0,
@@ -162,8 +157,8 @@ def main(context: VideoContext):
         width=image.size[0],
         height=image.size[1],
         image=image,
-        prompt_embeds=prompt_embeds.to("cuda"),
-        negative_prompt_embeds=negative_prompt_embeds.to("cuda"),
+        prompt_embeds=prompt_embeds,
+        negative_prompt_embeds=negative_prompt_embeds,
         num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
         guidance_scale=1.0,

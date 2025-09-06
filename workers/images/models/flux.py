@@ -8,14 +8,19 @@ from diffusers import (
 )
 from PIL import Image
 
+from common.config import (
+    IMAGE_CPU_OFFLOAD,
+    IMAGE_TRANSFORMER_PRECISION,
+    VIDEO_TRANSFORMER_PRECISION,
+)
 from common.logger import logger
-from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
     get_quantized_t5_text_encoder,
     optimize_pipeline,
 )
+from common.text_encoders import get_pipeline_flux_text_encoder
 from images.adapters import AdapterPipelineConfig
 from images.context import ImageContext
 
@@ -28,13 +33,16 @@ def get_pipeline(model_id, config: AdapterPipelineConfig):
         model_id=model_id,
         subfolder="transformer",
         model_class=FluxTransformer2DModel,
-        target_precision=8,
+        target_precision=IMAGE_TRANSFORMER_PRECISION,
         torch_dtype=torch.bfloat16,
     )
-    args["text_encoder_2"] = get_quantized_t5_text_encoder(8)
 
     pipe = FluxPipeline.from_pretrained(
         model_id,
+        text_encoder=None,
+        text_encoder_2=None,
+        tokenizer=None,
+        tokenizer_2=None,
         torch_dtype=torch.bfloat16,
         **args,
     )
@@ -48,7 +56,7 @@ def get_pipeline(model_id, config: AdapterPipelineConfig):
             image_encoder_pretrained_model_name_or_path=config.ip_adapter_image_encoder_subfolder,
         )
 
-    return optimize_pipeline(pipe, offload=LOW_VRAM)
+    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 @decorator_global_pipeline_cache
@@ -59,18 +67,35 @@ def get_inpainting_pipeline(model_id):
         model_id=model_id,
         subfolder="transformer",
         model_class=FluxTransformer2DModel,
-        target_precision=8,
+        target_precision=IMAGE_TRANSFORMER_PRECISION,
         torch_dtype=torch.bfloat16,
     )
-    args["text_encoder_2"] = get_quantized_t5_text_encoder(8)
 
     pipe = FluxFillPipeline.from_pretrained(
         model_id,
+        text_encoder=None,
+        text_encoder_2=None,
+        tokenizer=None,
+        tokenizer_2=None,
         torch_dtype=torch.bfloat16,
         **args,
     )
 
-    return optimize_pipeline(pipe, offload=LOW_VRAM)
+    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
+
+
+def apply_prompt_embeddings(args, prompt, negative_prompt=""):
+    pipe = get_pipeline_flux_text_encoder()
+    prompt_embeds, pooled_prompt_embeds = pipe.encode(prompt)
+    args["prompt_embeds"] = prompt_embeds
+    args["pooled_prompt_embeds"] = pooled_prompt_embeds
+
+    if negative_prompt != "":
+        negative_prompt_embeds, negative_pooled_prompt_embeds = pipe.encode(negative_prompt)
+        args["negative_prompt_embeds"] = negative_prompt_embeds
+        args["negative_pooled_prompt_embeds"] = negative_pooled_prompt_embeds
+
+    return args
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
@@ -100,12 +125,11 @@ def text_to_image_call(context: ImageContext, model_id):
     args = {
         "width": context.width,
         "height": context.height,
-        "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
         "num_inference_steps": context.data.num_inference_steps,
         "generator": context.generator,
         "guidance_scale": context.data.guidance_scale,
     }
+    args = apply_prompt_embeddings(args, context.data.prompt, "")
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
@@ -128,14 +152,13 @@ def image_to_image_call(context: ImageContext, model_id):
     args = {
         "width": context.width,
         "height": context.height,
-        "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
         "image": context.color_image,
         "num_inference_steps": context.data.num_inference_steps,
         "generator": context.generator,
         "strength": context.data.strength,
         "guidance_scale": context.data.guidance_scale,
     }
+    args = apply_prompt_embeddings(args, context.data.prompt, "")
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
@@ -150,7 +173,6 @@ def inpainting_call(context: ImageContext, model_id):
     args = {
         "width": context.width,
         "height": context.height,
-        "prompt": context.data.prompt,
         "image": context.color_image,
         "mask_image": context.mask_image,
         "num_inference_steps": context.data.num_inference_steps,
@@ -158,6 +180,7 @@ def inpainting_call(context: ImageContext, model_id):
         "guidance_scale": context.data.guidance_scale * 10,  # range is from 1.5 to 100
         "strength": context.data.strength,
     }
+    args = apply_prompt_embeddings(args, context.data.prompt, "")
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]

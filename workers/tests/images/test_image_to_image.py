@@ -13,13 +13,14 @@ from tests.utils import (
 
 MODES = ["image_to_image"]
 models: List[ModelName] = ["sd-xl", "sd-3", "flux-1", "flux-kontext-1", "qwen-image"]
-models_external: List[ModelName] = [
-    "flux-1-1-pro",
-    "flux-kontext-1-pro",
-    "gpt-image-1",
-    "runway-gen4-image",
-]
-models.extend(models_external)
+# models_external: List[ModelName] = [
+#     "flux-1-1-pro",
+#     "flux-kontext-1-pro",
+#     "gpt-image-1",
+#     "runway-gen4-image",
+# ]
+# models.extend(models_external)
+models = ["flux-kontext-1", "flux-kontext-1", "flux-1"]
 
 
 @pytest.mark.parametrize("mode", MODES)

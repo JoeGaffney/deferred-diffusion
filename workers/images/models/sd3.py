@@ -7,10 +7,9 @@ from diffusers import (
     StableDiffusion3Pipeline,
 )
 from PIL import Image
-from transformers import T5EncoderModel
 
+from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
 from common.logger import logger
-from common.memory import LOW_VRAM
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -27,7 +26,7 @@ def get_pipeline(model_id):
         model_id=model_id,
         subfolder="transformer",
         model_class=SD3Transformer2DModel,
-        target_precision=8,
+        target_precision=IMAGE_TRANSFORMER_PRECISION,
         torch_dtype=torch.bfloat16,
     )
     args["text_encoder_3"] = get_quantized_t5_text_encoder(8)
@@ -37,7 +36,7 @@ def get_pipeline(model_id):
         **args,
     )
 
-    return optimize_pipeline(pipe, offload=LOW_VRAM)
+    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):

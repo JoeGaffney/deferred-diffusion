@@ -1,23 +1,10 @@
-import os
 from functools import lru_cache
 
-import psutil
 import torch
-from diffusers import (
-    AutoencoderKLWan,
-    FlowMatchEulerDiscreteScheduler,
-    UniPCMultistepScheduler,
-    WanImageToVideoPipeline,
-    WanPipeline,
-    WanTransformer3DModel,
-)
-from transformers import TorchAoConfig, UMT5EncoderModel
+from diffusers import FluxPipeline, WanPipeline
+from transformers import T5EncoderModel, UMT5EncoderModel
 
-from common.pipeline_helpers import (
-    decorator_global_pipeline_cache,
-    get_quantized_model,
-    time_info_decorator,
-)
+from common.pipeline_helpers import time_info_decorator
 
 
 @lru_cache(maxsize=1)
@@ -58,6 +45,53 @@ def get_pipeline_wan_text_encoder(torch_dtype=torch.float32, device="cpu"):
                 max_sequence_length=256,
                 device=device,
             )
+            if prompt_embeds is not None:
+                prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
             return prompt_embeds
+
+    return TextEncoderWrapper(pipe)
+
+
+@lru_cache(maxsize=1)
+@time_info_decorator
+def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
+    model_id = "black-forest-labs/FLUX.1-schnell"
+
+    text_encoder_2 = T5EncoderModel.from_pretrained(
+        model_id,
+        subfolder="text_encoder_2",
+        torch_dtype=torch_dtype,
+    ).to(device)
+
+    pipe = FluxPipeline.from_pretrained(
+        model_id,
+        text_encoder_2=text_encoder_2,
+        transformer=None,
+        vae=None,
+        scheduler=None,
+        torch_dtype=torch_dtype,
+    ).to(device)
+
+    class TextEncoderWrapper:
+        def __init__(self, pipe: FluxPipeline):
+            self.pipe = pipe
+
+        @time_info_decorator
+        @lru_cache(maxsize=5)
+        def encode(self, prompt, max_sequence_length=512):
+
+            device = self.pipe.device
+            dtype = self.pipe.dtype
+
+            prompt_embeds, pooled_prompt_embeds, _ = self.pipe.encode_prompt(
+                prompt=prompt,
+                max_sequence_length=max_sequence_length,
+                device=device,
+            )
+            if prompt_embeds is not None:
+                prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
+                pooled_prompt_embeds = pooled_prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
+
+            return prompt_embeds, pooled_prompt_embeds
 
     return TextEncoderWrapper(pipe)

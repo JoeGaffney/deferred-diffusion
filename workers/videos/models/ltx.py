@@ -5,7 +5,7 @@ from diffusers.pipelines.ltx.pipeline_ltx_condition import (
     LTXVideoTransformer3DModel,
 )
 
-from common.memory import LOW_VRAM
+from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -22,7 +22,7 @@ def get_pipeline(model_id):
         model_id,
         subfolder="transformer",
         model_class=LTXVideoTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 4,
+        target_precision=VIDEO_TRANSFORMER_PRECISION,
         torch_dtype=torch.bfloat16,
     )
 
@@ -36,7 +36,11 @@ def get_pipeline(model_id):
     )
 
     pipe.vae.enable_tiling()
-    pipe.enable_model_cpu_offload()
+    if VIDEO_CPU_OFFLOAD:
+        pipe.enable_model_cpu_offload()
+    else:
+        pipe.to("cuda")
+
     return pipe
 
 
