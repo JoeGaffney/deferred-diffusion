@@ -20,7 +20,7 @@ models: List[ModelName] = ["sd-xl", "sd-3", "flux-1", "flux-kontext-1", "qwen-im
 #     "runway-gen4-image",
 # ]
 # models.extend(models_external)
-models = ["flux-kontext-1", "flux-kontext-1", "flux-1"]
+models = ["qwen-image", "qwen-image"]
 
 
 @pytest.mark.parametrize("mode", MODES)

@@ -1,8 +1,12 @@
 from functools import lru_cache
 
 import torch
-from diffusers import FluxPipeline, WanPipeline
-from transformers import T5EncoderModel, UMT5EncoderModel
+from diffusers import FluxPipeline, QwenImagePipeline, WanPipeline
+from transformers import (
+    Qwen2_5_VLForConditionalGeneration,
+    T5EncoderModel,
+    UMT5EncoderModel,
+)
 
 from common.pipeline_helpers import time_info_decorator
 
@@ -93,5 +97,52 @@ def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
                 pooled_prompt_embeds = pooled_prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
 
             return prompt_embeds, pooled_prompt_embeds
+
+    return TextEncoderWrapper(pipe)
+
+
+@lru_cache(maxsize=1)
+@time_info_decorator
+def get_pipeline_qwen_text_encoder(torch_dtype=torch.float32, device="cpu"):
+    model_id = "ovedrive/qwen-image-4bit"
+
+    text_encoder = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+        "Qwen/Qwen2.5-VL-7B-Instruct",
+        subfolder="",
+        torch_dtype=torch_dtype,
+    ).to(device)
+
+    pipe = QwenImagePipeline.from_pretrained(
+        model_id,
+        text_encoder=text_encoder,
+        transformer=None,
+        vae=None,
+        scheduler=None,
+        torch_dtype=torch_dtype,
+    ).to(device)
+
+    class TextEncoderWrapper:
+        def __init__(self, pipe: QwenImagePipeline):
+            self.pipe = pipe
+
+        @time_info_decorator
+        @lru_cache(maxsize=5)
+        def encode(self, prompt, max_sequence_length=1024):
+
+            device = self.pipe.device
+            dtype = self.pipe.dtype
+
+            prompt_embeds, prompt_embeds_mask = self.pipe.encode_prompt(
+                prompt=prompt,
+                max_sequence_length=max_sequence_length,
+                device=device,
+            )
+            if prompt_embeds is not None:
+                prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
+                prompt_embeds_mask = prompt_embeds_mask.to(device=device)
+                if prompt_embeds_mask.dtype != torch.long:
+                    prompt_embeds_mask = prompt_embeds_mask.long()
+
+            return prompt_embeds, prompt_embeds_mask
 
     return TextEncoderWrapper(pipe)

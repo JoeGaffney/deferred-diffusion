@@ -264,25 +264,3 @@ def get_quantized_t5_text_encoder(target_precision) -> T5EncoderModel:
         target_precision=target_precision,
         torch_dtype=torch.bfloat16,
     )
-
-
-def get_quantized_umt5_text_encoder(target_precision) -> UMT5EncoderModel:
-    UMT_T5_MODEL_PATH = "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers"
-
-    return get_quantized_model(
-        model_id=UMT_T5_MODEL_PATH,
-        subfolder="text_encoder",
-        model_class=UMT5EncoderModel,
-        target_precision=target_precision,
-        torch_dtype=torch.bfloat16,
-    )
-
-
-def get_quantized_qwen_2_5_text_encoder(target_precision) -> Qwen2_5_VLForConditionalGeneration:
-    return get_quantized_model(
-        model_id="Qwen/Qwen2.5-VL-7B-Instruct",
-        subfolder="",
-        model_class=Qwen2_5_VLForConditionalGeneration,
-        target_precision=target_precision,
-        torch_dtype=torch.bfloat16,
-    )

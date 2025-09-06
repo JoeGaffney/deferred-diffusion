@@ -17,7 +17,7 @@ models_external: List[ModelName] = [
     "google-gemini-2-5",
 ]
 models.extend(models_external)
-models = ["flux-1"]
+models = ["qwen-image"]
 
 
 @pytest.mark.parametrize("mode", MODES)
