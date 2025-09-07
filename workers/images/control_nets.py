@@ -13,7 +13,6 @@ from utils.utils import load_image_if_exists
 # NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
 def load_controlnet(model, model_family: ModelName):
-
     if model_family == "sd_3":
         return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
     elif model_family == "flux":
@@ -89,7 +88,7 @@ class ControlNets:
                 control_net = ControlNet(data, model_family, width, height)
                 self.control_nets.append(control_net)
             except ControlNetConfigError as e:
-                logger.error(f"Failed to initialize ControlNet: {e}")
+                logger.warning(f"Failed to initialize ControlNet: {e}")
 
     def is_enabled(self) -> bool:
         """Check if there are any valid control nets."""

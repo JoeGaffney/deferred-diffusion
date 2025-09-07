@@ -151,7 +151,7 @@ class Adapters:
                 adapter = IpAdapter(data, model_family, width, height)
                 self.adapters.append(adapter)
             except IPAdapterConfigError as e:
-                logger.error(f"Failed to initialize IP-Adapter: {e}")
+                logger.warning(f"Failed to initialize IP-Adapter: {e}")
 
     def is_enabled(self) -> bool:
         """Check if there are any valid adapters."""

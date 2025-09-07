@@ -8,16 +8,10 @@ from diffusers import (
 )
 from PIL import Image
 
-from common.config import (
-    IMAGE_CPU_OFFLOAD,
-    IMAGE_TRANSFORMER_PRECISION,
-    VIDEO_TRANSFORMER_PRECISION,
-)
-from common.logger import logger
+from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
-    get_quantized_t5_text_encoder,
     optimize_pipeline,
 )
 from common.text_encoders import get_pipeline_flux_text_encoder

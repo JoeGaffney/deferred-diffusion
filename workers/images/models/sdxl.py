@@ -3,31 +3,28 @@ from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForText2Image,
     DDIMScheduler,
-    DiffusionPipeline,
     StableDiffusionXLInpaintPipeline,
+    StableDiffusionXLPipeline,
 )
 from PIL import Image
 from transformers import CLIPVisionModelWithProjection
 
-from common.logger import logger
+from common.config import IMAGE_CPU_OFFLOAD
 from common.pipeline_helpers import decorator_global_pipeline_cache, optimize_pipeline
 from images.adapters import AdapterPipelineConfig
 from images.context import ImageContext
 
 
 @decorator_global_pipeline_cache
-def get_pipeline(model_id, config: AdapterPipelineConfig) -> DiffusionPipeline:
-    args = {"torch_dtype": torch.float16, "use_safetensors": True}
+def get_pipeline(model_id, config: AdapterPipelineConfig) -> StableDiffusionXLPipeline:
 
-    pipe = DiffusionPipeline.from_pretrained(
+    pipe = StableDiffusionXLPipeline.from_pretrained(
         model_id,
-        **args,
+        torch_dtype=torch.float16,
+        use_safetensors=True,
     )
 
     if config.ip_adapter_models != ():
-        if not hasattr(pipe, "load_ip_adapter"):
-            raise ValueError("The pipeline does not support IP-Adapters. Please use a compatible pipeline.")
-
         pipe.load_ip_adapter(
             list(config.ip_adapter_models),
             subfolder=list(config.ip_adapter_subfolders),
@@ -43,22 +40,23 @@ def get_pipeline(model_id, config: AdapterPipelineConfig) -> DiffusionPipeline:
             pipe.image_encoder = image_encoder
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 @decorator_global_pipeline_cache
 def get_inpainting_pipeline(model_id, variant=None) -> StableDiffusionXLInpaintPipeline:
-    args = {"torch_dtype": torch.float16, "use_safetensors": True}
-
+    args = {}
     if variant:
         args["variant"] = variant
 
     pipe = StableDiffusionXLInpaintPipeline.from_pretrained(
         model_id,
+        torch_dtype=torch.float16,
+        use_safetensors=True,
         **args,
     )
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, offload=False)
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):

@@ -44,13 +44,6 @@ model: ModelName = "sd-xl"
 def test_models_with_canny(mode):
     output_name = setup_output_file(model, mode, "_canny")
     width, height = get_16_9_resolution("540p")
-    references = [
-        References(
-            mode="canny",
-            image=image_to_base64("../assets/canny_v001.png"),
-            strength=0.5,
-        )
-    ]
 
     # Delete existing file if it exists
     if os.path.exists(output_name):
@@ -65,7 +58,13 @@ def test_models_with_canny(mode):
                 guidance_scale=5,
                 width=width,
                 height=height,
-                references=references,
+                references=[
+                    References(
+                        mode="canny",
+                        image=image_to_base64("../assets/canny_v001.png"),
+                        strength=0.5,
+                    )
+                ],
             )
         ),
     )
