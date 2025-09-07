@@ -14,7 +14,7 @@ from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
 # Wan gives better results with a default negative prompt
-negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
+_negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
 
 
 @decorator_global_pipeline_cache
@@ -88,10 +88,10 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
         transformer_2=transformer_2,
         text_encoder=None,
         tokenizer=None,
-        # vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
+        vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
     )
-    # pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     try:
         pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
@@ -110,7 +110,7 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
 def text_to_video(context: VideoContext):
     text_encoder_pipe = get_pipeline_wan_text_encoder()
     prompt_embeds = text_encoder_pipe.encode(context.data.prompt)
-    negative_prompt_embeds = text_encoder_pipe.encode(negative_prompt)
+    negative_prompt_embeds = text_encoder_pipe.encode(_negative_prompt)
 
     if context.data.model == "wan-2-1":
         pipe = get_pipeline_t2v(model_id="magespace/Wan2.1-T2V-14B-Lightning-Diffusers", wan_2_1=False)
@@ -143,7 +143,7 @@ def main(context: VideoContext):
 
     text_encoder_pipe = get_pipeline_wan_text_encoder()
     prompt_embeds = text_encoder_pipe.encode(context.data.prompt)
-    negative_prompt_embeds = text_encoder_pipe.encode(negative_prompt)
+    negative_prompt_embeds = text_encoder_pipe.encode(_negative_prompt)
 
     if context.data.model == "wan-2-1":
         pipe = get_pipeline_i2v(model_id="magespace/Wan2.1-I2V-14B-480P-Lightning-Diffusers", wan_2_1=False)

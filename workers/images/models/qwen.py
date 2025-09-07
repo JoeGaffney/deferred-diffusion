@@ -113,8 +113,8 @@ def get_edit_pipeline(model_id) -> QwenImageEditPipeline:
 
 
 def text_to_image_call(context: ImageContext):
-    pipe = get_pipeline_qwen_text_encoder()
-    prompt_embeds, prompt_embeds_mask = pipe.encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    encoder = get_pipeline_qwen_text_encoder()
+    prompt_embeds, prompt_embeds_mask = encoder.encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
 
     pipe = get_pipeline("ovedrive/qwen-image-4bit")
 

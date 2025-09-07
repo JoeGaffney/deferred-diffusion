@@ -10,7 +10,10 @@ from utils.utils import ensure_path_exists
 
 def setup_output_file(model_id, mode, suffix="", extension="png"):
     """Prepare output path and delete existing file if needed."""
-    output_name = f"../tmp/output/{mode}/{model_id.replace('/', '_')}_{suffix}.{extension}"
+    model_id_nice = model_id.replace("/", "_").replace(":", "_")
+    suffix_nice = f"_{suffix}" if suffix != "" else ""
+    output_name = f"../tmp/output/{model_id_nice}/{model_id_nice}_{mode}{suffix_nice}.{extension}"
+
     if os.path.exists(output_name):
         os.remove(output_name)
     ensure_path_exists(output_name)

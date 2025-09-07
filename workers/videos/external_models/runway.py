@@ -22,7 +22,6 @@ def main(context: VideoContext):
 
     image = resize_image(image, 1, 1.0, 2048, 2048)
 
-    model: Literal["gen3a_turbo", "gen4_turbo"] = cast(Literal["gen3a_turbo", "gen4_turbo"], context.data.model_path)
     ratio: Literal["1280:768", "1280:720", "768:1280"] = "1280:768"
     duration: Literal[5, 10] = 5
     if model == "gen4_turbo":

@@ -1,16 +1,14 @@
 import torch
 from diffusers.pipelines.ltx.pipeline_ltx_condition import (
+    AutoencoderKLLTXVideo,
     LTXConditionPipeline,
     LTXVideoCondition,
     LTXVideoTransformer3DModel,
 )
 
 from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
-from common.pipeline_helpers import (
-    decorator_global_pipeline_cache,
-    get_quantized_model,
-    get_quantized_t5_text_encoder,
-)
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
+from common.text_encoders import get_pipeline_ltx_text_encoder
 from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
@@ -26,12 +24,11 @@ def get_pipeline(model_id):
         torch_dtype=torch.bfloat16,
     )
 
-    text_encoder = get_quantized_t5_text_encoder(8)
-
     pipe = LTXConditionPipeline.from_pretrained(
         model_id,
         transformer=transformer,
-        text_encoder=text_encoder,
+        text_encoder=None,
+        tokenizer=None,
         torch_dtype=torch.bfloat16,
     )
 
@@ -45,6 +42,10 @@ def get_pipeline(model_id):
 
 
 def image_to_video(context: VideoContext):
+    encoder = get_pipeline_ltx_text_encoder()
+    prompt_embeds, prompt_attention_mask = encoder.encode(context.data.prompt)
+    negative_prompt_embeds, negative_prompt_attention_mask = encoder.encode(context.data.negative_prompt)
+
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
     width, height = get_16_9_resolution("720p")
@@ -69,8 +70,10 @@ def image_to_video(context: VideoContext):
         width=image.size[0],
         height=image.size[1],
         conditions=conditions,
-        prompt=context.data.prompt,
-        negative_prompt=context.data.negative_prompt,
+        prompt_embeds=prompt_embeds,
+        prompt_attention_mask=prompt_attention_mask,
+        negative_prompt_embeds=negative_prompt_embeds,
+        negative_prompt_attention_mask=negative_prompt_attention_mask,
         num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
@@ -82,6 +85,10 @@ def image_to_video(context: VideoContext):
 
 
 def text_to_video(context: VideoContext):
+    encoder = get_pipeline_ltx_text_encoder()
+    prompt_embeds, prompt_attention_mask = encoder.encode(context.data.prompt)
+    negative_prompt_embeds, negative_prompt_attention_mask = encoder.encode(context.data.negative_prompt)
+
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
     width, height = get_16_9_resolution("720p")
@@ -91,8 +98,10 @@ def text_to_video(context: VideoContext):
     video = pipe.__call__(
         width=width,
         height=height,
-        prompt=context.data.prompt,
-        negative_prompt=context.data.negative_prompt,
+        prompt_embeds=prompt_embeds,
+        prompt_attention_mask=prompt_attention_mask,
+        negative_prompt_embeds=negative_prompt_embeds,
+        negative_prompt_attention_mask=negative_prompt_attention_mask,
         num_inference_steps=context.data.num_inference_steps,
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
