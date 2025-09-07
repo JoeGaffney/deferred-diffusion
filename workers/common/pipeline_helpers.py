@@ -10,15 +10,7 @@ from accelerate.hooks import CpuOffload
 from cachetools.keys import hashkey
 from diffusers import GGUFQuantizationConfig
 from huggingface_hub import hf_hub_download
-from transformers import (
-    AutoModel,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    Qwen2_5_VLForConditionalGeneration,
-    T5EncoderModel,
-    TorchAoConfig,
-    UMT5EncoderModel,
-)
+from transformers import BitsAndBytesConfig, TorchAoConfig
 
 from common.logger import logger
 from common.memory import free_gpu_memory, gpu_memory_usage
@@ -29,9 +21,6 @@ torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix mu
 
 # Keep reference to original (if you want to restore later)
 _original_pre_forward = CpuOffload.pre_forward
-
-# depends on systems ram resources how many models can be safely cached in ram
-MAX_MODEL_CACHE = int(os.getenv("MAX_MODEL_CACHE", 2))
 
 
 @time_info_decorator
@@ -47,9 +36,6 @@ class ModelLRUCache:
     def __init__(self, max_models=1):
         self.cache = OrderedDict()
         self.max_models = max_models
-        self.hits = 0
-        self.misses = 0
-        self.evictions = 0
 
     def get_or_load(self, key, loader_fn):
         # Ensure we have enough free GPU memory before loading a new model
@@ -58,7 +44,6 @@ class ModelLRUCache:
         if key in self.cache:
             # Move to end (most recently used position)
             self.cache.move_to_end(key)
-            self.hits += 1
             logger.debug(f"Cache hit for {key}")
             return self.cache[key]
 
@@ -88,7 +73,6 @@ class ModelLRUCache:
         logger.warning(f"Evicting LRU model: {oldest_key}")
         self._cleanup(oldest_pipeline)
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
-        self.evictions += 1
 
     def _cleanup(self, pipeline):
         try:
@@ -103,22 +87,11 @@ class ModelLRUCache:
         except Exception as e:
             logger.error(f"Pipeline cleanup error: {e}")
 
-    def get_stats(self):
-        return {
-            "cache_hits": self.hits,
-            "cache_misses": self.misses,
-            "cache_evictions": self.evictions,
-            "current_cache_size": len(self.cache),
-        }
-
     def clear(self):
         """Clean up all pipelines and clear the cache without triggering eviction logic."""
         for _, pipeline in list(self.cache.items()):
             self._cleanup(pipeline)
         self.cache.clear()
-        self.hits = 0
-        self.misses = 0
-        self.evictions = 0
 
 
 # Global cache
@@ -250,17 +223,3 @@ def get_quantized_model(
         logger.info(f"Saved quantized model to {quant_dir}")
 
     return model
-
-
-# Cache this one as used in many pipelines
-# @lru_cache(maxsize=1)
-def get_quantized_t5_text_encoder(target_precision) -> T5EncoderModel:
-    T5_MODEL_PATH = "black-forest-labs/FLUX.1-schnell"
-
-    return get_quantized_model(
-        model_id=T5_MODEL_PATH,
-        subfolder="text_encoder_2",
-        model_class=T5EncoderModel,
-        target_precision=target_precision,
-        torch_dtype=torch.bfloat16,
-    )

@@ -17,7 +17,6 @@ models_external: List[ModelName] = [
     "google-gemini-2-5",
 ]
 models.extend(models_external)
-models = ["sd-3"]
 
 
 @pytest.mark.parametrize("mode", MODES)
