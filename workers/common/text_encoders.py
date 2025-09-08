@@ -151,7 +151,10 @@ def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
         scheduler=None,
         torch_dtype=torch_dtype,
         low_cpu_mem_usage=True,
+        image_encoder=None,
+        feature_extractor=None,
     ).to(device)
+    del pipe.image_processor
 
     class TextEncoderWrapper:
         def __init__(self, pipe: FluxPipeline):

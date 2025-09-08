@@ -30,10 +30,11 @@ def report_cpu_memory(prefix: str = ""):
 @pytest.mark.parametrize("prompt", prompts)
 def test_flux_text_encoder_cpu(prompt):
     flux = get_pipeline_flux_text_encoder(torch_dtype=torch_dtype, device="cpu")
+    report_cpu_memory("FLUX LOAD:")
     assert flux is not None
     flux_out = flux.encode(prompt)
     assert flux_out is not None
-    report_cpu_memory("FLUX:")
+    report_cpu_memory("FLUX ENCODE:")
 
 
 @pytest.mark.parametrize("prompt", prompts)
