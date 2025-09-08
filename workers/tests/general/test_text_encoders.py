@@ -12,7 +12,7 @@ from common.text_encoders import (
     get_pipeline_wan_text_encoder,
 )
 
-torch_dtype = torch.bfloat16
+torch_dtype = torch.float32
 
 
 def report_cpu_memory(prefix: str = ""):

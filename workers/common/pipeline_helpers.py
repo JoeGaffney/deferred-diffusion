@@ -47,8 +47,6 @@ class ModelLRUCache:
             logger.debug(f"Cache hit for {key}")
             return self.cache[key]
 
-        self.misses += 1
-
         # Evict least recently used model if at capacity
         if len(self.cache) >= self.max_models:
             self._evict_lru()
