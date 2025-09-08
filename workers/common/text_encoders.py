@@ -22,8 +22,6 @@ from transformers import (
 from common.logger import logger
 from common.pipeline_helpers import time_info_decorator
 
-prompt_cache = LRUCache(maxsize=512)
-
 
 class ModelLRUCache:
     def __init__(self, max_models=1):
@@ -58,7 +56,7 @@ class ModelLRUCache:
         # Get the first item (least recently used)
         oldest_key, oldest_pipeline = next(iter(self.cache.items()))
 
-        logger.warning(f"Evicting LRU model: {oldest_key}")
+        logger.debug(f"Evicting TextEncoder LRU model: {oldest_key}")
         self._cleanup(oldest_pipeline)
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
 
@@ -91,7 +89,6 @@ def get_pipeline_wan_text_encoder(torch_dtype=torch.float32, device="cpu"):
         "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers",
         subfolder="text_encoder",
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     )
 
     pipe = WanPipeline.from_pretrained(
@@ -102,7 +99,6 @@ def get_pipeline_wan_text_encoder(torch_dtype=torch.float32, device="cpu"):
         vae=None,
         scheduler=None,
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     ).to(device)
 
     class TextEncoderWrapper:
@@ -141,7 +137,6 @@ def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
         "black-forest-labs/FLUX.1-schnell",
         subfolder="text_encoder_2",
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     )
     pipe = FluxPipeline.from_pretrained(
         "black-forest-labs/FLUX.1-schnell",
@@ -150,7 +145,6 @@ def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
         vae=None,
         scheduler=None,
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
         image_encoder=None,
         feature_extractor=None,
     ).to(device)
@@ -189,7 +183,6 @@ def get_pipeline_sd3_text_encoder(torch_dtype=torch.float32, device="cpu"):
         "black-forest-labs/FLUX.1-schnell",
         subfolder="text_encoder_2",
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     )
 
     pipe = StableDiffusion3Pipeline.from_pretrained(
@@ -201,7 +194,6 @@ def get_pipeline_sd3_text_encoder(torch_dtype=torch.float32, device="cpu"):
         image_encoder=None,
         feature_extractor=None,
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     ).to(device)
 
     class TextEncoderWrapper:
@@ -241,7 +233,6 @@ def get_pipeline_ltx_text_encoder(torch_dtype=torch.float32, device="cpu"):
         "black-forest-labs/FLUX.1-schnell",
         subfolder="text_encoder_2",
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     )
 
     pipe = LTXConditionPipeline.from_pretrained(
@@ -251,7 +242,6 @@ def get_pipeline_ltx_text_encoder(torch_dtype=torch.float32, device="cpu"):
         vae=None,
         scheduler=None,
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     ).to(device)
 
     class TextEncoderWrapper:
@@ -289,7 +279,6 @@ def get_pipeline_qwen_text_encoder(torch_dtype=torch.float32, device="cpu"):
         "Qwen/Qwen2.5-VL-7B-Instruct",
         subfolder="",
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     )
 
     pipe = QwenImagePipeline.from_pretrained(
@@ -299,7 +288,6 @@ def get_pipeline_qwen_text_encoder(torch_dtype=torch.float32, device="cpu"):
         vae=None,
         scheduler=None,
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
     ).to(device)
 
     class TextEncoderWrapper:

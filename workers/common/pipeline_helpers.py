@@ -68,7 +68,7 @@ class ModelLRUCache:
         # Get the first item (least recently used)
         oldest_key, oldest_pipeline = next(iter(self.cache.items()))
 
-        logger.warning(f"Evicting LRU model: {oldest_key}")
+        logger.debug(f"Evicting LRU model: {oldest_key}")
         self._cleanup(oldest_pipeline)
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
 
@@ -81,7 +81,7 @@ class ModelLRUCache:
         try:
             gc.collect()
             del pipeline
-            free_gpu_memory(threshold_percent=1)
+            free_gpu_memory()
         except Exception as e:
             logger.error(f"Pipeline cleanup error: {e}")
 
@@ -130,7 +130,6 @@ def optimize_pipeline(pipe, disable_safety_checker=True, offload=True, vae_tilin
     if disable_safety_checker:
         pipe.safety_checker = dummy_safety_checker
 
-    gpu_memory_usage()
     return pipe
 
 

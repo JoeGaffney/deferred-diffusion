@@ -19,11 +19,11 @@ models_external: List[ModelName] = [
 models.extend(models_external)
 
 
-@pytest.mark.parametrize("mode", MODES)
+@pytest.mark.parametrize("seed", [42, 43])
 @pytest.mark.parametrize("model", models)
-def test_text_to_image(model, mode):
+def test_text_to_image(model, seed):
 
-    output_name = setup_output_file(model, mode)
+    output_name = setup_output_file(model, "text_to_image", suffix=str(seed))
     width, height = get_16_9_resolution("540p")
 
     result = main(
@@ -36,6 +36,7 @@ def test_text_to_image(model, mode):
                 width=width,
                 height=height,
                 num_inference_steps=15,
+                seed=seed,
             )
         )
     )
