@@ -13,6 +13,7 @@ from common.text_encoders import (
 )
 
 torch_dtype = torch.float32
+prompts = ["A short test prompt", "A short test prompt"]
 
 
 def report_cpu_memory(prefix: str = ""):
@@ -26,41 +27,46 @@ def report_cpu_memory(prefix: str = ""):
         print(f"Could not determine CPU memory: {e}")
 
 
-def test_wan_text_encoder_cpu():
-    wan = get_pipeline_wan_text_encoder(torch_dtype=torch_dtype, device="cpu")
-    assert wan is not None
-    wan_out = wan.encode("A short test prompt for WAN")
-    assert wan_out is not None
-    report_cpu_memory("WAN:")
-
-
-def test_flux_text_encoder_cpu():
+@pytest.mark.parametrize("prompt", prompts)
+def test_flux_text_encoder_cpu(prompt):
     flux = get_pipeline_flux_text_encoder(torch_dtype=torch_dtype, device="cpu")
     assert flux is not None
-    flux_out = flux.encode("A short test prompt for FLUX")
+    flux_out = flux.encode(prompt)
     assert flux_out is not None
     report_cpu_memory("FLUX:")
 
 
-def test_sd3_text_encoder_cpu():
+@pytest.mark.parametrize("prompt", prompts)
+def test_sd3_text_encoder_cpu(prompt):
     sd3 = get_pipeline_sd3_text_encoder(torch_dtype=torch_dtype, device="cpu")
     assert sd3 is not None
-    sd3_out = sd3.encode("A short test prompt for SD3")
+    sd3_out = sd3.encode(prompt)
     assert sd3_out is not None
     report_cpu_memory("SD3:")
 
 
-def test_ltx_text_encoder_cpu():
+@pytest.mark.parametrize("prompt", prompts)
+def test_ltx_text_encoder_cpu(prompt):
     ltx = get_pipeline_ltx_text_encoder(torch_dtype=torch_dtype, device="cpu")
     assert ltx is not None
-    ltx_out = ltx.encode("A short test prompt for LTX")
+    ltx_out = ltx.encode(prompt)
     assert ltx_out is not None
     report_cpu_memory("LTX:")
 
 
-def test_qwen_text_encoder_cpu():
+@pytest.mark.parametrize("prompt", prompts)
+def test_qwen_text_encoder_cpu(prompt):
     qwen = get_pipeline_qwen_text_encoder(torch_dtype=torch_dtype, device="cpu")
     assert qwen is not None
-    qwen_out = qwen.encode("A short test prompt for QWEN")
+    qwen_out = qwen.encode(prompt)
     assert qwen_out is not None
     report_cpu_memory("QWEN:")
+
+
+@pytest.mark.parametrize("prompt", prompts)
+def test_wan_text_encoder_cpu(prompt):
+    wan = get_pipeline_wan_text_encoder(torch_dtype=torch_dtype, device="cpu")
+    assert wan is not None
+    wan_out = wan.encode(prompt)
+    assert wan_out is not None
+    report_cpu_memory("WAN:")
