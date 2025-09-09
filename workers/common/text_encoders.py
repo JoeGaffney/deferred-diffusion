@@ -107,8 +107,7 @@ def get_pipeline_wan_text_encoder(torch_dtype=torch.float32, device="cpu"):
             self.cache = {}
 
         @time_info_decorator
-        @lru_cache(maxsize=5)
-        def encode(self, prompt, max_sequence_length=256):
+        def encode(self, prompt):
             if prompt == "":
                 return None
 
@@ -138,6 +137,7 @@ def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
         subfolder="text_encoder_2",
         torch_dtype=torch_dtype,
     )
+
     pipe = FluxPipeline.from_pretrained(
         "black-forest-labs/FLUX.1-schnell",
         text_encoder_2=text_encoder,
@@ -165,7 +165,7 @@ def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
 
             prompt_embeds, pooled_prompt_embeds, _ = self.pipe.encode_prompt(
                 prompt=prompt,
-                max_sequence_length=512,
+                max_sequence_length=256,
             )
             if prompt_embeds is not None:
                 prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
@@ -306,7 +306,7 @@ def get_pipeline_qwen_text_encoder(torch_dtype=torch.float32, device="cpu"):
 
             prompt_embeds, prompt_embeds_mask = self.pipe.encode_prompt(
                 prompt=prompt,
-                max_sequence_length=1024,
+                max_sequence_length=256,
             )
             if prompt_embeds is not None:
                 prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
