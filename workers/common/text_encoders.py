@@ -1,7 +1,7 @@
 import gc
 import time
 from collections import OrderedDict
-from functools import lru_cache, wraps
+from functools import wraps
 
 import torch
 from cachetools import LRUCache
@@ -21,6 +21,29 @@ from transformers import (
 
 from common.logger import logger
 from common.pipeline_helpers import time_info_decorator
+
+GLOBAL_PROMPT_CACHE_SIZE = 512
+global_prompt_cache = LRUCache(maxsize=GLOBAL_PROMPT_CACHE_SIZE)
+
+
+def get_prompt_from_cache(model_name, prompt):
+    key = hashkey(model_name, prompt)
+    return global_prompt_cache.get(key)
+
+
+def set_prompt_in_cache(model_name, prompt, embedding_tuple):
+    key = hashkey(model_name, prompt)
+    global_prompt_cache[key] = embedding_tuple
+
+
+# NOTE import we must detach and clone tensors before caching them
+def convert_tensor(tensor, device="cuda", dtype=torch.bfloat16):
+    if tensor is None:
+        return None
+    t = tensor.detach().clone().to(device=device)
+    if dtype is not None:
+        t = t.to(dtype=dtype)
+    return t
 
 
 class ModelLRUCache:
@@ -63,7 +86,6 @@ class ModelLRUCache:
     def _cleanup(self, pipeline):
         gc.collect()
         try:
-            del pipeline.pipe
             del pipeline
             gc.collect()
         except Exception as e:
@@ -84,16 +106,14 @@ def decorator_global_text_encoder_cache(func):
 
 
 @decorator_global_text_encoder_cache
-def get_pipeline_wan_text_encoder(torch_dtype=torch.float32, device="cpu"):
-    text_encoder = UMT5EncoderModel.from_pretrained(
+def _pipeline_wan_text_encoder(torch_dtype=torch.float32, device="cpu"):
+    return WanPipeline.from_pretrained(
         "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers",
-        subfolder="text_encoder",
-        torch_dtype=torch_dtype,
-    )
-
-    pipe = WanPipeline.from_pretrained(
-        "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers",
-        text_encoder=text_encoder,
+        text_encoder=UMT5EncoderModel.from_pretrained(
+            "Wan-AI/Wan2.1-I2V-14B-480P-Diffusers",
+            subfolder="text_encoder",
+            torch_dtype=torch_dtype,
+        ),
         transformer=None,
         transformer_2=None,
         vae=None,
@@ -101,46 +121,39 @@ def get_pipeline_wan_text_encoder(torch_dtype=torch.float32, device="cpu"):
         torch_dtype=torch_dtype,
     ).to(device)
 
-    class TextEncoderWrapper:
-        def __init__(self, pipe: WanPipeline):
-            self.pipe = pipe
-            self.cache = {}
 
-        @time_info_decorator
-        def encode(self, prompt):
-            if prompt == "":
-                return None
+@time_info_decorator
+def wan_encode(prompt, torch_dtype=torch.float32, device="cpu"):
+    if prompt == "":
+        return None
 
-            key = hashkey(prompt)
-            if key in self.cache:
-                return self.cache[key]
+    cached = get_prompt_from_cache("wan", prompt)
+    if cached is not None:
+        return cached
 
-            prompt_embeds, _ = self.pipe.encode_prompt(
-                prompt=prompt,
-                do_classifier_free_guidance=False,
-                num_videos_per_prompt=1,
-                max_sequence_length=256,
-            )
-            if prompt_embeds is not None:
-                prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
+    pipe = _pipeline_wan_text_encoder(torch_dtype=torch_dtype, device=device)
+    prompt_embeds, _ = pipe.encode_prompt(
+        prompt=prompt,
+        do_classifier_free_guidance=False,
+        num_videos_per_prompt=1,
+        max_sequence_length=256,
+    )
+    if prompt_embeds is not None:
+        prompt_embeds = convert_tensor(prompt_embeds)
 
-            self.cache[key] = prompt_embeds
-            return prompt_embeds
-
-    return TextEncoderWrapper(pipe)
+    set_prompt_in_cache("wan", prompt, prompt_embeds)
+    return prompt_embeds
 
 
 @decorator_global_text_encoder_cache
-def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
-    text_encoder = T5EncoderModel.from_pretrained(
+def _pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
+    return FluxPipeline.from_pretrained(
         "black-forest-labs/FLUX.1-schnell",
-        subfolder="text_encoder_2",
-        torch_dtype=torch_dtype,
-    )
-
-    pipe = FluxPipeline.from_pretrained(
-        "black-forest-labs/FLUX.1-schnell",
-        text_encoder_2=text_encoder,
+        text_encoder_2=T5EncoderModel.from_pretrained(
+            "black-forest-labs/FLUX.1-schnell",
+            subfolder="text_encoder_2",
+            torch_dtype=torch_dtype,
+        ),
         transformer=None,
         vae=None,
         scheduler=None,
@@ -148,46 +161,39 @@ def get_pipeline_flux_text_encoder(torch_dtype=torch.float32, device="cpu"):
         image_encoder=None,
         feature_extractor=None,
     ).to(device)
-    del pipe.image_processor
 
-    class TextEncoderWrapper:
-        def __init__(self, pipe: FluxPipeline):
-            self.pipe = pipe
-            self.cache = {}
 
-        @time_info_decorator
-        def encode(self, prompt):
-            if prompt == "":
-                return None, None
-            key = hashkey(prompt)
-            if key in self.cache:
-                return self.cache[key]
+@time_info_decorator
+def flux_encode(prompt, torch_dtype=torch.float32, device="cpu"):
+    if prompt == "":
+        return None, None
 
-            prompt_embeds, pooled_prompt_embeds, _ = self.pipe.encode_prompt(
-                prompt=prompt,
-                max_sequence_length=256,
-            )
-            if prompt_embeds is not None:
-                prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
-                pooled_prompt_embeds = pooled_prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
+    cached = get_prompt_from_cache("flux", prompt)
+    if cached is not None:
+        return cached
 
-            self.cache[key] = (prompt_embeds, pooled_prompt_embeds)
-            return prompt_embeds, pooled_prompt_embeds
+    pipe = _pipeline_flux_text_encoder(torch_dtype=torch_dtype, device=device)
+    prompt_embeds, pooled_prompt_embeds, _ = pipe.encode_prompt(
+        prompt=prompt,
+        max_sequence_length=256,
+    )
+    if prompt_embeds is not None:
+        prompt_embeds = convert_tensor(prompt_embeds)
+        pooled_prompt_embeds = convert_tensor(pooled_prompt_embeds)
 
-    return TextEncoderWrapper(pipe)
+    set_prompt_in_cache("flux", prompt, (prompt_embeds, pooled_prompt_embeds))
+    return prompt_embeds, pooled_prompt_embeds
 
 
 @decorator_global_text_encoder_cache
-def get_pipeline_sd3_text_encoder(torch_dtype=torch.float32, device="cpu"):
-    text_encoder = T5EncoderModel.from_pretrained(
-        "black-forest-labs/FLUX.1-schnell",
-        subfolder="text_encoder_2",
-        torch_dtype=torch_dtype,
-    )
-
-    pipe = StableDiffusion3Pipeline.from_pretrained(
+def _pipeline_sd3_text_encoder(torch_dtype=torch.float32, device="cpu"):
+    return StableDiffusion3Pipeline.from_pretrained(
         "stabilityai/stable-diffusion-3.5-large",
-        text_encoder_3=text_encoder,
+        text_encoder_3=T5EncoderModel.from_pretrained(
+            "black-forest-labs/FLUX.1-schnell",
+            subfolder="text_encoder_2",
+            torch_dtype=torch_dtype,
+        ),
         transformer=None,
         vae=None,
         scheduler=None,
@@ -196,125 +202,102 @@ def get_pipeline_sd3_text_encoder(torch_dtype=torch.float32, device="cpu"):
         torch_dtype=torch_dtype,
     ).to(device)
 
-    class TextEncoderWrapper:
-        def __init__(self, pipe: StableDiffusion3Pipeline):
-            self.pipe = pipe
-            self.cache = {}
 
-        @time_info_decorator
-        def encode(self, prompt):
-            if prompt == "":
-                return None, None
+@time_info_decorator
+def sd3_encode(prompt, torch_dtype=torch.float32, device="cpu"):
+    if prompt == "":
+        return None, None
 
-            key = hashkey(prompt)
-            if key in self.cache:
-                return self.cache[key]
+    cached = get_prompt_from_cache("sd3", prompt)
+    if cached is not None:
+        return cached
 
-            prompt_embeds, _, pooled_prompt_embeds, _ = self.pipe.encode_prompt(
-                prompt=prompt,
-                prompt_2=prompt,
-                prompt_3=prompt,
-                do_classifier_free_guidance=False,
-                max_sequence_length=256,
-            )
-            if prompt_embeds is not None:
-                prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
-                pooled_prompt_embeds = pooled_prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
+    pipe = _pipeline_sd3_text_encoder(torch_dtype=torch_dtype, device=device)
+    prompt_embeds, _, pooled_prompt_embeds, _ = pipe.encode_prompt(
+        prompt=prompt,
+        prompt_2=prompt,
+        prompt_3=prompt,
+        do_classifier_free_guidance=False,
+        max_sequence_length=256,
+    )
+    prompt_embeds = convert_tensor(prompt_embeds)
+    pooled_prompt_embeds = convert_tensor(pooled_prompt_embeds)
 
-            self.cache[key] = (prompt_embeds, pooled_prompt_embeds)
-            return prompt_embeds, pooled_prompt_embeds
-
-    return TextEncoderWrapper(pipe)
+    set_prompt_in_cache("sd3", prompt, (prompt_embeds, pooled_prompt_embeds))
+    return prompt_embeds, pooled_prompt_embeds
 
 
 @decorator_global_text_encoder_cache
-def get_pipeline_ltx_text_encoder(torch_dtype=torch.float32, device="cpu"):
-    text_encoder = T5EncoderModel.from_pretrained(
-        "black-forest-labs/FLUX.1-schnell",
-        subfolder="text_encoder_2",
-        torch_dtype=torch_dtype,
-    )
-
-    pipe = LTXConditionPipeline.from_pretrained(
+def _pipeline_ltx_text_encoder(torch_dtype=torch.float32, device="cpu"):
+    return LTXConditionPipeline.from_pretrained(
         "Lightricks/LTX-Video-0.9.7-distilled",
-        text_encoder=text_encoder,
+        text_encoder=T5EncoderModel.from_pretrained(
+            "black-forest-labs/FLUX.1-schnell",
+            subfolder="text_encoder_2",
+            torch_dtype=torch_dtype,
+        ),
         transformer=None,
         vae=None,
         scheduler=None,
         torch_dtype=torch_dtype,
     ).to(device)
 
-    class TextEncoderWrapper:
-        def __init__(self, pipe: LTXConditionPipeline):
-            self.pipe = pipe
-            self.cache = {}
 
-        @time_info_decorator
-        def encode(self, prompt):
-            if prompt == "":
-                return None, None
+@time_info_decorator
+def ltx_encode(prompt, torch_dtype=torch.float32, device="cpu"):
+    if prompt == "":
+        return None, None
 
-            key = hashkey(prompt)
-            if key in self.cache:
-                return self.cache[key]
+    cached = get_prompt_from_cache("ltx", prompt)
+    if cached is not None:
+        return cached
 
-            prompt_embeds, prompt_attention_mask, _, _ = self.pipe.encode_prompt(
-                prompt=prompt,
-                max_sequence_length=256,
-                do_classifier_free_guidance=False,
-            )
-            if prompt_embeds is not None:
-                prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
-                prompt_attention_mask = prompt_attention_mask.to(device="cuda", dtype=torch.bfloat16)
+    pipe = _pipeline_ltx_text_encoder(torch_dtype=torch_dtype, device=device)
+    prompt_embeds, prompt_attention_mask, _, _ = pipe.encode_prompt(
+        prompt=prompt,
+        max_sequence_length=256,
+        do_classifier_free_guidance=False,
+    )
+    prompt_embeds = convert_tensor(prompt_embeds)
+    prompt_attention_mask = convert_tensor(prompt_attention_mask)
 
-            self.cache[key] = (prompt_embeds, prompt_attention_mask)
-            return prompt_embeds, prompt_attention_mask
-
-    return TextEncoderWrapper(pipe)
+    set_prompt_in_cache("ltx", prompt, (prompt_embeds, prompt_attention_mask))
+    return prompt_embeds, prompt_attention_mask
 
 
 @decorator_global_text_encoder_cache
-def get_pipeline_qwen_text_encoder(torch_dtype=torch.float32, device="cpu"):
-    text_encoder = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        "Qwen/Qwen2.5-VL-7B-Instruct",
-        subfolder="",
-        torch_dtype=torch_dtype,
-    )
-
-    pipe = QwenImagePipeline.from_pretrained(
+def _pipeline_qwen_text_encoder(torch_dtype=torch.float32, device="cpu"):
+    return QwenImagePipeline.from_pretrained(
         "ovedrive/qwen-image-4bit",
-        text_encoder=text_encoder,
+        text_encoder=Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            "Qwen/Qwen2.5-VL-7B-Instruct",
+            subfolder="",
+            torch_dtype=torch_dtype,
+        ),
         transformer=None,
         vae=None,
         scheduler=None,
         torch_dtype=torch_dtype,
     ).to(device)
 
-    class TextEncoderWrapper:
-        def __init__(self, pipe: QwenImagePipeline):
-            self.pipe = pipe
-            self.cache = {}
 
-        @time_info_decorator
-        def encode(self, prompt):
-            if prompt == "":
-                return None, None
+@time_info_decorator
+def qwen_encode(prompt, torch_dtype=torch.float32, device="cpu"):
+    if prompt == "":
+        return None, None
 
-            key = hashkey(prompt)
-            if key in self.cache:
-                return self.cache[key]
+    cached = get_prompt_from_cache("qwen", prompt)
+    if cached is not None:
+        return cached
 
-            prompt_embeds, prompt_embeds_mask = self.pipe.encode_prompt(
-                prompt=prompt,
-                max_sequence_length=256,
-            )
-            if prompt_embeds is not None:
-                prompt_embeds = prompt_embeds.to(device="cuda", dtype=torch.bfloat16)
-                prompt_embeds_mask = prompt_embeds_mask.to(device=device)
-                if prompt_embeds_mask.dtype != torch.long:
-                    prompt_embeds_mask = prompt_embeds_mask.long()
+    pipe = _pipeline_qwen_text_encoder(torch_dtype=torch_dtype, device=device)
+    prompt_embeds, prompt_embeds_mask = pipe.encode_prompt(
+        prompt=prompt,
+        max_sequence_length=256,
+    )
 
-            self.cache[key] = (prompt_embeds, prompt_embeds_mask)
-            return prompt_embeds, prompt_embeds_mask
+    prompt_embeds = convert_tensor(prompt_embeds)
+    prompt_embeds_mask = convert_tensor(prompt_embeds_mask, dtype=torch.long)
 
-    return TextEncoderWrapper(pipe)
+    set_prompt_in_cache("qwen", prompt, (prompt_embeds, prompt_embeds_mask))
+    return prompt_embeds, prompt_embeds_mask
