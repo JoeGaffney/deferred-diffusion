@@ -8,7 +8,7 @@ from diffusers.pipelines.ltx.pipeline_ltx_condition import (
 
 from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
 from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
-from common.text_encoders import get_pipeline_ltx_text_encoder
+from common.text_encoders import ltx_encode
 from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
@@ -42,9 +42,8 @@ def get_pipeline(model_id):
 
 
 def image_to_video(context: VideoContext):
-    encoder = get_pipeline_ltx_text_encoder()
-    prompt_embeds, prompt_attention_mask = encoder.encode(context.data.prompt)
-    negative_prompt_embeds, negative_prompt_attention_mask = encoder.encode(context.data.negative_prompt)
+    prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
+    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(context.data.negative_prompt)
 
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
@@ -85,9 +84,8 @@ def image_to_video(context: VideoContext):
 
 
 def text_to_video(context: VideoContext):
-    encoder = get_pipeline_ltx_text_encoder()
-    prompt_embeds, prompt_attention_mask = encoder.encode(context.data.prompt)
-    negative_prompt_embeds, negative_prompt_attention_mask = encoder.encode(context.data.negative_prompt)
+    prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
+    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(context.data.negative_prompt)
 
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 

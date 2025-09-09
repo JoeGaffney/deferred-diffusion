@@ -14,7 +14,7 @@ from common.pipeline_helpers import (
     get_quantized_model,
     optimize_pipeline,
 )
-from common.text_encoders import get_pipeline_flux_text_encoder
+from common.text_encoders import flux_encode
 from images.adapters import AdapterPipelineConfig
 from images.context import ImageContext
 
@@ -79,13 +79,12 @@ def get_inpainting_pipeline(model_id):
 
 
 def apply_prompt_embeddings(args, prompt, negative_prompt=""):
-    pipe = get_pipeline_flux_text_encoder()
-    prompt_embeds, pooled_prompt_embeds = pipe.encode(prompt)
+    prompt_embeds, pooled_prompt_embeds = flux_encode(prompt)
     args["prompt_embeds"] = prompt_embeds
     args["pooled_prompt_embeds"] = pooled_prompt_embeds
 
     if negative_prompt != "":
-        negative_prompt_embeds, negative_pooled_prompt_embeds = pipe.encode(negative_prompt)
+        negative_prompt_embeds, negative_pooled_prompt_embeds = flux_encode(negative_prompt)
         args["negative_prompt_embeds"] = negative_prompt_embeds
         args["negative_pooled_prompt_embeds"] = negative_pooled_prompt_embeds
 

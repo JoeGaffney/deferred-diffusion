@@ -17,10 +17,9 @@ from common.logger import logger
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
-    get_quantized_t5_text_encoder,
     optimize_pipeline,
 )
-from common.text_encoders import get_pipeline_flux_text_encoder
+from common.text_encoders import flux_encode
 from images.context import ImageContext
 
 
@@ -50,13 +49,12 @@ def get_pipeline(model_id):
 
 
 def apply_prompt_embeddings(args, prompt, negative_prompt=""):
-    pipe = get_pipeline_flux_text_encoder()
-    prompt_embeds, pooled_prompt_embeds = pipe.encode(prompt)
+    prompt_embeds, pooled_prompt_embeds = flux_encode(prompt)
     args["prompt_embeds"] = prompt_embeds
     args["pooled_prompt_embeds"] = pooled_prompt_embeds
 
     if negative_prompt != "":
-        negative_prompt_embeds, negative_pooled_prompt_embeds = pipe.encode(negative_prompt)
+        negative_prompt_embeds, negative_pooled_prompt_embeds = flux_encode(negative_prompt)
         args["negative_prompt_embeds"] = negative_prompt_embeds
         args["negative_pooled_prompt_embeds"] = negative_pooled_prompt_embeds
 

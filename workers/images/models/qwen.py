@@ -18,7 +18,7 @@ from common.pipeline_helpers import (
     get_quantized_model,
     optimize_pipeline,
 )
-from common.text_encoders import get_pipeline_qwen_text_encoder
+from common.text_encoders import qwen_encode
 from images.context import ImageContext
 
 
@@ -113,8 +113,7 @@ def get_edit_pipeline(model_id) -> QwenImageEditPipeline:
 
 
 def text_to_image_call(context: ImageContext):
-    encoder = get_pipeline_qwen_text_encoder()
-    prompt_embeds, prompt_embeds_mask = encoder.encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
 
     pipe = get_pipeline("ovedrive/qwen-image-4bit")
 
@@ -136,8 +135,7 @@ def text_to_image_call(context: ImageContext):
 
 
 def image_to_image_call(context: ImageContext):
-    encoder = get_pipeline_qwen_text_encoder()
-    prompt_embeds, prompt_embeds_mask = encoder.encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
 
     pipe = QwenImageImg2ImgPipeline.from_pipe(get_pipeline("ovedrive/qwen-image-4bit"))
 
@@ -161,8 +159,7 @@ def image_to_image_call(context: ImageContext):
 
 
 def image_edit_call(context: ImageContext):
-    encoder = get_pipeline_qwen_text_encoder()
-    prompt_embeds, prompt_embeds_mask = encoder.encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
 
     pipe = get_edit_pipeline("ovedrive/qwen-image-edit-4bit")
 
@@ -185,8 +182,7 @@ def image_edit_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    encoder = get_pipeline_qwen_text_encoder()
-    prompt_embeds, prompt_embeds_mask = encoder.encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
 
     pipe = QwenImageInpaintPipeline.from_pipe(get_pipeline("ovedrive/qwen-image-4bit"))
 

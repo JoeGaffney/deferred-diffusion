@@ -9,7 +9,7 @@ from diffusers import (
 
 from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
 from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
-from common.text_encoders import get_pipeline_wan_text_encoder
+from common.text_encoders import wan_encode
 from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
@@ -108,9 +108,8 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
 
 
 def text_to_video(context: VideoContext):
-    text_encoder_pipe = get_pipeline_wan_text_encoder()
-    prompt_embeds = text_encoder_pipe.encode(context.data.prompt)
-    negative_prompt_embeds = text_encoder_pipe.encode(_negative_prompt)
+    prompt_embeds = wan_encode(context.data.prompt)
+    negative_prompt_embeds = wan_encode(_negative_prompt)
 
     if context.data.model == "wan-2-1":
         pipe = get_pipeline_t2v(model_id="magespace/Wan2.1-T2V-14B-Lightning-Diffusers", wan_2_1=False)
@@ -141,9 +140,8 @@ def main(context: VideoContext):
     if image is None:
         return text_to_video(context)
 
-    text_encoder_pipe = get_pipeline_wan_text_encoder()
-    prompt_embeds = text_encoder_pipe.encode(context.data.prompt)
-    negative_prompt_embeds = text_encoder_pipe.encode(_negative_prompt)
+    prompt_embeds = wan_encode(context.data.prompt)
+    negative_prompt_embeds = wan_encode(_negative_prompt)
 
     if context.data.model == "wan-2-1":
         pipe = get_pipeline_i2v(model_id="magespace/Wan2.1-I2V-14B-480P-Lightning-Diffusers", wan_2_1=False)

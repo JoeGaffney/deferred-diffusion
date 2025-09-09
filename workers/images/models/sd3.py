@@ -14,7 +14,7 @@ from common.pipeline_helpers import (
     get_quantized_model,
     optimize_pipeline,
 )
-from common.text_encoders import get_pipeline_sd3_text_encoder
+from common.text_encoders import sd3_encode
 from images.context import ImageContext
 
 
@@ -45,13 +45,12 @@ def get_pipeline(model_id):
 
 
 def apply_prompt_embeddings(args, prompt, negative_prompt=""):
-    pipe = get_pipeline_sd3_text_encoder()
-    prompt_embeds, pooled_prompt_embeds = pipe.encode(prompt)
+    prompt_embeds, pooled_prompt_embeds = sd3_encode(prompt)
     args["prompt_embeds"] = prompt_embeds
     args["pooled_prompt_embeds"] = pooled_prompt_embeds
 
     if negative_prompt != "":
-        negative_prompt_embeds, negative_pooled_prompt_embeds = pipe.encode(negative_prompt)
+        negative_prompt_embeds, negative_pooled_prompt_embeds = sd3_encode(negative_prompt)
         args["negative_prompt_embeds"] = negative_prompt_embeds
         args["negative_pooled_prompt_embeds"] = negative_pooled_prompt_embeds
 
