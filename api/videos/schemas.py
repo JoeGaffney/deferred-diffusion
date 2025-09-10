@@ -12,6 +12,10 @@ ModelNameExternal: TypeAlias = Literal[
     "runway-act-two",
     "runway-upscale",
     "runway-gen-4-aleph",
+    "bytedance-seedance-1",
+    "kwaivgi-kling-2-1",
+    "minimax-hailuo-2",
+    "google-veo-3",
 ]
 
 
@@ -25,6 +29,10 @@ ModelName: TypeAlias = Literal[
     "runway-act-two",
     "runway-upscale",
     "runway-gen-4-aleph",
+    "bytedance-seedance-1",
+    "kwaivgi-kling-2-1",
+    "minimax-hailuo-2",
+    "google-veo-3",
 ]
 
 
@@ -80,6 +88,22 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "runway-gen-4-aleph": ModelInfo(
         path="gen4_aleph",
         description="Runway's Gen-4 Aleph model, takes in video input as well as images and can enhance or change the video. Or even generate new video content based on the input images and video. Ideal for creative video transformations and enhancements.",
+    ),
+    "bytedance-seedance-1": ModelInfo(
+        path="bytedance/seedance-1-lite",
+        description="ByteDance's Seedance-1-Lite model, a lighter version of their Seedance-1 model. Good for generating dance videos from text prompts with lower computational requirements.",
+    ),
+    "kwaivgi-kling-2-1": ModelInfo(
+        path="kwaivgi/kling-v2.1",
+        description="Kling V2.1 model by kwaivgi, designed for high-quality video generation from text prompts. Known for its ability to create detailed and coherent video sequences.",
+    ),
+    "google-veo-3": ModelInfo(
+        path="google/veo-3-fast",
+        description="Google's VEO-3-Fast model, optimized for rapid video generation while maintaining good quality. Suitable for applications requiring quick turnaround times.",
+    ),
+    "minimax-hailuo-2": ModelInfo(
+        path="minimax/hailuo-02",
+        description="Minimax's Hailuo-02 model, a versatile video generation model capable of producing high-quality videos from text prompts. Balances quality and performance effectively.",
     ),
 }
 

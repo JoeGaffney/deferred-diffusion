@@ -7,7 +7,7 @@ import pytest
 from tests.utils import image_to_base64, setup_output_file
 from videos.context import VideoContext
 from videos.schemas import ModelName, VideoRequest
-from videos.tasks import external_model_router_main as main
+from videos.tasks import model_router_main as main
 
 MODES = ["video_to_video"]
 models: List[ModelName] = ["runway-act-two"]
