@@ -1,24 +1,8 @@
-from typing import Literal
-
-from diffusers.utils import load_image
 from PIL import Image, ImageOps
-from runwayml import RunwayML
-from runwayml.types.text_to_image_create_params import ContentModeration, ReferenceImage
 
+from common.replicate_helpers import process_replicate_image_output, replicate_run
 from images.context import ImageContext
-from utils.utils import pill_to_base64
-
-
-def process_runway_image_output(output: str) -> Image.Image:
-    if not isinstance(output, str):
-        raise ValueError(f"Expected output from Runway to be a URL string, got {type(output)} {str(output)}")
-
-    try:
-        processed_image = load_image(output)
-    except Exception as e:
-        raise ValueError(f"Failed to process image from Runway: {str(e)} {output}")
-
-    return processed_image
+from utils.utils import convert_pil_to_bytes
 
 
 def fix_aspect_ratio(img: Image.Image, safety_margin: float = 0.02) -> Image.Image:
@@ -46,79 +30,61 @@ def fix_aspect_ratio(img: Image.Image, safety_margin: float = 0.02) -> Image.Ima
     return ImageOps.fit(img, (new_width, img.height))
 
 
-def get_size(
-    context: ImageContext,
-) -> Literal["1024:1024", "1920:1080", "1080:1920"]:
-    size = "1024:1024"
+def get_aspect_ratio(context: ImageContext) -> str:
+    """
+    Convert context dimensions to Runway aspect ratio format.
+    """
     dimension_type = context.get_dimension_type()
     if dimension_type == "landscape":
-        size = "1920:1080"
+        return "16:9"
     elif dimension_type == "portrait":
-        size = "1080:1920"
-    return size
+        return "9:16"
+    else:
+        return "1:1"
 
 
 def text_to_image_call(context: ImageContext) -> Image.Image:
-    client = RunwayML()
+    payload = {
+        "prompt": context.data.prompt,
+        "aspect_ratio": get_aspect_ratio(context),
+    }
 
-    try:
-        task = client.text_to_image.create(
-            model="gen4_image",
-            prompt_text=context.data.prompt,
-            ratio=get_size(context),
-            seed=context.data.seed,
-            content_moderation=ContentModeration(public_figure_threshold="low"),
-        ).wait_for_task_output()
-    except Exception as e:
-        raise RuntimeError(f"Error calling RunwayML API: {e}")
-
-    if task.status == "SUCCEEDED" and task.output and len(task.output) > 0:
-        return process_runway_image_output(task.output[0])
-
-    raise Exception(f"Task failed: {task}")
+    output = replicate_run("runwayml/gen4-image", payload)
+    return process_replicate_image_output(output)
 
 
 def image_to_image_call(context: ImageContext) -> Image.Image:
-    client = RunwayML()
-
-    # gather all possible reference images we piggy back on the ipdapter images
+    # Gather all possible reference images
     reference_images = []
+    reference_tags = []
+
     if context.color_image:
         fixed_image = fix_aspect_ratio(context.color_image)
-        reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
+        reference_images.append(convert_pil_to_bytes(fixed_image))
+        reference_tags.append("image1")
 
-    for current in context.get_reference_images():
-        fixed_image = fix_aspect_ratio(current)
-        reference_images.append(ReferenceImage(uri=f"data:image/png;base64,{pill_to_base64(fixed_image)}"))
+    for i, current in enumerate(context.get_reference_images()):
+        if current is not None:
+            fixed_image = fix_aspect_ratio(current)
+            reference_images.append(convert_pil_to_bytes(fixed_image))
+            reference_tags.append(f"image{i+2}")
 
     if len(reference_images) == 0:
         raise ValueError("No reference images provided")
 
-    try:
-        task = client.text_to_image.create(
-            model="gen4_image_turbo",
-            prompt_text=context.data.prompt,
-            ratio=get_size(context),
-            reference_images=reference_images,
-            seed=context.data.seed,
-        ).wait_for_task_output()
-    except Exception as e:
-        raise RuntimeError(f"Error calling RunwayML API: {e}")
+    payload = {
+        "prompt": context.data.prompt,
+        "aspect_ratio": get_aspect_ratio(context),
+        "reference_images": reference_images,
+        "reference_tags": reference_tags,
+    }
 
-    if task.status == "SUCCEEDED" and task.output and len(task.output) > 0:
-        return process_runway_image_output(task.output[0])
-
-    raise Exception(f"Task failed: {task}")
+    output = replicate_run("runwayml/gen4-image-turbo", payload)
+    return process_replicate_image_output(output)
 
 
 def main(context: ImageContext) -> Image.Image:
-    mode = context.get_generation_mode()
-
-    if mode == "text_to_image":
-        if context.get_reference_images() != []:
-            return image_to_image_call(context)
-        return text_to_image_call(context)
-    elif mode == "img_to_img":
+    if context.get_reference_images() != [] or context.color_image:
         return image_to_image_call(context)
 
-    raise ValueError(f"Invalid mode {mode} for RunwayML API")
+    return text_to_image_call(context)

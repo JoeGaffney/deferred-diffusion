@@ -46,6 +46,7 @@ def model_router_main(context: ImageContext) -> Image.Image:
         "flux-1-1-pro": ("images.external_models.flux", "main"),
         "topazlabs-upscale": ("images.external_models.topazlabs", "main"),
         "google-gemini-2-5": ("images.external_models.google_gemini", "main"),
+        "bytedance-seedream-4": ("images.external_models.bytedance", "main"),
     }
 
     if model not in MODEL_NAME_TO_CALLABLE:
@@ -188,6 +189,15 @@ def topazlabs_upscale(request_dict):
 @celery_app.task(name="google-gemini-2-5", queue="cpu")
 def google_gemini_2_5(request_dict):
     from images.external_models.google_gemini import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@celery_app.task(name="bytedance-seedream-4", queue="cpu")
+def bytedance_seedream_4(request_dict):
+    from images.external_models.bytedance import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

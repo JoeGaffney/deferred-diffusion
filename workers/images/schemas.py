@@ -24,6 +24,7 @@ ModelNameExternal: TypeAlias = Literal[
     "flux-1-1-pro",
     "topazlabs-upscale",
     "google-gemini-2-5",
+    "bytedance-seedream-4",
 ]
 
 
@@ -127,6 +128,11 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "google-gemini-2-5": ModelInfo(
         path="google-gemini-2.5-image",
         description="Google's Gemini 2.5 model for advanced image generation and manipulation.",
+        references=True,
+    ),
+    "bytedance-seedream-4": ModelInfo(
+        path="bytedance/Seedream-4",
+        description="Unified text-to-image generation and precise single-sentence editing at up to 4K resolution",
         references=True,
     ),
 }
