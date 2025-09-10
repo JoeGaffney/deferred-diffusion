@@ -9,7 +9,7 @@ def main(context: VideoContext):
         "prompt": context.data.prompt,
         "seed": context.data.seed,
         "aspect_ratio": "16:9",
-        "resolution": "768p",
+        "resolution": "1080p",
     }
 
     if context.image:

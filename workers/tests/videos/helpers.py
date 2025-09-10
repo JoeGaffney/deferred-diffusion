@@ -10,6 +10,7 @@ from videos.tasks import model_router_main as main
 def text_to_video(
     model: ModelName,
     prompt="Two anthropomorphic cats in comfy boxing gear and bright gloves fight intensely on a spotlighted stage.",
+    # prompt="An avalanche crashes down a mountain side. Thick torrential snow. Bright sunny day. Cinematic. Film quality.",
 ):
     output_name = setup_output_file(model, "text_to_video", extension="mp4")
 
