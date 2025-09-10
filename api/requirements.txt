@@ -2,7 +2,7 @@ fastapi
 openai
 openapi-python-client
 pydantic
-pydantic-ai
+pydantic-ai-slim[openai]
 uvicorn
 celery
 redis

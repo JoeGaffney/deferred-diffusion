@@ -37,6 +37,10 @@ def model_router_main(context: VideoContext):
         "runway-act-two": ("videos.external_models.runway_act", "main"),
         "runway-upscale": ("videos.external_models.runway_upscale", "main"),
         "runway-gen-4-aleph": ("videos.external_models.runway_aleph", "main"),
+        "bytedance-seedance-1": ("videos.external_models.bytedance_seedance", "main"),
+        "kwaivgi-kling-2-1": ("videos.external_models.kling", "main"),
+        "google-veo-3": ("videos.external_models.google_veo", "main"),
+        "minimax-hailuo-2": ("videos.external_models.minimax_hailuo", "main"),
     }
 
     if model not in MODEL_NAME_TO_CALLABLE:
@@ -116,6 +120,42 @@ def runway_upscale(request_dict):
 @celery_app.task(name="runway-gen-4-aleph", queue="cpu")
 def runway_gen_4_aleph(request_dict):
     from videos.external_models.runway_aleph import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@celery_app.task(name="bytedance-seedance-1", queue="cpu")
+def bytedance_seedance_1(request_dict):
+    from videos.external_models.bytedance_seedance import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@celery_app.task(name="kwaivgi-kling-2-1", queue="cpu")
+def kwaivgi_kling_2_1(request_dict):
+    from videos.external_models.kling import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@celery_app.task(name="google-veo-3", queue="cpu")
+def google_veo_3(request_dict):
+    from videos.external_models.google_veo import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@celery_app.task(name="minimax-hailuo-2", queue="cpu")
+def minimax_hailuo_2(request_dict):
+    from videos.external_models.minimax_hailuo import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

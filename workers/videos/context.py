@@ -15,6 +15,7 @@ class VideoContext:
         self.data = data
         self.image = load_image_if_exists(data.image)
         self.video_frames = load_video_frames_if_exists(data.video)
+        self.image_last_frame = load_image_if_exists(data.image_last_frame)
 
     def get_generator(self, device="cuda"):
         return torch.Generator(device=device).manual_seed(self.data.seed)
