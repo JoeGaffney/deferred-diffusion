@@ -125,10 +125,7 @@ def process_video(node):
             image_last_frame=image_last_frame,
             video=video_base64,
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
-            negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
-            guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
             num_frames=get_node_value(node, "num_frames", UNSET, return_type=int, mode="value"),
-            num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
         )
         _api_call(node, body, output_video_path, current_frame)

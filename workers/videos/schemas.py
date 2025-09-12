@@ -130,14 +130,7 @@ class VideoRequest(BaseModel):
         description="Positive Prompt text",
         json_schema_extra={"format": "multi_line"},
     )
-    negative_prompt: str = Field(
-        default="worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes",
-        description="Negative prompt text",
-        json_schema_extra={"format": "multi_line"},
-    )
-    guidance_scale: float = 5.0
     num_frames: int = 48
-    num_inference_steps: int = 25
     seed: int = 42
     image: Optional[str] = Field(
         default=None,

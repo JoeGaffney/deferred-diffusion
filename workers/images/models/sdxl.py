@@ -14,6 +14,8 @@ from common.pipeline_helpers import decorator_global_pipeline_cache, optimize_pi
 from images.adapters import AdapterPipelineConfig
 from images.context import ImageContext
 
+_negative_prompt_default = "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes"
+
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, config: AdapterPipelineConfig) -> StableDiffusionXLPipeline:
@@ -88,10 +90,10 @@ def text_to_image_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
-        "num_inference_steps": context.data.num_inference_steps,
+        "negative_prompt": _negative_prompt_default,
+        "num_inference_steps": 30,
         "generator": context.generator,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 3.5,
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
@@ -117,12 +119,12 @@ def image_to_image_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
+        "negative_prompt": _negative_prompt_default,
         "image": context.color_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "strength": context.data.strength,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 3.5,
     }
 
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
@@ -140,13 +142,13 @@ def inpainting_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
+        # "negative_prompt": _negative_prompt_default,
         "image": context.color_image,
         "mask_image": context.mask_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
-        "strength": context.data.strength,
-        "guidance_scale": context.data.guidance_scale,
+        "strength": 0.99,
+        "guidance_scale": 5.0,
     }
 
     processed_image = pipe.__call__(**args).images[0]

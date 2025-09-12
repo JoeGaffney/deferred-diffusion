@@ -28,8 +28,6 @@ def test_text_to_video(model, mode, seed):
                 # prompt="A photorealistic mech robot, emblazoned with the Philippine flag, battles a massive giant squid in a stormy ocean. Towering oil rigs loom in the background, Cinematic lighting, realistic textures, and dynamic camera angles emphasize the epic scale, intensity, and drama of this confrontation.",
                 # prompt="A photorealistic Evangelion-style robot, emblazoned with the Philippine flag, rises from the stormy ocean. In the background, towering oil rigs and the glowing city lights of Manila reflect on the water. Water splashes and mist swirl around the robot's sleek, biomechanical armor as cinematic lighting highlights the epic scale and drama. Dynamic camera angle emphasizes power, motion, and intensity of this moment.",
                 # prompt="Tiny humans in a giant world. A photorealistic person carefully walks across a keyboard like a bridge, while another swims in a coffee cup. Shallow depth of field and soft cinematic lighting enhance the sense of scale and wonder.",
-                num_inference_steps=6,
-                guidance_scale=3.0,
                 num_frames=48,
                 seed=seed,
             )

@@ -32,10 +32,8 @@ def test_text_to_image(model, seed):
             ImageRequest(
                 model=model,
                 prompt="Sperm whale (Moby Dick) diving deep in the dark ocean, giant squid looming in the background, photorealistic, DSLR-style photography, cinematic lighting, nature documentary style, deep ocean atmosphere",
-                guidance_scale=2.0,
                 width=width,
                 height=height,
-                num_inference_steps=25,
                 seed=seed,
             )
         )

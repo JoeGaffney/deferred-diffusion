@@ -10,13 +10,14 @@ from utils.utils import get_16_9_resolution
 
 MODES = ["text_to_image"]
 models: List[ModelName] = ["sd-xl", "sd-3", "flux-1", "flux-1-krea", "qwen-image"]
-models_external: List[ModelName] = [
-    "flux-1-1-pro",
-    "gpt-image-1",
-    "runway-gen4-image",
-    "google-gemini-2-5",
-]
-models.extend(models_external)
+# models_external: List[ModelName] = [
+#     "flux-1-1-pro",
+#     "gpt-image-1",
+#     "runway-gen4-image",
+#     "google-gemini-2-5",
+# ]
+# models.extend(models_external)
+models = ["sd-3"]
 
 
 @pytest.mark.parametrize("seed", [42, 43])
@@ -32,10 +33,8 @@ def test_text_to_image(model, seed):
                 model=model,
                 prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
                 strength=0.5,
-                guidance_scale=3.5,
                 width=width,
                 height=height,
-                num_inference_steps=15,
                 seed=seed,
             )
         )

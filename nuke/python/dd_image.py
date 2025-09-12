@@ -115,11 +115,8 @@ def process_image(node):
 
         body = ImageRequest(
             model=ImageRequestModel(get_node_value(node, "model", "sd-xl", mode="value")),
-            guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
             image=image,
             mask=mask,
-            negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
-            num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
             strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),

@@ -1,6 +1,7 @@
 #! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
 version 14.0 v3
-Gizmo {
+Group {
+ name DDReference
  inputs 2
  addUserKnob {20 User}
  addUserKnob {4 mode M {style style-plus face depth canny pose ""}}

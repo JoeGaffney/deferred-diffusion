@@ -12,6 +12,8 @@ from common.text_encoders import ltx_encode
 from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
 
+_negative_prompt_default = "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes"
+
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id):
@@ -43,7 +45,7 @@ def get_pipeline(model_id):
 
 def image_to_video(context: VideoContext):
     prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
-    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(context.data.negative_prompt)
+    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode("")
 
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
@@ -73,7 +75,7 @@ def image_to_video(context: VideoContext):
         prompt_attention_mask=prompt_attention_mask,
         negative_prompt_embeds=negative_prompt_embeds,
         negative_prompt_attention_mask=negative_prompt_attention_mask,
-        num_inference_steps=context.data.num_inference_steps,
+        num_inference_steps=10,
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
         guidance_scale=1.0,
@@ -85,7 +87,7 @@ def image_to_video(context: VideoContext):
 
 def text_to_video(context: VideoContext):
     prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
-    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(context.data.negative_prompt)
+    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode("")
 
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
@@ -100,7 +102,7 @@ def text_to_video(context: VideoContext):
         prompt_attention_mask=prompt_attention_mask,
         negative_prompt_embeds=negative_prompt_embeds,
         negative_prompt_attention_mask=negative_prompt_attention_mask,
-        num_inference_steps=context.data.num_inference_steps,
+        num_inference_steps=10,
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
         guidance_scale=1.0,

@@ -16,30 +16,6 @@ MODES = ["text_to_image", "img_to_img", "img_to_img_inpainting"]
 model: ModelName = "sd-xl"
 
 
-# @pytest.mark.parametrize("mode", MODES)
-# def test_models(mode):
-#     output_name = setup_output_file(model, mode)
-#     width, height = get_16_9_resolution("540p")
-
-#     result = main(
-#         ImageContext(
-#             ImageRequest(
-#                 model=model,
-#                 image=None if mode == "text_to_image" else image_to_base64("../assets/color_v001.jpeg"),
-#                 mask=None if mode == "img_to_img_inpainting" else image_to_base64("../assets/mask_v001.png"),
-#                 prompt="tornado on farm feild, enhance keep original elements, Detailed, 8k, DSLR photo, photorealistic",
-#                 strength=0.5,
-#                 guidance_scale=5,
-#                 width=width,
-#                 height=height,
-#                 controlnets=[],
-#             )
-#         )
-#     )
-
-#     save_image_and_assert_file_exists(result, output_name)
-
-
 @pytest.mark.parametrize("mode", ["text_to_image"])
 def test_models_with_canny(mode):
     output_name = setup_output_file(model, mode, "_canny")
@@ -55,7 +31,6 @@ def test_models_with_canny(mode):
                 model=model,
                 prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
                 strength=0.5,
-                guidance_scale=5,
                 width=width,
                 height=height,
                 references=[
@@ -83,9 +58,7 @@ def test_style(mode):
             ImageRequest(
                 model=model,
                 prompt="a cat, masterpiece, best quality, high quality",
-                negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
                 strength=0.75,
-                guidance_scale=5,
                 width=width,
                 height=height,
                 references=[
@@ -113,9 +86,7 @@ def test_face(mode):
             ImageRequest(
                 model=model,
                 prompt="a man walking, masterpiece, best quality, high quality",
-                negative_prompt="monochrome, lowres, bad anatomy, worst quality, low quality",
                 strength=0.75,
-                guidance_scale=5,
                 width=width,
                 height=height,
                 references=[

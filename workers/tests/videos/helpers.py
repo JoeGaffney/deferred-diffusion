@@ -19,8 +19,6 @@ def text_to_video(
             VideoRequest(
                 model=model,
                 prompt=prompt,
-                num_inference_steps=6,
-                guidance_scale=3.0,
                 num_frames=24,
             )
         )
@@ -45,8 +43,6 @@ def image_to_video(model: ModelName):
                 model=model,
                 image=image_to_base64("../assets/color_v002.png"),
                 prompt="A man with short gray hair plays a red electric guitar.",
-                num_inference_steps=6,
-                guidance_scale=3.0,
                 num_frames=24,
             )
         )
@@ -72,8 +68,6 @@ def image_to_video_portrait(model):
                 model=model,
                 image=image_to_base64("../assets/wan_i2v_input.JPG"),
                 prompt=prompt,
-                num_inference_steps=6,
-                guidance_scale=3.0,
                 num_frames=48,
             )
         )

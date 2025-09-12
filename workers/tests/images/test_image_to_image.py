@@ -34,8 +34,6 @@ def test_image_to_image(model, mode):
                 prompt="Change to night time and add rain and lighting",
                 strength=0.5,
                 image=image_to_base64("../assets/color_v001.jpeg"),
-                num_inference_steps=10,
-                guidance_scale=3.5,
             )
         )
     )

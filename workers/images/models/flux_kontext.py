@@ -68,9 +68,9 @@ def image_to_image_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "image": context.color_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 2.0,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
     processed_image = pipe.__call__(**args).images[0]

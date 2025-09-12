@@ -17,6 +17,8 @@ from common.pipeline_helpers import (
 from common.text_encoders import sd3_encode
 from images.context import ImageContext
 
+_negative_prompt_default = "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes"
+
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id):
@@ -78,11 +80,11 @@ def text_to_image_call(context: ImageContext):
     args = {
         "width": context.width,
         "height": context.height,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 4.0,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, context.data.negative_prompt)
+    args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
@@ -105,12 +107,12 @@ def image_to_image_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "image": context.color_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "strength": context.data.strength,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 4.0,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, context.data.negative_prompt)
+    args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
@@ -134,12 +136,12 @@ def inpainting_call(context: ImageContext):
         "height": context.height,
         "image": context.color_image,
         "mask_image": context.mask_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "strength": context.data.strength,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 4.0,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, "")
+    args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]

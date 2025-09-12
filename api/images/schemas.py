@@ -195,16 +195,9 @@ class ImageRequest(BaseModel):
         description="Positive Prompt text",
         json_schema_extra={"format": "multi_line"},
     )
-    negative_prompt: str = Field(
-        default="worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes",
-        description="Negative prompt text",
-        json_schema_extra={"format": "multi_line"},
-    )
     height: int = 512
     width: int = 512
-    num_inference_steps: int = 25
     seed: int = 42
-    guidance_scale: float = 5.0
     strength: float = 0.5
     image: Optional[str] = Field(
         default=None,

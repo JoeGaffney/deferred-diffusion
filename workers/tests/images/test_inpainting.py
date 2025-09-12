@@ -33,8 +33,6 @@ def test_inpainting(model, mode):
                 strength=0.5,
                 image=image_to_base64("../assets/inpaint.png"),
                 mask=image_to_base64("../assets/inpaint_mask.png"),
-                num_inference_steps=25,
-                guidance_scale=3.5,
             )
         )
     )
@@ -55,8 +53,6 @@ def test_inpainting_alt(model, mode):
                 strength=0.9,
                 image=image_to_base64("../assets/inpaint_v002.png"),
                 mask=image_to_base64("../assets/inpaint_mask_v002.png"),
-                num_inference_steps=25,
-                guidance_scale=3.5,
             )
         )
     )

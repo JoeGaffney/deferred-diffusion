@@ -118,9 +118,9 @@ def text_to_image_call(context: ImageContext, model_id):
     args = {
         "width": context.width,
         "height": context.height,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 2.0,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
@@ -146,10 +146,10 @@ def image_to_image_call(context: ImageContext, model_id):
         "width": context.width,
         "height": context.height,
         "image": context.color_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "strength": context.data.strength,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 2.0,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
@@ -168,9 +168,9 @@ def inpainting_call(context: ImageContext, model_id):
         "height": context.height,
         "image": context.color_image,
         "mask_image": context.mask_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
-        "guidance_scale": context.data.guidance_scale * 10,  # range is from 1.5 to 100
+        "guidance_scale": 30,
         "strength": context.data.strength,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")

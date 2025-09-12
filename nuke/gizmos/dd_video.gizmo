@@ -1,6 +1,7 @@
 #! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
 version 14.0 v3
-Gizmo {
+Group {
+ name DDVideo
  inputs 2
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
@@ -11,16 +12,9 @@ Gizmo {
  addUserKnob {26 ""}
  addUserKnob {43 prompt l Prompt t "Describe the video you want to generate."}
  prompt "Detailed, cinematic, high quality"
- addUserKnob {43 negative_prompt l Negative t "Describe what to avoid in the video." -STARTLINE}
- negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
- addUserKnob {26 ""}
  addUserKnob {2 video l "Video (Input)" t "Must be mp4 under 16mb"}
- addUserKnob {7 num_inference_steps l "Quality (Steps)" t "Number of inference steps for generation. Higher means better quality." R 1 50}
- num_inference_steps 10
  addUserKnob {7 num_frames l Frames t "Number of frames to generate." R 1 200}
  num_frames 48
- addUserKnob {7 guidance_scale l "Guidance Scale" t "Classifier-free guidance (CFG) scale. Higher = more prompt adherence." R 1 10}
- guidance_scale 5
  addUserKnob {7 seed l Seed t "Random seed for reproducibility." R 1 1000}
  seed 42
  addUserKnob {26 ""}

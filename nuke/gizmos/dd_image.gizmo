@@ -1,6 +1,7 @@
 #! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
 version 14.0 v3
-Gizmo {
+Group {
+ name DDImage
  inputs 3
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
@@ -11,17 +12,10 @@ Gizmo {
  addUserKnob {26 ""}
  addUserKnob {43 prompt l "Prompt" t "Describe the image you want to generate."}
  prompt "Detailed, 8k, photorealistic"
- addUserKnob {43 negative_prompt l "Negative" t "Describe what to avoid in the image." -STARTLINE}
- negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
- addUserKnob {26 ""}
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
  width_height {1280 720}
- addUserKnob {7 num_inference_steps l "Quality (Steps)" t "Number of inference steps for generation. Higher means better quality." R 1 50}
- num_inference_steps 25
  addUserKnob {7 strength l "Strength" t "Prompt strength for img2img. 0.0 keeps the image, 1.0 follows the prompt; in between blends their influence."}
  strength 0.5
- addUserKnob {7 guidance_scale l "Guidance Scale" t "Classifier-free guidance (CFG) scale. Higher = more prompt adherence." R 1 10}
- guidance_scale 5
  addUserKnob {7 seed l "Seed" t "Random seed for reproducibility." R 1 1000}
  seed 42
  addUserKnob {20 Paths}
