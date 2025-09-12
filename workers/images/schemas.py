@@ -45,6 +45,7 @@ ModelName: TypeAlias = Literal[
     "flux-1-1-pro",
     "topazlabs-upscale",
     "google-gemini-2-5",
+    "bytedance-seedream-4",
 ]
 
 

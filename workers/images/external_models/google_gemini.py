@@ -33,7 +33,6 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         "image_input": reference_images,
         "output_format": "png",
     }
-    print("Payload:", payload)
     output = replicate_run("google/nano-banana", payload)
 
     return process_replicate_image_output(output)

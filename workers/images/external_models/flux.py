@@ -52,7 +52,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         "raw": True,
     }
 
-    output = replicate_run("black-forest-labs/flux-1.1-pro-ultra", payload)
+    output = replicate_run("black-forest-labs/flux-1.1-pro", payload)
 
     return process_replicate_image_output(output)
 

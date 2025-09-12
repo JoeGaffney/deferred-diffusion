@@ -27,4 +27,8 @@ def main(context: ImageContext) -> Image.Image:
 
     output = replicate_run("bytedance/seedream-4", payload)
 
+    # as this can return a list, we just take the first item
+    if isinstance(output, list):
+        output = output[0]
+
     return process_replicate_image_output(output)
