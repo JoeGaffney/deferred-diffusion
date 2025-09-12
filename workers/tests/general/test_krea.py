@@ -9,15 +9,7 @@ from tests.utils import save_image_and_assert_file_exists, setup_output_file
 from utils.utils import get_16_9_resolution
 
 MODES = ["text_to_image"]
-# models: List[ModelName] = ["sd-xl", "sd-3", "flux-1", "flux-1-krea", "qwen-image"]
-# models_external: List[ModelName] = [
-#     "flux-1-1-pro",
-#     "gpt-image-1",
-#     "runway-gen4-image",
-#     "google-gemini-2-5",
-# ]
-# models.extend(models_external)
-models = ["google-gemini-2-5", "flux-1-1-pro", "flux-1-krea", "qwen-image"]
+models = ["flux-1-krea", "qwen-image"]
 
 
 @pytest.mark.parametrize("seed", range(42, 46))

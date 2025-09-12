@@ -1,2 +1,0 @@
-TEXT_TO_IMAGE_PROMPT = "A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature."
-IMAGE_TO_IMAGE_PROMPT = "Change to night time and add rain and lighting"

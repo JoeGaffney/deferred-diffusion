@@ -42,8 +42,6 @@ def test_get_ltx(api_client):
         model=VideoRequestModel("ltx-video"),
         image=image_to_base64("../assets/color_v002.png"),
         prompt="A man with short gray hair plays a red electric guitar.",
-        num_inference_steps=7,
-        guidance_scale=3.0,
         num_frames=96,
     )
     image_id = create_video(api_client, body)

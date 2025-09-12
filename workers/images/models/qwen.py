@@ -134,30 +134,6 @@ def text_to_image_call(context: ImageContext):
     return processed_image
 
 
-def image_to_image_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
-
-    pipe = QwenImageImg2ImgPipeline.from_pipe(get_pipeline("ovedrive/qwen-image-4bit"))
-
-    args = {
-        "width": context.width,
-        "height": context.height,
-        "prompt_embeds": prompt_embeds,
-        "prompt_embeds_mask": prompt_embeds_mask,
-        "negative_prompt": "",
-        "image": context.color_image,
-        "generator": context.generator,
-        "strength": context.data.strength,
-        "num_inference_steps": 8,
-        "true_cfg_scale": 1.0,
-    }
-
-    processed_image = pipe.__call__(**args).images[0]
-    context.cleanup()
-
-    return processed_image
-
-
 def image_edit_call(context: ImageContext):
     prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
 
@@ -194,7 +170,6 @@ def inpainting_call(context: ImageContext):
         "negative_prompt": "",
         "image": context.color_image,
         "mask_image": context.mask_image,
-        "num_inference_steps": context.data.num_inference_steps,
         "generator": context.generator,
         "strength": context.data.strength,
         "num_inference_steps": 8,
@@ -214,8 +189,6 @@ def main(context: ImageContext) -> Image.Image:
         return text_to_image_call(context)
     elif mode == "img_to_img":
         return image_edit_call(context)
-        # NOTE do we allow image to image with strength?
-        # return image_to_image_call(context)
     elif mode == "img_to_img_inpainting":
         return inpainting_call(context)
 

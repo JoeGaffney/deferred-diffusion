@@ -60,14 +60,6 @@ class ImageContext:
         else:
             return "img_to_img"
 
-    def get_quality(self) -> Literal["low", "medium", "high"]:
-        """Get quality setting based on number of inference steps."""
-        if self.data.num_inference_steps < 20:
-            return "low"
-        elif self.data.num_inference_steps > 40:
-            return "high"
-        return "medium"
-
     def get_dimension_type(self) -> Literal["square", "landscape", "portrait"]:
         """Determine the image dimension type based on width and height ratio."""
         if self.width > self.height:

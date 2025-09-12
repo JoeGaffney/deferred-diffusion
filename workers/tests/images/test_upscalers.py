@@ -4,7 +4,7 @@ import pytest
 
 from images.context import ImageContext
 from images.schemas import ImageRequest, ModelName
-from images.tasks import router_main as main
+from images.tasks import model_router_main as main
 from tests.utils import (
     image_to_base64,
     save_image_and_assert_file_exists,

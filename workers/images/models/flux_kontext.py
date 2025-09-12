@@ -68,7 +68,7 @@ def image_to_image_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "image": context.color_image,
-        "num_inference_steps": 30,
+        "num_inference_steps": 20,
         "generator": context.generator,
         "guidance_scale": 2.0,
     }
