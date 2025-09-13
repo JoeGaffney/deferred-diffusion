@@ -142,13 +142,13 @@ def inpainting_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "prompt": context.data.prompt,
-        # "negative_prompt": _negative_prompt_default,
+        "negative_prompt": _negative_prompt_default,
         "image": context.color_image,
         "mask_image": context.mask_image,
-        "num_inference_steps": 30,
+        "num_inference_steps": 25,
         "generator": context.generator,
-        "strength": 0.99,
-        "guidance_scale": 5.0,
+        "strength": 0.95,
+        "guidance_scale": 4.0,
     }
 
     processed_image = pipe.__call__(**args).images[0]
@@ -158,6 +158,7 @@ def inpainting_call(context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
+    context.ensure_max_dimension(1024)
     context.ensure_divisible(16)
     mode = context.get_generation_mode()
 

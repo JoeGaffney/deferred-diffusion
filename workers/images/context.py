@@ -51,6 +51,15 @@ class ImageContext:
         if self.color_image:
             self.color_image = self.color_image.resize([self.width, self.height])
 
+    def ensure_max_dimension(self, delta: int = 1024):
+        if self.width < delta or self.height < delta:
+            # Calculate scale factor to get closest dimension to 1024
+            scale_factor = max(delta / self.width, delta / self.height)
+
+            # Apply scaling and ensure divisibility by 16
+            self.width = int(self.width * scale_factor)
+            self.height = int(self.height * scale_factor)
+
     def get_generation_mode(self) -> Literal["text_to_image", "img_to_img", "img_to_img_inpainting"]:
         """Get generation mode, can be overridden by specific models."""
         if self.data.image is None:

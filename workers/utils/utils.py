@@ -80,6 +80,9 @@ def save_copy_with_timestamp(path):
 
 
 def ensure_divisible(value: int, divisor=16) -> int:
+    if divisor <= 1:
+        return value
+
     return (value // divisor) * divisor
 
 

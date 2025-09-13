@@ -75,8 +75,8 @@ def inpainting_alt(model: ModelName):
                 model=model,
                 prompt="a tiger sitting on a park bench",
                 strength=0.9,
-                image=image_to_base64("../assets/inpaint_v002.png"),
-                mask=image_to_base64("../assets/inpaint_mask_v002.png"),
+                image=image_to_base64("../assets/inpaint_v003.png"),
+                mask=image_to_base64("../assets/inpaint_mask_v003.png"),
             )
         )
     )
