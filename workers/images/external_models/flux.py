@@ -41,16 +41,13 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
 
     payload = {
         "prompt": context.data.prompt,
-        "image_prompt": convert_pil_to_bytes(context.color_image),
+        "input_image": convert_pil_to_bytes(context.color_image),
         "output_format": "png",
-        "image_prompt_strength": context.data.strength,
         "safety_tolerance": 6,
         "seed": context.data.seed,
-        "aspect_ratio": get_size(context),
-        "raw": True,
     }
 
-    output = replicate_run("black-forest-labs/flux-1.1-pro", payload)
+    output = replicate_run("black-forest-labs/flux-kontext-pro", payload)
 
     return process_replicate_image_output(output)
 

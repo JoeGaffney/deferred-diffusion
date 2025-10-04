@@ -10,7 +10,7 @@ from videos.schemas import ModelName, VideoRequest
 from videos.tasks import model_router_main as main
 
 MODES = ["text_to_video"]
-models: List[ModelName] = ["wan-2-2"]
+models: List[ModelName] = ["wan-2"]
 
 
 @pytest.mark.parametrize("mode", ["text_to_video"])

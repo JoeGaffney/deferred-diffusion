@@ -13,7 +13,7 @@ from helpers import (
 
 from images.schemas import ModelName
 
-models: List[ModelName] = ["flux-1-krea"]
+models: List[ModelName] = ["flux-1"]
 
 
 @pytest.mark.parametrize("model", models)

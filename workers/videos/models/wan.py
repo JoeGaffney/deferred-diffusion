@@ -27,15 +27,13 @@ def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
         torch_dtype=torch_dtype,
     )
 
-    transformer_2 = None
-    if wan_2_1:
-        transformer_2 = get_quantized_model(
-            model_id=model_id,
-            subfolder="transformer_2",
-            model_class=WanTransformer3DModel,
-            target_precision=VIDEO_TRANSFORMER_PRECISION,
-            torch_dtype=torch_dtype,
-        )
+    transformer_2 = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer_2",
+        model_class=WanTransformer3DModel,
+        target_precision=VIDEO_TRANSFORMER_PRECISION,
+        torch_dtype=torch_dtype,
+    )
 
     pipe = WanImageToVideoPipeline.from_pretrained(
         model_id,
@@ -63,7 +61,7 @@ def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> WanPipeline:
+def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
     transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
@@ -72,15 +70,13 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
         torch_dtype=torch_dtype,
     )
 
-    transformer_2 = None
-    if wan_2_1:
-        transformer_2 = get_quantized_model(
-            model_id=model_id,
-            subfolder="transformer_2",
-            model_class=WanTransformer3DModel,
-            target_precision=VIDEO_TRANSFORMER_PRECISION,
-            torch_dtype=torch_dtype,
-        )
+    transformer_2 = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer_2",
+        model_class=WanTransformer3DModel,
+        target_precision=VIDEO_TRANSFORMER_PRECISION,
+        torch_dtype=torch_dtype,
+    )
 
     pipe = WanPipeline.from_pretrained(
         model_id,
@@ -110,11 +106,7 @@ def get_pipeline_t2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> Wan
 def text_to_video(context: VideoContext):
     prompt_embeds = wan_encode(context.data.prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
-
-    if context.data.model == "wan-2-1":
-        pipe = get_pipeline_t2v(model_id="magespace/Wan2.1-T2V-14B-Lightning-Diffusers", wan_2_1=False)
-    else:
-        pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers", wan_2_1=True)
+    pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers", wan_2_1=True)
 
     width, height = get_16_9_resolution("480p")
     width = ensure_divisible(width, 16)
@@ -142,11 +134,7 @@ def main(context: VideoContext):
 
     prompt_embeds = wan_encode(context.data.prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
-
-    if context.data.model == "wan-2-1":
-        pipe = get_pipeline_i2v(model_id="magespace/Wan2.1-I2V-14B-480P-Lightning-Diffusers", wan_2_1=False)
-    else:
-        pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers", wan_2_1=True)
+    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers", wan_2_1=True)
 
     width, height = get_16_9_resolution("720p")
     image = resize_image(image, 16, 1.0, width, height)

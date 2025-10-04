@@ -1,8 +1,8 @@
 import torch
 from diffusers import (
-    AutoPipelineForImage2Image,
     AutoPipelineForText2Image,
     FluxFillPipeline,
+    FluxKontextPipeline,
     FluxPipeline,
     FluxTransformer2DModel,
 )
@@ -21,9 +21,7 @@ from images.context import ImageContext
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, config: AdapterPipelineConfig):
-    args = {}
-
-    args["transformer"] = get_quantized_model(
+    transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
         model_class=FluxTransformer2DModel,
@@ -37,8 +35,8 @@ def get_pipeline(model_id, config: AdapterPipelineConfig):
         text_encoder_2=None,
         tokenizer=None,
         tokenizer_2=None,
+        transformer=transformer,
         torch_dtype=torch.bfloat16,
-        **args,
     )
     if config.ip_adapter_models != ():
         if not hasattr(pipe, "load_ip_adapter"):
@@ -54,10 +52,31 @@ def get_pipeline(model_id, config: AdapterPipelineConfig):
 
 
 @decorator_global_pipeline_cache
-def get_inpainting_pipeline(model_id):
-    args = {}
+def get_kontext_pipeline(model_id):
+    transformer = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer",
+        model_class=FluxTransformer2DModel,
+        target_precision=IMAGE_TRANSFORMER_PRECISION,
+        torch_dtype=torch.bfloat16,
+    )
 
-    args["transformer"] = get_quantized_model(
+    pipe = FluxKontextPipeline.from_pretrained(
+        model_id,
+        text_encoder=None,
+        text_encoder_2=None,
+        tokenizer=None,
+        tokenizer_2=None,
+        transformer=transformer,
+        torch_dtype=torch.bfloat16,
+    )
+
+    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
+
+
+@decorator_global_pipeline_cache
+def get_inpainting_pipeline(model_id):
+    transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
         model_class=FluxTransformer2DModel,
@@ -71,8 +90,8 @@ def get_inpainting_pipeline(model_id):
         text_encoder_2=None,
         tokenizer=None,
         tokenizer_2=None,
+        transformer=transformer,
         torch_dtype=torch.bfloat16,
-        **args,
     )
 
     return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
@@ -103,7 +122,11 @@ def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
     return pipe, args
 
 
-def text_to_image_call(context: ImageContext, model_id):
+def text_to_image_call(context: ImageContext):
+    # NOTE just use krea for now as it seems to be better
+    # model_id = "black-forest-labs/FLUX.1-dev"
+    model_id = "black-forest-labs/FLUX.1-Krea-dev"
+
     pipe_args = {}
     controlnets = context.control_nets.get_loaded_controlnets()
     if controlnets != []:
@@ -130,38 +153,26 @@ def text_to_image_call(context: ImageContext, model_id):
     return processed_image
 
 
-def image_to_image_call(context: ImageContext, model_id):
-    pipe_args = {}
-    controlnets = context.control_nets.get_loaded_controlnets()
-    if controlnets != []:
-        pipe_args["controlnet"] = controlnets
-
-    pipe = AutoPipelineForImage2Image.from_pipe(
-        get_pipeline(model_id, context.adapters.get_adapter_pipeline_config()),
-        requires_safety_checker=False,
-        **pipe_args,
-    )
+def image_to_image_call(context: ImageContext):
+    pipe = get_kontext_pipeline("black-forest-labs/FLUX.1-Kontext-dev")
 
     args = {
         "width": context.width,
         "height": context.height,
         "image": context.color_image,
-        "num_inference_steps": 30,
+        "num_inference_steps": 20,
         "generator": context.generator,
-        "strength": context.data.strength,
         "guidance_scale": 2.0,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
-
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
     return processed_image
 
 
-def inpainting_call(context: ImageContext, model_id):
-    pipe = get_inpainting_pipeline(model_id)
+def inpainting_call(context: ImageContext):
+    pipe = get_inpainting_pipeline("black-forest-labs/FLUX.1-Fill-dev")
 
     args = {
         "width": context.width,
@@ -185,15 +196,11 @@ def inpainting_call(context: ImageContext, model_id):
 def main(context: ImageContext) -> Image.Image:
     mode = context.get_generation_mode()
 
-    model_id = "black-forest-labs/FLUX.1-dev"
-    if context.data.model == "flux-1-krea":
-        model_id = "black-forest-labs/FLUX.1-Krea-dev"
-
     if mode == "text_to_image":
-        return text_to_image_call(context, model_id=model_id)
+        return text_to_image_call(context)
     elif mode == "img_to_img":
-        return image_to_image_call(context, model_id=model_id)
+        return image_to_image_call(context)
     elif mode == "img_to_img_inpainting":
-        return inpainting_call(context, model_id="black-forest-labs/FLUX.1-Fill-dev")
+        return inpainting_call(context)
 
     raise ValueError(f"Unknown mode: {mode}")

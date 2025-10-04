@@ -7,8 +7,6 @@ ModelNameLocal: TypeAlias = Literal[
     "sd-xl",
     "sd-3",
     "flux-1",
-    "flux-1-krea",
-    "flux-kontext-1",
     "qwen-image",
     "depth-anything-2",
     "segment-anything-2",
@@ -20,10 +18,9 @@ ModelNameLocal: TypeAlias = Literal[
 ModelNameExternal: TypeAlias = Literal[
     "gpt-image-1",
     "runway-gen4-image",
-    "flux-kontext-1-pro",
-    "flux-1-1-pro",
+    "flux-1-pro",
     "topazlabs-upscale",
-    "google-gemini-2-5",
+    "google-gemini-2",
     "bytedance-seedream-4",
 ]
 
@@ -33,24 +30,20 @@ ModelName: TypeAlias = Literal[
     "sd-xl",
     "sd-3",
     "flux-1",
-    "flux-1-krea",
-    "flux-kontext-1",
     "qwen-image",
     "depth-anything-2",
     "segment-anything-2",
     "real-esrgan-x4",
     "gpt-image-1",
     "runway-gen4-image",
-    "flux-kontext-1-pro",
-    "flux-1-1-pro",
+    "flux-1-pro",
     "topazlabs-upscale",
-    "google-gemini-2-5",
+    "google-gemini-2",
     "bytedance-seedream-4",
 ]
 
 
 class ModelInfo(BaseModel):
-    path: str
     references: bool = Field(default=False, description="Supports image references as input")
     description: Optional[str] = None
 
@@ -58,7 +51,6 @@ class ModelInfo(BaseModel):
         """Generate documentation for this model"""
         doc = f"## {model_name}\n\n"
         doc += f"{self.description}\n"
-        doc += f"- **Path:** `{self.path}`\n"
         doc += f"- **References:** {'✓' if self.references else '✗'}\n"
 
         doc += "\n"
@@ -67,73 +59,48 @@ class ModelInfo(BaseModel):
 
 MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
     "sd-xl": ModelInfo(
-        path="SG161222/RealVisXL_V4.0",
         references=True,
         description="Stable Diffusion XL variant supports the most conteol nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
     ),
     "sd-3": ModelInfo(
-        path="stabilityai/stable-diffusion-3.5-large",
         description="Stable Diffusion 3.5 offers superior prompt understanding and composition. Excels at complex scenes, concept art, and handling multiple subjects with accurate interactions.",
     ),
     "flux-1": ModelInfo(
-        path="black-forest-labs/FLUX.1-dev",
         references=True,
-        description="FLUX.1 delivers exceptional text rendering and coherent scene composition. Specializes in illustrations with text elements, UI mockups, and detailed technical imagery.",
-    ),
-    "flux-1-krea": ModelInfo(
-        path="black-forest-labs/FLUX.1-Krea-dev",
-        references=True,
-        description="FLUX Krea model is flux-1 dev trained with opinions from krea for more photorealistic results.",
-    ),
-    "flux-kontext-1": ModelInfo(
-        path="black-forest-labs/FLUX.1-Kontext-dev",
-        description="FLUX Kontext model optimized for contextual understanding. Ideal for scene continuation, thematically consistent series, and context-aware image generation.",
+        description="FLUX Krea model is flux-1 dev trained with opinions from krea for more photorealistic results. Will use flux Kontext for image to image and flux fill for inpainting.",
     ),
     "qwen-image": ModelInfo(
-        path="ovedrive/qwen-image-4bit",  # path="Qwen/Qwen-Image",
         description="Qwen model specializes in generating high-quality images from textual descriptions. It excels at understanding nuanced prompts and delivering detailed visuals.",
     ),
     "depth-anything-2": ModelInfo(
-        path="depth-anything/Depth-Anything-V2-Large-hf",
         description="Advanced depth estimation model. Creates high-quality depth maps from any image for 3D visualization, AR applications, and as input for ControlNet pipelines.",
     ),
     "segment-anything-2": ModelInfo(
-        path="sam2.1_hiera_base_plus",
         description="State-of-the-art image segmentation model. Precisely identifies and segments objects, people, and features for compositing, editing, and analysis.",
     ),
 }
 
 MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "gpt-image-1": ModelInfo(
-        path="gpt-image-1",
         references=True,
         description="OpenAI's advanced image generation model with exceptional understanding of complex prompts. Excels at photorealistic imagery, accurate object rendering, and following detailed instructions.",
     ),
     "runway-gen4-image": ModelInfo(
-        path="gen4_image",
         references=True,
         description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combinging multiple references into a single, cohesive image.",
     ),
-    "flux-kontext-1-pro": ModelInfo(
-        path="black-forest-labs/flux-kontext-pro",
-        description="Professional version of FLUX Kontext accessed via API. Offers superior contextual awareness for creating coherent image sequences and variations with consistent themes.",
-    ),
-    "flux-1-1-pro": ModelInfo(
-        path="black-forest-labs/flux-1.1-pro",
-        description="Pro version of FLUX 1.1 with enhanced capabilities. Excellent text rendering, sharp details, and consistent style. Ideal for professional illustrations and design work.",
+    "flux-1-pro": ModelInfo(
+        description="Pro variants of FLUX 1.1 with enhanced capabilities. Will use flux Kontext pro for image to image and flux fill pro for inpainting.",
     ),
     "topazlabs-upscale": ModelInfo(
-        path="topazlabs/image-upscale",
         description="Topaz Labs' advanced image upscaling model. Specializes in enhancing image resolution while preserving fine details and textures, ideal for professional photography and print work.",
     ),
-    "google-gemini-2-5": ModelInfo(
-        path="google-gemini-2.5-image",
-        description="Google's Gemini 2.5 model for advanced image generation and manipulation.",
+    "google-gemini-2": ModelInfo(
+        description="Google's Gemini 2.5 model for advanced image generation and manipulation. Aka nano bannana",
         references=True,
     ),
     "bytedance-seedream-4": ModelInfo(
-        path="bytedance/Seedream-4",
-        description="Unified text-to-image generation and precise single-sentence editing at up to 4K resolution",
+        description="Supreme image to image context model from Bytedance. Excels at transforming input images based on textual prompts while maintaining core elements of the original image.",
         references=True,
     ),
 }

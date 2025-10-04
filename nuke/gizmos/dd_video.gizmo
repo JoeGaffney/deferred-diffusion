@@ -5,7 +5,7 @@ Group {
  inputs 2
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
- addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2-1 wan-2-2 runway-gen-3 runway-gen-4 runway-act-two runway-gen-4-aleph runway-upscale bytedance-seedance-1 kwaivgi-kling-2 minimax-hailuo-2 google-veo-3}}
+ addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2 runway-gen-3 runway-gen-4 runway-act-two runway-gen-4-aleph runway-upscale bytedance-seedance-1 kwaivgi-kling-2 minimax-hailuo-2 google-veo-3}}
  addUserKnob {22 generate l Generate t "Start video generation with current settings." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.process_video(node)"}
  addUserKnob {1 task_id l "Task ID" t "ID of the current video generation task." -STARTLINE}
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest video for this task." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.get_video(node)"}

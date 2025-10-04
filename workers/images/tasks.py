@@ -1,9 +1,10 @@
 import importlib
+from typing import Any, Dict, Tuple
 
 from PIL import Image
 
 from images.context import ImageContext
-from images.schemas import ImageRequest, ImageWorkerResponse
+from images.schemas import ImageRequest, ImageWorkerResponse, ModelName
 from utils.utils import pil_to_base64
 from worker import celery_app
 
@@ -29,12 +30,10 @@ def model_router_main(context: ImageContext) -> Image.Image:
     """
     model = context.data.model
 
-    MODEL_NAME_TO_CALLABLE = {
+    MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
         "sd-xl": ("images.models.sdxl", "main"),
         "sd-3": ("images.models.sd3", "main"),
         "flux-1": ("images.models.flux", "main"),
-        "flux-1-krea": ("images.models.flux", "main"),
-        "flux-kontext-1": ("images.models.flux_kontext", "main"),
         "qwen-image": ("images.models.qwen", "main"),
         "depth-anything-2": ("images.models.depth_anything", "main"),
         "segment-anything-2": ("images.models.segment_anything", "main"),
@@ -42,10 +41,9 @@ def model_router_main(context: ImageContext) -> Image.Image:
         # external implementations (match celery task targets)
         "gpt-image-1": ("images.external_models.openai", "main"),
         "runway-gen4-image": ("images.external_models.runway", "main"),
-        "flux-kontext-1-pro": ("images.external_models.flux_kontext", "main"),
-        "flux-1-1-pro": ("images.external_models.flux", "main"),
+        "flux-1-pro": ("images.external_models.flux", "main"),
         "topazlabs-upscale": ("images.external_models.topazlabs", "main"),
-        "google-gemini-2-5": ("images.external_models.google_gemini", "main"),
+        "google-gemini-2": ("images.external_models.google_gemini", "main"),
         "bytedance-seedream-4": ("images.external_models.bytedance", "main"),
     }
 
@@ -58,8 +56,12 @@ def model_router_main(context: ImageContext) -> Image.Image:
     return main_fn(context)
 
 
+def typed_task(name: ModelName, queue: str):
+    return celery_app.task(name=name, queue=queue)
+
+
 # Explicit internal model tasks (lazy-import model implementation inside each task)
-@celery_app.task(name="sd-3", queue="gpu")
+@typed_task(name="sd-3", queue="gpu")
 def sd_3(request_dict):
     from images.models.sd3 import main
 
@@ -68,7 +70,7 @@ def sd_3(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="flux-1", queue="gpu")
+@typed_task(name="flux-1", queue="gpu")
 def flux_1(request_dict):
     from images.models.flux import main
 
@@ -77,25 +79,7 @@ def flux_1(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="flux-1-krea", queue="gpu")
-def flux_1_krea(request_dict):
-    from images.models.flux import main
-
-    context = validate_request_and_context(request_dict)
-    result = main(context)
-    return process_result(context, result)
-
-
-@celery_app.task(name="flux-kontext-1", queue="gpu")
-def flux_kontext_1(request_dict):
-    from images.models.flux_kontext import main
-
-    context = validate_request_and_context(request_dict)
-    result = main(context)
-    return process_result(context, result)
-
-
-@celery_app.task(name="qwen-image", queue="gpu")
+@typed_task(name="qwen-image", queue="gpu")
 def qwen_image(request_dict):
     from images.models.qwen import main
 
@@ -104,7 +88,7 @@ def qwen_image(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="depth-anything-2", queue="gpu")
+@typed_task(name="depth-anything-2", queue="gpu")
 def depth_anything_2(request_dict):
     from images.models.depth_anything import main
 
@@ -113,7 +97,7 @@ def depth_anything_2(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="segment-anything-2", queue="gpu")
+@typed_task(name="segment-anything-2", queue="gpu")
 def segment_anything_2(request_dict):
     from images.models.segment_anything import main
 
@@ -122,7 +106,7 @@ def segment_anything_2(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="real-esrgan-x4", queue="gpu")
+@typed_task(name="real-esrgan-x4", queue="gpu")
 def real_esrgan_x4(request_dict):
     from images.models.real_esrgan import main
 
@@ -131,7 +115,7 @@ def real_esrgan_x4(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="sd-xl", queue="gpu")
+@typed_task(name="sd-xl", queue="gpu")
 def sd_xl(request_dict):
     from images.models.sdxl import main
 
@@ -141,7 +125,7 @@ def sd_xl(request_dict):
 
 
 # Explicit external model tasks
-@celery_app.task(name="gpt-image-1", queue="cpu")
+@typed_task(name="gpt-image-1", queue="cpu")
 def gpt_image_1(request_dict):
     from images.external_models.openai import main
 
@@ -150,7 +134,7 @@ def gpt_image_1(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="runway-gen4-image", queue="cpu")
+@typed_task(name="runway-gen4-image", queue="cpu")
 def runway_gen4_image(request_dict):
     from images.external_models.runway import main
 
@@ -159,17 +143,8 @@ def runway_gen4_image(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="flux-kontext-1-pro", queue="cpu")
-def flux_kontext_1_pro(request_dict):
-    from images.external_models.flux_kontext import main
-
-    context = validate_request_and_context(request_dict)
-    result = main(context)
-    return process_result(context, result)
-
-
-@celery_app.task(name="flux-1-1-pro", queue="cpu")
-def flux_1_1_pro(request_dict):
+@typed_task(name="flux-1-pro", queue="cpu")
+def flux_1_pro(request_dict):
     from images.external_models.flux import main
 
     context = validate_request_and_context(request_dict)
@@ -177,7 +152,7 @@ def flux_1_1_pro(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="topazlabs-upscale", queue="cpu")
+@typed_task(name="topazlabs-upscale", queue="cpu")
 def topazlabs_upscale(request_dict):
     from images.external_models.topazlabs import main
 
@@ -186,8 +161,8 @@ def topazlabs_upscale(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="google-gemini-2-5", queue="cpu")
-def google_gemini_2_5(request_dict):
+@typed_task(name="google-gemini-2", queue="cpu")
+def google_gemini_2(request_dict):
     from images.external_models.google_gemini import main
 
     context = validate_request_and_context(request_dict)
@@ -195,7 +170,7 @@ def google_gemini_2_5(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="bytedance-seedream-4", queue="cpu")
+@typed_task(name="bytedance-seedream-4", queue="cpu")
 def bytedance_seedream_4(request_dict):
     from images.external_models.bytedance import main
 

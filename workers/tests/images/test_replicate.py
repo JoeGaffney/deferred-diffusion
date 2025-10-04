@@ -14,24 +14,23 @@ from helpers import (
 from images.schemas import ModelName
 
 models: List[ModelName] = [
-    "flux-1-1-pro",
+    "flux-1-pro",
     "runway-gen4-image",
-    "google-gemini-2-5",
+    "google-gemini-2",
     "bytedance-seedream-4",
 ]
 models_image_to_image: List[ModelName] = [
-    "flux-1-1-pro",
-    "flux-kontext-1-pro",
+    "flux-1",
     "runway-gen4-image",
-    "google-gemini-2-5",
+    "google-gemini-2",
     "bytedance-seedream-4",
 ]
 models_inpainting: List[ModelName] = [
-    "flux-1-1-pro",
+    "flux-1",
 ]
 models_references: List[ModelName] = [
     "runway-gen4-image",
-    "google-gemini-2-5",
+    "google-gemini-2",
     "bytedance-seedream-4",
 ]
 

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, Field
 
-ModelNameLocal: TypeAlias = Literal["ltx-video", "wan-2-1", "wan-2-2"]
+ModelNameLocal: TypeAlias = Literal["ltx-video", "wan-2"]
 
 # External-only model names (convenience alias)
 ModelNameExternal: TypeAlias = Literal[
@@ -22,8 +22,7 @@ ModelNameExternal: TypeAlias = Literal[
 # User facing choice
 ModelName: TypeAlias = Literal[
     "ltx-video",
-    "wan-2-1",
-    "wan-2-2",
+    "wan-2",
     "runway-gen-3",
     "runway-gen-4",
     "runway-act-two",
@@ -37,72 +36,51 @@ ModelName: TypeAlias = Literal[
 
 
 class ModelInfo(BaseModel):
-    path: str
-    description: Optional[str] = None
+    description: str
 
     def to_doc_format(self, model_name: str) -> str:
         """Generate documentation for this model"""
         doc = f"### {model_name}\n\n"
-
-        if self.description:
-            doc += f"{self.description}\n\n"
-
-        doc += f"- **Path:** `{self.path}`\n"
-
+        doc += f"{self.description}\n\n"
         doc += "\n"
         return doc
 
 
 MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
     "ltx-video": ModelInfo(
-        path="Lightricks/LTX-Video-0.9.7-distilled",
         description="Fast but more limted video generation model. Good for quick iterations and less complex scenes.",
     ),
-    "wan-2-1": ModelInfo(
-        path="Wan-AI/Wan2.1-I2V-A14B-Diffusers",
-        description="Previous version of Wan 2.2, still strong performance but slightly less temporal consistency.",
-    ),
-    "wan-2-2": ModelInfo(
-        path="Wan-AI/Wan2.2-I2V-A14B-Diffusers",
-        description="Powerful model with excellent temporal consistency. Specializes in maintaining subject identity and detailed motion from a single image.",
+    "wan-2": ModelInfo(
+        description="Wan 2.2, best open-source video generation model. Good quality and motion coherence for a variety of scenes.",
     ),
 }
 
 MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "runway-gen-3": ModelInfo(
-        path="gen3a_turbo",
-        description="Runway's Gen-3 model accessed via API. Great for dynamic scenes, camera movements, and natural motion. Good balance of quality and generation speed.",
+        description="Runway's Gen-3 model okay for basic video generation tasks. Suitable for simple scenes and concepts.",
     ),
     "runway-gen-4": ModelInfo(
-        path="gen4_turbo",
-        description="Runway's latest Gen-4 model offering exceptional motion coherence and visual quality. Superior handling of complex animations and realistic physics.",
+        description="Runway's latest Gen-4 showing it's age fast computer time. Good for a variety of video generation tasks with improved quality over Gen-3.",
     ),
     "runway-act-two": ModelInfo(
-        path="act_two",
         description="Runway's Act Two model updates a video with reference image. Ideal for enhancing existing footage with new visual elements while maintaining original motion and style.",
     ),
     "runway-upscale": ModelInfo(
-        path="upscale_v1",
         description="Runway's Upscale model for high-quality video upscaling. Utilizes advanced techniques to enhance video resolution and detail.",
     ),
     "runway-gen-4-aleph": ModelInfo(
-        path="gen4_aleph",
         description="Runway's Gen-4 Aleph model, takes in video input as well as images and can enhance or change the video. Or even generate new video content based on the input images and video. Ideal for creative video transformations and enhancements.",
     ),
     "bytedance-seedance-1": ModelInfo(
-        path="bytedance/seedance-1-lite",
-        description="ByteDance's Seedance-1 model, a lighter version of their Seedance-1 model. Good for generating dance videos from text prompts with lower computational requirements.",
+        description="ByteDance's Seedance-1 model, Pretty strong overall and quite fast. Good for a variety of video generation tasks with decent quality and speed.",
     ),
     "kwaivgi-kling-2": ModelInfo(
-        path="kwaivgi/kling-v2.1",
         description="Kling V2 model by kwaivgi, designed for high-quality video generation from text prompts. Known for its ability to create detailed and coherent video sequences.",
     ),
     "google-veo-3": ModelInfo(
-        path="google/veo-3-fast",
         description="Google's VEO-3-Fast model, optimized for rapid video generation while maintaining good quality. Suitable for applications requiring quick turnaround times.",
     ),
     "minimax-hailuo-2": ModelInfo(
-        path="minimax/hailuo-02",
         description="Minimax's Hailuo-02 model, a versatile video generation model capable of producing high-quality videos from text prompts. Balances quality and performance effectively.",
     ),
 }
