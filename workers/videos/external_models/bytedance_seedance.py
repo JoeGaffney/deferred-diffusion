@@ -17,7 +17,7 @@ def main(context: VideoContext):
     if context.image_last_frame:
         payload["last_frame_image"] = convert_pil_to_bytes(context.image_last_frame)
 
-    output = replicate_run("bytedance/seedance-1-lite", payload)
+    output = replicate_run("bytedance/seedance-1-pro", payload)
     video_url = process_replicate_video_output(output)
 
     return context.save_video_url(video_url)

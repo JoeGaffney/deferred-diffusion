@@ -13,7 +13,7 @@ ModelNameExternal: TypeAlias = Literal[
     "runway-upscale",
     "runway-gen-4-aleph",
     "bytedance-seedance-1",
-    "kwaivgi-kling-2-1",
+    "kwaivgi-kling-2",
     "minimax-hailuo-2",
     "google-veo-3",
 ]
@@ -30,7 +30,7 @@ ModelName: TypeAlias = Literal[
     "runway-upscale",
     "runway-gen-4-aleph",
     "bytedance-seedance-1",
-    "kwaivgi-kling-2-1",
+    "kwaivgi-kling-2",
     "minimax-hailuo-2",
     "google-veo-3",
 ]
@@ -91,11 +91,11 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     ),
     "bytedance-seedance-1": ModelInfo(
         path="bytedance/seedance-1-lite",
-        description="ByteDance's Seedance-1-Lite model, a lighter version of their Seedance-1 model. Good for generating dance videos from text prompts with lower computational requirements.",
+        description="ByteDance's Seedance-1 model, a lighter version of their Seedance-1 model. Good for generating dance videos from text prompts with lower computational requirements.",
     ),
-    "kwaivgi-kling-2-1": ModelInfo(
+    "kwaivgi-kling-2": ModelInfo(
         path="kwaivgi/kling-v2.1",
-        description="Kling V2.1 model by kwaivgi, designed for high-quality video generation from text prompts. Known for its ability to create detailed and coherent video sequences.",
+        description="Kling V2 model by kwaivgi, designed for high-quality video generation from text prompts. Known for its ability to create detailed and coherent video sequences.",
     ),
     "google-veo-3": ModelInfo(
         path="google/veo-3-fast",

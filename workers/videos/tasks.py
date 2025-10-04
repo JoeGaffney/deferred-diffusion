@@ -38,7 +38,7 @@ def model_router_main(context: VideoContext):
         "runway-upscale": ("videos.external_models.runway_upscale", "main"),
         "runway-gen-4-aleph": ("videos.external_models.runway_aleph", "main"),
         "bytedance-seedance-1": ("videos.external_models.bytedance_seedance", "main"),
-        "kwaivgi-kling-2-1": ("videos.external_models.kling", "main"),
+        "kwaivgi-kling-2": ("videos.external_models.kling", "main"),
         "google-veo-3": ("videos.external_models.google_veo", "main"),
         "minimax-hailuo-2": ("videos.external_models.minimax_hailuo", "main"),
     }
@@ -135,8 +135,8 @@ def bytedance_seedance_1(request_dict):
     return process_result(context, result)
 
 
-@celery_app.task(name="kwaivgi-kling-2-1", queue="cpu")
-def kwaivgi_kling_2_1(request_dict):
+@celery_app.task(name="kwaivgi-kling-2", queue="cpu")
+def kwaivgi_kling_2(request_dict):
     from videos.external_models.kling import main
 
     context = validate_request_and_context(request_dict)
