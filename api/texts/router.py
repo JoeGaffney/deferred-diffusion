@@ -9,13 +9,16 @@ from texts.schemas import (
     TextRequest,
     TextResponse,
     TextWorkerResponse,
+    generate_model_docs,
 )
 from worker import celery_app
 
-router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify_token)])
+router = APIRouter(
+    prefix="/texts", tags=["Texts"], dependencies=[Depends(verify_token)]  # This will apply to all routes
+)
 
 
-@router.post("", response_model=TextCreateResponse, operation_id="texts_create")
+@router.post("", response_model=TextCreateResponse, operation_id="texts_create", description=generate_model_docs())
 def create(request: TextRequest, response: Response):
     try:
         result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
