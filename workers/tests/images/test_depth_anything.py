@@ -25,7 +25,6 @@ def test_models(mode):
                 image=image_to_base64("../assets/color_v001.jpeg"),
                 prompt="Detailed, 8k, DSLR photo, photorealistic, tornado, enhance keep original elements",
                 strength=0.5,
-                guidance_scale=5,
                 width=width,
                 height=height,
             )

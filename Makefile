@@ -29,13 +29,13 @@ generate-clients: up
 
 
 TEST_PATH ?= images
-# make test-worker TEST_PATH=videos
-# make test-worker TEST_PATH=texts
 # make test-worker TEST_PATH=images
-# make test-worker TEST_PATH=images/test_text_to_image.py
-# make test-worker TEST_PATH=images/test_image_to_image.py
-# make test-worker TEST_PATH=images/test_external_text_to_image.py
-# make test-worker TEST_PATH=images/test_external_image_to_image.py
+# make test-worker TEST_PATH=texts
+# make test-worker TEST_PATH=videos
+# make test-worker TEST_PATH=images/test_flux.py
+# make test-worker TEST_PATH=images/test_replicate.py
+# make test-worker TEST_PATH=videos/test_wan.py
+# make test-worker TEST_PATH=videos/test_replicate.py
 test-worker: up
 	docker-compose exec gpu-workers pytest tests/$(TEST_PATH) -vs
 

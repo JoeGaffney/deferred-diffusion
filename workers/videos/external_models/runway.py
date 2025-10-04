@@ -10,9 +10,9 @@ from videos.context import VideoContext
 
 def main(context: VideoContext):
     client = RunwayML()
-
-    if context.data.model_path not in ["gen3a_turbo", "gen4_turbo"]:
-        raise ValueError("Only gen3a_turbo and gen4_turbo models are supported")
+    model = "gen4_turbo"
+    if context.data.model == "runway-gen-3":
+        model = "gen3a_turbo"
 
     # atm only these 16 by 9 or 9 by 16 supported
     # TODO switch to closest resolution as per the aspect ratio
@@ -22,7 +22,6 @@ def main(context: VideoContext):
 
     image = resize_image(image, 1, 1.0, 2048, 2048)
 
-    model: Literal["gen3a_turbo", "gen4_turbo"] = cast(Literal["gen3a_turbo", "gen4_turbo"], context.data.model_path)
     ratio: Literal["1280:768", "1280:720", "768:1280"] = "1280:768"
     duration: Literal[5, 10] = 5
     if model == "gen4_turbo":

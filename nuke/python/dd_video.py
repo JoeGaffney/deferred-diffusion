@@ -2,6 +2,7 @@ import os
 import time
 
 import nuke
+from httpcore import RemoteProtocolError
 
 from config import client
 from generated.api_client.api.videos import videos_create, videos_get
@@ -44,11 +45,12 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
                 break
 
-            def progress_update():
-                if isinstance(parsed, VideoResponse):
-                    set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
+            def progress_update(parsed=parsed, count=count):
+                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
+        except RemoteProtocolError:
+            continue  # Retry on protocol errors attempt again
         except Exception as e:
 
             def handle_error(error=e):
@@ -123,10 +125,7 @@ def process_video(node):
             image_last_frame=image_last_frame,
             video=video_base64,
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
-            negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
-            guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
             num_frames=get_node_value(node, "num_frames", UNSET, return_type=int, mode="value"),
-            num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
         )
         _api_call(node, body, output_video_path, current_frame)

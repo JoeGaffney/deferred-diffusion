@@ -1,27 +1,21 @@
 #! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
 version 14.0 v3
-Gizmo {
+Group {
+ name DDImage
  inputs 3
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
- addUserKnob {4 model l "Model" M {sd-xl sd-3 flux-1 flux-1-krea flux-kontext-1 depth-anything-2 segment-anything-2 real-esrgan-x4 gpt-image-1 runway-gen4-image flux-kontext-1-pro flux-1-1-pro topazlabs-upscale } t "Select the image generation model."}
+ addUserKnob {4 model l "Model" M {sd-xl sd-3 flux-1 qwen-image depth-anything-2 segment-anything-2 real-esrgan-x4 gpt-image-1 runway-gen4-image flux-1-pro topazlabs-upscale google-gemini-2 bytedance-seedream-4 } t "Select the image generation model."}
  addUserKnob {22 generate l "Generate" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" t "Start image generation with current settings."}
  addUserKnob {1 task_id l "Task ID" -STARTLINE t "ID of the current image generation task."}
  addUserKnob {22 get_task l "Get Task" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)" t "Fetch the latest image for this task."}
  addUserKnob {26 ""}
  addUserKnob {43 prompt l "Prompt" t "Describe the image you want to generate."}
  prompt "Detailed, 8k, photorealistic"
- addUserKnob {43 negative_prompt l "Negative" t "Describe what to avoid in the image." -STARTLINE}
- negative_prompt "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon"
- addUserKnob {26 ""}
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
  width_height {1280 720}
- addUserKnob {7 num_inference_steps l "Quality (Steps)" t "Number of inference steps for generation. Higher means better quality." R 1 50}
- num_inference_steps 25
- addUserKnob {7 strength l "Strength" t "How much the input image influences the result (0-1)."}
+ addUserKnob {7 strength l "Strength" t "Prompt strength for img2img. 0.0 keeps the image, 1.0 follows the prompt; in between blends their influence."}
  strength 0.5
- addUserKnob {7 guidance_scale l "Guidance Scale" t "Classifier-free guidance (CFG) scale. Higher = more prompt adherence." R 1 10}
- guidance_scale 5
  addUserKnob {7 seed l "Seed" t "Random seed for reproducibility." R 1 1000}
  seed 42
  addUserKnob {20 Paths}

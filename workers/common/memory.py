@@ -6,8 +6,6 @@ import torch
 
 from common.logger import logger
 
-LOW_VRAM = os.getenv("LOW_VRAM", "0") == "1"
-
 
 def _get_total_gpu_usage():
     try:
@@ -49,28 +47,20 @@ def _get_gpu_memory_usage_pretty():
     )
 
 
-def _should_free_gpu_memory(threshold_percent: float = 1):
-    total, used, reserved, allocated, usage_percent, allocated_percent = _get_gpu_memory_usage()
-    logger.info(f"{_get_gpu_memory_usage_pretty()}")
-    return allocated_percent > threshold_percent
-
-
 def gpu_memory_usage():
     logger.info(f"{_get_gpu_memory_usage_pretty()}")
     # logger.info(torch.cuda.memory_summary())
 
 
 def free_gpu_memory(threshold_percent: float = 25):
-    if (_should_free_gpu_memory(threshold_percent=threshold_percent) == False) or (torch.cuda.is_available() == False):
-        return
-
     gc.collect()
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
+    torch.cuda.reset_peak_memory_stats()
 
     gc.collect()
     torch.cuda.synchronize()
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
 
-    logger.warning(f"Clean {_get_gpu_memory_usage_pretty()}")
+    logger.warning(f"Cleaned GPU memory: {_get_gpu_memory_usage_pretty()}")

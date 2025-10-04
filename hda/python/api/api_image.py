@@ -78,15 +78,12 @@ def main(node):
 
         body = ImageRequest(
             model=ImageRequestModel(params.get("model", "sdxl")),
-            controlnets=get_control_nets(node),
-            guidance_scale=params.get("guidance_scale", UNSET),
+            # controlnets=get_control_nets(node),
             image=image,
-            ip_adapters=get_ip_adapters(node),
+            # ip_adapters=get_ip_adapters(node),
             mask=mask,
             height=params.get("height", UNSET),
             width=params.get("width", UNSET),
-            negative_prompt=params.get("negative_prompt", UNSET),
-            num_inference_steps=params.get("num_inference_steps", UNSET),
             prompt=params.get("prompt", UNSET),
             seed=params.get("seed", UNSET),
             strength=params.get("strength", UNSET),

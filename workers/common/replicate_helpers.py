@@ -25,3 +25,11 @@ def process_replicate_image_output(output: Any) -> Image.Image:
         raise ValueError(f"Failed to process image from replicate: {str(e)} {output}")
 
     return processed_image
+
+
+def process_replicate_video_output(output: Any) -> str:
+    """Process replicate video output and return the URL for download."""
+    if not isinstance(output, FileOutput):
+        raise ValueError(f"Expected output from replicate to be FileOutput, got {type(output)} {str(output)}")
+
+    return output.url

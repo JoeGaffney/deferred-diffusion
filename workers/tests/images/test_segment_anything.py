@@ -24,7 +24,6 @@ def test_models(mode):
                 image=image_to_base64("../assets/style_v001.jpeg"),
                 prompt="Person, house, tree, flowers",
                 strength=0.5,
-                guidance_scale=5,
             )
         )
     )

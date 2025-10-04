@@ -8,7 +8,7 @@ from worker import celery_app
 async def main(prompt: str, image_reference_image: str) -> str:
     print(f"Processing image reference with prompt: {prompt}")
     request = TextRequest(
-        model="gpt-4o-mini",  # or "gpt-4.1-mini" for the other model
+        model="gpt-5",  # or "gpt-4.1-mini" for the other model
         messages=[
             MessageItem(
                 role="user",
@@ -21,7 +21,7 @@ async def main(prompt: str, image_reference_image: str) -> str:
     )
     id = None
     try:
-        create_result = celery_app.send_task("process_text_external", args=[request.model_dump()])
+        create_result = celery_app.send_task("gpt-5", args=[request.model_dump()])
         id = create_result.id
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")

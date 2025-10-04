@@ -1,6 +1,5 @@
 from typing import Literal
 
-import replicate
 from PIL import Image
 
 from common.replicate_helpers import process_replicate_image_output, replicate_run
@@ -31,7 +30,7 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
         "raw": True,
     }
 
-    output = replicate_run(context.data.model_path, payload)
+    output = replicate_run("black-forest-labs/flux-1.1-pro", payload)
 
     return process_replicate_image_output(output)
 
@@ -42,18 +41,13 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
 
     payload = {
         "prompt": context.data.prompt,
-        "image_prompt": convert_pil_to_bytes(context.color_image),
+        "input_image": convert_pil_to_bytes(context.color_image),
         "output_format": "png",
-        "guidance": context.data.guidance_scale,
-        "image_prompt_strength": context.data.strength,
-        "steps": 50,
         "safety_tolerance": 6,
         "seed": context.data.seed,
-        "aspect_ratio": get_size(context),
-        # "raw": True,
     }
 
-    output = replicate_run(context.data.model_path, payload)
+    output = replicate_run("black-forest-labs/flux-kontext-pro", payload)
 
     return process_replicate_image_output(output)
 
@@ -66,14 +60,12 @@ def inpainting_call(context: ImageContext) -> Image.Image:
         "prompt": context.data.prompt,
         "image": convert_pil_to_bytes(context.color_image),
         "mask": convert_pil_to_bytes(context.mask_image),
-        "guidance": context.data.guidance_scale * 10,  # range is from 1.5 to 100
-        "steps": 50,
         "output_format": "png",
         "safety_tolerance": 6,
         "seed": context.data.seed,
     }
 
-    output = replicate_run(context.data.model_path_inpainting, payload)
+    output = replicate_run("black-forest-labs/flux-fill-pro", payload)
 
     return process_replicate_image_output(output)
 

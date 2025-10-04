@@ -1,20 +1,10 @@
+import importlib
+from typing import Any, Dict, Tuple
+
 from PIL import Image
 
 from images.context import ImageContext
-from images.external_models.flux import main as external_flux_main
-from images.external_models.flux_kontext import main as external_flux_kontext_main
-from images.external_models.openai import main as external_openai_main
-from images.external_models.runway import main as external_runway_main
-from images.external_models.topazlabs import main as external_topazlabs_main
-from images.models.depth_anything import main as depth_anything_main
-from images.models.flux import main as flux_main
-from images.models.flux_kontext import main as flux_kontext_main
-from images.models.qwen import main as qwen_main
-from images.models.real_esrgan import main as real_esrgan_main
-from images.models.sd3 import main as sd3_main
-from images.models.sdxl import main as sdxl_main
-from images.models.segment_anything import main as segment_anything_main
-from images.schemas import ImageRequest, ImageWorkerResponse
+from images.schemas import ImageRequest, ImageWorkerResponse, ModelName
 from utils.utils import pil_to_base64
 from worker import celery_app
 
@@ -26,64 +16,164 @@ def process_result(context, result):
     raise ValueError("Image generation failed")
 
 
-def model_router_main(context: ImageContext):
-    family = context.data.model_family
-    if family == "sdxl":
-        return sdxl_main(context)
-    elif family == "sd3":
-        return sd3_main(context)
-    elif family == "flux":
-        return flux_main(context)
-    elif family == "flux_kontext":
-        return flux_kontext_main(context)
-    elif family == "real_esrgan":
-        return real_esrgan_main(context)
-    elif family == "depth_anything":
-        return depth_anything_main(context)
-    elif family == "segment_anything":
-        return segment_anything_main(context)
-    elif family == "qwen":
-        return qwen_main(context)
-    else:
-        raise ValueError(f"Unsupported model family: {family}")
-
-
-def external_model_router_main(context: ImageContext):
-    family = context.data.model_family
-    if family == "openai":
-        return external_openai_main(context)
-    elif family == "runway":
-        return external_runway_main(context)
-    elif family == "flux_kontext":
-        return external_flux_kontext_main(context)
-    elif family == "flux":
-        return external_flux_main(context)
-    elif family == "topazlabs":
-        return external_topazlabs_main(context)
-    else:
-        raise ValueError(f"Unsupported model family: {family}")
-
-
-def router_main(context: ImageContext):
-    if context.data.external_model:
-        return external_model_router_main(context)
-
-    return model_router_main(context)
-
-
-@celery_app.task(name="process_image", queue="gpu")
-def process_image(request_dict):
+# Helper to validate request and build context to avoid duplication across tasks
+def validate_request_and_context(request_dict):
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
-    result = model_router_main(context)
+    return context
 
+
+def model_router_main(context: ImageContext) -> Image.Image:
+    """Route to the specific model implementation by concrete model name.
+
+    Lazy-imports the module/attribute that the corresponding celery task would call.
+    """
+    model = context.data.model
+
+    MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
+        "sd-xl": ("images.models.sdxl", "main"),
+        "sd-3": ("images.models.sd3", "main"),
+        "flux-1": ("images.models.flux", "main"),
+        "qwen-image": ("images.models.qwen", "main"),
+        "depth-anything-2": ("images.models.depth_anything", "main"),
+        "segment-anything-2": ("images.models.segment_anything", "main"),
+        "real-esrgan-x4": ("images.models.real_esrgan", "main"),
+        # external implementations (match celery task targets)
+        "gpt-image-1": ("images.external_models.openai", "main"),
+        "runway-gen4-image": ("images.external_models.runway", "main"),
+        "flux-1-pro": ("images.external_models.flux", "main"),
+        "topazlabs-upscale": ("images.external_models.topazlabs", "main"),
+        "google-gemini-2": ("images.external_models.google_gemini", "main"),
+        "bytedance-seedream-4": ("images.external_models.bytedance", "main"),
+    }
+
+    if model not in MODEL_NAME_TO_CALLABLE:
+        raise ValueError(f"No direct model implementation mapped for model '{model}'")
+
+    module_path, attr = MODEL_NAME_TO_CALLABLE[model]
+    mod = importlib.import_module(module_path)
+    main_fn = getattr(mod, attr)
+    return main_fn(context)
+
+
+def typed_task(name: ModelName, queue: str):
+    return celery_app.task(name=name, queue=queue)
+
+
+# Explicit internal model tasks (lazy-import model implementation inside each task)
+@typed_task(name="sd-3", queue="gpu")
+def sd_3(request_dict):
+    from images.models.sd3 import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
     return process_result(context, result)
 
 
-@celery_app.task(name="process_image_external", queue="cpu")
-def process_image_external(request_dict):
-    request = ImageRequest.model_validate(request_dict)
-    context = ImageContext(request)
-    result = external_model_router_main(context)
+@typed_task(name="flux-1", queue="gpu")
+def flux_1(request_dict):
+    from images.models.flux import main
 
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="qwen-image", queue="gpu")
+def qwen_image(request_dict):
+    from images.models.qwen import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="depth-anything-2", queue="gpu")
+def depth_anything_2(request_dict):
+    from images.models.depth_anything import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="segment-anything-2", queue="gpu")
+def segment_anything_2(request_dict):
+    from images.models.segment_anything import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="real-esrgan-x4", queue="gpu")
+def real_esrgan_x4(request_dict):
+    from images.models.real_esrgan import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="sd-xl", queue="gpu")
+def sd_xl(request_dict):
+    from images.models.sdxl import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+# Explicit external model tasks
+@typed_task(name="gpt-image-1", queue="cpu")
+def gpt_image_1(request_dict):
+    from images.external_models.openai import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="runway-gen4-image", queue="cpu")
+def runway_gen4_image(request_dict):
+    from images.external_models.runway import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="flux-1-pro", queue="cpu")
+def flux_1_pro(request_dict):
+    from images.external_models.flux import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="topazlabs-upscale", queue="cpu")
+def topazlabs_upscale(request_dict):
+    from images.external_models.topazlabs import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="google-gemini-2", queue="cpu")
+def google_gemini_2(request_dict):
+    from images.external_models.google_gemini import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="bytedance-seedream-4", queue="cpu")
+def bytedance_seedream_4(request_dict):
+    from images.external_models.bytedance import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
     return process_result(context, result)

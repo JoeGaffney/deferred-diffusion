@@ -1,18 +1,18 @@
 import torch
 from diffusers.pipelines.ltx.pipeline_ltx_condition import (
+    AutoencoderKLLTXVideo,
     LTXConditionPipeline,
     LTXVideoCondition,
     LTXVideoTransformer3DModel,
 )
 
-from common.memory import LOW_VRAM
-from common.pipeline_helpers import (
-    decorator_global_pipeline_cache,
-    get_quantized_model,
-    get_quantized_t5_text_encoder,
-)
+from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
+from common.text_encoders import ltx_encode
 from utils.utils import ensure_divisible, get_16_9_resolution, resize_image
 from videos.context import VideoContext
+
+_negative_prompt_default = "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes"
 
 
 @decorator_global_pipeline_cache
@@ -22,26 +22,32 @@ def get_pipeline(model_id):
         model_id,
         subfolder="transformer",
         model_class=LTXVideoTransformer3DModel,
-        target_precision=4 if LOW_VRAM else 4,
+        target_precision=VIDEO_TRANSFORMER_PRECISION,
         torch_dtype=torch.bfloat16,
     )
-
-    text_encoder = get_quantized_t5_text_encoder(8)
 
     pipe = LTXConditionPipeline.from_pretrained(
         model_id,
         transformer=transformer,
-        text_encoder=text_encoder,
+        text_encoder=None,
+        tokenizer=None,
         torch_dtype=torch.bfloat16,
     )
 
     pipe.vae.enable_tiling()
-    pipe.enable_model_cpu_offload()
+    if VIDEO_CPU_OFFLOAD:
+        pipe.enable_model_cpu_offload()
+    else:
+        pipe.to("cuda")
+
     return pipe
 
 
 def image_to_video(context: VideoContext):
-    pipe = get_pipeline(context.data.model_path)
+    prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
+    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode("")
+
+    pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
     width, height = get_16_9_resolution("720p")
     image = context.image
@@ -65,9 +71,11 @@ def image_to_video(context: VideoContext):
         width=image.size[0],
         height=image.size[1],
         conditions=conditions,
-        prompt=context.data.prompt,
-        negative_prompt=context.data.negative_prompt,
-        num_inference_steps=context.data.num_inference_steps,
+        prompt_embeds=prompt_embeds,
+        prompt_attention_mask=prompt_attention_mask,
+        negative_prompt_embeds=negative_prompt_embeds,
+        negative_prompt_attention_mask=negative_prompt_attention_mask,
+        num_inference_steps=10,
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
         guidance_scale=1.0,
@@ -78,7 +86,10 @@ def image_to_video(context: VideoContext):
 
 
 def text_to_video(context: VideoContext):
-    pipe = get_pipeline(context.data.model_path)
+    prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
+    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode("")
+
+    pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
     width, height = get_16_9_resolution("720p")
     width = ensure_divisible(width, 32)
@@ -87,9 +98,11 @@ def text_to_video(context: VideoContext):
     video = pipe.__call__(
         width=width,
         height=height,
-        prompt=context.data.prompt,
-        negative_prompt=context.data.negative_prompt,
-        num_inference_steps=context.data.num_inference_steps,
+        prompt_embeds=prompt_embeds,
+        prompt_attention_mask=prompt_attention_mask,
+        negative_prompt_embeds=negative_prompt_embeds,
+        negative_prompt_attention_mask=negative_prompt_attention_mask,
+        num_inference_steps=10,
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
         guidance_scale=1.0,

@@ -44,7 +44,7 @@ def text_to_image_call(context: ImageContext):
     client = OpenAI()
 
     result = client.images.generate(
-        model=context.data.model_path,
+        model="gpt-image-1",
         quality="high",
         prompt=context.data.prompt,
         size=get_size(context),
@@ -69,7 +69,7 @@ def image_to_image_call(context: ImageContext):
         raise ValueError("No reference images provided")
 
     result = client.images.edit(
-        model=context.data.model_path,
+        model="gpt-image-1",
         quality="high",
         prompt=context.data.prompt,
         size=get_size(context),  # type: ignore type hints wrong
@@ -92,7 +92,7 @@ def inpainting_call(context: ImageContext):
 
     try:
         result = client.images.edit(
-            model=context.data.model_path,
+            model="gpt-image-1",
             quality="high",
             prompt=context.data.prompt,
             size=get_size(context),  # type: ignore type hints wrong

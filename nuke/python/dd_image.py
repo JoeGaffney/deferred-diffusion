@@ -1,6 +1,7 @@
 import time
 
 import nuke
+from httpx import RemoteProtocolError
 
 from config import client
 from generated.api_client.api.images import images_create, images_get
@@ -45,11 +46,12 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
                 break
 
-            def progress_update():
-                if isinstance(parsed, ImageResponse):
-                    set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
+            def progress_update(parsed=parsed, count=count):
+                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
 
             nuke.executeInMainThread(progress_update)
+        except RemoteProtocolError:
+            continue  # Retry on protocol errors attempt again
         except Exception as e:
 
             def handle_error(error=e):
@@ -113,11 +115,8 @@ def process_image(node):
 
         body = ImageRequest(
             model=ImageRequestModel(get_node_value(node, "model", "sd-xl", mode="value")),
-            guidance_scale=get_node_value(node, "guidance_scale", UNSET, return_type=float, mode="value"),
             image=image,
             mask=mask,
-            negative_prompt=get_node_value(node, "negative_prompt", UNSET, mode="get"),
-            num_inference_steps=get_node_value(node, "num_inference_steps", UNSET, return_type=int, mode="value"),
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
             strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),

@@ -3,31 +3,30 @@ from diffusers import (
     AutoPipelineForImage2Image,
     AutoPipelineForText2Image,
     DDIMScheduler,
-    DiffusionPipeline,
     StableDiffusionXLInpaintPipeline,
+    StableDiffusionXLPipeline,
 )
 from PIL import Image
 from transformers import CLIPVisionModelWithProjection
 
-from common.logger import logger
+from common.config import IMAGE_CPU_OFFLOAD
 from common.pipeline_helpers import decorator_global_pipeline_cache, optimize_pipeline
 from images.adapters import AdapterPipelineConfig
 from images.context import ImageContext
 
+_negative_prompt_default = "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes"
+
 
 @decorator_global_pipeline_cache
-def get_pipeline(model_id, config: AdapterPipelineConfig) -> DiffusionPipeline:
-    args = {"torch_dtype": torch.float16, "use_safetensors": True}
+def get_pipeline(model_id, config: AdapterPipelineConfig) -> StableDiffusionXLPipeline:
 
-    pipe = DiffusionPipeline.from_pretrained(
+    pipe = StableDiffusionXLPipeline.from_pretrained(
         model_id,
-        **args,
+        torch_dtype=torch.float16,
+        use_safetensors=True,
     )
 
     if config.ip_adapter_models != ():
-        if not hasattr(pipe, "load_ip_adapter"):
-            raise ValueError("The pipeline does not support IP-Adapters. Please use a compatible pipeline.")
-
         pipe.load_ip_adapter(
             list(config.ip_adapter_models),
             subfolder=list(config.ip_adapter_subfolders),
@@ -43,22 +42,23 @@ def get_pipeline(model_id, config: AdapterPipelineConfig) -> DiffusionPipeline:
             pipe.image_encoder = image_encoder
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 @decorator_global_pipeline_cache
 def get_inpainting_pipeline(model_id, variant=None) -> StableDiffusionXLInpaintPipeline:
-    args = {"torch_dtype": torch.float16, "use_safetensors": True}
-
+    args = {}
     if variant:
         args["variant"] = variant
 
     pipe = StableDiffusionXLInpaintPipeline.from_pretrained(
         model_id,
+        torch_dtype=torch.float16,
+        use_safetensors=True,
         **args,
     )
 
-    return optimize_pipeline(pipe)
+    return optimize_pipeline(pipe, offload=False)
 
 
 def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
@@ -81,7 +81,7 @@ def text_to_image_call(context: ImageContext):
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForText2Image.from_pipe(
-        get_pipeline(context.data.model_path, context.adapters.get_adapter_pipeline_config()),
+        get_pipeline("SG161222/RealVisXL_V4.0", context.adapters.get_adapter_pipeline_config()),
         requires_safety_checker=False,
         **pipe_args,
     )
@@ -90,10 +90,10 @@ def text_to_image_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
-        "num_inference_steps": context.data.num_inference_steps,
+        "negative_prompt": _negative_prompt_default,
+        "num_inference_steps": 30,
         "generator": context.generator,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 3.5,
     }
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
@@ -110,7 +110,7 @@ def image_to_image_call(context: ImageContext):
         pipe_args["controlnet"] = controlnets
 
     pipe = AutoPipelineForImage2Image.from_pipe(
-        get_pipeline(context.data.model_path, context.adapters.get_adapter_pipeline_config()),
+        get_pipeline("SG161222/RealVisXL_V4.0", context.adapters.get_adapter_pipeline_config()),
         requires_safety_checker=False,
         **pipe_args,
     )
@@ -119,12 +119,12 @@ def image_to_image_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
+        "negative_prompt": _negative_prompt_default,
         "image": context.color_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "strength": context.data.strength,
-        "guidance_scale": context.data.guidance_scale,
+        "guidance_scale": 3.5,
     }
 
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
@@ -136,19 +136,19 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    pipe = get_inpainting_pipeline(context.data.model_path_inpainting, variant="fp16")
+    pipe = get_inpainting_pipeline("OzzyGT/RealVisXL_V4.0_inpainting", variant="fp16")
 
     args = {
         "width": context.width,
         "height": context.height,
         "prompt": context.data.prompt,
-        "negative_prompt": context.data.negative_prompt,
+        "negative_prompt": _negative_prompt_default,
         "image": context.color_image,
         "mask_image": context.mask_image,
-        "num_inference_steps": context.data.num_inference_steps,
+        "num_inference_steps": 25,
         "generator": context.generator,
-        "strength": context.data.strength,
-        "guidance_scale": context.data.guidance_scale,
+        "strength": 0.95,
+        "guidance_scale": 4.0,
     }
 
     processed_image = pipe.__call__(**args).images[0]
@@ -158,6 +158,7 @@ def inpainting_call(context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
+    context.ensure_max_dimension(1024)
     context.ensure_divisible(16)
     mode = context.get_generation_mode()
 

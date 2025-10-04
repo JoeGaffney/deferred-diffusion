@@ -16,6 +16,6 @@ def main(context: ImageContext) -> Image.Image:
         "face_enhancement": False,
     }
 
-    output = replicate_run(context.data.model_path, payload)
+    output = replicate_run("topazlabs/image-upscale", payload)
 
     return process_replicate_image_output(output)

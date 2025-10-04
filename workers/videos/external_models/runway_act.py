@@ -10,10 +10,6 @@ from videos.context import VideoContext
 
 def main(context: VideoContext):
     client = RunwayML()
-    # Only 'act_two' model is supported for this context
-    if context.data.model_path not in ["act_two"]:
-        raise ValueError("Only 'act_two' model is supported")
-
     image = context.image
     if image is None:
         raise ValueError("Input image is None. Please provide a valid image.")
@@ -22,8 +18,6 @@ def main(context: VideoContext):
     if video is None:
         raise ValueError("Input video is None. Please provide a valid video.")
 
-    model: Literal["act_two"] = cast(Literal["act_two"], context.data.model_path)
-
     # TODO switch to closest resolution as per the aspect ratio
     image = resize_image(image, 1, 1.0, 2048, 2048)
     image_uri = f"data:image/png;base64,{pill_to_base64(image)}"
@@ -31,10 +25,9 @@ def main(context: VideoContext):
 
     video_uri = f"data:video/mp4;base64,{video}"
 
-    logger.info(f"Creating Runway {model} task")
     try:
         task = client.character_performance.create(
-            model=model,
+            model="act_two",
             character={
                 "type": "image",
                 "uri": image_uri,

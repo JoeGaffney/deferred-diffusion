@@ -78,10 +78,7 @@ def main(node):
             image=image,
             prompt=params.get("prompt", ""),
             seed=params.get("seed", 0),
-            negative_prompt=params.get("negative_prompt", UNSET),
             num_frames=params.get("num_frames", UNSET),
-            num_inference_steps=params.get("num_inference_steps", UNSET),
-            guidance_scale=params.get("guidance_scale", UNSET),
         )
 
         _api_call(node, body, output_video_path)

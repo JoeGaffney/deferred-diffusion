@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from common.exceptions import IPAdapterConfigError
 from common.logger import logger
-from images.schemas import ModelFamily, References
+from images.schemas import ModelName, References
 from utils.utils import load_image_if_exists
 
 processor = IPAdapterMaskProcessor()
@@ -56,8 +56,8 @@ generic_ip_adapter_model = IpAdapterModelConfig(
     image_encoder_subfolder="default",
 )
 
-IP_ADAPTER_MODEL_CONFIG: Dict[ModelFamily, Dict[str, IpAdapterModelConfig]] = {
-    "sdxl": {
+IP_ADAPTER_MODEL_CONFIG: Dict[ModelName, Dict[str, IpAdapterModelConfig]] = {
+    "sd-xl": {
         "style": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="sdxl_models",
@@ -80,7 +80,7 @@ IP_ADAPTER_MODEL_CONFIG: Dict[ModelFamily, Dict[str, IpAdapterModelConfig]] = {
             image_encoder_subfolder="models/image_encoder",
         ),
     },
-    "flux": {
+    "flux-1": {
         "style": IpAdapterModelConfig(
             model="XLabs-AI/flux-ip-adapter-v2",
             subfolder="default",
@@ -88,14 +88,9 @@ IP_ADAPTER_MODEL_CONFIG: Dict[ModelFamily, Dict[str, IpAdapterModelConfig]] = {
             image_encoder=True,
             image_encoder_subfolder="openai/clip-vit-large-patch14",
         ),
-        "style-plus": IpAdapterModelConfig(
-            model="XLabs-AI/flux-ip-adapter-v2",
-            subfolder="default",
-            weight_name="ip_adapter.safetensors",
-            image_encoder=True,
-            image_encoder_subfolder="openai/clip-vit-large-patch14",
-        ),
-        "face": IpAdapterModelConfig(
+    },
+    "flux-1-krea": {
+        "style": IpAdapterModelConfig(
             model="XLabs-AI/flux-ip-adapter-v2",
             subfolder="default",
             weight_name="ip_adapter.safetensors",
@@ -106,7 +101,7 @@ IP_ADAPTER_MODEL_CONFIG: Dict[ModelFamily, Dict[str, IpAdapterModelConfig]] = {
 }
 
 
-def get_ip_adapter_config(model_family: ModelFamily, adapter_type: str) -> IpAdapterModelConfig:
+def get_ip_adapter_config(model_family: ModelName, adapter_type: str) -> IpAdapterModelConfig:
     config = IP_ADAPTER_MODEL_CONFIG.get(model_family)
     if not config:
         raise IPAdapterConfigError(f"IP-Adapter model config for {model_family} not found")
@@ -119,7 +114,7 @@ def get_ip_adapter_config(model_family: ModelFamily, adapter_type: str) -> IpAda
 
 
 class IpAdapter:
-    def __init__(self, data: References, model_family: ModelFamily, width, height):
+    def __init__(self, data: References, model_family: ModelName, width, height):
         self.config = get_ip_adapter_config(model_family, data.mode)
         self.scale = data.strength
         self.model = self.config.model
@@ -147,7 +142,7 @@ class IpAdapter:
 
 
 class Adapters:
-    def __init__(self, adapters: list[References], model_family: ModelFamily, width, height):
+    def __init__(self, adapters: list[References], model_family: ModelName, width, height):
         self.adapters: list[IpAdapter] = []
 
         # Handle initialization errors and create valid adapters
@@ -156,7 +151,7 @@ class Adapters:
                 adapter = IpAdapter(data, model_family, width, height)
                 self.adapters.append(adapter)
             except IPAdapterConfigError as e:
-                logger.error(f"Failed to initialize IP-Adapter: {e}")
+                logger.warning(f"Failed to initialize IP-Adapter: {e}")
 
     def is_enabled(self) -> bool:
         """Check if there are any valid adapters."""

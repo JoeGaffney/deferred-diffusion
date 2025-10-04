@@ -6,14 +6,13 @@ from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
 
 from common.exceptions import ControlNetConfigError
 from common.logger import logger
-from images.schemas import ModelFamily, References
+from images.schemas import ModelName, References
 from utils.utils import load_image_if_exists
 
 
 # NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
-def load_controlnet(model, model_family: ModelFamily):
-
+def load_controlnet(model, model_family: ModelName):
     if model_family == "sd_3":
         return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
     elif model_family == "flux":
@@ -22,25 +21,29 @@ def load_controlnet(model, model_family: ModelFamily):
     return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch.float16, device_map="cpu")
 
 
-CONTROL_NET_MODEL_CONFIG: Dict[ModelFamily, Dict[str, str]] = {
-    "sdxl": {
+CONTROL_NET_MODEL_CONFIG: Dict[ModelName, Dict[str, str]] = {
+    "sd-xl": {
         "depth": "diffusers/controlnet-depth-sdxl-1.0-small",
         "canny": "diffusers/controlnet-canny-sdxl-1.0-small",
         "pose": "xinsir/controlnet-openpose-sdxl-1.0",
     },
     # # NOTE issues with SD3 ControlNets, so not using them for now
-    # "sd3": {
+    # "sd-3": {
     #     "depth": "InstantX/SD3-Controlnet-Depth",
     #     "canny": "InstantX/SD3-Controlnet-Canny",
     # },
-    "flux": {
+    "flux-1": {
+        "depth": "XLabs-AI/flux-controlnet-depth-diffusers",
+        "canny": "XLabs-AI/flux-controlnet-canny-diffusers",
+    },
+    "flux-1-krea": {
         "depth": "XLabs-AI/flux-controlnet-depth-diffusers",
         "canny": "XLabs-AI/flux-controlnet-canny-diffusers",
     },
 }
 
 
-def get_controlnet_model(model_family: ModelFamily, controlnet_model: str) -> str:
+def get_controlnet_model(model_family: ModelName, controlnet_model: str) -> str:
     config = CONTROL_NET_MODEL_CONFIG.get(model_family)
     if not config:
         raise ControlNetConfigError(f"ControlNet model config for {model_family} not found")
@@ -53,7 +56,7 @@ def get_controlnet_model(model_family: ModelFamily, controlnet_model: str) -> st
 
 
 class ControlNet:
-    def __init__(self, data: References, model_family: ModelFamily, width, height):
+    def __init__(self, data: References, model_family: ModelName, width, height):
         self.model = get_controlnet_model(model_family, data.mode)
         self.conditioning_scale = data.strength
         self.image = load_image_if_exists(data.image)
@@ -76,7 +79,7 @@ class ControlNet:
 
 
 class ControlNets:
-    def __init__(self, control_nets: list[References], model_family: ModelFamily, width, height):
+    def __init__(self, control_nets: list[References], model_family: ModelName, width, height):
         self.control_nets: list[ControlNet] = []
 
         # Handle initialization errors and create valid control nets
@@ -85,7 +88,7 @@ class ControlNets:
                 control_net = ControlNet(data, model_family, width, height)
                 self.control_nets.append(control_net)
             except ControlNetConfigError as e:
-                logger.error(f"Failed to initialize ControlNet: {e}")
+                logger.warning(f"Failed to initialize ControlNet: {e}")
 
     def is_enabled(self) -> bool:
         """Check if there are any valid control nets."""
