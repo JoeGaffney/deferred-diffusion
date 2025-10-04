@@ -18,7 +18,7 @@ _negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_i2v(model_id, wan_2_1=False, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
+def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
     transformer = get_quantized_model(
         model_id=model_id,
         subfolder="transformer",
@@ -106,7 +106,7 @@ def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
 def text_to_video(context: VideoContext):
     prompt_embeds = wan_encode(context.data.prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
-    pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers", wan_2_1=True)
+    pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers")
 
     width, height = get_16_9_resolution("480p")
     width = ensure_divisible(width, 16)
@@ -134,7 +134,7 @@ def main(context: VideoContext):
 
     prompt_embeds = wan_encode(context.data.prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
-    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers", wan_2_1=True)
+    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
 
     width, height = get_16_9_resolution("720p")
     image = resize_image(image, 16, 1.0, width, height)
