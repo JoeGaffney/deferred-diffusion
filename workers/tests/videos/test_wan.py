@@ -1,11 +1,21 @@
 import pytest
 
-from tests.videos.helpers import image_to_video, image_to_video_portrait, text_to_video
+from tests.videos.helpers import (
+    image_to_video,
+    image_to_video_portrait,
+    text_to_video,
+    text_to_video_portrait,
+)
 
 
 @pytest.mark.parametrize("model", ["wan-2"])
 def test_text_to_video(model):
     text_to_video(model)
+
+
+@pytest.mark.parametrize("model", ["wan-2"])
+def test_text_to_video_portrait(model):
+    text_to_video_portrait(model)
 
 
 @pytest.mark.parametrize("model", ["wan-2"])

@@ -39,14 +39,14 @@ def text_to_video_portrait(
     # prompt="An avalanche crashes down a mountain side. Thick torrential snow. Bright sunny day. Cinematic. Film quality. People running away in panic.",
     prompt="A smoky, dimly lit dive bar at night. Charles Bukowski, rugged, unshaven, wearing a wrinkled shirt, sits hunched at the counter with a glass of whiskey in one hand and a cigarette smoldering in the other. The light flickers from a neon sign behind him. He slowly turns to the camera, raises his glass, and with a weary, sardonic smirk says: “Hello you original boozers. What matters most is how well you walk through the fire.” The atmosphere is gritty, raw, and cinematic, like a 1970s underground film.",
 ):
-    output_name = setup_output_file(model, "text_to_video", extension="mp4")
+    output_name = setup_output_file(model, "text_to_video_portrait", extension="mp4")
 
     result = main(
         VideoContext(
             VideoRequest(
                 model=model,
                 prompt=prompt,
-                num_frames=24,
+                num_frames=48,
                 width=720,
                 height=1280,
             )

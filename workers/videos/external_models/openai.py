@@ -21,11 +21,15 @@ def get_aspect_ratio(context: VideoContext) -> VideoSize:
 def main(context: VideoContext):
     client = OpenAI()
 
-    # model = "sora-2-pro"
-    model = "sora-2"
+    # NOTE base model seems a bit crap but is 3 times cheaper than pro
+    # model = "sora-2"
+    model = "sora-2-pro"
+
     reference_image = None
     if context.image:
         reference_image = convert_pil_to_bytes(context.image)
+
+    seconds = "8" if context.long_video() else "4"
 
     try:
         video = client.videos.create_and_poll(
@@ -33,12 +37,11 @@ def main(context: VideoContext):
             prompt=context.data.prompt,
             input_reference=reference_image or Omit(),
             size=get_aspect_ratio(context),
-            seconds="8" if context.long_video() else "4",
+            seconds=seconds,
             timeout=60 * 10,  # 10 minutes
         )
 
         if video.status not in ("succeeded", "completed"):
-            print(video)
             raise ValueError(f"Video generation failed with status: {video.status} {str(video.error)}")
     except Exception as e:
         raise RuntimeError(f"Error calling OpenAI API: {e}")
