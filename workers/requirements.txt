@@ -1,7 +1,7 @@
 accelerate
 bitsandbytes
 # Note: we take recent commits from diffusers for latest features
-git+https://github.com/huggingface/diffusers.git@0d1c5b0c3efd89c5b677d232358228e7f2792927
+git+https://github.com/huggingface/diffusers.git@2d69bacb007bc3e21f2cb9c7b4dd89fb71ccdcf8
 ftfy
 gguf
 imageio

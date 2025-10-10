@@ -7,15 +7,14 @@ ModelNameLocal: TypeAlias = Literal["ltx-video", "wan-2"]
 
 # External-only model names (convenience alias)
 ModelNameExternal: TypeAlias = Literal[
-    "runway-gen-3",
     "runway-gen-4",
     "runway-act-two",
     "runway-upscale",
     "runway-gen-4-aleph",
     "bytedance-seedance-1",
     "kwaivgi-kling-2",
-    "minimax-hailuo-2",
     "google-veo-3",
+    "openai-sora-2",
 ]
 
 
@@ -23,15 +22,14 @@ ModelNameExternal: TypeAlias = Literal[
 ModelName: TypeAlias = Literal[
     "ltx-video",
     "wan-2",
-    "runway-gen-3",
     "runway-gen-4",
     "runway-act-two",
     "runway-upscale",
     "runway-gen-4-aleph",
     "bytedance-seedance-1",
     "kwaivgi-kling-2",
-    "minimax-hailuo-2",
     "google-veo-3",
+    "openai-sora-2",
 ]
 
 
@@ -56,11 +54,8 @@ MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
 }
 
 MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
-    "runway-gen-3": ModelInfo(
-        description="Runway's Gen-3 model okay for basic video generation tasks. Suitable for simple scenes and concepts.",
-    ),
     "runway-gen-4": ModelInfo(
-        description="Runway's latest Gen-4 showing its age in fast computer time. Good for a variety of video generation tasks with improved quality over Gen-3.",
+        description="Runway's latest Gen-4 showing it's age fast computer time. Good for a variety of video generation tasks with improved quality over Gen-3.",
     ),
     "runway-act-two": ModelInfo(
         description="Runway's Act Two model updates a video with reference image. Ideal for enhancing existing footage with new visual elements while maintaining original motion and style.",
@@ -80,8 +75,8 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "google-veo-3": ModelInfo(
         description="Google's VEO-3-Fast model, optimized for rapid video generation while maintaining good quality. Suitable for applications requiring quick turnaround times.",
     ),
-    "minimax-hailuo-2": ModelInfo(
-        description="Minimax's Hailuo-02 model, a versatile video generation model capable of producing high-quality videos from text prompts. Balances quality and performance effectively.",
+    "openai-sora-2": ModelInfo(
+        description="OpenAI's Sora 2 model, high-end video generation model known for producing high-quality and realistic videos from text prompts. Ideal for professional-grade video content creation.",
     ),
 }
 
@@ -108,6 +103,8 @@ class VideoRequest(BaseModel):
         description="Positive Prompt text",
         json_schema_extra={"format": "multi_line"},
     )
+    height: int = 720
+    width: int = 1280
     num_frames: int = 48
     seed: int = 42
     image: Optional[str] = Field(

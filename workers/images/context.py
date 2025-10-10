@@ -23,9 +23,6 @@ class ImageContext:
         self.data = data
         self.model = data.model
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
-
-        # Round down to nearest multiple of the eg. 8, 16, 32, etc.
-        self.division = 1  # data.model_divisor
         self.width = copy.copy(data.width)
         self.height = copy.copy(data.height)
         self.color_image = load_image_if_exists(data.image)

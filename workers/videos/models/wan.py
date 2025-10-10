@@ -108,13 +108,33 @@ def text_to_video(context: VideoContext):
     negative_prompt_embeds = wan_encode(_negative_prompt)
     pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers")
 
-    width, height = get_16_9_resolution("480p")
-    width = ensure_divisible(width, 16)
-    height = ensure_divisible(height, 16)
+    output = pipe(
+        width=context.width,
+        height=context.height,
+        prompt_embeds=prompt_embeds,
+        negative_prompt_embeds=negative_prompt_embeds,
+        num_inference_steps=8,
+        num_frames=context.data.num_frames,
+        guidance_scale=1.0,
+        generator=context.get_generator(),
+    ).frames[0]
+
+    processed_path = context.save_video(output, fps=16)
+    return processed_path
+
+
+def image_to_video(context: VideoContext):
+    if context.image is None:
+        raise ValueError("No input image provided for image-to-video generation")
+
+    prompt_embeds = wan_encode(context.data.prompt)
+    negative_prompt_embeds = wan_encode(_negative_prompt)
+    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
 
     output = pipe(
-        width=width,
-        height=height,
+        width=context.width,
+        height=context.height,
+        image=context.image,
         prompt_embeds=prompt_embeds,
         negative_prompt_embeds=negative_prompt_embeds,
         num_inference_steps=8,
@@ -128,28 +148,8 @@ def text_to_video(context: VideoContext):
 
 
 def main(context: VideoContext):
-    image = context.image
-    if image is None:
-        return text_to_video(context)
+    context.ensure_divisible(16)
+    if context.data.image:
+        return image_to_video(context)
 
-    prompt_embeds = wan_encode(context.data.prompt)
-    negative_prompt_embeds = wan_encode(_negative_prompt)
-    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
-
-    width, height = get_16_9_resolution("720p")
-    image = resize_image(image, 16, 1.0, width, height)
-
-    output = pipe(
-        width=image.size[0],
-        height=image.size[1],
-        image=image,
-        prompt_embeds=prompt_embeds,
-        negative_prompt_embeds=negative_prompt_embeds,
-        num_inference_steps=8,
-        num_frames=context.data.num_frames,
-        guidance_scale=1.0,
-        generator=context.get_generator(),
-    ).frames[0]
-
-    processed_path = context.save_video(output, fps=16)
-    return processed_path
+    return text_to_video(context)

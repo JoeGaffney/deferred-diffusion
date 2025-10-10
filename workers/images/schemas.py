@@ -60,7 +60,7 @@ class ModelInfo(BaseModel):
 MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
     "sd-xl": ModelInfo(
         references=True,
-        description="Stable Diffusion XL variant supports the most control nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
+        description="Stable Diffusion XL variant supports the most conteol nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
     ),
     "sd-3": ModelInfo(
         description="Stable Diffusion 3.5 offers superior prompt understanding and composition. Excels at complex scenes, concept art, and handling multiple subjects with accurate interactions.",
@@ -162,8 +162,8 @@ class ImageRequest(BaseModel):
         description="Positive Prompt text",
         json_schema_extra={"format": "multi_line"},
     )
-    height: int = 512
-    width: int = 512
+    height: int = 720
+    width: int = 1280
     seed: int = 42
     strength: float = 0.5
     image: Optional[str] = Field(

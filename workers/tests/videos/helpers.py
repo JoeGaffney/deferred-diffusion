@@ -34,6 +34,35 @@ def text_to_video(
     assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
 
 
+def text_to_video_portrait(
+    model: ModelName,
+    # prompt="An avalanche crashes down a mountain side. Thick torrential snow. Bright sunny day. Cinematic. Film quality. People running away in panic.",
+    prompt="A smoky, dimly lit dive bar at night. Charles Bukowski, rugged, unshaven, wearing a wrinkled shirt, sits hunched at the counter with a glass of whiskey in one hand and a cigarette smoldering in the other. The light flickers from a neon sign behind him. He slowly turns to the camera, raises his glass, and with a weary, sardonic smirk says: “Hello you original boozers. What matters most is how well you walk through the fire.” The atmosphere is gritty, raw, and cinematic, like a 1970s underground film.",
+):
+    output_name = setup_output_file(model, "text_to_video", extension="mp4")
+
+    result = main(
+        VideoContext(
+            VideoRequest(
+                model=model,
+                prompt=prompt,
+                num_frames=24,
+                width=720,
+                height=1280,
+            )
+        )
+    )
+
+    if os.path.exists(result):
+        shutil.copy(result, output_name)
+
+    # Check if output file exists
+    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+
+    # Check if the output file is a valid video file
+    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+
+
 def image_to_video(model: ModelName):
     output_name = setup_output_file(model, "image_to_video", extension="mp4")
 
