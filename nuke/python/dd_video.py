@@ -119,6 +119,8 @@ def process_video(node):
                 raise ValueError(f"Video file does not exist: {video}")
             video_base64 = image_to_base64(video)
 
+        width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
+
         body = VideoRequest(
             model=VideoRequestModel(get_node_value(node, "model", UNSET, mode="value")),
             image=image,
@@ -127,6 +129,8 @@ def process_video(node):
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
             num_frames=get_node_value(node, "num_frames", UNSET, return_type=int, mode="value"),
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
+            width=int(width_height[0]),
+            height=int(width_height[1]),
         )
         _api_call(node, body, output_video_path, current_frame)
 

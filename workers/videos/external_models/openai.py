@@ -3,6 +3,7 @@ from typing import Literal
 import openai
 from openai import Omit, OpenAI
 from openai.types import VideoSeconds, VideoSize
+from PIL import Image
 
 from common.logger import logger
 from utils.utils import convert_pil_to_bytes
@@ -18,16 +19,28 @@ def get_aspect_ratio(context: VideoContext) -> VideoSize:
     return "1280x720"
 
 
+def resize_image_to_aspect_ratio(image, context: VideoContext) -> Image.Image:
+    dimension_type = context.get_dimension_type()
+    if dimension_type == "portrait":
+        return image.resize((720, 1280))
+
+    # default to landscape
+    return image.resize((1280, 720))
+
+
 def main(context: VideoContext):
     client = OpenAI()
 
     # NOTE base model seems a bit crap but is 3 times cheaper than pro
-    # model = "sora-2"
-    model = "sora-2-pro"
+    model = "sora-2"
+    # model = "sora-2-pro"
 
+    size = get_aspect_ratio(context)
+
+    # NOTE sora seems terrible at image to video
     reference_image = None
     if context.image:
-        reference_image = convert_pil_to_bytes(context.image)
+        reference_image = convert_pil_to_bytes(resize_image_to_aspect_ratio(context.image, context))
 
     seconds = "8" if context.long_video() else "4"
 
@@ -36,7 +49,7 @@ def main(context: VideoContext):
             model=model,
             prompt=context.data.prompt,
             input_reference=reference_image or Omit(),
-            size=get_aspect_ratio(context),
+            size=size,
             seconds=seconds,
             timeout=60 * 10,  # 10 minutes
         )
