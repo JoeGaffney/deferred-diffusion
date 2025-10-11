@@ -111,7 +111,7 @@ def process_image(node):
 
         image = node_to_base64(image_node, current_frame)
         mask = node_to_base64(mask_node, current_frame)
-        width_height = get_node_value(node, "width_height", [1024, 1024], return_type=list, mode="value")
+        width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
 
         body = ImageRequest(
             model=ImageRequestModel(get_node_value(node, "model", "sd-xl", mode="value")),

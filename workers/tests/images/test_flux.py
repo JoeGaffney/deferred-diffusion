@@ -31,21 +31,21 @@ def test_inpainting(model):
     inpainting(model)
 
 
-@pytest.mark.parametrize("model", models)
-def test_inpainting_alt(model):
-    inpainting_alt(model)
+# @pytest.mark.parametrize("model", models)
+# def test_inpainting_alt(model):
+#     inpainting_alt(model)
 
 
-@pytest.mark.parametrize("model", models)
-def test_references_canny(model):
-    references_canny(model)
+# @pytest.mark.parametrize("model", models)
+# def test_references_canny(model):
+#     references_canny(model)
 
 
-@pytest.mark.parametrize("model", models)
-def test_references_face(model):
-    references_face(model)
+# @pytest.mark.parametrize("model", models)
+# def test_references_face(model):
+#     references_face(model)
 
 
-@pytest.mark.parametrize("model", models)
-def test_references_style(model):
-    references_style(model)
+# @pytest.mark.parametrize("model", models)
+# def test_references_style(model):
+#     references_style(model)

@@ -6,7 +6,7 @@ from diffusers import (
     FluxPipeline,
     FluxTransformer2DModel,
 )
-from nunchaku import NunchakuFluxTransformer2DModelV2
+from nunchaku import NunchakuFluxTransformer2dModel, NunchakuFluxTransformer2DModelV2
 from nunchaku.utils import get_precision
 from PIL import Image
 
@@ -26,9 +26,9 @@ _use_nunchaku = True
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, config: AdapterPipelineConfig):
     if _use_nunchaku:
-        precision = get_precision()  # auto-detect your precision is 'int4' or 'fp4' based on your GPU
+        # Controlnet is not supported for FluxTransformer2DModelV2 for now
         transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
-            f"nunchaku-tech/nunchaku-flux.1-krea-dev/svdq-{precision}_r32-flux.1-krea-dev.safetensors"
+            f"nunchaku-tech/nunchaku-flux.1-krea-dev/svdq-{get_precision()}_r32-flux.1-krea-dev.safetensors"
         )
     else:
         transformer = get_quantized_model(
@@ -63,13 +63,18 @@ def get_pipeline(model_id, config: AdapterPipelineConfig):
 
 @decorator_global_pipeline_cache
 def get_kontext_pipeline(model_id):
-    transformer = get_quantized_model(
-        model_id=model_id,
-        subfolder="transformer",
-        model_class=FluxTransformer2DModel,
-        target_precision=IMAGE_TRANSFORMER_PRECISION,
-        torch_dtype=torch.bfloat16,
-    )
+    if _use_nunchaku:
+        transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
+            f"nunchaku-tech/nunchaku-flux.1-kontext-dev/svdq-{get_precision()}_r32-flux.1-kontext-dev.safetensors"
+        )
+    else:
+        transformer = get_quantized_model(
+            model_id=model_id,
+            subfolder="transformer",
+            model_class=FluxTransformer2DModel,
+            target_precision=IMAGE_TRANSFORMER_PRECISION,
+            torch_dtype=torch.bfloat16,
+        )
 
     pipe = FluxKontextPipeline.from_pretrained(
         model_id,
@@ -86,13 +91,18 @@ def get_kontext_pipeline(model_id):
 
 @decorator_global_pipeline_cache
 def get_inpainting_pipeline(model_id):
-    transformer = get_quantized_model(
-        model_id=model_id,
-        subfolder="transformer",
-        model_class=FluxTransformer2DModel,
-        target_precision=IMAGE_TRANSFORMER_PRECISION,
-        torch_dtype=torch.bfloat16,
-    )
+    if _use_nunchaku:
+        transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
+            f"nunchaku-tech/nunchaku-flux.1-fill-dev/svdq-{get_precision()}_r32-flux.1-fill-dev.safetensors"
+        )
+    else:
+        transformer = get_quantized_model(
+            model_id=model_id,
+            subfolder="transformer",
+            model_class=FluxTransformer2DModel,
+            target_precision=IMAGE_TRANSFORMER_PRECISION,
+            torch_dtype=torch.bfloat16,
+        )
 
     pipe = FluxFillPipeline.from_pretrained(
         model_id,
@@ -151,9 +161,9 @@ def text_to_image_call(context: ImageContext):
     args = {
         "width": context.width,
         "height": context.height,
-        "num_inference_steps": 30,
+        "num_inference_steps": 28,
         "generator": context.generator,
-        "guidance_scale": 2.0,
+        "guidance_scale": 2.5,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
     pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)

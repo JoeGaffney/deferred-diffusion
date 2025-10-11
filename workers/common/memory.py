@@ -52,7 +52,7 @@ def gpu_memory_usage():
     # logger.info(torch.cuda.memory_summary())
 
 
-def free_gpu_memory(threshold_percent: float = 25):
+def free_gpu_memory(threshold_percent: float = 25, message: str = "Cleaned GPU memory"):
     gc.collect()
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
@@ -63,4 +63,4 @@ def free_gpu_memory(threshold_percent: float = 25):
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
 
-    logger.warning(f"Cleaned GPU memory: {_get_gpu_memory_usage_pretty()}")
+    logger.warning(f"{message}: {_get_gpu_memory_usage_pretty()}")
