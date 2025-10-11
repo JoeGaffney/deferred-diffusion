@@ -45,31 +45,26 @@ def get_pipeline(model_id):
 
 def image_to_video(context: VideoContext):
     prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
-    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode("")
-
+    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(_negative_prompt_default)
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
-    width, height = get_16_9_resolution("720p")
-    image = context.image
-    image = resize_image(image, 32, 1.0, width, height)
-
     condition1 = LTXVideoCondition(
-        image=image,
+        image=context.image,
         frame_index=0,
     )
     conditions = [condition1]
 
     if context.video_frames:
         video_condition = LTXVideoCondition(
-            image=image,
+            image=context.image,
             video=context.video_frames[: context.data.num_frames],
             frame_index=0,
         )
         conditions.append(video_condition)
 
     video = pipe.__call__(
-        width=image.size[0],
-        height=image.size[1],
+        width=context.image.size[0],
+        height=context.image.size[1],
         conditions=conditions,
         prompt_embeds=prompt_embeds,
         prompt_attention_mask=prompt_attention_mask,
@@ -87,17 +82,12 @@ def image_to_video(context: VideoContext):
 
 def text_to_video(context: VideoContext):
     prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
-    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode("")
-
+    negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(_negative_prompt_default)
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
-    width, height = get_16_9_resolution("720p")
-    width = ensure_divisible(width, 32)
-    height = ensure_divisible(height, 32)
-
     video = pipe.__call__(
-        width=width,
-        height=height,
+        width=context.width,
+        height=context.height,
         prompt_embeds=prompt_embeds,
         prompt_attention_mask=prompt_attention_mask,
         negative_prompt_embeds=negative_prompt_embeds,
@@ -113,6 +103,7 @@ def text_to_video(context: VideoContext):
 
 
 def main(context: VideoContext):
+    context.ensure_divisible(32)
     if context.data.image:
         return image_to_video(context)
 

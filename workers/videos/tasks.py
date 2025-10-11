@@ -32,7 +32,6 @@ def model_router_main(context: VideoContext):
         "ltx-video": ("videos.models.ltx", "main"),
         "wan-2": ("videos.models.wan", "main"),
         # external implementations (match celery task targets)
-        "runway-gen-3": ("videos.external_models.runway", "main"),
         "runway-gen-4": ("videos.external_models.runway", "main"),
         "runway-act-two": ("videos.external_models.runway_act", "main"),
         "runway-upscale": ("videos.external_models.runway_upscale", "main"),
@@ -40,7 +39,7 @@ def model_router_main(context: VideoContext):
         "bytedance-seedance-1": ("videos.external_models.bytedance_seedance", "main"),
         "kwaivgi-kling-2": ("videos.external_models.kling", "main"),
         "google-veo-3": ("videos.external_models.google_veo", "main"),
-        "minimax-hailuo-2": ("videos.external_models.minimax_hailuo", "main"),
+        "openai-sora-2": ("videos.external_models.openai", "main"),
     }
 
     if model not in MODEL_NAME_TO_CALLABLE:
@@ -76,15 +75,6 @@ def wan_2(request_dict):
 
 
 # Explicit external model tasks
-@typed_task(name="runway-gen-3", queue="cpu")
-def runway_gen_3(request_dict):
-    from videos.external_models.runway import main
-
-    context = validate_request_and_context(request_dict)
-    result = main(context)
-    return process_result(context, result)
-
-
 @typed_task(name="runway-gen-4", queue="cpu")
 def runway_gen_4(request_dict):
     from videos.external_models.runway import main
@@ -148,9 +138,9 @@ def google_veo_3(request_dict):
     return process_result(context, result)
 
 
-@typed_task(name="minimax-hailuo-2", queue="cpu")
-def minimax_hailuo_2(request_dict):
-    from videos.external_models.minimax_hailuo import main
+@typed_task(name="openai-sora-2", queue="cpu")
+def openai_sora_2(request_dict):
+    from videos.external_models.openai import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

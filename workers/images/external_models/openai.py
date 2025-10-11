@@ -9,6 +9,8 @@ from PIL import Image
 from images.context import ImageContext
 from utils.utils import convert_mask_for_inpainting, convert_pil_to_bytes
 
+_quality: Literal["high", "auto"] = "auto"
+
 
 def get_size(
     context: ImageContext,
@@ -42,10 +44,11 @@ def process_openai_image_output(output: ImagesResponse) -> Image.Image:
 
 def text_to_image_call(context: ImageContext):
     client = OpenAI()
+    model = "gpt-image-1-mini"
 
     result = client.images.generate(
-        model="gpt-image-1",
-        quality="high",
+        model=model,
+        quality=_quality,
         prompt=context.data.prompt,
         size=get_size(context),
     )
@@ -55,6 +58,7 @@ def text_to_image_call(context: ImageContext):
 
 def image_to_image_call(context: ImageContext):
     client = OpenAI()
+    model = "gpt-image-1-mini"
 
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
@@ -69,10 +73,10 @@ def image_to_image_call(context: ImageContext):
         raise ValueError("No reference images provided")
 
     result = client.images.edit(
-        model="gpt-image-1",
-        quality="high",
+        model=model,
+        quality=_quality,
         prompt=context.data.prompt,
-        size=get_size(context),  # type: ignore type hints wrong
+        size=get_size(context),
         image=reference_images,
     )
 
@@ -81,6 +85,7 @@ def image_to_image_call(context: ImageContext):
 
 def inpainting_call(context: ImageContext):
     client = OpenAI()
+    model = "gpt-image-1-mini"
 
     if context.color_image is None:
         raise ValueError("No color image provided")
@@ -92,8 +97,8 @@ def inpainting_call(context: ImageContext):
 
     try:
         result = client.images.edit(
-            model="gpt-image-1",
-            quality="high",
+            model=model,
+            quality=_quality,
             prompt=context.data.prompt,
             size=get_size(context),  # type: ignore type hints wrong
             image=[convert_pil_to_bytes(context.color_image)],

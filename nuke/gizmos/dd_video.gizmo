@@ -5,13 +5,15 @@ Group {
  inputs 2
  addUserKnob {20 Settings}
  addUserKnob {26 ""}
- addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2 runway-gen-3 runway-gen-4 runway-act-two runway-gen-4-aleph runway-upscale bytedance-seedance-1 kwaivgi-kling-2 minimax-hailuo-2 google-veo-3}}
+ addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2 runway-gen-4 runway-act-two runway-gen-4-aleph runway-upscale bytedance-seedance-1 kwaivgi-kling-2 google-veo-3 openai-sora-2}}
  addUserKnob {22 generate l Generate t "Start video generation with current settings." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.process_video(node)"}
  addUserKnob {1 task_id l "Task ID" t "ID of the current video generation task." -STARTLINE}
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest video for this task." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.get_video(node)"}
  addUserKnob {26 ""}
  addUserKnob {43 prompt l Prompt t "Describe the video you want to generate."}
  prompt "Detailed, cinematic, high quality"
+ addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
+ width_height {1280 720}
  addUserKnob {2 video l "Video (Input)" t "Must be mp4 under 16mb"}
  addUserKnob {7 num_frames l Frames t "Number of frames to generate." R 1 200}
  num_frames 48

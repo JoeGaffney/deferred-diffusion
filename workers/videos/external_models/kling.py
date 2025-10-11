@@ -4,6 +4,15 @@ from utils.utils import convert_pil_to_bytes
 from videos.context import VideoContext
 
 
+def get_aspect_ratio(context: VideoContext) -> str:
+    dimension_type = context.get_dimension_type()
+    if dimension_type == "landscape":
+        return "16:9"
+    elif dimension_type == "portrait":
+        return "9:16"
+    return "1:1"
+
+
 def main(context: VideoContext):
     if context.image is None:
         raise ValueError("Input image is None. Please provide a valid image.")
@@ -12,7 +21,7 @@ def main(context: VideoContext):
     payload = {
         "prompt": context.data.prompt,
         "seed": context.data.seed,
-        "aspect_ratio": "16:9",
+        "aspect_ratio": get_aspect_ratio(context),
         "mode": "standard",
     }
 

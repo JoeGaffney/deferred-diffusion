@@ -238,6 +238,16 @@ print(f"Custom plugin paths from {custom_plugin_path} have been added.")
 
 To optimize volumes and virtual disk useful after model deletions
 
+# Kill Docker Desktop and related processes
+
+```bash
+Stop-Process -Name "Docker Desktop" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "com.docker.*" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "vmmemWSL" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "wslhost" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "wsl" -Force -ErrorAction SilentlyContinue
+```
+
 ```bash
 Optimize-VHD -Path "Y:\DOCKER\DockerDesktopWSL\disk\docker_data.vhdx" -Mode Full
 ```

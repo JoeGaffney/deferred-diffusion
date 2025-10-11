@@ -162,8 +162,8 @@ class ImageRequest(BaseModel):
         description="Positive Prompt text",
         json_schema_extra={"format": "multi_line"},
     )
-    height: int = 512
-    width: int = 512
+    height: int = 720
+    width: int = 1280
     seed: int = 42
     strength: float = 0.5
     image: Optional[str] = Field(
