@@ -6,6 +6,8 @@ from diffusers import (
     FluxPipeline,
     FluxTransformer2DModel,
 )
+from nunchaku import NunchakuFluxTransformer2DModelV2
+from nunchaku.utils import get_precision
 from PIL import Image
 
 from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
@@ -18,16 +20,24 @@ from common.text_encoders import flux_encode
 from images.adapters import AdapterPipelineConfig
 from images.context import ImageContext
 
+_use_nunchaku = True
+
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, config: AdapterPipelineConfig):
-    transformer = get_quantized_model(
-        model_id=model_id,
-        subfolder="transformer",
-        model_class=FluxTransformer2DModel,
-        target_precision=IMAGE_TRANSFORMER_PRECISION,
-        torch_dtype=torch.bfloat16,
-    )
+    if _use_nunchaku:
+        precision = get_precision()  # auto-detect your precision is 'int4' or 'fp4' based on your GPU
+        transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
+            f"nunchaku-tech/nunchaku-flux.1-krea-dev/svdq-{precision}_r32-flux.1-krea-dev.safetensors"
+        )
+    else:
+        transformer = get_quantized_model(
+            model_id=model_id,
+            subfolder="transformer",
+            model_class=FluxTransformer2DModel,
+            target_precision=IMAGE_TRANSFORMER_PRECISION,
+            torch_dtype=torch.bfloat16,
+        )
 
     pipe = FluxPipeline.from_pretrained(
         model_id,

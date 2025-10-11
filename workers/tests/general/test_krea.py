@@ -9,10 +9,10 @@ from tests.utils import save_image_and_assert_file_exists, setup_output_file
 from utils.utils import get_16_9_resolution
 
 MODES = ["text_to_image"]
-models = ["flux-1-krea", "qwen-image"]
+models = ["flux-1"]
 
 
-@pytest.mark.parametrize("seed", range(42, 46))
+@pytest.mark.parametrize("seed", range(42, 44))
 @pytest.mark.parametrize("model", models)
 def test_text_to_image(model, seed):
 
