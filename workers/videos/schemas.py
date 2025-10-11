@@ -55,7 +55,7 @@ MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
 
 MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "runway-gen-4": ModelInfo(
-        description="Runway's latest Gen-4 showing it's age fast computer time. Good for a variety of video generation tasks with improved quality over Gen-3.",
+        description="Runway's latest Gen-4 showing its age fast computer time. Good for a variety of video generation tasks with improved quality over Gen-3.",
     ),
     "runway-act-two": ModelInfo(
         description="Runway's Act Two model updates a video with reference image. Ideal for enhancing existing footage with new visual elements while maintaining original motion and style.",
