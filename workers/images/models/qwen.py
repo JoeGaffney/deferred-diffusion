@@ -23,7 +23,7 @@ from common.pipeline_helpers import (
 from common.text_encoders import qwen_encode
 from images.context import ImageContext
 
-_use_nunchaku = False
+_use_nunchaku = True
 
 
 def get_scheduler():
