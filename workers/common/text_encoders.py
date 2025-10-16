@@ -268,7 +268,7 @@ def ltx_encode(prompt, torch_dtype=torch.float32, device="cpu"):
 @decorator_global_text_encoder_cache
 def _pipeline_qwen_text_encoder(torch_dtype=torch.float32, device="cpu"):
     return QwenImagePipeline.from_pretrained(
-        "ovedrive/qwen-image-4bit",
+        "Qwen/Qwen-Image",
         text_encoder=Qwen2_5_VLForConditionalGeneration.from_pretrained(
             "Qwen/Qwen2.5-VL-7B-Instruct",
             subfolder="",
@@ -298,6 +298,5 @@ def qwen_encode(prompt, torch_dtype=torch.float32, device="cpu"):
 
     prompt_embeds = convert_tensor(prompt_embeds)
     prompt_embeds_mask = convert_tensor(prompt_embeds_mask, dtype=torch.long)
-
     set_prompt_in_cache("qwen", prompt, (prompt_embeds, prompt_embeds_mask))
     return prompt_embeds, prompt_embeds_mask

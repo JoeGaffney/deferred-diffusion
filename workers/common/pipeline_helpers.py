@@ -39,7 +39,7 @@ class ModelLRUCache:
 
     def get_or_load(self, key, loader_fn):
         # Ensure we have enough free GPU memory before loading a new model
-        free_gpu_memory()
+        free_gpu_memory(message="Before loading new model")
 
         if key in self.cache:
             # Move to end (most recently used position)
@@ -68,11 +68,27 @@ class ModelLRUCache:
         # Get the first item (least recently used)
         oldest_key, oldest_pipeline = next(iter(self.cache.items()))
 
-        logger.debug(f"Evicting LRU model: {oldest_key}")
+        logger.info(f"Evicting LRU model: {oldest_key}")
         self._cleanup(oldest_pipeline)
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
 
     def _cleanup(self, pipeline):
+        # NOTE required for Nunchaku models to avoid memory leaks specifically with NunchakuFluxTransformer2dModel
+        try:
+            if hasattr(pipeline, "transformer"):
+                # Special handling for Nunchaku models BEFORE moving to CPU
+                if hasattr(pipeline.transformer, "transformer_blocks"):
+                    logger.warning("Detected Nunchaku transformer - calling reset()")
+                    for block in pipeline.transformer.transformer_blocks:
+                        if hasattr(block, "m") and hasattr(block.m, "reset"):
+                            logger.warning(f"Calling reset() on block {type(block)}")
+                            block.m.reset()
+
+                pipeline.transformer.to("cpu")
+                del pipeline.transformer
+        except Exception as e:
+            logger.error(f"Error moving transformer to CPU: {e}")
+
         try:
             pipeline.to("cpu")
         except Exception as e:
@@ -81,7 +97,7 @@ class ModelLRUCache:
         try:
             gc.collect()
             del pipeline
-            free_gpu_memory()
+            free_gpu_memory(message="Pipeline cleaned up")
         except Exception as e:
             logger.error(f"Pipeline cleanup error: {e}")
 

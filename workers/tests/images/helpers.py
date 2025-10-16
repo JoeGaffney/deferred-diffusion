@@ -13,13 +13,34 @@ from utils.utils import get_16_9_resolution
 
 def text_to_image(model: ModelName, seed=42):
     output_name = setup_output_file(model, "text_to_image", suffix=str(seed))
-    width, height = get_16_9_resolution("540p")
+    width, height = get_16_9_resolution("720p")
 
     result = main(
         ImageContext(
             ImageRequest(
                 model=model,
                 prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
+                strength=0.5,
+                width=width,
+                height=height,
+                seed=seed,
+            )
+        )
+    )
+
+    save_image_and_assert_file_exists(result, output_name)
+
+
+def text_to_image_alt(model: ModelName, seed=42):
+    output_name = setup_output_file(model, "text_to_image_alt", suffix=str(seed))
+    width, height = get_16_9_resolution("720p")
+    prompt = """Bookstore window display. A sign displays “New Arrivals This Week”. Below, a shelf tag with the text “Best-Selling Novels Here”. To the side, a colorful poster advertises “Author Meet And Greet on Saturday” with a central portrait of the author. There are four books on the bookshelf, namely “The light between worlds” “When stars are scattered” “The slient patient” “The night circus”"""
+
+    result = main(
+        ImageContext(
+            ImageRequest(
+                model=model,
+                prompt=prompt,
                 strength=0.5,
                 width=width,
                 height=height,
@@ -38,9 +59,26 @@ def image_to_image(model: ModelName):
         ImageContext(
             ImageRequest(
                 model=model,
-                prompt="Change to night time and add rain and lighting",
+                prompt="Change to night time and add rain and Lightning",
                 strength=0.5,
                 image=image_to_base64("../assets/color_v001.jpeg"),
+            )
+        )
+    )
+
+    save_image_and_assert_file_exists(result, output_name)
+
+
+def image_to_image_alt(model: ModelName):
+    output_name = setup_output_file(model, "image_to_image_alt")
+
+    result = main(
+        ImageContext(
+            ImageRequest(
+                model=model,
+                prompt="Change the car color to red, turn the headlights on",
+                strength=0.5,
+                image=image_to_base64("../assets/color_v003.png"),
             )
         )
     )

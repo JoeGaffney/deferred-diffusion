@@ -88,9 +88,7 @@ IP_ADAPTER_MODEL_CONFIG: Dict[ModelName, Dict[str, IpAdapterModelConfig]] = {
             image_encoder=True,
             image_encoder_subfolder="openai/clip-vit-large-patch14",
         ),
-    },
-    "flux-1-krea": {
-        "style": IpAdapterModelConfig(
+        "face": IpAdapterModelConfig(
             model="XLabs-AI/flux-ip-adapter-v2",
             subfolder="default",
             weight_name="ip_adapter.safetensors",

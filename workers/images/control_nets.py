@@ -13,9 +13,9 @@ from utils.utils import load_image_if_exists
 # NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
 def load_controlnet(model, model_family: ModelName):
-    if model_family == "sd_3":
+    if model_family == "sd-3":
         return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
-    elif model_family == "flux":
+    elif model_family == "flux-1":
         return FluxControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
 
     return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch.float16, device_map="cpu")
@@ -33,10 +33,6 @@ CONTROL_NET_MODEL_CONFIG: Dict[ModelName, Dict[str, str]] = {
     #     "canny": "InstantX/SD3-Controlnet-Canny",
     # },
     "flux-1": {
-        "depth": "XLabs-AI/flux-controlnet-depth-diffusers",
-        "canny": "XLabs-AI/flux-controlnet-canny-diffusers",
-    },
-    "flux-1-krea": {
         "depth": "XLabs-AI/flux-controlnet-depth-diffusers",
         "canny": "XLabs-AI/flux-controlnet-canny-diffusers",
     },

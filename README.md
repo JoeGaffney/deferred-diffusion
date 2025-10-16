@@ -1,12 +1,18 @@
 # deferred-diffusion
 
-Multi model API that can run diffusion and other models with py-torch and external services.
+**Deferred Diffusion** is a **self-hosted, scalable AI inference stack** with a fully **typed, testable API**. It supports **local GPU models** and can route tasks to **external AI services** such as Replicate, OpenAI, or RunwayML. The system is **containerized**, automatically downloads all models and dependencies, and is **stateless**, allowing tasks to run across multiple workers without relying on local file paths. This makes deployments **predictable, cross-platform, and easy to scale**.
 
-The API will push tasks to worker broker and workers will pick this up. Workers can run process tasks using python ML ecosystem, external tasks which call ML providers.
+It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, letting local models and external providers run seamlessly in the same system. The API queues tasks through a message broker, and worker services pick them up for processing. Workers can execute:
 
-Client will call the API get end points to check for task completion. See swagger ui for more info.
+- **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
+- **External inference tasks** via APIs such as Replicate, OpenAI, and RunwayML
 
-Currently example Houdini HDA's are provided as it already provides a rich compositing node based ui, but would be possible to add more applications or a standalone ui.
+An **intelligent model cache** keeps the last-used local model resident in GPU memory for fast reuse.
+**Text encoders** are run on the CPU, and **prompt embeddings** are cached to maximize available VRAM during inference.
+
+Clients interact with the API through clean typed REST endpoints, with a built-in **Swagger UI** for testing and inspection.
+
+Example **Houdini** and **Nuke** clients are included to demonstrate integration into node-based VFX pipelines.
 
 ## **Project Structure Overview**
 
@@ -14,9 +20,7 @@ This project follows a **feature-based structure**, grouping related components 
 
 We try to use plural to adhere to REST best practices.
 
-### **📂 Why This Structure?**
-
-#### ✅ **Cohesion & Readability**
+### **Cohesion & Readability**
 
 - All components related to a specific AI task (`images`, `texts`, `videos`) are grouped together.
 - They are grouped in a sense of what main data type they return, but can have multi model inputs.
@@ -24,7 +28,7 @@ We try to use plural to adhere to REST best practices.
 - Eliminates the need to navigate across multiple directories to understand a feature.
 - New developers can quickly locate relevant code without confusion.
 
-#### ✅ **Scalability for AI Projects**
+### **Scalability for AI Projects**
 
 - AI models often require **domain-specific logic**. Keeping `schemas.py`, `context.py`, and `models/` in the same module makes it easier to extend functionality.
 - If a new AI domain (`audio`, `3D`, etc.) is introduced, the structure remains consistent just duplicate the existing pattern.
@@ -58,7 +62,7 @@ We try to use plural to adhere to REST best practices.
 │ ├── external_models/ # ✅ external AI models
 │ ├── schemas.py # ✅ Pydantic schemas (data validation)
 │ ├── context.py # ✅ Business logic layer
-│ ├── tasks.py # ✅ Celery task
+│ ├── tasks.py # ✅ Celery tasks route to models
 │── /texts
 │ ├── ...
 │── /videos
@@ -69,6 +73,45 @@ We try to use plural to adhere to REST best practices.
 │── worker.py # ✅ Celery
 │── pytest.ini # ✅ Test configuration
 ```
+
+## Model naming / pathing
+
+User-facing model choices are simple names like "flux-1" or "flux-1-pro". The actual model calls and implementations are defined in the worker pipeline. Worker tasks follow these user-driven names but may share common logic for variants.
+
+For example, "flux-1" might internally use:
+
+- "black-forest-labs/FLUX.1-Krea-dev"
+- "black-forest-labs/FLUX.1-Kontext-dev"
+- "black-forest-labs/FLUX.1-Fill-dev"
+
+Depending on the inputs (e.g., whether an image is provided), we internally route to the most appropriate model variant.
+
+We avoid cluttering user model choices with minor versions (.1, .2, etc.) and instead automatically select the best available version. This approach allows us to properly test and verify model behaviors for both external and local models without requiring users to understand implementation details.
+
+The model pipelines themselves serve as the source of truth for what models are actually used. This is especially important given various optimizations and edge cases that may apply.
+
+### Model Registration Philosophy
+
+Model definitions are **version-controlled in code**, not loaded dynamically from configuration files.
+
+This design choice ensures:
+
+- **Full test coverage** and deterministic behavior across releases
+- **Stable API contracts** between `/api` and `/workers`
+- **Clear traceability** between user-facing model identifiers and their actual implementations
+
+Developers who want to extend or modify available models can do so by editing the typed definitions directly in code:
+
+- `api/images/schemas.py`
+- `workers/images/tasks.py` or `workers/images/models/`
+
+Each new model entry should include:
+
+1. A Pydantic schema entry in `ModelNameLocal` or `ModelNameExternal`
+2. A corresponding task or pipeline implementation
+3. Updated tests under `tests/images`
+
+This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
 
 ## Building
 
@@ -112,7 +155,7 @@ Tag & push docker images to the hub - optional
 make tag-and-push
 ```
 
-### 🚀 Deploying the Release on a Server
+### Deploying the Release on a Server
 
 1. **Change into the directory** containing the `docker-compose.yml` file.
 
@@ -138,7 +181,7 @@ make tag-and-push
    docker-compose up -d --no-build
    ```
 
-### ⚙️ System Requirements
+### System Requirements
 
 - **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
 - **Environment Variables**: Ensure all required environment variables are set on the host.
@@ -238,7 +281,7 @@ print(f"Custom plugin paths from {custom_plugin_path} have been added.")
 
 To optimize volumes and virtual disk useful after model deletions
 
-# Kill Docker Desktop and related processes
+#### Kill Docker Desktop and related processes
 
 ```bash
 Stop-Process -Name "Docker Desktop" -Force -ErrorAction SilentlyContinue
