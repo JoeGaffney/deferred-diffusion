@@ -115,7 +115,7 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
 
 def text_to_image_call(context: ImageContext):
     prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + "Ultra HD, 4K, cinematic composition.")
-    pipe = get_pipeline("Qwen/Qwen-Image-Edit-2509")
+    pipe = get_pipeline("Qwen/Qwen-Image")
 
     args = {
         "width": context.width,
