@@ -27,7 +27,7 @@ _use_nunchaku = True
 def get_pipeline(model_id, config: AdapterPipelineConfig):
     if _use_nunchaku:
         # Controlnet is not supported for FluxTransformer2DModelV2 for now
-        transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
+        transformer = NunchakuFluxTransformer2dModel.from_pretrained(
             f"nunchaku-tech/nunchaku-flux.1-krea-dev/svdq-{get_precision()}_r32-flux.1-krea-dev.safetensors"
         )
     else:

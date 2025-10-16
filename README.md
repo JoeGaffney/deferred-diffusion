@@ -1,24 +1,18 @@
 # deferred-diffusion
 
-**Deferred Diffusion** lets you run your own production-grade AI inference stack with strongly typed APIs and a container-first architecture. It’s built for both local GPU models and external AI services, managing resources efficiently, caching models intelligently, and providing a reproducible, maintainable framework for complex pipelines.
+**Deferred Diffusion** is a **self-hosted, scalable AI inference stack** with a fully **typed, testable API**. It supports **local GPU models** and can route tasks to **external AI services** such as Replicate, OpenAI, or RunwayML. The system is **containerized**, automatically downloads all models and dependencies, and is **stateless**, allowing tasks to run across multiple workers without relying on local file paths. This makes deployments **predictable, cross-platform, and easy to scale**.
 
-## Info
-
-**Deferred Diffusion** is a **self-hosted multi-model inference framework** that runs diffusion and other AI models using **PyTorch** and **external AI services**.
-
-It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, allowing local GPU models and external providers to run seamlessly in the same system.
-
-The API queues tasks through a message broker, and worker services pick them up for processing. Workers can execute:
+It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, letting local models and external providers run seamlessly in the same system. The API queues tasks through a message broker, and worker services pick them up for processing. Workers can execute:
 
 - **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
-- **External inference tasks** via APIs such as Replicate, OpenAI and RunwayML
+- **External inference tasks** via APIs such as Replicate, OpenAI, and RunwayML
 
 An **intelligent model cache** keeps the last-used local model resident in GPU memory for fast reuse.
-**Text encoders** are ran on the CPU, and **prompt embeddings** are cached to maximize available VRAM during inference.
+**Text encoders** are run on the CPU, and **prompt embeddings** are cached to maximize available VRAM during inference.
 
 Clients interact with the API through clean typed REST endpoints, with a built-in **Swagger UI** for testing and inspection.
 
-Example **Houdini** and **Nuke** clients are included to demonstrate integration into a node-based VFX pipeline.
+Example **Houdini** and **Nuke** clients are included to demonstrate integration into node-based VFX pipelines.
 
 ## **Project Structure Overview**
 

@@ -73,20 +73,21 @@ class ModelLRUCache:
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
 
     def _cleanup(self, pipeline):
-        # try:
-        #     if hasattr(pipeline, "transformer"):
-        #         # Special handling for Nunchaku models BEFORE moving to CPU
-        #         if hasattr(pipeline.transformer, "transformer_blocks"):
-        #             logger.warning("Detected Nunchaku transformer - calling reset()")
-        #             for block in pipeline.transformer.transformer_blocks:
-        #                 if hasattr(block, "m") and hasattr(block.m, "reset"):
-        #                     logger.warning(f"Calling reset() on block {type(block)}")
-        #                     block.m.reset()
+        # NOTE required for Nunchaku models to avoid memory leaks specifically with NunchakuFluxTransformer2dModel
+        try:
+            if hasattr(pipeline, "transformer"):
+                # Special handling for Nunchaku models BEFORE moving to CPU
+                if hasattr(pipeline.transformer, "transformer_blocks"):
+                    logger.warning("Detected Nunchaku transformer - calling reset()")
+                    for block in pipeline.transformer.transformer_blocks:
+                        if hasattr(block, "m") and hasattr(block.m, "reset"):
+                            logger.warning(f"Calling reset() on block {type(block)}")
+                            block.m.reset()
 
-        #         pipeline.transformer.to("cpu")
-        #         del pipeline.transformer
-        # except Exception as e:
-        #     logger.error(f"Error moving transformer to CPU: {e}")
+                pipeline.transformer.to("cpu")
+                del pipeline.transformer
+        except Exception as e:
+            logger.error(f"Error moving transformer to CPU: {e}")
 
         try:
             pipeline.to("cpu")
