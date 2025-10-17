@@ -121,8 +121,14 @@ def get_all_parent_nodes(node, stop_at_types: List, visited=None) -> list:
     for i in range(node.inputs()):
         input_node = node.input(i)
         if input_node is not None:
-            # Stop recursion if this node type is in stop_at_types
-            if input_node.Class() in stop_at_types:
+            # Check if this node should stop recursion using node_type knob
+            should_stop = False
+            if input_node.Class() == "Group":
+                node_type_knob = input_node.knob("node_type")
+                if node_type_knob and node_type_knob.value() in stop_at_types:
+                    should_stop = True
+
+            if should_stop:
                 continue
 
             parent_nodes.append(input_node)
@@ -144,8 +150,11 @@ def find_nodes_of_type(node, target_class_type: str, stop_at_types=[NODE_IMAGE])
 
     # Filter only the nodes of the desired type
     for current in all_nodes:
-        if current.Class() == target_class_type:
-            matching_nodes.append(current)
+        if current.Class() == "Group":
+            # Check for custom node_type knob
+            node_type_knob = current.knob("node_type")
+            if node_type_knob and node_type_knob.value() == target_class_type:
+                matching_nodes.append(current)
 
     return matching_nodes
 

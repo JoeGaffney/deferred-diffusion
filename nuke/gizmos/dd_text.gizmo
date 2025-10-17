@@ -3,6 +3,8 @@ version 14.0 v3
 Group {
  name DDText
  addUserKnob {20 Settings}
+ addUserKnob {1 node_type +HIDDEN}
+ node_type dd_text
  addUserKnob {26 ""}
  addUserKnob {4 model l Model t "Select the text generation model." M {qwen-2 gpt-4o gpt-4 gpt-5}}
  model gpt-4

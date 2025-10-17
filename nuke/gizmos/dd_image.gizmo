@@ -4,6 +4,8 @@ Group {
  name DDImage
  inputs 3
  addUserKnob {20 Settings}
+ addUserKnob {1 node_type +HIDDEN}
+ node_type dd_image
  addUserKnob {26 ""}
  addUserKnob {4 model l "Model" M {sd-xl sd-3 flux-1 qwen-image depth-anything-2 segment-anything-2 real-esrgan-x4 gpt-image-1 runway-gen4-image flux-1-pro topazlabs-upscale google-gemini-2 bytedance-seedream-4 } t "Select the image generation model."}
  addUserKnob {22 generate l "Generate" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" t "Start image generation with current settings."}
@@ -18,6 +20,8 @@ Group {
  strength 0.5
  addUserKnob {7 seed l "Seed" t "Random seed for reproducibility." R 1 1000}
  seed 42
+ addUserKnob {6 high_quality l "High Quality" +STARTLINE t "Will use the high quality models or steps when available."}
+ high_quality 0
  addUserKnob {20 Paths}
  addUserKnob {41 file l output_read T output_read.file}
  addUserKnob {41 first l "Frame Range" T output_read.first}

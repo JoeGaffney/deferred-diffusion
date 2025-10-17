@@ -3,6 +3,8 @@ version 14.0 v3
 Group {
  name DDReference
  inputs 2
+ addUserKnob {1 node_type +HIDDEN}
+ node_type dd_reference
  addUserKnob {20 User}
  addUserKnob {4 mode M {style style-plus face depth canny pose ""}}
  mode style
