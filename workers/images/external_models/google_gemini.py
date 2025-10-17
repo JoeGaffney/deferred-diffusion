@@ -1,3 +1,5 @@
+from typing import Literal
+
 from PIL import Image
 
 from common.replicate_helpers import process_replicate_image_output, replicate_run
@@ -5,11 +7,20 @@ from images.context import ImageContext
 from utils.utils import convert_pil_to_bytes, pill_to_base64
 
 
+def get_size(
+    context: ImageContext,
+) -> Literal["1:1", "16:9", "9:16"]:
+    size = "1:1"
+    dimension_type = context.get_dimension_type()
+    if dimension_type == "landscape":
+        size = "16:9"
+    elif dimension_type == "portrait":
+        size = "9:16"
+    return size
+
+
 def text_to_image_call(context: ImageContext) -> Image.Image:
-    payload = {
-        "prompt": context.data.prompt,
-        "output_format": "png",
-    }
+    payload = {"prompt": context.data.prompt, "output_format": "png", "aspect_ratio": get_size(context)}
 
     output = replicate_run("google/gemini-2.5-flash-image", payload)
 

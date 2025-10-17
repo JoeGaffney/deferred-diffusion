@@ -33,7 +33,8 @@ def main(context: VideoContext):
 
     # NOTE base model seems a bit crap but is 3 times cheaper than pro
     model = "sora-2"
-    # model = "sora-2-pro"
+    if context.data.high_quality:
+        model = "sora-2-pro"
 
     size = get_aspect_ratio(context)
 
