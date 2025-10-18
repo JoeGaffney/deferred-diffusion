@@ -113,6 +113,59 @@ Each new model entry should include:
 
 This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
 
+### **Flow Diagram Concept**
+
+```
+Client API Request
+    │
+    ▼
+ImageRequest / VideoRequest schema
+    │
+    ▼
+API ModelName (user-facing choice, e.g., "flux-1")
+    ├─ Sends a Celery task to the workers
+    └─ Selects the worker queue (CPU or GPU) via task_queue property
+    │
+    ▼
+Worker / Task Router
+    ├─ Confirms queue assignment (CPU/GPU)
+    └─ Selects the appropriate pipeline function based on ModelName (lazy import)
+    │
+    ▼
+ImageContext / VideoContext
+    ├─ Initializes inputs: images, mask, seed, width/height
+    ├─ Initializes adapters & controlnets if enabled
+    └─ Provides helper functions:
+          - get_generation_mode()
+          - ensure_divisible()
+          - cleanup()
+    │
+    ▼
+Pipeline Function (pure function)
+    ├─ Calls one of:
+          - text_to_image_call(context)
+          - image_to_image_call(context)
+          - inpainting_call(context)
+    ├─ Internally selects the exact model(s) / transformer variants:
+          - Flux: Krea / Kontext / Fill
+          - WAN, VEO variants based on context
+    ├─ Applies adapters and controlnets as needed
+    └─ Prepares prompt embeddings for inference
+    │
+    ▼
+Pipeline Execution
+    ├─ Runs inference on GPU or CPU
+    └─ Produces output: PIL Image (or video frames for VideoContext)
+    │
+    ▼
+Context.save_image() / Context.save_video()
+    └─ Writes temporary file path for output
+    │
+    ▼
+Worker / API Response
+    └─ Encodes output as base64 (VideoWorkerResponse / ImageWorkerResponse)
+```
+
 ## Building
 
 Run primarily in the docker containers because of the multi service workflows and the multi copies of model downloads.

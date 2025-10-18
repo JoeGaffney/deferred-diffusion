@@ -14,16 +14,31 @@ def get_aspect_ratio(context: VideoContext) -> str:
 
 
 def main(context: VideoContext):
+
+    model = "google/veo-3.1-fast"
+    if context.data.high_quality:
+        model = "google/veo-3.1"
+
+    duration = 8 if context.long_video() else 4
+
+    # cheaper without audio
+    generate_audio = False
+
     payload = {
         "prompt": context.data.prompt,
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
+        "duration": duration,
+        "generate_audio": generate_audio,
     }
 
     if context.image:
         payload["image"] = convert_pil_to_bytes(context.image)
 
-    output = replicate_run("google/veo-3-fast", payload)
+        if context.image_last_frame:
+            payload["last_frame"] = convert_pil_to_bytes(context.image_last_frame)
+
+    output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)
 
     return context.save_video_url(video_url)

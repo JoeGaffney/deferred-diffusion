@@ -15,13 +15,12 @@ _quality: Literal["high", "auto"] = "auto"
 def get_size(
     context: ImageContext,
 ) -> Literal["1024x1024", "1536x1024", "1024x1536"]:
-    size = "1024x1024"
     dimension_type = context.get_dimension_type()
     if dimension_type == "landscape":
-        size = "1536x1024"
+        return "1536x1024"
     elif dimension_type == "portrait":
-        size = "1024x1536"
-    return size
+        return "1024x1536"
+    return "1024x1024"
 
 
 def process_openai_image_output(output: ImagesResponse) -> Image.Image:
@@ -44,7 +43,7 @@ def process_openai_image_output(output: ImagesResponse) -> Image.Image:
 
 def text_to_image_call(context: ImageContext):
     client = OpenAI()
-    model = "gpt-image-1-mini"
+    model = "gpt-image-1" if context.data.high_quality else "gpt-image-1-mini"
 
     result = client.images.generate(
         model=model,
@@ -58,7 +57,7 @@ def text_to_image_call(context: ImageContext):
 
 def image_to_image_call(context: ImageContext):
     client = OpenAI()
-    model = "gpt-image-1-mini"
+    model = "gpt-image-1" if context.data.high_quality else "gpt-image-1-mini"
 
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
@@ -100,7 +99,7 @@ def inpainting_call(context: ImageContext):
             model=model,
             quality=_quality,
             prompt=context.data.prompt,
-            size=get_size(context),  # type: ignore type hints wrong
+            size=get_size(context),  # type: ignore
             image=[convert_pil_to_bytes(context.color_image)],
             mask=convert_pil_to_bytes(converted_mask),
         )

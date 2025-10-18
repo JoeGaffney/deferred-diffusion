@@ -4,6 +4,8 @@ Group {
  name DDVideo
  inputs 2
  addUserKnob {20 Settings}
+ addUserKnob {1 node_type +HIDDEN}
+ node_type dd_video
  addUserKnob {26 ""}
  addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2 runway-gen-4 runway-act-two runway-gen-4-aleph runway-upscale bytedance-seedance-1 kwaivgi-kling-2 google-veo-3 openai-sora-2}}
  addUserKnob {22 generate l Generate t "Start video generation with current settings." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.process_video(node)"}
@@ -19,6 +21,8 @@ Group {
  num_frames 48
  addUserKnob {7 seed l Seed t "Random seed for reproducibility." R 1 1000}
  seed 42
+ addUserKnob {6 high_quality l "High Quality" +STARTLINE t "Will use the high quality models or steps when available."}
+ high_quality 0
  addUserKnob {26 ""}
  addUserKnob {20 Paths}
  addUserKnob {41 file l output_read T output_read.file}

@@ -35,7 +35,7 @@ def main(context: TextContext):
 
     response = client.responses.create(
         model=model,
-        input=messages,
+        input=messages,  # type: ignore
     )
 
     output = response.output_text

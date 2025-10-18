@@ -31,6 +31,12 @@ COPY assets/ ./assets/
 # Set the working directory to the api folder
 WORKDIR /app/workers
 
+# Let mypy resolve absolute imports from /app
+ENV PYTHONPATH=/app/workers
+
+# Run mypy to catch runtime-like type errors
+RUN mypy .
+
 # Command to run Celery worker
 # Breaks cuda with concurrency
 # CMD ["celery", "-A", "worker", "worker", "--loglevel=info", "--concurrency=2"]

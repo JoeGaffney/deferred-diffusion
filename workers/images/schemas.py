@@ -60,7 +60,7 @@ class ModelInfo(BaseModel):
 MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
     "sd-xl": ModelInfo(
         references=True,
-        description="Stable Diffusion XL variant supports the most control nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
+        description="Stable Diffusion XL variant supports the most conteol nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
     ),
     "sd-3": ModelInfo(
         description="Stable Diffusion 3.5 offers superior prompt understanding and composition. Excels at complex scenes, concept art, and handling multiple subjects with accurate interactions.",
@@ -183,6 +183,10 @@ class ImageRequest(BaseModel):
         },
     )
     references: list[References] = []
+    high_quality: bool = Field(
+        default=False,
+        description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
+    )
 
     @property
     def external_model(self) -> bool:

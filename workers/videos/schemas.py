@@ -73,10 +73,10 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
         description="Kling V2 model by kwaivgi, designed for high-quality video generation from text prompts. Known for its ability to create detailed and coherent video sequences.",
     ),
     "google-veo-3": ModelInfo(
-        description="Google's VEO-3-Fast model, optimized for rapid video generation while maintaining good quality. Suitable for applications requiring quick turnaround times.",
+        description="Google's VEO-3 model, high end flagship model. Supports high_quality parameter for slower but higher quality variant.",
     ),
     "openai-sora-2": ModelInfo(
-        description="OpenAI's Sora 2 model, high-end video generation model known for producing high-quality and realistic videos from text prompts. Ideal for professional-grade video content creation.",
+        description="OpenAI's Sora 2 model, high-end video generation model known for producing high-quality and realistic videos from text prompts. Supports high_quality parameter for pro variant. Ideal for professional-grade video content creation.",
     ),
 }
 
@@ -130,6 +130,10 @@ class VideoRequest(BaseModel):
             "contentEncoding": "base64",
             "contentMediaType": "video/*",
         },
+    )
+    high_quality: bool = Field(
+        default=False,
+        description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
     )
 
     @property

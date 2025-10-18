@@ -112,6 +112,11 @@ def process_image(node):
         image = node_to_base64(image_node, current_frame)
         mask = node_to_base64(mask_node, current_frame)
         width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
+        # backward compatibility for high_quality knob missing in older nodes
+        try:
+            high_quality = get_node_value(node, "high_quality", False, return_type=bool, mode="value")
+        except Exception:
+            high_quality = False
 
         body = ImageRequest(
             model=ImageRequestModel(get_node_value(node, "model", "sd-xl", mode="value")),
@@ -123,6 +128,7 @@ def process_image(node):
             width=int(width_height[0]),
             height=int(width_height[1]),
             references=get_references(aux_node),
+            high_quality=high_quality,
         )
         _api_call(node, body, output_image_path, current_frame)
 
