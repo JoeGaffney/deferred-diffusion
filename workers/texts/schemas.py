@@ -29,13 +29,13 @@ MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
 
 MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "gpt-4o": ModelInfo(
-        description="OpenAI's GPT-4o model with enhanced multimodal capabilities. Excels at complex reasoning, code generation, and handling text with images and videos.",
+        description="OpenAI's GPT-4o model with enhanced multimodal capabilities. (mini variant)",
     ),
     "gpt-4": ModelInfo(
-        description="OpenAI's GPT-4 model with advanced reasoning capabilities. Strong performance on complex tasks, analysis, and creative writing.",
+        description="OpenAI's GPT-4 model with advanced reasoning capabilities. (4.1 mini variant)",
     ),
     "gpt-5": ModelInfo(
-        description="OpenAI's latest GPT-5 model with cutting-edge performance across all text generation tasks.",
+        description="OpenAI's latest GPT-5 model with cutting-edge performance across all text generation tasks. (mini variant)",
     ),
 }
 

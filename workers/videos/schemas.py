@@ -133,7 +133,7 @@ class VideoRequest(BaseModel):
     )
     high_quality: bool = Field(
         default=False,
-        description="Use high quality model variant when available (may cost more and take longer). Or use higher steps in local models.",
+        description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
     )
 
     @property

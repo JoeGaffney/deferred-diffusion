@@ -183,6 +183,10 @@ class ImageRequest(BaseModel):
         },
     )
     references: list[References] = []
+    high_quality: bool = Field(
+        default=False,
+        description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
+    )
 
     @property
     def external_model(self) -> bool:

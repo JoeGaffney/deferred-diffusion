@@ -345,8 +345,13 @@ def get_previous_text_messages(node) -> str:
     if node is None:
         return ""
 
-    if node.Class() != "dd_text":
-        return ""
+    if node.Class() == "Group":
+        node_type_knob = node.knob("node_type")
+        valid = False
+        if node_type_knob and node_type_knob.value() in "dd_text":
+            valid = True
+        if not valid:
+            return ""
 
     # NOTE some issues here with how nuke handles json encoded text so we read from text knob directly
     # k = node["chain_of_thought"]
