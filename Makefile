@@ -23,9 +23,9 @@ up: build
 
 # API Client generation
 generate-clients: up
-	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path hda/python/generated --overwrite
-	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path nuke/python/generated --overwrite
-	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path it_tests/generated --overwrite
+	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path clients/houdini/python/generated --overwrite
+	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path clients/nuke/python/generated --overwrite
+	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path clients/it_tests/generated --overwrite
 
 
 TEST_PATH ?= images
@@ -47,8 +47,8 @@ test-worker-basic: up
 # make test-it-tests TEST_PATH=videos
 # make test-it-tests TEST_PATH=texts
 test-it-tests: generate-clients
-	cd it_tests && pytest $(TEST_PATH) -vs
-	cd ..
+	cd clients/it_tests && pytest $(TEST_PATH) -vs
+	cd ../..
 
 VERSION ?= 0.3.0
 PROJECT_NAME ?= deferred-diffusion
@@ -78,6 +78,6 @@ create-release: build
 # Copy directories with exclusions
 	echo __pycache__ > exclude_patterns.txt
 	echo backup >> exclude_patterns.txt
-	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt nuke releases\$(VERSION)\$(PROJECT_NAME)\nuke
-	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt hda releases\$(VERSION)\$(PROJECT_NAME)\hda
+	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt clients\nuke releases\$(VERSION)\$(PROJECT_NAME)\clients\nuke
+	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt clients\houdini releases\$(VERSION)\$(PROJECT_NAME)\clients\houdini
 	del exclude_patterns.txt

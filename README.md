@@ -274,7 +274,7 @@ These are examples on how to simply get things on the path you could use rez or 
 
 Adjust directories depending on where you have the toolset folders and the versions of your application. Examples are given for a windows environment.
 
-### HDA's houdini setup
+### Houdini Setup
 
 #### Python Modules
 
@@ -291,9 +291,9 @@ You can install like this to put on roaming path.
 #### Env file
 
 ```env
-HOUDINI_PATH = C:/development/deferred-diffusion/hda;&
-HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/hda;&
-PYTHONPATH = C:/development/deferred-diffusion/hda/python;&
+HOUDINI_PATH = C:/development/deferred-diffusion/clients/houdini;&
+HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/clients/houdini;&
+PYTHONPATH = C:/development/deferred-diffusion/clients/houdini/python;&
 ```
 
 ### Nuke plug-in setup
@@ -321,7 +321,7 @@ Update your
 import nuke
 
 # Centralized Nuke plugin path (your custom directory)
-custom_plugin_path = r"C:\development\deferred-diffusion\nuke"
+custom_plugin_path = r"C:\development\deferred-diffusion\clients\nuke"
 
 # Add your custom plugin paths
 nuke.pluginAddPath(custom_plugin_path)

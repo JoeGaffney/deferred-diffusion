@@ -2,8 +2,6 @@ import base64
 import os
 from typing import Optional
 
-from PIL import Image
-
 
 def base64_to_image(base64_str: str, output_path: str):
     """Convert a base64 string to an image and save it to the specified path."""
