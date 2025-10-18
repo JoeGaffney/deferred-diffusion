@@ -32,7 +32,7 @@ def main(context: VideoContext):
     client = OpenAI()
 
     # NOTE base model seems a bit crap but is 3 times cheaper than pro
-    model = "sora-2"
+    model: Literal["sora-2", "sora-2-pro"] = "sora-2"
     if context.data.high_quality:
         model = "sora-2-pro"
 
@@ -43,7 +43,7 @@ def main(context: VideoContext):
     if context.image:
         reference_image = convert_pil_to_bytes(resize_image_to_aspect_ratio(context.image, context))
 
-    seconds = "8" if context.long_video() else "4"
+    seconds: Literal["4", "8"] = "8" if context.long_video() else "4"
 
     try:
         video = client.videos.create_and_poll(

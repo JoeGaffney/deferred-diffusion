@@ -38,7 +38,7 @@ def main(context: VideoContext):
             model="gen4_aleph",
             video_uri=video_uri,
             prompt_text=context.data.prompt,
-            references=references,
+            references=references,  # type: ignore
             ratio=ratio,
             seed=context.data.seed,
             content_moderation=ContentModeration(public_figure_threshold="low"),

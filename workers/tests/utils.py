@@ -39,8 +39,8 @@ def _convert_image_to_base64(image_path: str) -> Optional[str]:
     try:
         with open(image_path, "rb") as image_file:
             image_bytes = image_file.read()
-            base64_str = base64.b64encode(image_bytes)
-            base64_str = base64_str.decode("utf-8")  # Convert to a string
+            base64_bytes = base64.b64encode(image_bytes)
+            base64_str = base64_bytes.decode("utf-8")  # Convert to a string
 
             print(f"Base64: {base64_str[:100]}... length: {len(base64_str)}")
             return base64_str

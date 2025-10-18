@@ -10,13 +10,12 @@ from utils.utils import convert_pil_to_bytes
 def get_size(
     context: ImageContext,
 ) -> Literal["1:1", "16:9", "9:16"]:
-    size = "1:1"
     dimension_type = context.get_dimension_type()
     if dimension_type == "landscape":
-        size = "16:9"
+        return "16:9"
     elif dimension_type == "portrait":
-        size = "9:16"
-    return size
+        return "9:16"
+    return "1:1"
 
 
 def main(context: ImageContext) -> Image.Image:

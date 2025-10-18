@@ -63,8 +63,8 @@ def image_to_video(context: VideoContext):
         conditions.append(video_condition)
 
     video = pipe.__call__(
-        width=context.image.size[0],
-        height=context.image.size[1],
+        width=context.width,
+        height=context.height,
         conditions=conditions,
         prompt_embeds=prompt_embeds,
         prompt_attention_mask=prompt_attention_mask,

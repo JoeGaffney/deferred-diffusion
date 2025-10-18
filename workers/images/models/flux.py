@@ -161,7 +161,7 @@ def text_to_image_call(context: ImageContext):
     args = {
         "width": context.width,
         "height": context.height,
-        "num_inference_steps": 28,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "guidance_scale": 2.5,
     }

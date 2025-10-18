@@ -18,7 +18,7 @@ def get_aspect_ratio(context: VideoContext) -> Literal["1280:720", "720:1280", "
 
 def main(context: VideoContext):
     client = RunwayML()
-    model = "gen4_turbo"
+    model: Literal["gen4_turbo"] = "gen4_turbo"
 
     image = context.image
     if image is None:

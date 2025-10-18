@@ -1,5 +1,5 @@
 import os
-from typing import Literal
+from typing import Literal, TypeGuard
 
 from common.logger import logger
 
@@ -15,7 +15,13 @@ def _read_precision(env_name: str, default: Literal[4, 8, 16] = 4) -> Literal[4,
     if val not in _VALID_PRECISIONS:
         logger.warning("Unsupported %s=%d, falling back to %d", env_name, val, default)
         return default
-    return val
+
+    def _is_valid_precision(val: int) -> TypeGuard[Literal[4, 8, 16]]:
+        return val in _VALID_PRECISIONS
+
+    if _is_valid_precision(val):
+        return val
+    return default
 
 
 # Container/process-level defaults for transformer quantization precision

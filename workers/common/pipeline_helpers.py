@@ -3,7 +3,7 @@ import os
 import time
 from collections import OrderedDict
 from functools import lru_cache, wraps
-from typing import Literal
+from typing import Literal, Union
 
 import torch
 from accelerate.hooks import CpuOffload
@@ -203,10 +203,9 @@ def get_quantized_model(
     load_in_4bit = target_precision == 4
     quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit=load_in_4bit)
 
-    # NOTE possibly optium quanto is better for 8bit
-    # bits and bytes does not offload with 8bit
-    quant_config = TorchAoConfig("int8_weight_only")
     use_safetensors = False
+    quant_config: Union[BitsAndBytesConfig, TorchAoConfig]
+
     if load_in_4bit:
         # Use BitsAndBytesConfig for 4-bit quantization
         use_safetensors = True
@@ -216,6 +215,10 @@ def get_quantized_model(
             bnb_4bit_compute_dtype=torch_dtype,
             bnb_4bit_use_double_quant=False,  # NOTE test this out
         )
+    else:  # 8-bit quantization
+        # torchAO seems best fit for 8-bit currently as still supported offloading
+        quant_config = TorchAoConfig("int8_weight_only")
+        use_safetensors = False
 
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
