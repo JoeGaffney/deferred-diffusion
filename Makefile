@@ -1,9 +1,9 @@
 .PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests create-release
 
-VERSION ?= 0.3.1
+VERSION ?= latest
 PROJECT_NAME ?= deferred-diffusion
 REPO ?= deferred-diffusion
-USERNAME ?= joegaffney
+REPO_USERNAME ?= joegaffney
 TEST_PATH ?= images
 TEST_FILES ?= tests/images/test_flux.py tests/texts/test_qwen.py tests/videos/test_ltx.py
 
@@ -40,10 +40,8 @@ generate-clients-raw:
 	openapi-python-client generate --path clients/openapi.json --output-path clients/it_tests/generated --overwrite
 
 # API Client generation
-generate-clients: generate-openapi-spec
-	openapi-python-client generate --path clients/openapi.json --output-path clients/houdini/python/generated --overwrite
-	openapi-python-client generate --path clients/openapi.json --output-path clients/nuke/python/generated --overwrite
-	openapi-python-client generate --path clients/openapi.json --output-path clients/it_tests/generated --overwrite
+generate-clients: generate-openapi-spec generate-clients-raw
+	@echo "API clients generated successfully."
 
 
 # make test-worker TEST_PATH=images
@@ -67,18 +65,13 @@ test-it-tests: generate-clients
 	cd ../..
 
 
-create-image-release: build
-# Create release directory with combined project-version name
-	if not exist releases mkdir releases
-	if exist releases\$(VERSION)\$(PROJECT_NAME) rmdir /S /Q releases\$(VERSION)\$(PROJECT_NAME)
-	mkdir releases\$(VERSION)\$(PROJECT_NAME)
-
+tag-and-push: build
 # Tag images with version (this creates new tags without removing latest tags)
-	docker tag deferred-diffusion-api:latest $(USERNAME)/$(REPO):api-$(VERSION)
-	docker tag deferred-diffusion-workers:latest $(USERNAME)/$(REPO):worker-$(VERSION)
+	docker tag deferred-diffusion-api:latest $(REPO_USERNAME)/$(REPO):api-$(VERSION)
+	docker tag deferred-diffusion-workers:latest $(REPO_USERNAME)/$(REPO):worker-$(VERSION)
 # Push images
-	docker push $(USERNAME)/$(REPO):api-$(VERSION)
-	docker push $(USERNAME)/$(REPO):worker-$(VERSION)
+	docker push $(REPO_USERNAME)/$(REPO):api-$(VERSION)
+	docker push $(REPO_USERNAME)/$(REPO):worker-$(VERSION)
 
 create-client-release: generate-clients-raw
 # Create release directory with combined project-version name
@@ -91,7 +84,7 @@ create-client-release: generate-clients-raw
 	copy README.md releases\$(VERSION)\$(PROJECT_NAME)\README.md
 
 # Update docker-compose.yml to use versioned images
-	powershell -Command "(Get-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', '$(USERNAME)/$(REPO):api-$(VERSION)' -replace 'deferred-diffusion-workers:latest', '$(USERNAME)/$(REPO):worker-$(VERSION)' | Set-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml"
+	powershell -Command "(Get-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', '$(REPO_USERNAME)/$(REPO):api-$(VERSION)' -replace 'deferred-diffusion-workers:latest', '$(REPO_USERNAME)/$(REPO):worker-$(VERSION)' | Set-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml"
 
 # Copy directories with exclusions
 	xcopy /E /I /Y clients releases\$(VERSION)\$(PROJECT_NAME)\clients
@@ -111,8 +104,8 @@ create-client-release-linux: generate-clients-raw
 	cp README.md releases/$(VERSION)/$(PROJECT_NAME)/README.md
 
 # Update docker-compose.yml to use versioned images
-	sed -i 's/deferred-diffusion-api:latest/$(USERNAME)\/$(REPO):api-$(VERSION)/g' releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
-	sed -i 's/deferred-diffusion-workers:latest/$(USERNAME)\/$(REPO):worker-$(VERSION)/g' releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
+	sed -i 's/deferred-diffusion-api:latest/$(REPO_USERNAME)\/$(REPO):api-$(VERSION)/g' releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
+	sed -i 's/deferred-diffusion-workers:latest/$(REPO_USERNAME)\/$(REPO):worker-$(VERSION)/g' releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
 
 # Copy directories with exclusions
 	cp -r clients releases/$(VERSION)/$(PROJECT_NAME)/

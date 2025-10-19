@@ -42,7 +42,7 @@ We try to use plural to adhere to REST best practices.
 │ ├── ...
 │── /videos
 │ ├── ...
-│── /agentic # Agentic area is a bit experimental; the agents can call on other modules, for example, calling the "texts" or "images" models for vision processing by the use of tools.
+│── /agentic # Agentic area is a bit experimental
 │ ├── agents/
 │ ├── schemas.py
 │ ├── context.py
@@ -90,7 +90,7 @@ We avoid cluttering user model choices with minor versions (.1, .2, etc.) and in
 
 The model pipelines themselves serve as the source of truth for what models are actually used. This is especially important given various optimizations and edge cases that may apply.
 
-### Model Registration Philosophy
+#### Model Registration Philosophy
 
 Model definitions are **version-controlled in code**, not loaded dynamically from configuration files.
 
@@ -113,7 +113,7 @@ Each new model entry should include:
 
 This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
 
-### **Flow Diagram Concept**
+#### **Flow Diagram Concept**
 
 ```
 Client API Request
@@ -176,7 +176,7 @@ make all
 
 ### Local setup Windows
 
-For local venv
+For local venv mainly to get intellisense on the packages and some local testing.
 
 ```bash
 ./start_venv_setup.bat
@@ -193,18 +193,18 @@ make test-worker
 make test-it-tests
 ```
 
+See the make file for more info.
+
 ## Releasing
 
-will make /releases/deferred-diffusion-alpha
-Which will have a tar of the images setup
+Tag and push the to github will trigger github actions to the do the release.
+
+- Currently there is no testing in the CI because of the gpu compute nature of things so please run the test suite locally on main after a merge.
+
+To make a local release.
 
 ```bash
 make create-release
-```
-
-Tag & push docker images to the hub - optional
-
-```bash
 make tag-and-push
 ```
 
@@ -248,10 +248,10 @@ OPENAI_API_KEY=your-openai-key # For OpenAI services
 RUNWAYML_API_SECRET=your-runway-secret # For RunwayML services
 REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
 HF_TOKEN=your-huggingface-token # For Hugging Face model access
-DDIFFUSION_API_KEYS=Welcome1! # API keys for authentication
+DDIFFUSION_API_KEYS=Welcome1!,Welcome2! # API keys for authentication
 ```
 
-For the clients where the toolsets are used
+For the clients where the tool sets are used
 
 ```env
 DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
@@ -268,7 +268,7 @@ docker-compose exec gpu-workers pytest tests/texts -vs
 docker-compose exec gpu-workers pytest tests/videos -vs
 ```
 
-## Toolsets
+## Clients
 
 These are examples on how to simply get things on the path you could use rez or any other way preferred way to get the modules and plugins loaded.
 
