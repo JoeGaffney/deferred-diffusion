@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  packages: write
+  
 env:
   USERNAME: joegaffney
   REPO: deferred-diffusion
@@ -61,6 +65,14 @@ jobs:
         prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
         generate_release_notes: true
         body: |
-          ## LEAVE BLANK FOR NOW
+          ## 🚀 Deferred Diffusion v${{ steps.version.outputs.VERSION }}
+          
+          ### Docker Image
+          ```bash
+          docker pull ${{ env.USERNAME }}/${{ env.REPO }}:api-${{ steps.version.outputs.VERSION }}
+          ```
+          
+          ### Release Package
+          Download the release archive below.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
