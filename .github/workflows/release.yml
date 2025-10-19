@@ -14,7 +14,7 @@ env:
   REPO: deferred-diffusion
 
 jobs:
-  release:
+  build-and-tag:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -45,30 +45,30 @@ jobs:
         username: ${{ env.USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-    # NOTE to heavy to do in the same build job
-    # - name: Build and push API image
-    #   uses: docker/build-push-action@v5
-    #   with:
-    #     context: .
-    #     file: ./Dockerfile.api
-    #     push: true
-    #     tags: |
-    #       ${{ env.USERNAME }}/${{ env.REPO }}:api-${{ steps.version.outputs.VERSION }}
-    #       ${{ env.USERNAME }}/${{ env.REPO }}:api-latest
-    #     cache-from: type=gha
-    #     cache-to: type=gha,mode=max
-
-    - name: Build and push Worker image
+    - name: Build and push API image
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./Dockerfile.workers
+        file: ./Dockerfile.api
         push: true
         tags: |
-          ${{ env.USERNAME }}/${{ env.REPO }}:worker-${{ steps.version.outputs.VERSION }}
-          ${{ env.USERNAME }}/${{ env.REPO }}:worker-latest
+          ${{ env.USERNAME }}/${{ env.REPO }}:api-${{ steps.version.outputs.VERSION }}
+          ${{ env.USERNAME }}/${{ env.REPO }}:api-latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    # NOTE to heavy to do in the same build job
+    # - name: Build and push Worker image
+    #   uses: docker/build-push-action@v5
+    #   with:
+    #     context: .
+    #     file: ./Dockerfile.workers
+    #     push: true
+    #     tags: |
+    #       ${{ env.USERNAME }}/${{ env.REPO }}:worker-${{ steps.version.outputs.VERSION }}
+    #       ${{ env.USERNAME }}/${{ env.REPO }}:worker-latest
+    #     cache-from: type=gha
+    #     cache-to: type=gha,mode=max
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
