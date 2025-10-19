@@ -14,7 +14,7 @@ env:
   REPO: deferred-diffusion
 
 jobs:
-  build-and-tag:
+  build-and-release:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
