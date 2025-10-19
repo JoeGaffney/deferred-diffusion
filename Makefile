@@ -21,11 +21,16 @@ build: down copy-schemas
 up: build
 	docker-compose up -d
 
+# Generate OpenAPI spec file
+generate-openapi-spec: up
+	curl -o clients/openapi.json http://127.0.0.1:5000/openapi.json || powershell -Command "Invoke-WebRequest -Uri 'http://127.0.0.1:5000/openapi.json' -OutFile 'clients/openapi.json'"
+	@echo OpenAPI spec saved to clients/openapi.json
+
 # API Client generation
-generate-clients: up
-	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path clients/houdini/python/generated --overwrite
-	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path clients/nuke/python/generated --overwrite
-	openapi-python-client generate --url http://127.0.0.1:5000/openapi.json --output-path clients/it_tests/generated --overwrite
+generate-clients: generate-openapi-spec
+	openapi-python-client generate --path clients/openapi.json --output-path clients/houdini/python/generated --overwrite
+	openapi-python-client generate --path clients/openapi.json --output-path clients/nuke/python/generated --overwrite
+	openapi-python-client generate --path clients/openapi.json --output-path clients/it_tests/generated --overwrite
 
 
 TEST_PATH ?= images
@@ -81,3 +86,8 @@ create-release: build
 	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt clients\nuke releases\$(VERSION)\$(PROJECT_NAME)\clients\nuke
 	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt clients\houdini releases\$(VERSION)\$(PROJECT_NAME)\clients\houdini
 	del exclude_patterns.txt
+
+# Create release archive
+	cd releases\$(VERSION) && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
+	@echo Release files created in releases\$(VERSION)\$(PROJECT_NAME)
+	@echo Archive created: releases\$(VERSION)\$(PROJECT_NAME)-$(VERSION).tar.gz
