@@ -1,5 +1,12 @@
 .PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests create-release
 
+VERSION ?= 0.3.1
+PROJECT_NAME ?= deferred-diffusion
+REPO ?= deferred-diffusion
+USERNAME ?= joegaffney
+TEST_PATH ?= images
+TEST_FILES ?= tests/images/test_flux.py tests/texts/test_qwen.py tests/videos/test_ltx.py
+
 
 # Default target
 all: generate-clients
@@ -27,13 +34,18 @@ generate-openapi-spec: up
 	@echo OpenAPI spec saved to clients/openapi.json
 
 # API Client generation
+generate-clients-raw: 
+	openapi-python-client generate --path clients/openapi.json --output-path clients/houdini/python/generated --overwrite
+	openapi-python-client generate --path clients/openapi.json --output-path clients/nuke/python/generated --overwrite
+	openapi-python-client generate --path clients/openapi.json --output-path clients/it_tests/generated --overwrite
+
+# API Client generation
 generate-clients: generate-openapi-spec
 	openapi-python-client generate --path clients/openapi.json --output-path clients/houdini/python/generated --overwrite
 	openapi-python-client generate --path clients/openapi.json --output-path clients/nuke/python/generated --overwrite
 	openapi-python-client generate --path clients/openapi.json --output-path clients/it_tests/generated --overwrite
 
 
-TEST_PATH ?= images
 # make test-worker TEST_PATH=images
 # make test-worker TEST_PATH=texts
 # make test-worker TEST_PATH=videos
@@ -44,7 +56,6 @@ TEST_PATH ?= images
 test-worker: up
 	docker-compose exec gpu-workers pytest tests/$(TEST_PATH) -vs
 
-TEST_FILES ?= tests/images/test_flux.py tests/texts/test_qwen.py tests/videos/test_ltx.py
 test-worker-basic: up
 	docker-compose exec gpu-workers pytest $(TEST_FILES) -vs
 
@@ -55,12 +66,8 @@ test-it-tests: generate-clients
 	cd clients/it_tests && pytest $(TEST_PATH) -vs
 	cd ../..
 
-VERSION ?= 0.3.0
-PROJECT_NAME ?= deferred-diffusion
-create-release: build
-# Define variables
-	$(eval USERNAME=joegaffney)
-	$(eval REPO=deferred-diffusion)
+
+create-image-release: build
 # Create release directory with combined project-version name
 	if not exist releases mkdir releases
 	if exist releases\$(VERSION)\$(PROJECT_NAME) rmdir /S /Q releases\$(VERSION)\$(PROJECT_NAME)
@@ -73,6 +80,12 @@ create-release: build
 	docker push $(USERNAME)/$(REPO):api-$(VERSION)
 	docker push $(USERNAME)/$(REPO):worker-$(VERSION)
 
+create-client-release: generate-clients-raw
+# Create release directory with combined project-version name
+	if not exist releases mkdir releases
+	if exist releases\$(VERSION)\$(PROJECT_NAME) rmdir /S /Q releases\$(VERSION)\$(PROJECT_NAME)
+	mkdir releases\$(VERSION)\$(PROJECT_NAME)
+
 # Copy deployment docker-compose.yml to release folder
 	copy docker-compose.release.yml releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml
 	copy README.md releases\$(VERSION)\$(PROJECT_NAME)\README.md
@@ -81,13 +94,30 @@ create-release: build
 	powershell -Command "(Get-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', '$(USERNAME)/$(REPO):api-$(VERSION)' -replace 'deferred-diffusion-workers:latest', '$(USERNAME)/$(REPO):worker-$(VERSION)' | Set-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml"
 
 # Copy directories with exclusions
-	echo __pycache__ > exclude_patterns.txt
-	echo backup >> exclude_patterns.txt
-	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt clients\nuke releases\$(VERSION)\$(PROJECT_NAME)\clients\nuke
-	xcopy /E /I /Y /EXCLUDE:exclude_patterns.txt clients\houdini releases\$(VERSION)\$(PROJECT_NAME)\clients\houdini
-	del exclude_patterns.txt
+	xcopy /E /I /Y clients releases\$(VERSION)\$(PROJECT_NAME)\clients
 
 # Create release archive
 	cd releases\$(VERSION) && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
 	@echo Release files created in releases\$(VERSION)\$(PROJECT_NAME)
 	@echo Archive created: releases\$(VERSION)\$(PROJECT_NAME)-$(VERSION).tar.gz
+
+create-client-release-linux: generate-clients-raw
+# Create release directory with combined project-version name
+	mkdir -p releases/$(VERSION)/$(PROJECT_NAME)
+	rm -rf releases/$(VERSION)/$(PROJECT_NAME)/* 2>/dev/null || true
+
+# Copy deployment docker-compose.yml to release folder
+	cp docker-compose.release.yml releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
+	cp README.md releases/$(VERSION)/$(PROJECT_NAME)/README.md
+
+# Update docker-compose.yml to use versioned images
+	sed -i 's/deferred-diffusion-api:latest/$(USERNAME)\/$(REPO):api-$(VERSION)/g' releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
+	sed -i 's/deferred-diffusion-workers:latest/$(USERNAME)\/$(REPO):worker-$(VERSION)/g' releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
+
+# Copy directories with exclusions
+	cp -r clients releases/$(VERSION)/$(PROJECT_NAME)/
+
+# Create release archive
+	cd releases/$(VERSION) && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
+	@echo Release files created in releases/$(VERSION)/$(PROJECT_NAME)
+	@echo Archive created: releases/$(VERSION)/$(PROJECT_NAME)-$(VERSION).tar.gz
