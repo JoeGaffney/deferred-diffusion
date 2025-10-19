@@ -57,6 +57,18 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Build and push Worker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.workers
+        push: true
+        tags: |
+          ${{ env.USERNAME }}/${{ env.REPO }}:worker-${{ steps.version.outputs.VERSION }}
+          ${{ env.USERNAME }}/${{ env.REPO }}:worker-latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
