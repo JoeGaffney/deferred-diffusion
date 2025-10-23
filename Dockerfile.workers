@@ -27,6 +27,11 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 COPY workers/ ./workers/
 COPY assets/ ./assets/
 
+# Copy LICENSE and README files
+COPY README.md /README.md
+COPY LICENSE /LICENSE
+LABEL license="MIT"
+
 # Set working directory for worker code
 WORKDIR /app/workers
 

@@ -17,6 +17,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY api/ ./api/
 COPY assets/ ./assets/
 
+# Copy LICENSE and README files
+COPY README.md /README.md
+COPY LICENSE /LICENSE
+LABEL license="MIT"
+
 # Set the working directory to the api folder
 WORKDIR /app/api
 

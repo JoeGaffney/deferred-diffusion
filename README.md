@@ -86,7 +86,7 @@ For example, "flux-1" might internally use:
 
 Depending on the inputs (e.g., whether an image is provided), we internally route to the most appropriate model variant.
 
-We avoid cluttering user model choices with minor versions (.1, .2, etc.) and instead automatically select the best available version. This approach allows us to properly test and verify model behaviors for both external and local models without requiring users to understand implementation details.
+We avoid cluttering user model choices with minor versions (.1, .2, etc.) and instead select the best available minor version. This approach allows us to properly test and verify model behaviors for both external and local models without requiring users to understand implementation details.
 
 The model pipelines themselves serve as the source of truth for what models are actually used. This is especially important given various optimizations and edge cases that may apply.
 
@@ -197,9 +197,9 @@ See the make file for more info.
 
 ## Releasing
 
-Tag and push the to github will trigger github actions to the do the release.
+Tag and push to github will trigger github actions to the do the release.
 
-- Currently there is no testing in the CI because of the gpu compute nature of things so please run the test suite locally on main after a merge.
+- Currently there is no testing in the CI because of the gpu compute nature of things so please run the test suite locally on main before any releases or merges.
 
 To make a local release.
 
@@ -214,19 +214,7 @@ make tag-and-push
 
 2. **Ensure Docker Desktop is installed** on the server.
 
-3. **Authenticate with Docker Hub** (one-time setup per machine/user):
-
-   ```bash
-   docker login -u joegaffney
-   ```
-
-   At the password prompt, enter your **personal access token (PAT)**, e.g.:
-
-   ```bash
-   dckr_pat__##-###################
-   ```
-
-4. **Pull and run the containers**:
+3. **Pull and run the containers**:
 
    ```bash
    docker-compose down
@@ -234,9 +222,10 @@ make tag-and-push
    docker-compose up -d --no-build
    ```
 
-### System Requirements
+### Requirements
 
 - **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
+- **GPU** Nvidia GPU with at least 12gb VRAM. 24 GB recommended.
 - **Environment Variables**: Ensure all required environment variables are set on the host.
 
 #### Required Environment Variables
@@ -264,6 +253,7 @@ Tests are included inside the containers these can be ran to verify and also to 
 
 ```bash
 docker-compose exec gpu-workers pytest tests/images -vs
+docker-compose exec gpu-workers pytest tests/images/test_flux.py -vs
 docker-compose exec gpu-workers pytest tests/texts -vs
 docker-compose exec gpu-workers pytest tests/videos -vs
 ```
@@ -272,7 +262,7 @@ docker-compose exec gpu-workers pytest tests/videos -vs
 
 These are examples on how to simply get things on the path you could use rez or any other way preferred way to get the modules and plugins loaded.
 
-Adjust directories depending on where you have the toolset folders and the versions of your application. Examples are given for a windows environment.
+Adjust directories depending on where you have the folders and the versions of your application. Examples are given for a windows environment.
 
 ### Houdini Setup
 
