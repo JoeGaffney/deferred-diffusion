@@ -12,21 +12,27 @@
       "name": "workers"
     },
     {
-      "path": "it_tests",
+      "path": "clients/it_tests",
       "name": "it_tests"
     },
     {
-      "path": "hda/python",
+      "path": "clients/houdini/python",
       "name": "Houdini"
     },
     {
-      "path": "nuke/python",
+      "path": "clients/nuke/python",
       "name": "Nuke"
     }
   ],
   "settings": {
     "python.defaultInterpreterPath": "${workspaceFolder:deferred-diffusion}/venv/Scripts/python.exe",
-    "python.analysis.extraPaths": ["./api", "./workers", "./it_tests", "./hda/python", "./nuke/python"],
+    "python.analysis.extraPaths": [
+      "./api",
+      "./workers",
+      "./clients/it_tests",
+      "./clients/houdini/python",
+      "./clients/nuke/python"
+    ],
     "python.analysis.exclude": ["**/venv/**", "**/.git/**"],
     "python.analysis.indexing": true,
     "editor.formatOnSave": true,

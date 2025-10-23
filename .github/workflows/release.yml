@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+  
+env:
+  REPO_USERNAME: joegaffney
+  REPO: deferred-diffusion
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Free Disk Space (Ubuntu)
+      uses: insightsengineering/disk-space-reclaimer@v1
+      with:
+        android: true
+        dotnet: true
+        haskell: false
+        large-packages: true
+        swap-storage: false
+        docker-images: false
+        tools-cache: false
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Extract version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install openapi-python-client
+      run: pip install openapi-python-client
+
+    - name: Create client release package using Makefile
+      run: |
+        make create-client-release-linux VERSION=${{ steps.version.outputs.VERSION }}
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: releases/${{ steps.version.outputs.VERSION }}/${{ env.REPO }}-${{ steps.version.outputs.VERSION }}.tar.gz
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
+        generate_release_notes: true
+        body: |
+          ## 🚀 Deferred Diffusion v${{ steps.version.outputs.VERSION }}
+          
+          ### Docker Image
+          ```bash
+          docker pull ${{ env.REPO_USERNAME }}/${{ env.REPO }}:api-${{ steps.version.outputs.VERSION }}
+          docker pull ${{ env.REPO_USERNAME }}/${{ env.REPO }}:worker-${{ steps.version.outputs.VERSION }}
+          ```
+          
+          ### Release Package
+          Download the release archive below for clients.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

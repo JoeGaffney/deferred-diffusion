@@ -18,9 +18,9 @@ from utils import image_to_base64
 model = TextRequestModel("qwen-2")
 model = TextRequestModel("gpt-4")
 
-image_a = image_to_base64("../assets/color_v001.jpeg")
-image_b = image_to_base64("../assets/style_v001.jpeg")
-video_a = image_to_base64("../assets/video_v001.mp4")
+image_a = image_to_base64("../../assets/color_v001.jpeg")
+image_b = image_to_base64("../../assets/style_v001.jpeg")
+video_a = image_to_base64("../../assets/video_v001.mp4")
 
 
 @pytest.fixture

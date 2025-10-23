@@ -11,24 +11,28 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip and upgrade basic Python packages
-RUN pip install --upgrade pip setuptools wheel
+# Upgrade pip and core Python packages
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Install your pinned requirements first
-ARG REBUILD_DATE=2025-08-17
-COPY workers/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+# Install pinned requirements
+COPY workers/requirements.txt . 
 COPY workers/requirements_no_deps.txt .
-RUN pip install --no-cache-dir -r requirements_no_deps.txt --no-deps --ignore-requires-python
 
-RUN pip install --no-cache-dir peft
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements_no_deps.txt --no-deps --ignore-requires-python && \
+    pip install --no-cache-dir peft && \
+    pip cache purge  # remove pip cache to save space
 
-# Copy only specific directories instead of everything
+# Copy only necessary directories instead of everything
 COPY workers/ ./workers/
 COPY assets/ ./assets/
 
-# Set the working directory to the api folder
+# Copy LICENSE and README files
+COPY README.md /README.md
+COPY LICENSE /LICENSE
+LABEL license="MIT"
+
+# Set working directory for worker code
 WORKDIR /app/workers
 
 # Let mypy resolve absolute imports from /app

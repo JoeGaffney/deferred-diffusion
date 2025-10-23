@@ -77,7 +77,4 @@ def root():
 
 # Run Uvicorn programmatically for convenience
 if __name__ == "__main__":
-    # NOTE: Running single-threaded since GPU operations require high VRAM.
-    # Our async routes without await statements naturally serialize GPU operations,
-    # preventing concurrent GPU usage that could cause out-of-memory errors.
     uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True, reload_dirs=["api"], workers=1)

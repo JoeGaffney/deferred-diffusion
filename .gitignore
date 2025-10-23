@@ -18,10 +18,10 @@ __pycache__/
 
 # misc
 tmp
-nuke/python/generated/
-hda/backup/
-hda/python/generated/
-it_tests/generated/
+clients/nuke/python/generated/
+clients/houdini/python/generated/
+clients/it_tests/generated/
+clients/houdini/backup/
 releases/
 *.dat
 
