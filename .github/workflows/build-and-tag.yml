@@ -1,4 +1,4 @@
-name: Build and Tag Workers
+name: Build and Tag
 
 on:
   push:
@@ -56,3 +56,14 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         
+    - name: Build and push API image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.api
+        push: true
+        tags: |
+          ${{ env.REPO_USERNAME }}/${{ env.REPO }}:api-${{ steps.version.outputs.VERSION }}
+          ${{ env.REPO_USERNAME }}/${{ env.REPO }}:api-latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
