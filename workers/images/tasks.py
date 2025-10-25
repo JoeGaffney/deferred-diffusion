@@ -1,6 +1,3 @@
-import importlib
-from typing import Any, Dict, Tuple
-
 from PIL import Image
 
 from images.context import ImageContext
@@ -21,39 +18,6 @@ def validate_request_and_context(request_dict):
     request = ImageRequest.model_validate(request_dict)
     context = ImageContext(request)
     return context
-
-
-def model_router_main(context: ImageContext) -> Image.Image:
-    """Route to the specific model implementation by concrete model name.
-
-    Lazy-imports the module/attribute that the corresponding celery task would call.
-    """
-    model = context.data.model
-
-    MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
-        "sd-xl": ("images.models.sdxl", "main"),
-        "sd-3": ("images.models.sd3", "main"),
-        "flux-1": ("images.models.flux", "main"),
-        "qwen-image": ("images.models.qwen", "main"),
-        "depth-anything-2": ("images.models.depth_anything", "main"),
-        "segment-anything-2": ("images.models.segment_anything", "main"),
-        "real-esrgan-x4": ("images.models.real_esrgan", "main"),
-        # external implementations (match celery task targets)
-        "gpt-image-1": ("images.external_models.openai", "main"),
-        "runway-gen4-image": ("images.external_models.runway", "main"),
-        "flux-1-pro": ("images.external_models.flux", "main"),
-        "topazlabs-upscale": ("images.external_models.topazlabs", "main"),
-        "google-gemini-2": ("images.external_models.google_gemini", "main"),
-        "bytedance-seedream-4": ("images.external_models.bytedance", "main"),
-    }
-
-    if model not in MODEL_NAME_TO_CALLABLE:
-        raise ValueError(f"No direct model implementation mapped for model '{model}'")
-
-    module_path, attr = MODEL_NAME_TO_CALLABLE[model]
-    mod = importlib.import_module(module_path)
-    main_fn = getattr(mod, attr)
-    return main_fn(context)
 
 
 def typed_task(name: ModelName, queue: str):

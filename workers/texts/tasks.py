@@ -1,4 +1,3 @@
-from common.memory import free_gpu_memory
 from texts.context import TextContext
 from texts.schemas import ModelName, TextRequest, TextWorkerResponse
 from worker import celery_app
@@ -30,9 +29,6 @@ def qwen_2(request_dict):
 
     context = validate_request_and_context(request_dict)
     result = main(context)
-
-    # Free GPU memory after processing
-    free_gpu_memory()
     return process_result(context, result)
 
 

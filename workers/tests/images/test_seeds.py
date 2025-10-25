@@ -1,10 +1,8 @@
-from typing import List
-
 import pytest
 
 from images.context import ImageContext
 from images.schemas import ImageRequest, ModelName
-from images.tasks import model_router_main as main
+from tests.images.helpers import main
 from tests.utils import save_image_and_assert_file_exists, setup_output_file
 from utils.utils import get_16_9_resolution
 
