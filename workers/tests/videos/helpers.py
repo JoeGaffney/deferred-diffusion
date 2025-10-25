@@ -186,3 +186,28 @@ def video_upscale(model: ModelName):
 
     # Check if the output file is a valid video file
     assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+
+
+def first_frame_last_frame(model: ModelName):
+    output_name = setup_output_file(model, "first_frame_last_frame", extension="mp4")
+
+    result = main(
+        VideoContext(
+            VideoRequest(
+                model=model,
+                image=image_to_base64("../assets/first_frame_v001.png"),
+                image_last_frame=image_to_base64("../assets/last_frame_v001.png"),
+                prompt="A man walking on a moorland, the camera follows him from behind, dramatic clouds in the sky.",
+                num_frames=24,
+            )
+        )
+    )
+
+    if os.path.exists(result):
+        shutil.copy(result, output_name)
+
+    # Check if output file exists
+    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+
+    # Check if the output file is a valid video file
+    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."

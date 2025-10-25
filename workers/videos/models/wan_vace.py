@@ -1,11 +1,58 @@
 import PIL.Image
 import torch
-from diffusers import AutoencoderKLWan, WanVACEPipeline
+from diffusers import AutoencoderKLWan, WanVACEPipeline, WanVACETransformer3DModel
 from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
-from diffusers.utils import export_to_video, load_image
+
+from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
+from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
+from common.text_encoders import wan_encode
+from videos.context import VideoContext
 
 
-# WIP example for WanVACEPipeline
+@decorator_global_pipeline_cache
+def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanVACEPipeline:
+
+    transformer = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer",
+        model_class=WanVACETransformer3DModel,
+        target_precision=VIDEO_TRANSFORMER_PRECISION,
+        torch_dtype=torch_dtype,
+    )
+
+    vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32)
+
+    pipe = WanVACEPipeline.from_pretrained(
+        model_id,
+        vae=vae,
+        transformer=transformer,
+        transformer_2=None,
+        text_encoder=None,
+        tokenizer=None,
+        torch_dtype=torch_dtype,
+    )
+
+    flow_shift = 5.0  # 5.0 for 720P, 3.0 for 480P
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=flow_shift)
+
+    try:
+        pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
+        pipe.vae.enable_slicing()
+    except:
+        pass
+
+    # if VIDEO_CPU_OFFLOAD:
+    #     pipe.enable_model_cpu_offload()
+    # else:
+    #     pipe.to("cuda")
+    pipe.to("cuda")
+    return pipe
+
+
+# Wan VACE gives better results with a default negative prompt
+_negative_prompt = "Bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards"
+
+
 def prepare_video_and_mask(
     first_img: PIL.Image.Image, last_img: PIL.Image.Image, height: int, width: int, num_frames: int
 ):
@@ -24,37 +71,51 @@ def prepare_video_and_mask(
     return frames, mask
 
 
-model_id = "Wan-AI/Wan2.1-VACE-14B-diffusers"
-vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32)
-pipe = WanVACEPipeline.from_pretrained(model_id, vae=vae, torch_dtype=torch.bfloat16)
-flow_shift = 5.0  # 5.0 for 720P, 3.0 for 480P
-pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=flow_shift)
-pipe.to("cuda")
+def first_last_frame_to_video(context: VideoContext):
+    """
+    Generate a video from first and last frames with interpolation in between.
+    This is the main functionality of WanVACE pipeline.
+    """
+    if context.image_last_frame is None:
+        raise ValueError("No last frame image provided for first-last frame video generation")
 
-prompt = "CG animation style, a small blue bird takes off from the ground, flapping its wings. The bird's feathers are delicate, with a unique pattern on its chest. The background shows a blue sky with white clouds under bright sunshine. The camera follows the bird upward, capturing its flight and the vastness of the sky from a close-up, low-angle perspective."
-negative_prompt = "Bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards"
-first_frame = load_image(
-    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/flf2v_input_first_frame.png"
-)
-last_frame = load_image(
-    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/flf2v_input_last_frame.png"
-)
+    if context.image is None:
+        raise ValueError("No first frame image provided for first-last frame video generation")
 
-height = 512
-width = 512
-num_frames = 81
-video, mask = prepare_video_and_mask(first_frame, last_frame, height, width, num_frames)
+    prompt_embeds = wan_encode(context.data.prompt)
+    negative_prompt_embeds = wan_encode(_negative_prompt)
 
-output = pipe(
-    video=video,
-    mask=mask,
-    prompt=prompt,
-    negative_prompt=negative_prompt,
-    height=height,
-    width=width,
-    num_frames=num_frames,
-    num_inference_steps=30,
-    guidance_scale=5.0,
-    generator=torch.Generator().manual_seed(42),
-).frames[0]
-export_to_video(output, "output.mp4", fps=16)
+    pipe = get_pipeline(model_id="Wan-AI/Wan2.1-VACE-14B-diffusers")
+
+    # Prepare video frames and mask for VACE pipeline
+    video_frames, mask_frames = prepare_video_and_mask(
+        context.image, context.image_last_frame, context.height, context.width, context.data.num_frames
+    )
+
+    output = pipe(
+        video=video_frames,
+        mask=mask_frames,  # type: ignore
+        prompt_embeds=prompt_embeds,
+        negative_prompt_embeds=negative_prompt_embeds,
+        height=context.height,
+        width=context.width,
+        num_frames=context.data.num_frames,
+        num_inference_steps=10,
+        guidance_scale=5.0,
+        generator=context.get_generator(),
+    ).frames[0]
+
+    processed_path = context.save_video(output, fps=16)
+    return processed_path
+
+
+def main(context: VideoContext):
+    context.ensure_divisible(16)
+
+    # WanVACE requires both first and last frame
+    if context.image_last_frame is None:
+        raise ValueError(
+            "WanVACE pipeline requires a last frame image. Please provide both first and last frame images."
+        )
+
+    return first_last_frame_to_video(context)
