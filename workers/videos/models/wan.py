@@ -153,6 +153,6 @@ def main(context: VideoContext):
         return wan_vace_main(context)
 
     if context.data.image:
-        return wan_vace_main(context)
+        return image_to_video(context)
 
     return text_to_video(context)

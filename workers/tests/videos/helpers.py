@@ -197,7 +197,7 @@ def first_frame_last_frame(model: ModelName):
                 model=model,
                 image=image_to_base64("../assets/first_frame_v001.png"),
                 image_last_frame=image_to_base64("../assets/last_frame_v001.png"),
-                prompt="A man walking on a moorland, the camera follows him from behind, dramatic clouds in the sky.",
+                prompt="The camera tracks into the man from behind the man is static",
                 num_frames=24,
             )
         )

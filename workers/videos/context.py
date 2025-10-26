@@ -1,4 +1,5 @@
 import copy
+import math
 import tempfile
 from typing import Literal
 
@@ -47,6 +48,16 @@ class VideoContext:
             self.image = self.image.resize([self.width, self.height])
         if self.image_last_frame:
             self.image_last_frame = self.image_last_frame.resize([self.width, self.height])
+
+    def get_divisible_num_frames(self, divisor: int = 4) -> int:
+        current_frames = self.data.num_frames
+        remainder = (current_frames - 1) % divisor
+
+        if remainder == 0:
+            return current_frames
+
+        adjusted_frames = math.ceil((current_frames - 1) / divisor) * divisor + 1
+        return adjusted_frames
 
     def long_video(self) -> bool:
         return self.data.num_frames > 100

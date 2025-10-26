@@ -4,6 +4,7 @@ from diffusers import AutoencoderKLWan, WanVACEPipeline, WanVACETransformer3DMod
 from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
 
 from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
+from common.logger import logger
 from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
 from common.text_encoders import wan_encode
 from videos.context import VideoContext
@@ -87,11 +88,17 @@ def first_last_frame_to_video(context: VideoContext):
 
     pipe = get_pipeline(model_id="Wan-AI/Wan2.1-VACE-14B-diffusers")
 
+    # Adjust num_frames to meet WanVACE requirements: (num_frames - 1) must be divisible by 4
+    num_frames = context.get_divisible_num_frames(4)
+
     # Prepare video frames and mask for VACE pipeline
     video_frames, mask_frames = prepare_video_and_mask(
-        context.image, context.image_last_frame, context.height, context.width, context.data.num_frames
+        context.image, context.image_last_frame, context.height, context.width, num_frames
     )
 
+    logger.info(
+        f"Prepared {len(video_frames)} video frames and {len(mask_frames)} mask frames. num_frames={num_frames}"
+    )
     output = pipe(
         video=video_frames,
         mask=mask_frames,  # type: ignore
@@ -99,7 +106,7 @@ def first_last_frame_to_video(context: VideoContext):
         negative_prompt_embeds=negative_prompt_embeds,
         height=context.height,
         width=context.width,
-        num_frames=context.data.num_frames,
+        num_frames=num_frames,
         num_inference_steps=10,
         guidance_scale=5.0,
         generator=context.get_generator(),

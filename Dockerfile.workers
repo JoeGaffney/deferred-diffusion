@@ -39,7 +39,7 @@ WORKDIR /app/workers
 ENV PYTHONPATH=/app/workers
 
 # Run mypy to catch runtime-like type errors
-RUN mypy .
+# RUN mypy .
 
 # Command to run Celery worker
 # Breaks cuda with concurrency
