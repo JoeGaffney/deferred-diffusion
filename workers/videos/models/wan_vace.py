@@ -107,7 +107,7 @@ def first_last_frame_to_video(context: VideoContext):
         height=context.height,
         width=context.width,
         num_frames=num_frames,
-        num_inference_steps=10,
+        num_inference_steps=15 if context.data.high_quality else 30,
         guidance_scale=5.0,
         generator=context.get_generator(),
     ).frames[0]
