@@ -115,7 +115,7 @@ def _api_call_external(node, model: str, body: ImageRequest, output_image_path: 
     _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=100)
 
 
-def process_image(node, external: bool = False):
+def process_image(node):
     """Process the node using the API"""
     set_node_info(node, "", "")
     current_frame = nuke.frame()
@@ -132,13 +132,10 @@ def process_image(node, external: bool = False):
         image = node_to_base64(image_node, current_frame)
         mask = node_to_base64(mask_node, current_frame)
         width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
-        # backward compatibility for high_quality knob missing in older nodes
-        try:
-            high_quality = get_node_value(node, "high_quality", False, return_type=bool, mode="value")
-        except Exception:
-            high_quality = False
 
-        model = get_node_value(node, "model", "sd-xl", mode="value")
+        high_quality = get_node_value(node, "high_quality", False, return_type=bool, mode="value")
+        external = get_node_value(node, "external", False, return_type=bool, mode="value")
+
         body = ImageRequest(
             image=image,
             mask=mask,
@@ -150,9 +147,12 @@ def process_image(node, external: bool = False):
             references=get_references(aux_node),
             high_quality=high_quality,
         )
+
         if not external:
+            model = get_node_value(node, "model", "sd-xl", mode="value")
             _api_call(node, model, body, output_image_path, current_frame)
         else:
+            model = get_node_value(node, "external_model", "flux-1-pro", mode="value")
             _api_call_external(node, model, body, output_image_path, current_frame)
 
 
