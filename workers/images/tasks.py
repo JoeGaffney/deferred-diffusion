@@ -14,9 +14,9 @@ def process_result(context, result):
 
 
 # Helper to validate request and build context to avoid duplication across tasks
-def validate_request_and_context(request_dict):
+def validate_request_and_context(model: ModelName, request_dict):
     request = ImageRequest.model_validate(request_dict)
-    context = ImageContext(request)
+    context = ImageContext(model, request)
     return context
 
 
@@ -29,7 +29,7 @@ def typed_task(name: ModelName, queue: str):
 def sd_3(request_dict):
     from images.models.sd3 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("sd-3", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -38,7 +38,7 @@ def sd_3(request_dict):
 def flux_1(request_dict):
     from images.models.flux import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("flux-1", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -47,7 +47,7 @@ def flux_1(request_dict):
 def qwen_image(request_dict):
     from images.models.qwen import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("qwen-image", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -56,7 +56,7 @@ def qwen_image(request_dict):
 def depth_anything_2(request_dict):
     from images.models.depth_anything import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("depth-anything-2", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -65,7 +65,7 @@ def depth_anything_2(request_dict):
 def segment_anything_2(request_dict):
     from images.models.segment_anything import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("segment-anything-2", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -74,7 +74,7 @@ def segment_anything_2(request_dict):
 def real_esrgan_x4(request_dict):
     from images.models.real_esrgan import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("real-esrgan-x4", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -83,7 +83,7 @@ def real_esrgan_x4(request_dict):
 def sd_xl(request_dict):
     from images.models.sdxl import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("sd-xl", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -93,7 +93,7 @@ def sd_xl(request_dict):
 def gpt_image_1(request_dict):
     from images.external_models.openai import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("gpt-image-1", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -102,7 +102,7 @@ def gpt_image_1(request_dict):
 def runway_gen4_image(request_dict):
     from images.external_models.runway import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("runway-gen4-image", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -111,7 +111,7 @@ def runway_gen4_image(request_dict):
 def flux_1_pro(request_dict):
     from images.external_models.flux import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("flux-1-pro", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -120,7 +120,7 @@ def flux_1_pro(request_dict):
 def topazlabs_upscale(request_dict):
     from images.external_models.topazlabs import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("topazlabs-upscale", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -129,7 +129,7 @@ def topazlabs_upscale(request_dict):
 def google_gemini_2(request_dict):
     from images.external_models.google_gemini import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("google-gemini-2", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -138,6 +138,6 @@ def google_gemini_2(request_dict):
 def bytedance_seedream_4(request_dict):
     from images.external_models.bytedance import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("bytedance-seedream-4", request_dict)
     result = main(context)
     return process_result(context, result)

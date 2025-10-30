@@ -5,14 +5,14 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.images import images_create, images_get
+from generated.api_client.api.images import images_create_local, images_get
 from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models.image_create_response import ImageCreateResponse
 from generated.api_client.models.image_request import ImageRequest
-from generated.api_client.models.image_request_model import ImageRequestModel
 from generated.api_client.models.image_response import ImageResponse
+from generated.api_client.models.images_create_local_model import ImagesCreateLocalModel
 
-model = ImageRequestModel("sd-xl")
+model = ImagesCreateLocalModel("sd-xl")
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def api_client():
 def create_image(api_client, body: ImageRequest) -> UUID:
     """Helper function to create an image and return its ID."""
 
-    response = images_create.sync_detailed(client=api_client, body=body)
+    response = images_create_local.sync_detailed(client=api_client, model=model, body=body)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
@@ -41,8 +41,9 @@ def create_image(api_client, body: ImageRequest) -> UUID:
 def test_connection_reset_edge(api_client):
     """Poll repeatedly to hit the server keep-alive edge case"""
     # Create a new image request
-    body = ImageRequest(prompt="Test polling edge", model=model, width=512, height=512)
-    response = images_create.sync(client=api_client, body=body)
+    body = ImageRequest(prompt="Test polling edge", width=512, height=512)
+    response = images_create_local.sync(client=api_client, model=model, body=body)
+    assert isinstance(response, ImageCreateResponse)
     assert isinstance(response.id, UUID)
 
     # Poll exactly at the server's keep-alive timeout
@@ -52,6 +53,7 @@ def test_connection_reset_edge(api_client):
     for i in range(10):
         time.sleep(poll_interval)
         result = images_get.sync(id=response.id, client=api_client)
+        assert isinstance(result, ImageResponse)
         print(f"Poll {i+1}: status={result.status}")
         # try:
         #     result = images_get.sync(id=response.id, client=api_client)
