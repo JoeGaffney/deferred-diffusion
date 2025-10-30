@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from common.auth import verify_token
 from texts.schemas import (
+    ModelNameExternal,
+    ModelNameLocal,
     TextCreateResponse,
     TextRequest,
     TextResponse,
@@ -13,19 +15,36 @@ from texts.schemas import (
 )
 from worker import celery_app
 
-router = APIRouter(
-    prefix="/texts", tags=["Texts"], dependencies=[Depends(verify_token)]  # This will apply to all routes
-)
+router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify_token)])
 
 
-@router.post("", response_model=TextCreateResponse, operation_id="texts_create", description=generate_model_docs())
-def create(request: TextRequest, response: Response):
+def _create_task(model: str, queue: str, request: TextRequest, response: Response) -> TextCreateResponse:
     try:
-        result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
+        result = celery_app.send_task(model, queue=queue, args=[request.model_dump()])
         response.headers["Location"] = f"/texts/{result.id}"
         return TextCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.post(
+    "/local/{model}",
+    response_model=TextCreateResponse,
+    operation_id="texts_create_local",
+    description=generate_model_docs(local=True),
+)
+def create_local(model: ModelNameLocal, request: TextRequest, response: Response):
+    return _create_task(model, "gpu", request, response)
+
+
+@router.post(
+    "/external/{model}",
+    response_model=TextCreateResponse,
+    operation_id="texts_create_external",
+    description=generate_model_docs(local=False),
+)
+def create_external(model: ModelNameExternal, request: TextRequest, response: Response):
+    return _create_task(model, "cpu", request, response)
 
 
 @router.get("/{id}", response_model=TextResponse, operation_id="texts_get")

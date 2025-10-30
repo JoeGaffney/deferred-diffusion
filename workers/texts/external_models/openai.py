@@ -30,9 +30,7 @@ def main(context: TextContext):
             }
         )
 
-    model = OPEN_AI_MODEL_MAP.get(context.data.model, "gpt-4o-mini")
-    logger.warning(f"Running {model} with {len(context.data.images)} images")
-
+    model = OPEN_AI_MODEL_MAP.get(context.model, "gpt-4o-mini")
     response = client.responses.create(
         model=model,
         input=messages,  # type: ignore
@@ -58,5 +56,4 @@ def main(context: TextContext):
         "chain_of_thought": chain_of_thought,
     }
 
-    log_pretty(f"{context.data.model} result", result)
     return result

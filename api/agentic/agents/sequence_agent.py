@@ -112,5 +112,4 @@ def main(request: SequenceRequest) -> SequenceResponse:
         history = result.all_messages()
 
     log_pretty("History", history)
-    # log_pretty("Result", result.data.model_dump())
     return result.data

@@ -13,7 +13,7 @@ def main(context: VideoContext):
 
     Lazy-imports the module/attribute that the corresponding celery task would call.
     """
-    model = context.data.model
+    model = context.model
 
     MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
         "ltx-video": ("videos.models.ltx", "main"),
@@ -46,11 +46,11 @@ def text_to_video(
 
     result = main(
         VideoContext(
+            model,
             VideoRequest(
-                model=model,
                 prompt=prompt,
                 num_frames=24,
-            )
+            ),
         )
     )
 
@@ -72,13 +72,13 @@ def text_to_video_portrait(
 
     result = main(
         VideoContext(
+            model,
             VideoRequest(
-                model=model,
                 prompt=prompt,
                 num_frames=24,
                 width=720,
                 height=1280,
-            )
+            ),
         )
     )
 
@@ -97,12 +97,12 @@ def image_to_video(model: ModelName):
 
     result = main(
         VideoContext(
+            model,
             VideoRequest(
-                model=model,
                 image=image_to_base64("../assets/color_v002.png"),
                 prompt="A man with short gray hair plays a red electric guitar.",
                 num_frames=24,
-            )
+            ),
         )
     )
 
@@ -122,12 +122,12 @@ def image_to_video_portrait(model):
 
     result = main(
         VideoContext(
+            model,
             VideoRequest(
-                model=model,
                 image=image_to_base64("../assets/wan_i2v_input.JPG"),
                 prompt=prompt,
                 num_frames=24,
-            )
+            ),
         )
     )
 
@@ -146,13 +146,13 @@ def video_to_video(model: ModelName):
 
     result = main(
         VideoContext(
+            model,
             VideoRequest(
-                model=model,
                 image=image_to_base64("../assets/act_char_v001.png"),
                 video=image_to_base64("../assets/act_reference_v001.mp4"),
                 prompt="A man in a tuxedo is waving at the camera.",
                 num_frames=24,
-            )
+            ),
         )
     )
 
@@ -171,10 +171,10 @@ def video_upscale(model: ModelName):
 
     result = main(
         VideoContext(
+            model,
             VideoRequest(
-                model=model,
                 video=image_to_base64("../assets/act_reference_v001.mp4"),
-            )
+            ),
         )
     )
 
@@ -193,13 +193,13 @@ def first_frame_last_frame(model: ModelName):
 
     result = main(
         VideoContext(
+            model,
             VideoRequest(
-                model=model,
                 image=image_to_base64("../assets/first_frame_v001.png"),
                 image_last_frame=image_to_base64("../assets/last_frame_v001.png"),
                 prompt="The camera tracks into the man from behind the man is static",
                 num_frames=24,
-            )
+            ),
         )
     )
 

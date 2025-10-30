@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from common.auth import verify_token
 from videos.schemas import (
+    ModelNameExternal,
+    ModelNameLocal,
     VideoCreateResponse,
     VideoRequest,
     VideoResponse,
@@ -16,14 +18,33 @@ from worker import celery_app
 router = APIRouter(prefix="/videos", tags=["Videos"], dependencies=[Depends(verify_token)])
 
 
-@router.post("", response_model=VideoCreateResponse, operation_id="videos_create", description=generate_model_docs())
-def create(request: VideoRequest, response: Response):
+def _create_task(model: str, queue: str, request: VideoRequest, response: Response) -> VideoCreateResponse:
     try:
-        result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
+        result = celery_app.send_task(model, queue=queue, args=[request.model_dump()])
         response.headers["Location"] = f"/videos/{result.id}"
         return VideoCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.post(
+    "/local/{model}",
+    response_model=VideoCreateResponse,
+    operation_id="videos_create_local",
+    description=generate_model_docs(local=True),
+)
+def create_local(model: ModelNameLocal, request: VideoRequest, response: Response):
+    return _create_task(model, "gpu", request, response)
+
+
+@router.post(
+    "/external/{model}",
+    response_model=VideoCreateResponse,
+    operation_id="videos_create_external",
+    description=generate_model_docs(local=False),
+)
+def create_external(model: ModelNameExternal, request: VideoRequest, response: Response):
+    return _create_task(model, "cpu", request, response)
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")

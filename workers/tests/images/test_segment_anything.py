@@ -19,12 +19,12 @@ def test_models(mode):
 
     result = main(
         ImageContext(
+            model,
             ImageRequest(
-                model=model,
                 image=image_to_base64("../assets/style_v001.jpeg"),
                 prompt="Person, house, tree, flowers",
                 strength=0.5,
-            )
+            ),
         )
     )
 

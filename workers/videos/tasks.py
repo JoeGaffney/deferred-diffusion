@@ -12,9 +12,9 @@ def process_result(context, result):
 
 
 # Helper to validate request and build context to avoid duplication across tasks
-def validate_request_and_context(request_dict):
+def validate_request_and_context(model: ModelName, request_dict):
     request = VideoRequest.model_validate(request_dict)
-    context = VideoContext(request)
+    context = VideoContext(model, request)
     return context
 
 
@@ -27,7 +27,7 @@ def typed_task(name: ModelName, queue: str):
 def ltx_video(request_dict):
     from videos.models.ltx import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("ltx-video", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -36,7 +36,7 @@ def ltx_video(request_dict):
 def wan_2(request_dict):
     from videos.models.wan import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("wan-2", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -46,7 +46,7 @@ def wan_2(request_dict):
 def runway_gen_4(request_dict):
     from videos.external_models.runway import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("runway-gen-4", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -55,7 +55,7 @@ def runway_gen_4(request_dict):
 def runway_act_two(request_dict):
     from videos.external_models.runway_act import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("runway-act-two", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -64,7 +64,7 @@ def runway_act_two(request_dict):
 def runway_upscale(request_dict):
     from videos.external_models.runway_upscale import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("runway-upscale", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -73,7 +73,7 @@ def runway_upscale(request_dict):
 def runway_gen_4_aleph(request_dict):
     from videos.external_models.runway_aleph import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("runway-gen-4-aleph", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -82,7 +82,7 @@ def runway_gen_4_aleph(request_dict):
 def bytedance_seedance_1(request_dict):
     from videos.external_models.bytedance_seedance import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("bytedance-seedance-1", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -91,7 +91,7 @@ def bytedance_seedance_1(request_dict):
 def kwaivgi_kling_2(request_dict):
     from videos.external_models.kling import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("kwaivgi-kling-2", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -100,7 +100,7 @@ def kwaivgi_kling_2(request_dict):
 def google_veo_3(request_dict):
     from videos.external_models.google_veo import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("google-veo-3", request_dict)
     result = main(context)
     return process_result(context, result)
 
@@ -109,6 +109,6 @@ def google_veo_3(request_dict):
 def openai_sora_2(request_dict):
     from videos.external_models.openai import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("openai-sora-2", request_dict)
     result = main(context)
     return process_result(context, result)

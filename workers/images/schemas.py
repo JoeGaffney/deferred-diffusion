@@ -45,13 +45,19 @@ ModelName: TypeAlias = Literal[
 
 class ModelInfo(BaseModel):
     references: bool = Field(default=False, description="Supports image references as input")
+    image: bool = Field(default=False, description="Supports input image for image-to-image generation")
+    mask: bool = Field(default=False, description="Supports input mask for inpainting")
+    text: bool = Field(default=False, description="Supports text-to-image generation")
     description: Optional[str] = None
 
     def to_doc_format(self, model_name: str) -> str:
         """Generate documentation for this model"""
         doc = f"## {model_name}\n\n"
         doc += f"{self.description}\n"
-        doc += f"- **References:** {'✓' if self.references else '✗'}\n"
+        doc += f"- **Text (text-to-image):** {'✓' if self.text else '✗'}\n"
+        doc += f"- **Image (image-to-image):** {'✓' if self.image else '✗'}\n"
+        doc += f"- **Mask (inpainting):** {'✓' if self.mask else '✗'}\n"
+        doc += f"- **References (controlnets and adapters):** {'✓' if self.references else '✗'}\n"
 
         doc += "\n"
         return doc
@@ -60,22 +66,37 @@ class ModelInfo(BaseModel):
 MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
     "sd-xl": ModelInfo(
         references=True,
-        description="Stable Diffusion XL variant supports the most conteol nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
+        text=True,
+        image=True,
+        mask=True,
+        description="Stable Diffusion XL variant supports the most control nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
     ),
     "sd-3": ModelInfo(
+        text=True,
+        image=True,
+        mask=True,
         description="Stable Diffusion 3.5 offers superior prompt understanding and composition. Excels at complex scenes, concept art, and handling multiple subjects with accurate interactions.",
     ),
     "flux-1": ModelInfo(
+        text=True,
+        image=True,
+        mask=True,
         references=True,
         description="FLUX Krea model is flux-1 dev trained with opinions from krea for more photorealistic results. Will use flux Kontext for image to image and flux fill for inpainting.",
     ),
     "qwen-image": ModelInfo(
+        text=True,
+        image=True,
+        mask=True,
+        references=True,
         description="Qwen model specializes in generating high-quality images from textual descriptions. It excels at understanding nuanced prompts and delivering detailed visuals.",
     ),
     "depth-anything-2": ModelInfo(
+        image=True,
         description="Advanced depth estimation model. Creates high-quality depth maps from any image for 3D visualization, AR applications, and as input for ControlNet pipelines.",
     ),
     "segment-anything-2": ModelInfo(
+        image=True,
         description="State-of-the-art image segmentation model. Precisely identifies and segments objects, people, and features for compositing, editing, and analysis.",
     ),
 }
@@ -83,55 +104,54 @@ MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
 MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     "gpt-image-1": ModelInfo(
         references=True,
+        text=True,
+        image=True,
+        mask=True,
         description="OpenAI's advanced image generation model with exceptional understanding of complex prompts. Excels at photorealistic imagery, accurate object rendering, and following detailed instructions.",
     ),
     "runway-gen4-image": ModelInfo(
         references=True,
+        text=True,
+        image=True,
         description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combinging multiple references into a single, cohesive image.",
     ),
     "flux-1-pro": ModelInfo(
+        text=True,
+        image=True,
+        mask=True,
         description="Pro variants of FLUX 1.1 with enhanced capabilities. Will use flux Kontext pro for image to image and flux fill pro for inpainting.",
     ),
     "topazlabs-upscale": ModelInfo(
+        image=True,
         description="Topaz Labs' advanced image upscaling model. Specializes in enhancing image resolution while preserving fine details and textures, ideal for professional photography and print work.",
     ),
     "google-gemini-2": ModelInfo(
-        description="Google's Gemini 2.5 model for advanced image generation and manipulation. Aka nano bannana",
+        text=True,
+        image=True,
         references=True,
+        description="Google's Gemini 2.5 model for advanced image generation and manipulation. Aka nano bannana",
     ),
     "bytedance-seedream-4": ModelInfo(
-        description="Supreme image to image context model from Bytedance. Excels at transforming input images based on textual prompts while maintaining core elements of the original image.",
+        text=True,
+        image=True,
         references=True,
+        description="Supreme image to image context model from Bytedance. Excels at transforming input images based on textual prompts while maintaining core elements of the original image.",
     ),
 }
 
 
-def generate_model_docs():
+def generate_model_docs(local=True):
     docs = """ # Generate images using various diffusion models.
 - External models are processed through their respective APIs.
-- ControlNets and IP-Adapters are unified as **references**:
-- `style`, `face`, `depth`, `canny`, `pose`, etc.
-- These guide the generation but do not change the base mode.
-- Guidance Scale controls how strongly the prompt influences the output. Lower values often produce more realism, higher values produce more stylization.
-- Image generation mode is chosen automatically:
-1. If `mask` is provided → routed to **inpainting** (if supported).
-2. Else if `image` is provided → **image-to-image**.
-3. If neither `image` nor `mask` is provided → **text-to-image**.
-- ⚠ Some models always require an input image:
-- Super-resolution models (e.g. ESRGAN, Topaz)
-- Enhancement models (upscalers, denoisers)
-- Depth/segmentation extractors
-Requests without an image for these models will raise an error.
+- Local models are processed on your own GPU workers.
+- ControlNets and Adapters are unified as **references**.
 """
-
-    docs += "# Local Models\n\n"
-    for model_name, model_info in MODEL_META_LOCAL.items():
-        docs += model_info.to_doc_format(model_name)
-
-    docs += "# External Models\n\n"
-    for model_name, model_info in MODEL_META_EXTERNAL.items():
-        docs += model_info.to_doc_format(model_name)
-
+    if local:
+        for model_name, model_info in MODEL_META_LOCAL.items():
+            docs += model_info.to_doc_format(model_name)
+    else:
+        for model_name, model_info in MODEL_META_EXTERNAL.items():
+            docs += model_info.to_doc_format(model_name)
     return docs
 
 
@@ -156,7 +176,6 @@ class References(BaseModel):
 
 
 class ImageRequest(BaseModel):
-    model: ModelName
     prompt: str = Field(
         default="Detailed, 8k, photorealistic",
         description="Positive Prompt text",
@@ -187,20 +206,6 @@ class ImageRequest(BaseModel):
         default=False,
         description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
     )
-
-    @property
-    def external_model(self) -> bool:
-        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
-        return self.model in _MODEL_EXTERNAL_VALUES
-
-    @property
-    def task_name(self) -> ModelName:
-        return self.model
-
-    @property
-    def task_queue(self) -> str:
-        """Return the task queue based on whether the model is external or not."""
-        return "cpu" if self.external_model else "gpu"
 
 
 class ImageWorkerResponse(BaseModel):

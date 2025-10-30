@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from common.logger import logger
 from images.adapters import Adapters
 from images.control_nets import ControlNets
-from images.schemas import ImageRequest
+from images.schemas import ImageRequest, ModelName
 from utils.utils import (
     ensure_divisible,
     get_tmp_dir,
@@ -19,9 +19,9 @@ from utils.utils import (
 
 
 class ImageContext:
-    def __init__(self, data: ImageRequest):
+    def __init__(self, model: ModelName, data: ImageRequest):
+        self.model = model
         self.data = data
-        self.model = data.model
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
         self.width = copy.copy(data.width)
         self.height = copy.copy(data.height)
@@ -36,8 +36,8 @@ class ImageContext:
             self.mask_image = self.mask_image.resize([self.width, self.height])
 
         # Initialize control nets and adapters
-        self.control_nets = ControlNets(data.references, self.data.model, self.width, self.height)
-        self.adapters = Adapters(data.references, self.data.model, self.width, self.height)
+        self.control_nets = ControlNets(data.references, self.model, self.width, self.height)
+        self.adapters = Adapters(data.references, self.model, self.width, self.height)
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value

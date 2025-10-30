@@ -14,11 +14,12 @@ from utils.utils import (
     load_image_if_exists,
     load_video_frames_if_exists,
 )
-from videos.schemas import VideoRequest
+from videos.schemas import ModelName, VideoRequest
 
 
 class VideoContext:
-    def __init__(self, data: VideoRequest):
+    def __init__(self, model: ModelName, data: VideoRequest):
+        self.model = model
         self.data = data
         self.width = copy.copy(data.width)
         self.height = copy.copy(data.height)

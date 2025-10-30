@@ -6,9 +6,7 @@ from worker import celery_app
 
 
 async def main(prompt: str, image_reference_image: str) -> str:
-    print(f"Processing image reference with prompt: {prompt}")
     request = TextRequest(
-        model="gpt-5",  # or "gpt-4.1-mini" for the other model
         messages=[
             MessageItem(
                 role="user",
