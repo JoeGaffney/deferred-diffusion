@@ -22,7 +22,6 @@ def main(context: VideoContext):
 
     if context.image:
         payload["image"] = convert_pil_to_bytes(context.image)
-        payload["aspect_ratio"] = "match_input_image"
 
     if context.image_last_frame:
         payload["last_frame_image"] = convert_pil_to_bytes(context.image_last_frame)
