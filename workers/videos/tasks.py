@@ -1,6 +1,3 @@
-import importlib
-from typing import Any, Dict, Tuple
-
 from utils.utils import mp4_to_base64
 from videos.context import VideoContext
 from videos.schemas import ModelName, VideoRequest, VideoWorkerResponse
@@ -19,36 +16,6 @@ def validate_request_and_context(request_dict):
     request = VideoRequest.model_validate(request_dict)
     context = VideoContext(request)
     return context
-
-
-def model_router_main(context: VideoContext):
-    """Route to the specific model implementation by concrete model name.
-
-    Lazy-imports the module/attribute that the corresponding celery task would call.
-    """
-    model = context.data.model
-
-    MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
-        "ltx-video": ("videos.models.ltx", "main"),
-        "wan-2": ("videos.models.wan", "main"),
-        # external implementations (match celery task targets)
-        "runway-gen-4": ("videos.external_models.runway", "main"),
-        "runway-act-two": ("videos.external_models.runway_act", "main"),
-        "runway-upscale": ("videos.external_models.runway_upscale", "main"),
-        "runway-gen-4-aleph": ("videos.external_models.runway_aleph", "main"),
-        "bytedance-seedance-1": ("videos.external_models.bytedance_seedance", "main"),
-        "kwaivgi-kling-2": ("videos.external_models.kling", "main"),
-        "google-veo-3": ("videos.external_models.google_veo", "main"),
-        "openai-sora-2": ("videos.external_models.openai", "main"),
-    }
-
-    if model not in MODEL_NAME_TO_CALLABLE:
-        raise ValueError(f"No direct model implementation mapped for model '{model}'")
-
-    module_path, attr = MODEL_NAME_TO_CALLABLE[model]
-    mod = importlib.import_module(module_path)
-    main_fn = getattr(mod, attr)
-    return main_fn(context)
 
 
 def typed_task(name: ModelName, queue: str):

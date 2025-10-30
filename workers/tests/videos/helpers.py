@@ -1,10 +1,41 @@
+import importlib
 import os
 import shutil
+from typing import Dict, Tuple
 
 from tests.utils import image_to_base64, setup_output_file
 from videos.context import VideoContext
 from videos.schemas import ModelName, VideoRequest
-from videos.tasks import model_router_main as main
+
+
+def main(context: VideoContext):
+    """Route to the specific model implementation by concrete model name.
+
+    Lazy-imports the module/attribute that the corresponding celery task would call.
+    """
+    model = context.data.model
+
+    MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
+        "ltx-video": ("videos.models.ltx", "main"),
+        "wan-2": ("videos.models.wan", "main"),
+        # external implementations (match celery task targets)
+        "runway-gen-4": ("videos.external_models.runway", "main"),
+        "runway-act-two": ("videos.external_models.runway_act", "main"),
+        "runway-upscale": ("videos.external_models.runway_upscale", "main"),
+        "runway-gen-4-aleph": ("videos.external_models.runway_aleph", "main"),
+        "bytedance-seedance-1": ("videos.external_models.bytedance_seedance", "main"),
+        "kwaivgi-kling-2": ("videos.external_models.kling", "main"),
+        "google-veo-3": ("videos.external_models.google_veo", "main"),
+        "openai-sora-2": ("videos.external_models.openai", "main"),
+    }
+
+    if model not in MODEL_NAME_TO_CALLABLE:
+        raise ValueError(f"No direct model implementation mapped for model '{model}'")
+
+    module_path, attr = MODEL_NAME_TO_CALLABLE[model]
+    mod = importlib.import_module(module_path)
+    main_fn = getattr(mod, attr)
+    return main_fn(context)
 
 
 def text_to_video(
@@ -44,7 +75,7 @@ def text_to_video_portrait(
             VideoRequest(
                 model=model,
                 prompt=prompt,
-                num_frames=48,
+                num_frames=24,
                 width=720,
                 height=1280,
             )
@@ -95,7 +126,7 @@ def image_to_video_portrait(model):
                 model=model,
                 image=image_to_base64("../assets/wan_i2v_input.JPG"),
                 prompt=prompt,
-                num_frames=48,
+                num_frames=24,
             )
         )
     )
@@ -143,6 +174,31 @@ def video_upscale(model: ModelName):
             VideoRequest(
                 model=model,
                 video=image_to_base64("../assets/act_reference_v001.mp4"),
+            )
+        )
+    )
+
+    if os.path.exists(result):
+        shutil.copy(result, output_name)
+
+    # Check if output file exists
+    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+
+    # Check if the output file is a valid video file
+    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+
+
+def first_frame_last_frame(model: ModelName):
+    output_name = setup_output_file(model, "first_frame_last_frame", extension="mp4")
+
+    result = main(
+        VideoContext(
+            VideoRequest(
+                model=model,
+                image=image_to_base64("../assets/first_frame_v001.png"),
+                image_last_frame=image_to_base64("../assets/last_frame_v001.png"),
+                prompt="The camera tracks into the man from behind the man is static",
+                num_frames=24,
             )
         )
     )

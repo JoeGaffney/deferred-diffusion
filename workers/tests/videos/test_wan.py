@@ -1,6 +1,7 @@
 import pytest
 
 from tests.videos.helpers import (
+    first_frame_last_frame,
     image_to_video,
     image_to_video_portrait,
     text_to_video,
