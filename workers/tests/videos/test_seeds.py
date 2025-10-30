@@ -21,12 +21,12 @@ def test_text_to_video(model, mode, seed):
 
     result = main(
         VideoContext(
+            model,
             VideoRequest(
-                model=model,
                 prompt="Two anthropomorphic cats in comfy boxing gear and bright gloves fight intensely on a spotlighted stage.",
                 num_frames=48,
                 seed=seed,
-            )
+            ),
         )
     )
 

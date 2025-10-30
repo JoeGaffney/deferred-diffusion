@@ -5,18 +5,19 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.texts import texts_create, texts_get
+from generated.api_client.api.texts import texts_create_external, texts_get
 from generated.api_client.client import AuthenticatedClient
-from generated.api_client.models.message_content import MessageContent
-from generated.api_client.models.message_item import MessageItem
-from generated.api_client.models.text_create_response import TextCreateResponse
-from generated.api_client.models.text_request import TextRequest
-from generated.api_client.models.text_request_model import TextRequestModel
-from generated.api_client.models.text_response import TextResponse
+from generated.api_client.models import (
+    MessageContent,
+    MessageItem,
+    TextCreateResponse,
+    TextRequest,
+    TextResponse,
+    TextsCreateExternalModel,
+)
 from utils import image_to_base64
 
-model = TextRequestModel("qwen-2")
-model = TextRequestModel("gpt-4")
+model = TextsCreateExternalModel("gpt-4")
 
 image_a = image_to_base64("../../assets/color_v001.jpeg")
 image_b = image_to_base64("../../assets/style_v001.jpeg")
@@ -34,7 +35,6 @@ def api_client():
 def create_text(api_client):
     """Helper function to create an image and return its ID."""
     request = TextRequest(
-        model=model,
         messages=[
             MessageItem(
                 role="user",
@@ -49,7 +49,7 @@ def create_text(api_client):
         images=[image_a],
     )
 
-    response = texts_create.sync_detailed(client=api_client, body=request)
+    response = texts_create_external.sync_detailed(client=api_client, model=model, body=request)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None

@@ -1,15 +1,18 @@
 import os
+import time
 from http import HTTPStatus
 from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.videos import videos_create, videos_get
+from generated.api_client.api.videos import videos_create_local, videos_get
 from generated.api_client.client import AuthenticatedClient
-from generated.api_client.models.video_create_response import VideoCreateResponse
-from generated.api_client.models.video_request import VideoRequest
-from generated.api_client.models.video_request_model import VideoRequestModel
-from generated.api_client.models.video_response import VideoResponse
+from generated.api_client.models import (
+    VideoCreateResponse,
+    VideoRequest,
+    VideoResponse,
+    VideosCreateLocalModel,
+)
 from utils import image_to_base64, save_image_and_assert_file_exists
 
 output_dir = "../tmp/output/it-tests/videos"
@@ -23,10 +26,10 @@ def api_client():
     )
 
 
-def create_video(api_client, body: VideoRequest) -> UUID:
+def create_video(api_client, model: VideosCreateLocalModel, body: VideoRequest) -> UUID:
     """Helper function to create an image and return its ID."""
 
-    response = videos_create.sync_detailed(client=api_client, body=body)
+    response = videos_create_local.sync_detailed(client=api_client, model=model, body=body)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
@@ -39,14 +42,17 @@ def create_video(api_client, body: VideoRequest) -> UUID:
 
 def test_get_ltx(api_client):
     body = VideoRequest(
-        model=VideoRequestModel("ltx-video"),
-        image=image_to_base64("../assets/color_v002.png"),
+        image=image_to_base64("../../assets/color_v002.png"),
         prompt="A man with short gray hair plays a red electric guitar.",
-        num_frames=96,
+        num_frames=24,
     )
-    image_id = create_video(api_client, body)
+    image_id = create_video(api_client, VideosCreateLocalModel("ltx-video"), body)
 
-    response = videos_get.sync_detailed(id=image_id, client=api_client)
+    for _ in range(20):  # Retry up to 20 times
+        time.sleep(10)
+        response = videos_get.sync_detailed(id=image_id, client=api_client)
+        if isinstance(response.parsed, VideoResponse) and response.parsed.status in ["SUCCESS", "COMPLETED"]:
+            break
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None

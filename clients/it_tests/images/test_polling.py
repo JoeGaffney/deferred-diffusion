@@ -55,10 +55,3 @@ def test_connection_reset_edge(api_client):
         result = images_get.sync(id=response.id, client=api_client)
         assert isinstance(result, ImageResponse)
         print(f"Poll {i+1}: status={result.status}")
-        # try:
-        #     result = images_get.sync(id=response.id, client=api_client)
-        #     print(f"Poll {i+1}: status={result.status}")
-        # except Exception as e:
-        #     # This should happen on unlucky iteration
-        #     print(f"Poll {i+1}: caught exception! {type(e).__name__}: {e}")
-        #     break

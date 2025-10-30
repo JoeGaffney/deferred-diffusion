@@ -40,22 +40,19 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
 }
 
 
-def generate_model_docs():
+def generate_model_docs(local: bool = True):
     docs = """ # Generate text using various language models.
 - External models are processed through their respective APIs.
 - Temperature controls randomness: lower values (0.1-0.3) for focused responses, higher values (0.7-1.0) for creative output.
 - Messages support conversation context with role-based structure (system, user, assistant).
 - Image and video references can be included for multimodal processing (where supported).
 """
-
-    docs += "# Local Models\n\n"
-    for model_name, model_info in MODEL_META_LOCAL.items():
-        docs += model_info.to_doc_format(model_name)
-
-    docs += "# External Models\n\n"
-    for model_name, model_info in MODEL_META_EXTERNAL.items():
-        docs += model_info.to_doc_format(model_name)
-
+    if local:
+        for model_name, model_info in MODEL_META_LOCAL.items():
+            docs += model_info.to_doc_format(model_name)
+    else:
+        for model_name, model_info in MODEL_META_EXTERNAL.items():  # type: ignore
+            docs += model_info.to_doc_format(model_name)
     return docs
 
 
@@ -77,24 +74,9 @@ class MessageItem(BaseModel):
 class TextRequest(BaseModel):
     temperature: float = 0.7
     seed: int = 42
-    model: ModelName = Field(description="model", default="qwen-2")
     messages: list[MessageItem] = Field(description="List of messages", default=[])
     images: List[str] = Field(description="Image references", default=[])
     videos: List[str] = Field(description="Video references", default=[])
-
-    @property
-    def external_model(self) -> bool:
-        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
-        return self.model in _MODEL_EXTERNAL_VALUES
-
-    @property
-    def task_name(self) -> ModelName:
-        return self.model
-
-    @property
-    def task_queue(self) -> str:
-        """Return the task queue based on whether the model is external or not."""
-        return "cpu" if self.external_model else "gpu"
 
 
 class TextWorkerResponse(BaseModel):

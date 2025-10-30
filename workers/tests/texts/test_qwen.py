@@ -33,7 +33,7 @@ def test_image_description():
         ],
         images=[image_a],
     )
-    result = main(TextContext(data))
+    result = main(TextContext("qwen-2", data))
     validate_result(result)
 
 
@@ -51,7 +51,7 @@ def test_image_prompt_generation():
         ],
         images=[image_a],
     )
-    result = main(TextContext(data))
+    result = main(TextContext("qwen-2", data))
     validate_result(result)
 
 
@@ -70,5 +70,5 @@ def test_image_video_comparison():
         ],
         images=[image_a, image_b],
     )
-    result = main(TextContext(data))
+    result = main(TextContext("qwen-2", data))
     validate_result(result)

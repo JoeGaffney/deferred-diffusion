@@ -13,9 +13,9 @@ def process_result(context, result):
 
 
 # Helper to validate request and build context to avoid duplication across tasks
-def validate_request_and_context(request_dict):
+def validate_request_and_context(model: ModelName, request_dict):
     request = TextRequest.model_validate(request_dict)
-    context = TextContext(request)
+    context = TextContext(model, request)
     return context
 
 
@@ -27,33 +27,33 @@ def typed_task(name: ModelName, queue: str):
 def qwen_2(request_dict):
     from texts.models.qwen import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("qwen-2", request_dict)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="gpt-4o", queue="cpu")
 def gpt_4o(request_dict):
-    from texts.models.openai import main
+    from texts.external_models.openai import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("gpt-4o", request_dict)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="gpt-4", queue="cpu")
 def gpt_4(request_dict):
-    from texts.models.openai import main
+    from texts.external_models.openai import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("gpt-4", request_dict)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="gpt-5", queue="cpu")
 def gpt_5(request_dict):
-    from texts.models.openai import main
+    from texts.external_models.openai import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context("gpt-5", request_dict)
     result = main(context)
     return process_result(context, result)
