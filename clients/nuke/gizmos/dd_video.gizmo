@@ -13,6 +13,7 @@ Group {
  addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2}}
  addUserKnob {4 external_model l "External" -STARTLINE M {runway-gen-4 runway-act-two runway-gen-4-aleph runway-upscale bytedance-seedance-1 kwaivgi-kling-2 google-veo-3 openai-sora-2 } t "Select the image generation model."}
  addUserKnob {6 external l "Use External" -STARTLINE t "Use the external API model"}
+ addUserKnob {26 ""}
  addUserKnob {43 prompt l Prompt t "Describe the video you want to generate."}
  prompt "Detailed, cinematic, high quality"
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}

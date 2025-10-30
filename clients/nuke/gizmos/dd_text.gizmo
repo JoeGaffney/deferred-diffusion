@@ -9,11 +9,11 @@ Group {
  addUserKnob {1 task_id l "Task ID" -STARTLINE t "ID of the current text generation task."}
  addUserKnob {22 get_task l "Get Task" -STARTLINE T "import dd_text\nnode = nuke.thisNode()\ndd_text.get_text(node)" t "Fetch the latest text for this task."}
  addUserKnob {26 ""}
-
  addUserKnob {4 model l Model t "Select the text generation model." M {qwen-2}}
  addUserKnob {4 external_model l "External" -STARTLINE M {gpt-4o gpt-4 gpt-5 } t "Select the image generation model."}
  addUserKnob {6 external l "Use External" -STARTLINE t "Use the external API model"}
  external 1
+ addUserKnob {26 ""}
  addUserKnob {43 prompt l Prompt t "Describe what you want the model to generate." -STARTLINE}
  prompt "Make me a prompt suitable for stable diffusion image generation - be creative please."
  addUserKnob {43 response l Response t "Generated response from the model."}
