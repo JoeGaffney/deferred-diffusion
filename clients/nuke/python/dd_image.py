@@ -4,11 +4,18 @@ import nuke
 from httpx import RemoteProtocolError
 
 from config import client
-from generated.api_client.api.images import images_create, images_get
-from generated.api_client.models.image_create_response import ImageCreateResponse
-from generated.api_client.models.image_request import ImageRequest
-from generated.api_client.models.image_request_model import ImageRequestModel
-from generated.api_client.models.image_response import ImageResponse
+from generated.api_client.api.images import (
+    images_create_external,
+    images_create_local,
+    images_get,
+)
+from generated.api_client.models import (
+    ImageCreateResponse,
+    ImageRequest,
+    ImageResponse,
+    ImagesCreateExternalModel,
+    ImagesCreateLocalModel,
+)
 from generated.api_client.types import UNSET
 from utils import (
     base64_to_file,
@@ -82,9 +89,9 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
     nuke.executeInMainThread(update_ui)
 
 
-def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: int):
+def _api_call(node, model: str, body: ImageRequest, output_image_path: str, current_frame: int):
     try:
-        parsed = images_create.sync(client=client, body=body)
+        parsed = images_create_local.sync(client=client, model=ImagesCreateLocalModel(model), body=body)
     except Exception as e:
         raise RuntimeError(f"API call failed: {str(e)}") from e
 
@@ -95,7 +102,20 @@ def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: i
     _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=100)
 
 
-def process_image(node):
+def _api_call_external(node, model: str, body: ImageRequest, output_image_path: str, current_frame: int):
+    try:
+        parsed = images_create_external.sync(client=client, model=ImagesCreateExternalModel(model), body=body)
+    except Exception as e:
+        raise RuntimeError(f"API call failed: {str(e)}") from e
+
+    if not isinstance(parsed, ImageCreateResponse):
+        raise ValueError("Unexpected response type from API call.")
+
+    set_node_value(node, "task_id", str(parsed.id))
+    _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=100)
+
+
+def process_image(node, external: bool = False):
     """Process the node using the API"""
     set_node_info(node, "", "")
     current_frame = nuke.frame()
@@ -118,8 +138,8 @@ def process_image(node):
         except Exception:
             high_quality = False
 
+        model = get_node_value(node, "model", "sd-xl", mode="value")
         body = ImageRequest(
-            model=ImageRequestModel(get_node_value(node, "model", "sd-xl", mode="value")),
             image=image,
             mask=mask,
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
@@ -130,7 +150,10 @@ def process_image(node):
             references=get_references(aux_node),
             high_quality=high_quality,
         )
-        _api_call(node, body, output_image_path, current_frame)
+        if not external:
+            _api_call(node, model, body, output_image_path, current_frame)
+        else:
+            _api_call_external(node, model, body, output_image_path, current_frame)
 
 
 def get_image(node):
