@@ -18,12 +18,11 @@ _negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_i2v(model_id, high_quality: bool, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
-    # high quality users both transformers - low noise only seems busted and gives crazy results atm
+def get_pipeline_i2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
+    # high noise uses both transformers - low noise only seems busted and gives crazy results atm
     transformer = None
     args = {"boundary_ratio": 1.0}
-    if high_quality:
-        # to reset to default don't set at all
+    if high_noise:
         args = {}
         transformer = get_quantized_model(
             model_id=model_id,
@@ -68,16 +67,12 @@ def get_pipeline_i2v(model_id, high_quality: bool, torch_dtype=torch.bfloat16) -
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_t2v(model_id, high_quality: bool, torch_dtype=torch.bfloat16) -> WanPipeline:
-    # high quality users both transformers
+def get_pipeline_t2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> WanPipeline:
+    # high noise uses both transformers
     transformer = None
     args = {"boundary_ratio": 1.0}
-    if high_quality:
-        # to reset to default don't set at all
+    if high_noise:
         args = {}
-        # even split seems to give good motion
-        args = {"boundary_ratio": 0.5}
-
         transformer = get_quantized_model(
             model_id=model_id,
             subfolder="transformer",
@@ -123,16 +118,14 @@ def get_pipeline_t2v(model_id, high_quality: bool, torch_dtype=torch.bfloat16) -
 def text_to_video(context: VideoContext):
     prompt_embeds = wan_encode(context.data.prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
-    pipe = get_pipeline_t2v(
-        model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers", high_quality=context.data.high_quality
-    )
+    pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers", high_noise=True)
 
     output = pipe(
         width=context.width,
         height=context.height,
         prompt_embeds=prompt_embeds,
         negative_prompt_embeds=negative_prompt_embeds,
-        num_inference_steps=8 if context.data.high_quality else 6,
+        num_inference_steps=8 if context.data.high_quality else 4,
         num_frames=context.data.num_frames,
         guidance_scale=1.0,
         generator=context.get_generator(),
@@ -148,7 +141,7 @@ def image_to_video(context: VideoContext):
 
     prompt_embeds = wan_encode(context.data.prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
-    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers", high_quality=True)
+    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers", high_noise=True)
 
     output = pipe(
         width=context.width,
