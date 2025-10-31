@@ -1,3 +1,5 @@
+import pytest
+
 from tests.utils import image_to_base64
 from texts.context import TextContext
 from texts.models.qwen import main
@@ -26,6 +28,7 @@ def validate_result(result, expected_keyword=None):
         assert expected_keyword.lower() in result["response"].lower(), f"Expected '{expected_keyword}' in response"
 
 
+@pytest.mark.basic
 def test_image_description():
     data = TextRequest(
         messages=[

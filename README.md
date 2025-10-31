@@ -252,10 +252,18 @@ DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
 Tests are included inside the containers these can be ran to verify and also to download any missing models.
 
 ```bash
-docker-compose exec gpu-workers pytest tests/images -vs
-docker-compose exec gpu-workers pytest tests/images/test_flux.py -vs
-docker-compose exec gpu-workers pytest tests/texts -vs
-docker-compose exec gpu-workers pytest tests/videos -vs
+docker-compose exec gpu-workers pytest tests/images/models/test_flux.py -vs
+docker-compose exec gpu-workers pytest tests/images/models -vs
+docker-compose exec gpu-workers pytest tests/texts/models -vs
+docker-compose exec gpu-workers pytest tests/videos/models -vs
+```
+
+The external tests are split out.
+
+```bash
+docker-compose exec gpu-workers pytest tests/images/external_models -vs
+docker-compose exec gpu-workers pytest tests/texts/external_models -vs
+docker-compose exec gpu-workers pytest tests/videos/external_models -vs
 ```
 
 ## Clients

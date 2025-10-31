@@ -1,7 +1,9 @@
 from typing import List, Literal
 
 import pytest
-from helpers import (
+
+from images.schemas import ModelName
+from tests.images.helpers import (
     image_to_image,
     inpainting,
     inpainting_alt,
@@ -10,8 +12,6 @@ from helpers import (
     references_style,
     text_to_image,
 )
-
-from images.schemas import ModelName
 
 models: List[ModelName] = ["sd-xl"]
 

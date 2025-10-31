@@ -1,7 +1,9 @@
 from typing import List, Literal
 
 import pytest
-from helpers import (
+
+from images.schemas import ModelName
+from tests.images.helpers import (
     image_to_image,
     image_to_image_alt,
     inpainting,
@@ -12,8 +14,6 @@ from helpers import (
     text_to_image,
     text_to_image_alt,
 )
-
-from images.schemas import ModelName
 
 models: List[ModelName] = ["qwen-image"]
 

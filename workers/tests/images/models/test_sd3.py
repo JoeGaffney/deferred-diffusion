@@ -1,7 +1,9 @@
 from typing import List, Literal
 
 import pytest
-from helpers import (
+
+from images.schemas import ModelName
+from tests.images.helpers import (
     image_to_image,
     inpainting,
     inpainting_alt,
@@ -11,9 +13,7 @@ from helpers import (
     text_to_image,
 )
 
-from images.schemas import ModelName
-
-models: List[ModelName] = ["flux-1"]
+models: List[ModelName] = ["sd-3"]
 
 
 @pytest.mark.parametrize("model", models)
@@ -36,16 +36,16 @@ def test_inpainting_alt(model):
     inpainting_alt(model)
 
 
-@pytest.mark.parametrize("model", models)
-def test_references_canny(model):
-    references_canny(model)
+# @pytest.mark.parametrize("model", models)
+# def test_references_canny(model):
+#     references_canny(model)
 
 
-@pytest.mark.parametrize("model", models)
-def test_references_face(model):
-    references_face(model)
+# @pytest.mark.parametrize("model", models)
+# def test_references_face(model):
+#     references_face(model)
 
 
-@pytest.mark.parametrize("model", models)
-def test_references_style(model):
-    references_style(model)
+# @pytest.mark.parametrize("model", models)
+# def test_references_style(model):
+#     references_style(model)

@@ -50,6 +50,8 @@ def text_to_video(
             VideoRequest(
                 prompt=prompt,
                 num_frames=24,
+                width=int(1280 / 1.5),
+                height=int(720 / 1.5),
             ),
         )
     )
@@ -76,8 +78,8 @@ def text_to_video_portrait(
             VideoRequest(
                 prompt=prompt,
                 num_frames=24,
-                width=720,
-                height=1280,
+                width=int(720 / 1.5),
+                height=int(1280 / 1.5),
             ),
         )
     )

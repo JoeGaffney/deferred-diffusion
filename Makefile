@@ -4,8 +4,7 @@ VERSION ?= latest
 PROJECT_NAME ?= deferred-diffusion
 REPO ?= deferred-diffusion
 REPO_USERNAME ?= joegaffney
-TEST_PATH ?= images
-TEST_FILES ?= tests/images/test_flux.py tests/texts/test_qwen.py tests/videos/test_ltx.py
+TEST_PATH ?= images/models
 
 
 # Default target
@@ -44,24 +43,22 @@ generate-clients: generate-openapi-spec generate-clients-raw
 	@echo "API clients generated successfully."
 
 
+# Example test commands:
 # make test-worker TEST_PATH=images
+# make test-worker TEST_PATH=images/models/test_flux.py
+# make test-worker TEST_PATH=images/external_models/test_replicate.py
 # make test-worker TEST_PATH=texts
 # make test-worker TEST_PATH=videos
-# make test-worker TEST_PATH=images/test_flux.py
-# make test-worker TEST_PATH=images/test_replicate.py
-# make test-worker TEST_PATH=videos/test_wan.py
-# make test-worker TEST_PATH=videos/test_replicate.py
+# make test-worker TEST_PATH=videos/models/test_wan.py
+# make test-worker TEST_PATH=videos/external_models/test_replicate.py
 test-worker: up
 	docker-compose exec gpu-workers pytest tests/$(TEST_PATH) -vs
 
 test-worker-basic: up
-	docker-compose exec gpu-workers pytest $(TEST_FILES) -vs
+	docker-compose exec gpu-workers pytest -m "basic" -vs
 
-# make test-it-tests TEST_PATH=images
-# make test-it-tests TEST_PATH=videos
-# make test-it-tests TEST_PATH=texts
 test-it-tests: generate-clients
-	cd clients/it_tests && pytest $(TEST_PATH) -vs
+	cd clients/it_tests && pytest -vs
 	cd ../..
 
 
