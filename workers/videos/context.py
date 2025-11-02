@@ -28,7 +28,7 @@ class VideoContext:
             self.width, self.height = self.image.size
 
         self.video_frames = load_video_frames_if_exists(data.video)
-        self.image_last_frame = load_image_if_exists(data.image_last_frame)
+        self.last_image = load_image_if_exists(data.last_image)
 
     def get_generator(self, device="cuda"):
         return torch.Generator(device=device).manual_seed(self.data.seed)
@@ -57,8 +57,8 @@ class VideoContext:
         self.height = ensure_divisible(self.height, value)
         if self.image:
             self.image = self.image.resize([self.width, self.height])
-        if self.image_last_frame:
-            self.image_last_frame = self.image_last_frame.resize([self.width, self.height])
+        if self.last_image:
+            self.last_image = self.last_image.resize([self.width, self.height])
 
     def ensure_frames_divisible(self, current_frames, divisor: int = 4) -> int:
         return ((current_frames - 1) // divisor) * divisor + 1

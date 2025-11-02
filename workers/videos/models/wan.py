@@ -149,7 +149,7 @@ def image_to_video(context: VideoContext):
         width=context.width,
         height=context.height,
         image=context.image,
-        last_image=context.image_last_frame,  # type: ignore
+        last_image=context.last_image,  # type: ignore
         prompt_embeds=prompt_embeds,
         negative_prompt_embeds=negative_prompt_embeds,
         num_inference_steps=8 if context.data.high_quality else 4,

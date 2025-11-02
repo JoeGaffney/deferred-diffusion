@@ -113,9 +113,9 @@ class VideoRequest(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    image_last_frame: Optional[str] = Field(
+    last_image: Optional[str] = Field(
         default=None,
-        description="Optional Base64 image string for the last frame",
+        description="Optional Base64 image string for the last image/frame in image-to-video generation",
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
