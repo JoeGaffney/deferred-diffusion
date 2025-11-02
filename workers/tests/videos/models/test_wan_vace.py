@@ -1,14 +1,8 @@
 import pytest
 
-from tests.videos.helpers import (
-    first_frame_last_frame,
-    image_to_video,
-    image_to_video_portrait,
-    text_to_video,
-    text_to_video_portrait,
-)
+from tests.videos.helpers import video_to_video
 
 
 @pytest.mark.parametrize("model", ["wan-2"])
-def test_first_frame_last_frame(model):
-    first_frame_last_frame(model)
+def test_video_to_video(model):
+    video_to_video(model)

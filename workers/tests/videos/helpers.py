@@ -199,8 +199,9 @@ def first_frame_last_frame(model: ModelName):
             VideoRequest(
                 image=image_to_base64("../assets/first_frame_v001.png"),
                 image_last_frame=image_to_base64("../assets/last_frame_v001.png"),
-                prompt="The camera tracks into the man from behind the man is static",
+                prompt="a dramatic dolly zoom",
                 num_frames=24,
+                high_quality=False,
             ),
         )
     )

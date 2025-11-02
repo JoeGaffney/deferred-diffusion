@@ -41,6 +41,16 @@ class VideoContext:
             return "portrait"
         return "square"
 
+    def get_is_720p(self) -> bool:
+        offset = 100
+        # 720p is 1280x720 = 921,600 pixels total
+        result = (self.width * self.height) >= (1280 * 720) - offset
+        logger.info(f"Is 720p: {result} for dimensions {self.width}x{self.height}")
+        return result
+
+    def get_flow_shift(self) -> int:
+        return 5.0 if self.get_is_720p() else 3.0
+
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value
         self.width = ensure_divisible(self.width, value)
@@ -50,15 +60,12 @@ class VideoContext:
         if self.image_last_frame:
             self.image_last_frame = self.image_last_frame.resize([self.width, self.height])
 
+    def ensure_frames_divisible(self, current_frames, divisor: int = 4) -> int:
+        return ((current_frames - 1) // divisor) * divisor + 1
+
     def get_divisible_num_frames(self, divisor: int = 4) -> int:
         current_frames = self.data.num_frames
-        remainder = (current_frames - 1) % divisor
-
-        if remainder == 0:
-            return current_frames
-
-        adjusted_frames = math.ceil((current_frames - 1) / divisor) * divisor + 1
-        return adjusted_frames
+        return self.ensure_frames_divisible(current_frames, divisor)
 
     def long_video(self) -> bool:
         return self.data.num_frames > 100
