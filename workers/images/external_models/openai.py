@@ -59,7 +59,7 @@ def image_to_image_call(context: ImageContext):
     client = OpenAI()
     model = "gpt-image-1" if context.data.high_quality else "gpt-image-1-mini"
 
-    # gather all possible reference images we piggy back on the ipdapter images
+    # gather all possible reference images
     reference_images = []
     if context.color_image:
         reference_images.append(convert_pil_to_bytes(context.color_image))

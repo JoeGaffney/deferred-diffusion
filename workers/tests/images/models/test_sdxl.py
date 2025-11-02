@@ -8,6 +8,7 @@ from tests.images.helpers import (
     inpainting,
     inpainting_alt,
     references_canny,
+    references_depth,
     references_face,
     references_style,
     text_to_image,
@@ -39,6 +40,11 @@ def test_inpainting_alt(model):
 @pytest.mark.parametrize("model", models)
 def test_references_canny(model):
     references_canny(model)
+
+
+@pytest.mark.parametrize("model", models)
+def test_references_depth(model):
+    references_depth(model)
 
 
 @pytest.mark.parametrize("model", models)

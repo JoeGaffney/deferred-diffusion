@@ -20,24 +20,13 @@ from common.text_encoders import flux_encode
 from images.adapters import AdapterPipelineConfig
 from images.context import ImageContext
 
-_use_nunchaku = True
-
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, config: AdapterPipelineConfig):
-    if _use_nunchaku:
-        # Controlnet is not supported for FluxTransformer2DModelV2 for now
-        transformer = NunchakuFluxTransformer2dModel.from_pretrained(
-            f"nunchaku-tech/nunchaku-flux.1-krea-dev/svdq-{get_precision()}_r32-flux.1-krea-dev.safetensors"
-        )
-    else:
-        transformer = get_quantized_model(
-            model_id=model_id,
-            subfolder="transformer",
-            model_class=FluxTransformer2DModel,
-            target_precision=IMAGE_TRANSFORMER_PRECISION,
-            torch_dtype=torch.bfloat16,
-        )
+    # Controlnet is not supported for FluxTransformer2DModelV2 for now
+    transformer = NunchakuFluxTransformer2dModel.from_pretrained(
+        f"nunchaku-tech/nunchaku-flux.1-krea-dev/svdq-{get_precision()}_r32-flux.1-krea-dev.safetensors"
+    )
 
     pipe = FluxPipeline.from_pretrained(
         model_id,
@@ -63,18 +52,9 @@ def get_pipeline(model_id, config: AdapterPipelineConfig):
 
 @decorator_global_pipeline_cache
 def get_kontext_pipeline(model_id):
-    if _use_nunchaku:
-        transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
-            f"nunchaku-tech/nunchaku-flux.1-kontext-dev/svdq-{get_precision()}_r32-flux.1-kontext-dev.safetensors"
-        )
-    else:
-        transformer = get_quantized_model(
-            model_id=model_id,
-            subfolder="transformer",
-            model_class=FluxTransformer2DModel,
-            target_precision=IMAGE_TRANSFORMER_PRECISION,
-            torch_dtype=torch.bfloat16,
-        )
+    transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
+        f"nunchaku-tech/nunchaku-flux.1-kontext-dev/svdq-{get_precision()}_r32-flux.1-kontext-dev.safetensors"
+    )
 
     pipe = FluxKontextPipeline.from_pretrained(
         model_id,
@@ -91,18 +71,9 @@ def get_kontext_pipeline(model_id):
 
 @decorator_global_pipeline_cache
 def get_inpainting_pipeline(model_id):
-    if _use_nunchaku:
-        transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
-            f"nunchaku-tech/nunchaku-flux.1-fill-dev/svdq-{get_precision()}_r32-flux.1-fill-dev.safetensors"
-        )
-    else:
-        transformer = get_quantized_model(
-            model_id=model_id,
-            subfolder="transformer",
-            model_class=FluxTransformer2DModel,
-            target_precision=IMAGE_TRANSFORMER_PRECISION,
-            torch_dtype=torch.bfloat16,
-        )
+    transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
+        f"nunchaku-tech/nunchaku-flux.1-fill-dev/svdq-{get_precision()}_r32-flux.1-fill-dev.safetensors"
+    )
 
     pipe = FluxFillPipeline.from_pretrained(
         model_id,
@@ -130,18 +101,6 @@ def apply_prompt_embeddings(args, prompt, negative_prompt=""):
     return args
 
 
-def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
-    if context.control_nets.is_enabled():
-        args["control_image"] = context.control_nets.get_images()
-        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
-
-    if context.adapters.is_enabled():
-        args["ip_adapter_image"] = context.adapters.get_images()
-        pipe = context.adapters.set_scale(pipe)
-
-    return pipe, args
-
-
 def text_to_image_call(context: ImageContext):
     # NOTE just use krea for now as it seems to be better
     # model_id = "black-forest-labs/FLUX.1-dev"
@@ -166,7 +125,13 @@ def text_to_image_call(context: ImageContext):
         "guidance_scale": 2.5,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
+    if context.control_nets.is_enabled():
+        args["control_image"] = context.control_nets.get_images()
+        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
+
+    if context.adapters.is_enabled():
+        args["ip_adapter_image"] = context.adapters.get_images()
+        pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
@@ -205,7 +170,6 @@ def inpainting_call(context: ImageContext):
         "strength": context.data.strength,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()

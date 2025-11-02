@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Dict
 
 import torch
-from diffusers import ControlNetModel, FluxControlNetModel, SD3ControlNetModel
+from diffusers import ControlNetModel, FluxControlNetModel
 
 from common.exceptions import ControlNetConfigError
 from common.logger import logger
@@ -13,12 +13,10 @@ from utils.utils import load_image_if_exists
 # NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
 def load_controlnet(model, model_family: ModelName):
-    if model_family == "sd-3":
-        return SD3ControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
-    elif model_family == "flux-1":
+    if model_family == "flux-1":
         return FluxControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
 
-    return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch.float16, device_map="cpu")
+    return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch.bfloat16, device_map="cpu")
 
 
 CONTROL_NET_MODEL_CONFIG: Dict[ModelName, Dict[str, str]] = {
@@ -27,11 +25,6 @@ CONTROL_NET_MODEL_CONFIG: Dict[ModelName, Dict[str, str]] = {
         "canny": "diffusers/controlnet-canny-sdxl-1.0-small",
         "pose": "xinsir/controlnet-openpose-sdxl-1.0",
     },
-    # # NOTE issues with SD3 ControlNets, so not using them for now
-    # "sd-3": {
-    #     "depth": "InstantX/SD3-Controlnet-Depth",
-    #     "canny": "InstantX/SD3-Controlnet-Canny",
-    # },
     "flux-1": {
         "depth": "XLabs-AI/flux-controlnet-depth-diffusers",
         "canny": "XLabs-AI/flux-controlnet-canny-diffusers",
@@ -54,11 +47,8 @@ def get_controlnet_model(model_family: ModelName, controlnet_model: str) -> str:
 class ControlNet:
     def __init__(self, data: References, model_family: ModelName, width, height):
         self.model = get_controlnet_model(model_family, data.mode)
-        self.conditioning_scale = data.strength
+        self.conditioning_scale = max(0.01, data.strength)
         self.image = load_image_if_exists(data.image)
-
-        if self.conditioning_scale < 0.01:
-            raise ControlNetConfigError("ControlNet conditioning scale must be >= 0.01")
 
         if not self.image:
             raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")

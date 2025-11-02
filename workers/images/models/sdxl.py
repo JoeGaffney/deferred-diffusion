@@ -22,7 +22,7 @@ def get_pipeline(model_id, config: AdapterPipelineConfig) -> StableDiffusionXLPi
 
     pipe = StableDiffusionXLPipeline.from_pretrained(
         model_id,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.bfloat16,
         use_safetensors=True,
     )
 
@@ -37,7 +37,7 @@ def get_pipeline(model_id, config: AdapterPipelineConfig) -> StableDiffusionXLPi
             image_encoder = CLIPVisionModelWithProjection.from_pretrained(
                 config.ip_adapter_image_encoder_model,
                 subfolder=config.ip_adapter_image_encoder_subfolder,
-                torch_dtype=torch.float16,
+                torch_dtype=torch.bfloat16,
             )
             pipe.image_encoder = image_encoder
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
@@ -53,25 +53,12 @@ def get_inpainting_pipeline(model_id, variant=None) -> StableDiffusionXLInpaintP
 
     pipe = StableDiffusionXLInpaintPipeline.from_pretrained(
         model_id,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.bfloat16,
         use_safetensors=True,
         **args,
     )
 
     return optimize_pipeline(pipe, offload=False)
-
-
-def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
-    if context.control_nets.is_enabled():
-        args["image"] = context.control_nets.get_images()
-        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
-
-    if context.adapters.is_enabled():
-        args["ip_adapter_image"] = context.adapters.get_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.adapters.get_masks()}
-        pipe = context.adapters.set_scale(pipe)
-
-    return pipe, args
 
 
 def text_to_image_call(context: ImageContext):
@@ -95,7 +82,14 @@ def text_to_image_call(context: ImageContext):
         "generator": context.generator,
         "guidance_scale": 3.5,
     }
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
+    if context.control_nets.is_enabled():
+        args["image"] = context.control_nets.get_images()
+        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
+
+    if context.adapters.is_enabled():
+        args["ip_adapter_image"] = context.adapters.get_images()
+        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.adapters.get_masks()}
+        pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
@@ -126,8 +120,14 @@ def image_to_image_call(context: ImageContext):
         "strength": context.data.strength,
         "guidance_scale": 3.5,
     }
+    if context.control_nets.is_enabled():
+        args["control_image"] = context.control_nets.get_images()
+        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
 
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
+    if context.adapters.is_enabled():
+        args["ip_adapter_image"] = context.adapters.get_images()
+        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.adapters.get_masks()}
+        pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()

@@ -159,7 +159,6 @@ def inpainting_alt(model: ModelName):
 
 def references_canny(model: ModelName):
     output_name = setup_output_file(model, "references", "_canny")
-    width, height = get_16_9_resolution("540p")
 
     result = main(
         ImageContext(
@@ -167,13 +166,39 @@ def references_canny(model: ModelName):
             ImageRequest(
                 prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
                 strength=0.5,
-                width=width,
-                height=height,
+                width=1152,
+                height=768,
                 references=[
                     References(
                         mode="canny",
                         image=image_to_base64("../assets/canny_v001.png"),
-                        strength=0.5,
+                        strength=0.7,
+                    )
+                ],
+            ),
+        )
+    )
+
+    save_image_and_assert_file_exists(result, output_name)
+
+
+def references_depth(model: ModelName):
+    output_name = setup_output_file(model, "references", "_depth")
+    width, height = get_16_9_resolution("540p")
+
+    result = main(
+        ImageContext(
+            model,
+            ImageRequest(
+                prompt="Two people hiking in a mountainous landscape, vibrant colors, high detail, 8k resolution",
+                strength=0.5,
+                width=width,
+                height=height,
+                references=[
+                    References(
+                        mode="depth",
+                        image=image_to_base64("../assets/depth_v001.png"),
+                        strength=0.65,
                     )
                 ],
             ),

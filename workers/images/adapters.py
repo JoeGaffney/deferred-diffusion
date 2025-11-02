@@ -114,16 +114,13 @@ def get_ip_adapter_config(model_family: ModelName, adapter_type: str) -> IpAdapt
 class IpAdapter:
     def __init__(self, data: References, model_family: ModelName, width, height):
         self.config = get_ip_adapter_config(model_family, data.mode)
-        self.scale = data.strength
+        self.scale = max(0.01, data.strength)
         self.model = self.config.model
 
         self.image = load_image_if_exists(data.image)
 
         if not self.image:
             raise IPAdapterConfigError(f"Could not load IP-Adapter image from {data.image}")
-
-        if self.scale < 0.01:
-            raise IPAdapterConfigError("IP-Adapter scale must be >= 0.01")
 
         # we allways need a full mask if some use a mask
         self.mask_image = Image.new("L", (width, height), 255)  # Create 512x512 white image in L mode
@@ -197,17 +194,11 @@ class Adapters:
             "image_encoder_subfolder": image_encoder_subfolder,
         }
 
-    def set_scale(self, pipe):
-        """Set the IP adapter scale on the pipeline."""
-        if not self.is_enabled():
-            return pipe
-
-        scales = self.get_scales_and_layers()
-        if len(scales) == 1:
-            pipe.set_ip_adapter_scale(scales[0])
-        else:
-            pipe.set_ip_adapter_scale(scales)
-        return pipe
+    def get_scales(self):
+        result = self.get_scales_and_layers()
+        if len(result) == 1:
+            return result[0]
+        return result
 
     def get_adapter_pipeline_config(self) -> AdapterPipelineConfig:
         adapter_config = self.get_pipeline_config()
