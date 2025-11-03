@@ -13,6 +13,7 @@ from tests.images.helpers import (
     references_face,
     references_style,
     text_to_image,
+    text_to_image_alt,
 )
 
 models: List[ModelName] = ["flux-1"]
@@ -22,6 +23,11 @@ models: List[ModelName] = ["flux-1"]
 @pytest.mark.parametrize("model", models)
 def test_text_to_image(model):
     text_to_image(model)
+
+
+@pytest.mark.parametrize("model", models)
+def test_text_to_image_alt(model):
+    text_to_image_alt(model)
 
 
 @pytest.mark.parametrize("model", models)
