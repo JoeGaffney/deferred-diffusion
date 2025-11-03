@@ -11,16 +11,12 @@ from tests.utils import (
     setup_output_file,
 )
 
-MODES = ["upscale_image"]
 models: List[ModelName] = ["real-esrgan-x4"]
-models_external: List[ModelName] = ["topazlabs-upscale"]
-models.extend(models_external)
 
 
-@pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize("model", models)
-def test_image_to_image(model, mode):
-    output_name = setup_output_file(model, mode)
+def test_image_to_image(model):
+    output_name = setup_output_file(model, "upscale_image")
 
     result = main(
         ImageContext(

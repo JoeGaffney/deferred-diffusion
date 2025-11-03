@@ -27,6 +27,7 @@ def main(context: VideoContext):
         "kwaivgi-kling-2": ("videos.external_models.kling", "main"),
         "google-veo-3": ("videos.external_models.google_veo", "main"),
         "openai-sora-2": ("videos.external_models.openai", "main"),
+        "minimax-hailuo-2": ("videos.external_models.minimax_hailuo", "main"),
     }
 
     if model not in MODEL_NAME_TO_CALLABLE:
