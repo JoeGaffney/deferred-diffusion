@@ -9,6 +9,8 @@ from diffusers import (
     QwenImagePipeline,
     QwenImageTransformer2DModel,
 )
+from nunchaku import NunchakuQwenImageTransformer2DModel
+from nunchaku.utils import get_gpu_memory, get_precision
 from PIL import Image
 
 from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
@@ -20,6 +22,8 @@ from common.pipeline_helpers import (
 )
 from common.text_encoders import qwen_encode
 from images.context import ImageContext
+
+_use_nunchaku = True
 
 
 def get_scheduler():
@@ -45,13 +49,21 @@ def get_scheduler():
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id) -> QwenImagePipeline:
-    transformer = get_quantized_model(
-        model_id="ovedrive/qwen-image-4bit",
-        subfolder="transformer",
-        model_class=QwenImageTransformer2DModel,
-        target_precision=16,
-        torch_dtype=torch.bfloat16,
-    )
+    if _use_nunchaku:
+        rank = 128  # you can also use the rank=128 model to improve the quality
+        model_paths = {
+            4: f"nunchaku-tech/nunchaku-qwen-image/svdq-{get_precision()}_r{rank}-qwen-image-lightningv1.0-4steps.safetensors",
+            8: f"nunchaku-tech/nunchaku-qwen-image/svdq-{get_precision()}_r{rank}-qwen-image-lightningv1.1-8steps.safetensors",
+        }
+        transformer = NunchakuQwenImageTransformer2DModel.from_pretrained(model_paths[8])
+    else:
+        transformer = get_quantized_model(
+            model_id="ovedrive/qwen-image-4bit",
+            subfolder="transformer",
+            model_class=QwenImageTransformer2DModel,
+            target_precision=16,
+            torch_dtype=torch.bfloat16,
+        )
 
     pipe = QwenImagePipeline.from_pretrained(
         model_id,
@@ -61,22 +73,29 @@ def get_pipeline(model_id) -> QwenImagePipeline:
         transformer=transformer,
         torch_dtype=torch.bfloat16,
     )
-    pipe.load_lora_weights(
-        "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors"
-    )
+    if not _use_nunchaku:
+        pipe.load_lora_weights(
+            "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors"
+        )
 
     return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 @decorator_global_pipeline_cache
 def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
-    transformer = get_quantized_model(
-        model_id="ovedrive/Qwen-Image-Edit-2509-4bit",
-        subfolder="transformer",
-        model_class=QwenImageTransformer2DModel,
-        target_precision=16,
-        torch_dtype=torch.bfloat16,
-    )
+    if _use_nunchaku:
+        num_inference_steps = 8  # you can also use the 8-step model to improve the quality
+        rank = 128  # you can also use the rank=128 model to improve the quality
+        model_path = f"nunchaku-tech/nunchaku-qwen-image-edit-2509/svdq-{get_precision()}_r{rank}-qwen-image-edit-2509-lightningv2.0-{num_inference_steps}steps.safetensors"
+        transformer = NunchakuQwenImageTransformer2DModel.from_pretrained(model_path)
+    else:
+        transformer = get_quantized_model(
+            model_id="ovedrive/Qwen-Image-Edit-2509-4bit",
+            subfolder="transformer",
+            model_class=QwenImageTransformer2DModel,
+            target_precision=16,
+            torch_dtype=torch.bfloat16,
+        )
 
     pipe = QwenImageEditPlusPipeline.from_pretrained(
         model_id,
@@ -86,15 +105,16 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
         scheduler=get_scheduler(),
         torch_dtype=torch.bfloat16,
     )
-    pipe.load_lora_weights(
-        "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Edit-Lightning-8steps-V1.0-bf16.safetensors"
-    )
+    if not _use_nunchaku:
+        pipe.load_lora_weights(
+            "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Edit-Lightning-8steps-V1.0-bf16.safetensors"
+        )
 
     return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 def text_to_image_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + "Ultra HD, 4K, cinematic composition.")
     pipe = get_pipeline("Qwen/Qwen-Image")
 
     args = {
@@ -114,18 +134,10 @@ def text_to_image_call(context: ImageContext):
     return processed_image
 
 
-def image_to_image_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+def image_edit_call(context: ImageContext):
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + "Ultra HD, 4K, cinematic composition.")
+
     pipe = get_edit_pipeline("ovedrive/Qwen-Image-Edit-2509-4bit")
-
-    # gather all possible reference images
-    reference_images = []
-    if context.color_image:
-        reference_images.append(context.color_image)
-
-    for current in context.get_reference_images():
-        if current is not None:
-            reference_images.append(current)
 
     args = {
         "width": context.width,
@@ -133,7 +145,7 @@ def image_to_image_call(context: ImageContext):
         "prompt_embeds": prompt_embeds,
         "prompt_embeds_mask": prompt_embeds_mask,
         "negative_prompt": "",
-        "image": reference_images[:3],  # max 3 images supported
+        "image": context.color_image,
         "generator": context.generator,
         "num_inference_steps": 8,
         "true_cfg_scale": 1.0,
@@ -146,7 +158,7 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + "Ultra HD, 4K, cinematic composition.")
 
     pipe = QwenImageInpaintPipeline.from_pipe(get_pipeline("ovedrive/qwen-image-4bit"))
 
@@ -174,11 +186,9 @@ def main(context: ImageContext) -> Image.Image:
     mode = context.get_generation_mode()
 
     if mode == "text_to_image":
-        if len(context.get_reference_images()) > 0:
-            return image_to_image_call(context)
         return text_to_image_call(context)
     elif mode == "img_to_img":
-        return image_to_image_call(context)
+        return image_edit_call(context)
     elif mode == "img_to_img_inpainting":
         return inpainting_call(context)
 
