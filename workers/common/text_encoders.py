@@ -9,6 +9,7 @@ from cachetools.keys import hashkey
 from diffusers import (
     FluxPipeline,
     LTXConditionPipeline,
+    QwenImageEditPlusPipeline,
     QwenImagePipeline,
     StableDiffusion3Pipeline,
     WanPipeline,
@@ -291,6 +292,43 @@ def qwen_encode(prompt, torch_dtype=torch.float32, device="cpu"):
         return cached
 
     pipe = _pipeline_qwen_text_encoder(torch_dtype=torch_dtype, device=device)
+    prompt_embeds, prompt_embeds_mask = pipe.encode_prompt(
+        prompt=prompt,
+        max_sequence_length=256,
+    )
+
+    prompt_embeds = convert_tensor(prompt_embeds)
+    prompt_embeds_mask = convert_tensor(prompt_embeds_mask, dtype=torch.long)
+    set_prompt_in_cache("qwen", prompt, (prompt_embeds, prompt_embeds_mask))
+    return prompt_embeds, prompt_embeds_mask
+
+
+@decorator_global_text_encoder_cache
+def _pipeline_qwen_edit_text_encoder(torch_dtype=torch.float32, device="cpu"):
+    return QwenImageEditPlusPipeline.from_pretrained(
+        "Qwen/Qwen-Image-Edit-2509",
+        text_encoder=Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            "Qwen/Qwen2.5-VL-7B-Instruct",
+            subfolder="",
+            torch_dtype=torch_dtype,
+        ),
+        transformer=None,
+        vae=None,
+        scheduler=None,
+        torch_dtype=torch_dtype,
+    ).to(device)
+
+
+@time_info_decorator
+def qwen_edit_encode(prompt, torch_dtype=torch.float32, device="cpu"):
+    if prompt == "":
+        return None, None
+
+    cached = get_prompt_from_cache("qwen", prompt)
+    if cached is not None:
+        return cached
+
+    pipe = _pipeline_qwen_edit_text_encoder(torch_dtype=torch_dtype, device=device)
     prompt_embeds, prompt_embeds_mask = pipe.encode_prompt(
         prompt=prompt,
         max_sequence_length=256,

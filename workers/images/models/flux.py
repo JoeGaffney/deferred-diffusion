@@ -131,8 +131,6 @@ def apply_prompt_embeddings(args, prompt, negative_prompt=""):
 
 
 def text_to_image_call(context: ImageContext):
-    # NOTE just use krea for now as it seems to be better
-    # model_id = "black-forest-labs/FLUX.1-dev"
     model_id = "black-forest-labs/FLUX.1-Krea-dev"
 
     pipe_args = {}

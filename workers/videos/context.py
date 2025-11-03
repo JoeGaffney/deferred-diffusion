@@ -48,7 +48,7 @@ class VideoContext:
         logger.info(f"Is 720p: {result} for dimensions {self.width}x{self.height}")
         return result
 
-    def get_flow_shift(self) -> int:
+    def get_flow_shift(self) -> float:
         return 5.0 if self.get_is_720p() else 3.0
 
     def ensure_divisible(self, value: int):
