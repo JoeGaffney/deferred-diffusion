@@ -7,7 +7,6 @@ from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
 from common.logger import logger
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
-    get_gguf_model,
     get_quantized_model,
 )
 from common.text_encoders import wan_encode
@@ -79,7 +78,6 @@ def video_to_video(context: VideoContext):
         frame = context.video_frames[frame_idx].resize((context.width, context.height))
         video_frames.append(frame)
 
-    mask_black = PIL.Image.new("L", (context.width, context.height), 0)
     mask_white = PIL.Image.new("L", (context.width, context.height), 255)
     # Create mask for video-to-video: mask all frames for transformation
     mask_frames = [mask_white] * num_frames
