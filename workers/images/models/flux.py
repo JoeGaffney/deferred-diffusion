@@ -6,8 +6,6 @@ from diffusers import (
     FluxPipeline,
     FluxTransformer2DModel,
 )
-from nunchaku import NunchakuFluxTransformer2dModel, NunchakuFluxTransformer2DModelV2
-from nunchaku.utils import get_precision
 from PIL import Image
 
 from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
@@ -23,9 +21,12 @@ from images.context import ImageContext
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id, config: AdapterPipelineConfig):
-    # Controlnet is not supported for FluxTransformer2DModelV2 for now
-    transformer = NunchakuFluxTransformer2dModel.from_pretrained(
-        f"nunchaku-tech/nunchaku-flux.1-krea-dev/svdq-{get_precision()}_r32-flux.1-krea-dev.safetensors"
+    transformer = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer",
+        model_class=FluxTransformer2DModel,
+        target_precision=IMAGE_TRANSFORMER_PRECISION,
+        torch_dtype=torch.bfloat16,
     )
 
     pipe = FluxPipeline.from_pretrained(
@@ -52,8 +53,12 @@ def get_pipeline(model_id, config: AdapterPipelineConfig):
 
 @decorator_global_pipeline_cache
 def get_kontext_pipeline(model_id):
-    transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
-        f"nunchaku-tech/nunchaku-flux.1-kontext-dev/svdq-{get_precision()}_r32-flux.1-kontext-dev.safetensors"
+    transformer = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer",
+        model_class=FluxTransformer2DModel,
+        target_precision=IMAGE_TRANSFORMER_PRECISION,
+        torch_dtype=torch.bfloat16,
     )
 
     pipe = FluxKontextPipeline.from_pretrained(
@@ -71,8 +76,12 @@ def get_kontext_pipeline(model_id):
 
 @decorator_global_pipeline_cache
 def get_inpainting_pipeline(model_id):
-    transformer = NunchakuFluxTransformer2DModelV2.from_pretrained(
-        f"nunchaku-tech/nunchaku-flux.1-fill-dev/svdq-{get_precision()}_r32-flux.1-fill-dev.safetensors"
+    transformer = get_quantized_model(
+        model_id=model_id,
+        subfolder="transformer",
+        model_class=FluxTransformer2DModel,
+        target_precision=IMAGE_TRANSFORMER_PRECISION,
+        torch_dtype=torch.bfloat16,
     )
 
     pipe = FluxFillPipeline.from_pretrained(

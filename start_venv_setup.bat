@@ -27,8 +27,5 @@ pip install --upgrade -r workers/requirements.txt
 pip install --upgrade -r infra/requirements.txt 
 pip install -r workers/requirements_no_deps.txt --no-deps
 
-echo installing nunchaku...
-pip install https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch2.6-cp312-cp312-win_amd64.whl --no-deps
-
 echo Virtual environment activated and requirements installed.
 CALL venv\Scripts\activate

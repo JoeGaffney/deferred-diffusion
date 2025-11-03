@@ -9,8 +9,6 @@ from diffusers import (
     QwenImagePipeline,
     QwenImageTransformer2DModel,
 )
-from nunchaku import NunchakuQwenImageTransformer2DModel
-from nunchaku.utils import get_gpu_memory, get_precision
 from PIL import Image
 
 from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
@@ -47,12 +45,13 @@ def get_scheduler():
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id) -> QwenImagePipeline:
-    rank = 128  # you can also use the rank=128 model to improve the quality
-    model_paths = {
-        4: f"nunchaku-tech/nunchaku-qwen-image/svdq-{get_precision()}_r{rank}-qwen-image-lightningv1.0-4steps.safetensors",
-        8: f"nunchaku-tech/nunchaku-qwen-image/svdq-{get_precision()}_r{rank}-qwen-image-lightningv1.1-8steps.safetensors",
-    }
-    transformer = NunchakuQwenImageTransformer2DModel.from_pretrained(model_paths[8])
+    transformer = get_quantized_model(
+        model_id="ovedrive/qwen-image-4bit",
+        subfolder="transformer",
+        model_class=QwenImageTransformer2DModel,
+        target_precision=16,
+        torch_dtype=torch.bfloat16,
+    )
 
     pipe = QwenImagePipeline.from_pretrained(
         model_id,
@@ -62,16 +61,22 @@ def get_pipeline(model_id) -> QwenImagePipeline:
         transformer=transformer,
         torch_dtype=torch.bfloat16,
     )
+    pipe.load_lora_weights(
+        "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Edit-Lightning-8steps-V1.0-bf16.safetensors"
+    )
 
     return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 @decorator_global_pipeline_cache
 def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
-    num_inference_steps = 8  # you can also use the 8-step model to improve the quality
-    rank = 128  # you can also use the rank=128 model to improve the quality
-    model_path = f"nunchaku-tech/nunchaku-qwen-image-edit-2509/svdq-{get_precision()}_r{rank}-qwen-image-edit-2509-lightningv2.0-{num_inference_steps}steps.safetensors"
-    transformer = NunchakuQwenImageTransformer2DModel.from_pretrained(model_path)
+    transformer = get_quantized_model(
+        model_id="ovedrive/Qwen-Image-Edit-2509-4bit",
+        subfolder="transformer",
+        model_class=QwenImageTransformer2DModel,
+        target_precision=16,
+        torch_dtype=torch.bfloat16,
+    )
 
     pipe = QwenImageEditPlusPipeline.from_pretrained(
         model_id,
@@ -80,6 +85,9 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
         transformer=transformer,
         scheduler=get_scheduler(),
         torch_dtype=torch.bfloat16,
+    )
+    pipe.load_lora_weights(
+        "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors"
     )
 
     return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
