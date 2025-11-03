@@ -282,8 +282,7 @@ def _pipeline_qwen_text_encoder(torch_dtype=torch.float32, device="cpu"):
 
 
 @time_info_decorator
-def qwen_encode(prompt, torch_dtype=torch.bfloat16, device="cpu"):
-    """qwen text encoder is large so default to bfloat16 - this is slow on the CPU however"""
+def qwen_encode(prompt, torch_dtype=torch.float32, device="cpu"):
     if prompt == "":
         return None, None
 

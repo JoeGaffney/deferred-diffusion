@@ -62,7 +62,7 @@ def get_pipeline(model_id) -> QwenImagePipeline:
         torch_dtype=torch.bfloat16,
     )
     pipe.load_lora_weights(
-        "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Edit-Lightning-8steps-V1.0-bf16.safetensors"
+        "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors"
     )
 
     return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
@@ -87,14 +87,14 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
         torch_dtype=torch.bfloat16,
     )
     pipe.load_lora_weights(
-        "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors"
+        "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Edit-Lightning-8steps-V1.0-bf16.safetensors"
     )
 
     return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
 
 
 def text_to_image_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + "Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
     pipe = get_pipeline("Qwen/Qwen-Image")
 
     args = {
@@ -115,7 +115,7 @@ def text_to_image_call(context: ImageContext):
 
 
 def image_to_image_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + "Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
     pipe = get_edit_pipeline("ovedrive/Qwen-Image-Edit-2509-4bit")
 
     # gather all possible reference images
@@ -146,7 +146,7 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + "Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
 
     pipe = QwenImageInpaintPipeline.from_pipe(get_pipeline("ovedrive/qwen-image-4bit"))
 
