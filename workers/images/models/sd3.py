@@ -59,14 +59,6 @@ def apply_prompt_embeddings(args, prompt, negative_prompt=""):
     return args
 
 
-def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
-    if context.control_nets.is_enabled():
-        args["control_image"] = context.control_nets.get_images()
-        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
-
-    return pipe, args
-
-
 def text_to_image_call(context: ImageContext):
     pipe_args = {}
     controlnets = context.control_nets.get_loaded_controlnets()
@@ -85,7 +77,6 @@ def text_to_image_call(context: ImageContext):
         "guidance_scale": 4.0,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
@@ -94,13 +85,8 @@ def text_to_image_call(context: ImageContext):
 
 
 def image_to_image_call(context: ImageContext):
-    pipe_args = {}
-    controlnets = context.control_nets.get_loaded_controlnets()
-    if controlnets != []:
-        pipe_args["controlnet"] = controlnets
-
     pipe = AutoPipelineForImage2Image.from_pipe(
-        get_pipeline("stabilityai/stable-diffusion-3.5-large"), requires_safety_checker=False, **pipe_args
+        get_pipeline("stabilityai/stable-diffusion-3.5-large"), requires_safety_checker=False
     )
 
     args = {
@@ -113,7 +99,6 @@ def image_to_image_call(context: ImageContext):
         "guidance_scale": 4.0,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
@@ -122,13 +107,8 @@ def image_to_image_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    pipe_args = {}
-    controlnets = context.control_nets.get_loaded_controlnets()
-    if controlnets != []:
-        pipe_args["controlnet"] = controlnets
-
     pipe = AutoPipelineForInpainting.from_pipe(
-        get_pipeline("stabilityai/stable-diffusion-3.5-large"), requires_safety_checker=False, **pipe_args
+        get_pipeline("stabilityai/stable-diffusion-3.5-large"), requires_safety_checker=False
     )
 
     args = {
@@ -142,7 +122,6 @@ def inpainting_call(context: ImageContext):
         "guidance_scale": 4.0,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()

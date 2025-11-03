@@ -130,21 +130,7 @@ def apply_prompt_embeddings(args, prompt, negative_prompt=""):
     return args
 
 
-def setup_controlnets_and_ip_adapters(pipe, context: ImageContext, args):
-    if context.control_nets.is_enabled():
-        args["control_image"] = context.control_nets.get_images()
-        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
-
-    if context.adapters.is_enabled():
-        args["ip_adapter_image"] = context.adapters.get_images()
-        pipe = context.adapters.set_scale(pipe)
-
-    return pipe, args
-
-
 def text_to_image_call(context: ImageContext):
-    # NOTE just use krea for now as it seems to be better
-    # model_id = "black-forest-labs/FLUX.1-dev"
     model_id = "black-forest-labs/FLUX.1-Krea-dev"
 
     pipe_args = {}
@@ -166,7 +152,13 @@ def text_to_image_call(context: ImageContext):
         "guidance_scale": 2.5,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
+    if context.control_nets.is_enabled():
+        args["control_image"] = context.control_nets.get_images()
+        args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
+
+    if context.adapters.is_enabled():
+        args["ip_adapter_image"] = context.adapters.get_images()
+        pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
@@ -205,7 +197,6 @@ def inpainting_call(context: ImageContext):
         "strength": context.data.strength,
     }
     args = apply_prompt_embeddings(args, context.data.prompt, "")
-    pipe, args = setup_controlnets_and_ip_adapters(pipe, context, args)
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()

@@ -126,8 +126,8 @@ def process_video(node):
         image_node = node.input(0)
         image = node_to_base64(image_node, current_frame)
 
-        image_last_frame_node = node.input(1)
-        image_last_frame = node_to_base64(image_last_frame_node, current_frame)
+        last_image_node = node.input(1)
+        last_image = node_to_base64(last_image_node, current_frame)
 
         # video input we extract from a file path parameter at the moment
         video = get_node_value(node, "video", UNSET, mode="get")
@@ -145,7 +145,7 @@ def process_video(node):
 
         body = VideoRequest(
             image=image,
-            image_last_frame=image_last_frame,
+            last_image=last_image,
             video=video_base64,
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
             num_frames=get_node_value(node, "num_frames", UNSET, return_type=int, mode="value"),

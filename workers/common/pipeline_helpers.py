@@ -84,8 +84,9 @@ class ModelLRUCache:
                             logger.warning(f"Calling reset() on block {type(block)}")
                             block.m.reset()
 
-                pipeline.transformer.to("cpu")
-                del pipeline.transformer
+                if pipeline.transformer is not None:
+                    pipeline.transformer.to("cpu")
+                    del pipeline.transformer
         except Exception as e:
             logger.error(f"Error moving transformer to CPU: {e}")
 

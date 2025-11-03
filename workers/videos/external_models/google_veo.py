@@ -35,8 +35,8 @@ def main(context: VideoContext):
     if context.image:
         payload["image"] = convert_pil_to_bytes(context.image)
 
-        if context.image_last_frame:
-            payload["last_frame"] = convert_pil_to_bytes(context.image_last_frame)
+        if context.last_image:
+            payload["last_frame"] = convert_pil_to_bytes(context.last_image)
 
     output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)

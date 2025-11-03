@@ -50,6 +50,8 @@ def text_to_video(
             VideoRequest(
                 prompt=prompt,
                 num_frames=24,
+                width=int(1280 / 1.5),
+                height=int(720 / 1.5),
             ),
         )
     )
@@ -76,8 +78,8 @@ def text_to_video_portrait(
             VideoRequest(
                 prompt=prompt,
                 num_frames=24,
-                width=720,
-                height=1280,
+                width=int(720 / 1.5),
+                height=int(1280 / 1.5),
             ),
         )
     )
@@ -196,9 +198,10 @@ def first_frame_last_frame(model: ModelName):
             model,
             VideoRequest(
                 image=image_to_base64("../assets/first_frame_v001.png"),
-                image_last_frame=image_to_base64("../assets/last_frame_v001.png"),
-                prompt="The camera tracks into the man from behind the man is static",
+                last_image=image_to_base64("../assets/last_frame_v001.png"),
+                prompt="a dramatic dolly zoom",
                 num_frames=24,
+                high_quality=False,
             ),
         )
     )

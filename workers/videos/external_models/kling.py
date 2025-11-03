@@ -27,9 +27,9 @@ def main(context: VideoContext):
 
     if context.image:
         # 2.5 does not support last frame input
-        if context.image_last_frame:
+        if context.last_image:
             payload["start_image"] = convert_pil_to_bytes(context.image)
-            payload["end_image"] = convert_pil_to_bytes(context.image_last_frame)
+            payload["end_image"] = convert_pil_to_bytes(context.last_image)
             payload["mode"] = "pro"
             model = "kwaivgi/kling-v2.1"
         else:

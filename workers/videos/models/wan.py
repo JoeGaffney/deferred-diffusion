@@ -11,21 +11,26 @@ from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
 from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
 from common.text_encoders import wan_encode
 from videos.context import VideoContext
-from videos.models.wan_vace import main as wan_vace_main
+from videos.models.wan_vace import video_to_video
 
 # Wan gives better results with a default negative prompt
 _negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
-    transformer = get_quantized_model(
-        model_id=model_id,
-        subfolder="transformer",
-        model_class=WanTransformer3DModel,
-        target_precision=VIDEO_TRANSFORMER_PRECISION,
-        torch_dtype=torch_dtype,
-    )
+def get_pipeline_i2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> WanImageToVideoPipeline:
+    # high noise uses both transformers - low noise only seems busted and gives crazy results atm
+    transformer = None
+    args = {"boundary_ratio": 1.0}
+    if high_noise:
+        args = {}
+        transformer = get_quantized_model(
+            model_id=model_id,
+            subfolder="transformer",
+            model_class=WanTransformer3DModel,
+            target_precision=VIDEO_TRANSFORMER_PRECISION,
+            torch_dtype=torch_dtype,
+        )
 
     transformer_2 = get_quantized_model(
         model_id=model_id,
@@ -43,6 +48,7 @@ def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPip
         tokenizer=None,
         vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
+        **args,
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
@@ -61,14 +67,19 @@ def get_pipeline_i2v(model_id, torch_dtype=torch.bfloat16) -> WanImageToVideoPip
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
-    transformer = get_quantized_model(
-        model_id=model_id,
-        subfolder="transformer",
-        model_class=WanTransformer3DModel,
-        target_precision=VIDEO_TRANSFORMER_PRECISION,
-        torch_dtype=torch_dtype,
-    )
+def get_pipeline_t2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> WanPipeline:
+    # high noise uses both transformers
+    transformer = None
+    args = {"boundary_ratio": 1.0}
+    if high_noise:
+        args = {}
+        transformer = get_quantized_model(
+            model_id=model_id,
+            subfolder="transformer",
+            model_class=WanTransformer3DModel,
+            target_precision=VIDEO_TRANSFORMER_PRECISION,
+            torch_dtype=torch_dtype,
+        )
 
     transformer_2 = get_quantized_model(
         model_id=model_id,
@@ -86,6 +97,7 @@ def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
         tokenizer=None,
         vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         torch_dtype=torch_dtype,
+        **args,
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
@@ -106,7 +118,8 @@ def get_pipeline_t2v(model_id, torch_dtype=torch.bfloat16) -> WanPipeline:
 def text_to_video(context: VideoContext):
     prompt_embeds = wan_encode(context.data.prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
-    pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers")
+    pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers", high_noise=True)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
 
     output = pipe(
         width=context.width,
@@ -129,12 +142,14 @@ def image_to_video(context: VideoContext):
 
     prompt_embeds = wan_encode(context.data.prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
-    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers")
+    pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers", high_noise=True)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
 
     output = pipe(
         width=context.width,
         height=context.height,
         image=context.image,
+        last_image=context.last_image,  # type: ignore
         prompt_embeds=prompt_embeds,
         negative_prompt_embeds=negative_prompt_embeds,
         num_inference_steps=8 if context.data.high_quality else 4,
@@ -149,8 +164,8 @@ def image_to_video(context: VideoContext):
 
 def main(context: VideoContext):
     context.ensure_divisible(16)
-    if context.data.image_last_frame and context.data.image:
-        return wan_vace_main(context)
+    if context.data.video and context.data.image:
+        return video_to_video(context)
 
     if context.data.image:
         return image_to_video(context)

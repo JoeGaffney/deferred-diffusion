@@ -46,7 +46,7 @@ Group {
  }
  Input {
   inputs 0
-  name last_frame
+  name last_image
   xpos 290
   ypos -129
   number 1
