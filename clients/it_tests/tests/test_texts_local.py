@@ -5,7 +5,7 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.texts import texts_create_external, texts_get
+from generated.api_client.api.texts import texts_create_local, texts_get
 from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models import (
     MessageContent,
@@ -13,15 +13,10 @@ from generated.api_client.models import (
     TextCreateResponse,
     TextRequest,
     TextResponse,
-    TextsCreateExternalModel,
 )
-from utils import image_to_base64
+from utils import image_a
 
-model = TextsCreateExternalModel("gpt-4")
-
-image_a = image_to_base64("../../assets/color_v001.jpeg")
-image_b = image_to_base64("../../assets/style_v001.jpeg")
-video_a = image_to_base64("../../assets/video_v001.mp4")
+models = ["qwen-2"]
 
 
 @pytest.fixture
@@ -32,8 +27,8 @@ def api_client():
     )
 
 
-def create_text(api_client):
-    """Helper function to create an image and return its ID."""
+def create_text(api_client, model):
+    """Helper function to create a text and return its ID."""
     request = TextRequest(
         messages=[
             MessageItem(
@@ -49,7 +44,7 @@ def create_text(api_client):
         images=[image_a],
     )
 
-    response = texts_create_external.sync_detailed(client=api_client, model=model, body=request)
+    response = texts_create_local.sync_detailed(client=api_client, model=model, body=request)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
@@ -60,22 +55,21 @@ def create_text(api_client):
     return response.parsed.id
 
 
-def test_create_text(api_client):
-    """Test creating an image through the API."""
-    image_id = create_text(api_client)
-    assert isinstance(image_id, UUID)
+@pytest.mark.local
+@pytest.mark.parametrize("model", models)
+def test_create_text(api_client, model):
+    """Test retrieving a text by ID."""
+    text_id = create_text(api_client, model)
 
+    for _ in range(20):  # Retry up to 20 times
+        time.sleep(5)
+        response = texts_get.sync_detailed(id=text_id, client=api_client)
+        if isinstance(response.parsed, TextResponse) and response.parsed.status in ["SUCCESS", "COMPLETED"]:
+            break
 
-def test_get_text(api_client):
-    """Test retrieving an image by ID."""
-    image_id = create_text(api_client)
-    time.sleep(10)  # Wait for the task to be processed
-
-    response = texts_get.sync_detailed(id=image_id, client=api_client)
     print(response.parsed)
-
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
     assert isinstance(response.parsed, TextResponse)
-    assert response.parsed.id == image_id
+    assert response.parsed.id == text_id
     assert response.parsed.status == "SUCCESS"

@@ -7,17 +7,15 @@ import pytest
 
 from generated.api_client.api.images import images_create_local, images_get
 from generated.api_client.client import AuthenticatedClient
-from generated.api_client.models.image_create_response import ImageCreateResponse
-from generated.api_client.models.image_request import ImageRequest
-from generated.api_client.models.image_response import ImageResponse
-from generated.api_client.models.images_create_local_model import ImagesCreateLocalModel
-from utils import image_to_base64, save_image_and_assert_file_exists
+from generated.api_client.models import (
+    ImageCreateResponse,
+    ImageRequest,
+    ImageResponse,
+    ImagesCreateLocalModel,
+)
+from utils import image_a, save_image_and_assert_file_exists
 
-model = ImagesCreateLocalModel("sd-xl")
-output_dir = "../tmp/output/it-tests/images"
-image_a = image_to_base64("../../assets/color_v001.jpeg")
-image_b = image_to_base64("../../assets/style_v001.jpeg")
-video_a = image_to_base64("../../assets/video_v001.mp4")
+models = [ImagesCreateLocalModel("sd-xl")]
 
 
 @pytest.fixture
@@ -30,8 +28,6 @@ def api_client():
 
 
 def create_image(api_client, model: ImagesCreateLocalModel, body: ImageRequest) -> UUID:
-    """Helper function to create an image and return its ID."""
-
     response = images_create_local.sync_detailed(client=api_client, model=model, body=body)
 
     assert response.status_code == HTTPStatus.OK
@@ -43,13 +39,9 @@ def create_image(api_client, model: ImagesCreateLocalModel, body: ImageRequest) 
     return response.parsed.id
 
 
-def test_create_image(api_client):
-    body = ImageRequest(prompt="A beautiful mountain landscape", width=512, height=512)
-    image_id = create_image(api_client, model, body)
-    assert isinstance(image_id, UUID)
-
-
-def test_get_image(api_client):
+@pytest.mark.local
+@pytest.mark.parametrize("model", models)
+def test_create_image(api_client, model):
     body = ImageRequest(prompt="A beautiful mountain landscape", width=512, height=512)
     image_id = create_image(api_client, model, body)
 
@@ -64,11 +56,12 @@ def test_get_image(api_client):
     assert isinstance(response.parsed, ImageResponse)
     assert response.parsed.id == image_id
     assert response.parsed.status == "SUCCESS"
-    save_image_and_assert_file_exists(response.parsed.result.base64_data, f"{output_dir}/test_get_image.png")  # type: ignore
+    save_image_and_assert_file_exists(response.parsed.result.base64_data, f"test_images_{model}.png")  # type: ignore
 
 
-def test_multi_submit_image(api_client):
-    "test that multiple image requests can be submitted successfully"
+@pytest.mark.local
+@pytest.mark.parametrize("model", models)
+def test_multi_submit_image(api_client, model):
     body = ImageRequest(prompt="A beautiful mountain landscape", image=image_a, width=512, height=512)
 
     for _ in range(3):
@@ -76,11 +69,32 @@ def test_multi_submit_image(api_client):
         assert isinstance(image_id, UUID)
 
 
-def test_multi_get_image(api_client):
-    "test that multiple image requests can be retrieved successfully"
+@pytest.mark.local
+@pytest.mark.parametrize("model", models)
+def test_multi_get_image(api_client, model):
     body = ImageRequest(prompt="A beautiful mountain landscape", width=512, height=512)
     image_id = create_image(api_client, model, body)
 
     for _ in range(10):
         response = images_get.sync_detailed(id=image_id, client=api_client)
         assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.local
+@pytest.mark.parametrize("model", models)
+def test_connection_reset_edge(api_client, model):
+    body = ImageRequest(prompt="Test polling edge", width=512, height=512)
+    response = images_create_local.sync(client=api_client, model=model, body=body)
+
+    assert isinstance(response, ImageCreateResponse)
+    assert isinstance(response.id, UUID)
+
+    # Poll exactly at the server's keep-alive timeout
+    poll_interval = 5  # match Uvicorn default timeout_keep_alive
+    print("Polling at 5s interval to trigger potential reset...")
+
+    for i in range(5):
+        time.sleep(poll_interval)
+        result = images_get.sync(id=response.id, client=api_client)
+        assert isinstance(result, ImageResponse)
+        print(f"Poll {i+1}: status={result.status}")

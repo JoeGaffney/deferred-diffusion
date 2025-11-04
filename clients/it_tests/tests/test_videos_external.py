@@ -5,17 +5,17 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.videos import videos_create_local, videos_get
+from generated.api_client.api.videos import videos_create_external, videos_get
 from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models import (
     VideoCreateResponse,
     VideoRequest,
     VideoResponse,
-    VideosCreateLocalModel,
+    VideosCreateExternalModel,
 )
-from utils import image_to_base64, save_image_and_assert_file_exists
+from utils import image_c, save_image_and_assert_file_exists
 
-output_dir = "../tmp/output/it-tests/videos"
+models = [VideosCreateExternalModel("runway-gen-4")]
 
 
 @pytest.fixture
@@ -26,10 +26,10 @@ def api_client():
     )
 
 
-def create_video(api_client, model: VideosCreateLocalModel, body: VideoRequest) -> UUID:
-    """Helper function to create an image and return its ID."""
+def create_video(api_client, model: VideosCreateExternalModel, body: VideoRequest) -> UUID:
+    """Helper function to create a video and return its ID."""
 
-    response = videos_create_local.sync_detailed(client=api_client, model=model, body=body)
+    response = videos_create_external.sync_detailed(client=api_client, model=model, body=body)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
@@ -40,23 +40,25 @@ def create_video(api_client, model: VideosCreateLocalModel, body: VideoRequest) 
     return response.parsed.id
 
 
-def test_get_ltx(api_client):
+@pytest.mark.external
+@pytest.mark.parametrize("model", models)
+def test_create_video(api_client, model):
     body = VideoRequest(
-        image=image_to_base64("../../assets/color_v002.png"),
+        image=image_c,
         prompt="A man with short gray hair plays a red electric guitar.",
         num_frames=24,
     )
-    image_id = create_video(api_client, VideosCreateLocalModel("ltx-video"), body)
+    video_id = create_video(api_client, model, body)
 
     for _ in range(20):  # Retry up to 20 times
         time.sleep(10)
-        response = videos_get.sync_detailed(id=image_id, client=api_client)
+        response = videos_get.sync_detailed(id=video_id, client=api_client)
         if isinstance(response.parsed, VideoResponse) and response.parsed.status in ["SUCCESS", "COMPLETED"]:
             break
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
     assert isinstance(response.parsed, VideoResponse)
-    assert response.parsed.id == image_id
+    assert response.parsed.id == video_id
     assert response.parsed.status == "SUCCESS"
-    save_image_and_assert_file_exists(response.parsed.result.base64_data, f"{output_dir}/test_get_ltx.mp4")  # type: ignore
+    save_image_and_assert_file_exists(response.parsed.result.base64_data, f"test_videos_{model}.mp4")  # type: ignore

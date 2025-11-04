@@ -2,6 +2,8 @@ import base64
 import os
 from typing import Optional
 
+output_dir = "../tmp/it-tests/"
+
 
 def base64_to_image(base64_str: str, output_path: str):
     """Convert a base64 string to an image and save it to the specified path."""
@@ -32,11 +34,12 @@ def base64_to_image(base64_str: str, output_path: str):
 
 
 def save_image_and_assert_file_exists(result, output_name):
-    if os.path.exists(output_name):
-        os.remove(output_name)
+    output_path = os.path.join(output_dir, output_name)
+    if os.path.exists(output_path):
+        os.remove(output_path)
 
-    base64_to_image(result, output_name)
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+    base64_to_image(result, output_path)
+    assert os.path.exists(output_path), f"Output file {output_path} was not created."
 
 
 def _convert_image_to_base64(image_path: str) -> Optional[str]:
@@ -70,3 +73,9 @@ def image_to_base64(image_path: str) -> str:
 def optional_image_to_base64(image_path: str) -> Optional[str]:
     """Convert an image file to base64. Returns None if conversion fails."""
     return _convert_image_to_base64(image_path)
+
+
+image_a = image_to_base64("../../assets/color_v001.jpeg")
+image_b = image_to_base64("../../assets/style_v001.jpeg")
+image_c = image_to_base64("../../assets/color_v002.png")
+video_a = image_to_base64("../../assets/video_v001.mp4")

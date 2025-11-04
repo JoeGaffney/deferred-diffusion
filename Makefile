@@ -57,10 +57,13 @@ test-worker: up
 test-worker-basic: up
 	docker-compose exec gpu-workers pytest -m "basic" -vs
 
-test-it-tests: generate-clients
-	cd clients/it_tests && pytest -vs
+it-tests-local: generate-clients
+	cd clients/it_tests && pytest -m "local" -vs
 	cd ../..
 
+it-tests-external: generate-clients
+	cd clients/it_tests && pytest -m "external" -vs
+	cd ../..
 
 tag-and-push: build
 # Tag images with version (this creates new tags without removing latest tags)
