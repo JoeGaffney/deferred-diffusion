@@ -12,20 +12,30 @@ all: generate-clients
 
 # Docker management
 down:
-	docker-compose down
+	docker compose down
 
 # atm we align by copying schemas from the api to the workers
 # this is a temporary solution until we have a better way to manage schemas
 copy-schemas:
+ifeq ($(OS),Windows_NT)
 	copy api\images\schemas.py workers\images\schemas.py
 	copy api\texts\schemas.py workers\texts\schemas.py
 	copy api\videos\schemas.py workers\videos\schemas.py
+else
+	cp api/images/schemas.py workers/images/schemas.py
+	cp api/texts/schemas.py workers/texts/schemas.py
+	cp api/videos/schemas.py workers/videos/schemas.py
+endif
 
 build: down copy-schemas
-	docker-compose build
+	docker compose build
 
 up: build
-	docker-compose up -d
+	docker compose up -d
+
+up-it-tests: down copy-schemas
+	docker compose -f docker-compose.it-tests.yml build
+	docker compose -f docker-compose.it-tests.yml up -d
 
 # Generate OpenAPI spec file
 generate-openapi-spec: up
@@ -52,15 +62,22 @@ generate-clients: generate-openapi-spec generate-clients-raw
 # make test-worker TEST_PATH=videos/models/test_wan.py
 # make test-worker TEST_PATH=videos/external_models/test_replicate.py
 test-worker: up
-	docker-compose exec gpu-workers pytest tests/$(TEST_PATH) -vs
+	docker compose exec gpu-workers pytest tests/$(TEST_PATH) -vs
 
 test-worker-basic: up
-	docker-compose exec gpu-workers pytest -m "basic" -vs
+	docker compose exec gpu-workers pytest -m "basic" -vs
 
-test-it-tests: generate-clients
-	cd clients/it_tests && pytest -vs
+it-tests-local: generate-clients
+	cd clients/it_tests && pytest -m "local" -vs
 	cd ../..
 
+it-tests-external: generate-clients
+	cd clients/it_tests && pytest -m "external" -vs
+	cd ../..
+
+it-tests-external-ci:
+	cd clients/it_tests && pytest -m "external" -vs
+	cd ../..
 
 tag-and-push: build
 # Tag images with version (this creates new tags without removing latest tags)

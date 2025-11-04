@@ -17,17 +17,6 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-    - name: Free Disk Space (Ubuntu)
-      uses: insightsengineering/disk-space-reclaimer@v1
-      with:
-        android: true
-        dotnet: true
-        haskell: false
-        large-packages: true
-        swap-storage: false
-        docker-images: false
-        tools-cache: false
-
     - name: Checkout
       uses: actions/checkout@v4
 
