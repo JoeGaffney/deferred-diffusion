@@ -5,6 +5,9 @@ from videos.context import VideoContext
 
 
 def main(context: VideoContext):
+    model = "minimax/hailuo-2.3" if context.data.high_quality else "minimax/hailuo-2.3-fast"
+    duration = 10 if context.long_video() else 6
+
     payload = {
         "prompt": context.data.prompt,
         "duration": duration,
@@ -15,7 +18,7 @@ def main(context: VideoContext):
     if context.image:
         payload["first_frame_image"] = convert_pil_to_bytes(context.image)
 
-    output = replicate_run("minimax/hailuo-2.3", payload)
+    output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)
 
     return context.save_video_url(video_url)

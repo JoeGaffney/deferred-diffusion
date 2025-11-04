@@ -18,11 +18,13 @@ def main(context: VideoContext):
         raise ValueError("Input image is None. Please provide a valid image.")
 
     model = "kwaivgi/kling-v2.5-turbo-pro"
+    duration = 10 if context.long_video() else 5
     payload = {
         "prompt": context.data.prompt,
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
         "mode": "standard",
+        "duration": duration,
     }
 
     if context.image:
