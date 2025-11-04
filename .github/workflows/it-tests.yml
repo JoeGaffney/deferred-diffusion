@@ -62,7 +62,7 @@ jobs:
 
     - name: Generate clients
       run: |
-        make generate-clients
+        make generate-clients-raw
 
     - name: Run IT Tests - External
       run: |
