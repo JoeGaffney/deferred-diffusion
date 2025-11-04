@@ -17,15 +17,26 @@ down:
 # atm we align by copying schemas from the api to the workers
 # this is a temporary solution until we have a better way to manage schemas
 copy-schemas:
+ifeq ($(OS),Windows_NT)
 	copy api\images\schemas.py workers\images\schemas.py
 	copy api\texts\schemas.py workers\texts\schemas.py
 	copy api\videos\schemas.py workers\videos\schemas.py
+else
+	cp api/images/schemas.py workers/images/schemas.py
+	cp api/texts/schemas.py workers/texts/schemas.py
+	cp api/videos/schemas.py workers/videos/schemas.py
+endif
 
 build: down copy-schemas
 	docker-compose build
 
 up: build
 	docker-compose up -d
+
+up-it-tests: copy-schemas
+	docker-compose down
+	docker-compose -f docker-compose.it-tests.yml build
+	docker-compose -f docker-compose.it-tests.yml up -d
 
 # Generate OpenAPI spec file
 generate-openapi-spec: up
@@ -62,6 +73,10 @@ it-tests-local: generate-clients
 	cd ../..
 
 it-tests-external: generate-clients
+	cd clients/it_tests && pytest -m "external" -vs
+	cd ../..
+
+it-tests-external-ci:
 	cd clients/it_tests && pytest -m "external" -vs
 	cd ../..
 

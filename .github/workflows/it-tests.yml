@@ -1,0 +1,69 @@
+name: IT Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Enables manual triggering
+
+permissions:
+  contents: read
+  
+env:
+  REPO_USERNAME: joegaffney
+  REPO: deferred-diffusion
+  DDIFFUSION_API_KEYS: "test-welcome-key"
+  DDIFFUSION_API_KEY: "test-welcome-key"
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  RUNWAYML_API_SECRET: ${{ secrets.RUNWAYML_API_SECRET }}
+  REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+
+jobs:
+  it-tests:  
+    runs-on: ubuntu-latest
+    steps:
+    - name: Free Disk Space (Ubuntu)
+      uses: insightsengineering/disk-space-reclaimer@v1
+      with:
+        android: true
+        dotnet: true
+        haskell: false
+        large-packages: true
+        swap-storage: false
+        docker-images: false
+        tools-cache: false
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install openapi-python-client and pytest
+      run: pip install openapi-python-client pytest
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ env.REPO_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      
+    - name: Docker Compose up
+      run: |
+        make up-it-tests
+
+    - name: Wait for services to be ready
+      run: |
+        timeout 300 bash -c 'until curl -f http://127.0.0.1:5000/health || curl -f http://127.0.0.1:5000/docs; do sleep 5; done'
+
+    - name: Generate clients
+      run: |
+        make generate-clients
+
+    - name: Run IT Tests - External
+      run: |
+        make it-tests-external-ci
