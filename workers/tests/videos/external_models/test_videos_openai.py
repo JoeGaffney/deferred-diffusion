@@ -1,3 +1,5 @@
+from typing import List
+
 import pytest
 
 from tests.videos.helpers import (
@@ -7,13 +9,11 @@ from tests.videos.helpers import (
     video_to_video,
     video_upscale,
 )
+from videos.schemas import ModelName
+
+models: List[ModelName] = ["openai-sora-2"]
 
 
-@pytest.mark.parametrize("model", ["openai-sora-2"])
+@pytest.mark.parametrize("model", models)
 def test_text_to_video(model):
     text_to_video_portrait(model)
-
-
-# @pytest.mark.parametrize("model", ["openai-sora-2"])
-# def test_image_to_video(model):
-#     image_to_video(model)

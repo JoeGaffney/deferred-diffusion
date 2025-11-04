@@ -58,4 +58,4 @@ def main(context: ImageContext) -> Image.Image:
     elif mode == "img_to_img" or mode == "inpainting":
         return image_to_image_call(context)
 
-    raise ValueError(f"Invalid mode {mode} for RunwayML API")
+    raise ValueError(f"Invalid mode {mode}")

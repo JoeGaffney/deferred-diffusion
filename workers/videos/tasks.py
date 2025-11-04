@@ -112,3 +112,12 @@ def openai_sora_2(request_dict):
     context = validate_request_and_context("openai-sora-2", request_dict)
     result = main(context)
     return process_result(context, result)
+
+
+@typed_task(name="minimax-hailuo-2", queue="cpu")
+def minimax_hailuo_2(request_dict):
+    from videos.external_models.minimax_hailuo import main
+
+    context = validate_request_and_context("minimax-hailuo-2", request_dict)
+    result = main(context)
+    return process_result(context, result)

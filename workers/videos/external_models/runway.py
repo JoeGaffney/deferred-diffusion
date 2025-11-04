@@ -19,13 +19,12 @@ def get_aspect_ratio(context: VideoContext) -> Literal["1280:720", "720:1280", "
 def main(context: VideoContext):
     client = RunwayML()
     model: Literal["gen4_turbo"] = "gen4_turbo"
+    ratio = get_aspect_ratio(context)
+    duration: Literal[5, 10] = 10 if context.long_video() else 5
 
     image = context.image
     if image is None:
         raise ValueError("Input image is None. Please provide a valid image.")
-
-    ratio = get_aspect_ratio(context)
-    duration: Literal[5, 10] = 5
 
     # encode image to base64
     image_uri = f"data:image/png;base64,{pill_to_base64(image)}"

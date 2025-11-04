@@ -15,6 +15,7 @@ ModelNameExternal: TypeAlias = Literal[
     "kwaivgi-kling-2",
     "google-veo-3",
     "openai-sora-2",
+    "minimax-hailuo-2",
 ]
 
 
@@ -30,6 +31,7 @@ ModelName: TypeAlias = Literal[
     "kwaivgi-kling-2",
     "google-veo-3",
     "openai-sora-2",
+    "minimax-hailuo-2",
 ]
 
 
@@ -77,6 +79,9 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
     ),
     "openai-sora-2": ModelInfo(
         description="OpenAI's Sora 2 model, high-end video generation model known for producing high-quality and realistic videos from text prompts. Supports high_quality parameter for pro variant. Ideal for professional-grade video content creation.",
+    ),
+    "minimax-hailuo-2": ModelInfo(
+        description="Minimax's Hailuo-2.3 model, advanced video generation with support for both 6s and 10s duration videos. Supports 768p and 1080p resolutions with prompt optimization capabilities.",
     ),
 }
 
