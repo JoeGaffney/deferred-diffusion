@@ -22,6 +22,7 @@ clients/nuke/python/generated/
 clients/houdini/python/generated/
 clients/it_tests/generated/
 clients/houdini/backup/
+agentic/generated/
 releases/
 *.dat
 

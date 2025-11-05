@@ -37,3 +37,17 @@ It is **local-first**, supports **multi-step, multi-modal workflows**, and maint
 4. Tools call `/api` or MCP endpoints for model inference.
 5. Results are returned to agent and stored in **local session state**.
 6. Gradio UI displays outputs and allows the user to refine prompts for multi-turn interactions.
+
+# DEV notes.
+
+```
+    # MCP client will be here Your auto-generated MCP server is now available at https://app.base.url/mcp.
+    base_url = os.getenv("DDIFFUSION_API_ADDRESS", "http://127.0.0.1:5000")
+
+    # Client connection from generated
+    return AuthenticatedClient(
+        base_url=os.getenv("DDIFFUSION_API_ADDRESS", "http://127.0.0.1:5000"),
+        token=os.getenv("DDIFFUSION_API_KEY", ""),
+        raise_on_unexpected_status=True,
+    )
+```

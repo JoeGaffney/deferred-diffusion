@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi_mcp import FastApiMCP
 
 from common.logger import logger
 from images import router as images
@@ -72,6 +73,12 @@ app.include_router(videos.router, prefix="/api")
 def root():
     return {"message": "Welcome to the API!"}
 
+
+# Initialize FastApiMCP
+mcp = FastApiMCP(app)
+
+# Mount the MCP server directly to your FastAPI app
+mcp.mount()
 
 # Run Uvicorn programmatically for convenience
 if __name__ == "__main__":

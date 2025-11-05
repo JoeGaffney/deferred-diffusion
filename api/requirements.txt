@@ -5,3 +5,4 @@ uvicorn
 celery
 redis
 mypy
+fastapi-mcp
