@@ -1,0 +1,6 @@
+pydantic
+pydantic-ai-slim[openai]
+gradio
+redis
+pillow
+mypy

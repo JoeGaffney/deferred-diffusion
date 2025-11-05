@@ -1,26 +1,10 @@
 import asyncio
-import base64
-import io
 import time
 
 from celery.result import AsyncResult
-from PIL import Image
 
 from common.logger import logger
 from worker import celery_app
-
-
-def load_image_from_base64(base64_bytes: str) -> Image.Image:
-
-    try:
-        # Convert bytes to a PIL image
-        tmp_bytes = base64.b64decode(base64_bytes)
-        imageFile = Image.open(io.BytesIO(tmp_bytes))
-        image = imageFile.convert("RGB")  # Ensure the image is in RGB mode
-        logger.info(f"Image loaded from Base64 bytes, size: {image.size}")
-        return image
-    except Exception as e:
-        raise ValueError(f"Invalid Base64 data: {type(base64_bytes)} {e}") from e
 
 
 async def poll_until_resolved(id: str, timeout=300, poll_interval=3) -> AsyncResult:

@@ -22,6 +22,10 @@
     {
       "path": "clients/nuke/python",
       "name": "Nuke"
+    },
+    {
+      "path": "agentic",
+      "name": "Agentic"
     }
   ],
   "settings": {
@@ -31,7 +35,8 @@
       "./workers",
       "./clients/it_tests",
       "./clients/houdini/python",
-      "./clients/nuke/python"
+      "./clients/nuke/python",
+      "./agentic"
     ],
     "python.analysis.exclude": ["**/venv/**", "**/.git/**"],
     "python.analysis.indexing": true,

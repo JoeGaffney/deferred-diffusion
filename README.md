@@ -60,7 +60,7 @@ We try to use plural to adhere to REST best practices.
 │── /images # Grouped by results type
 │ ├── models/ # ✅ AI models (ML/DL models, weights, configs)
 │ ├── external_models/ # ✅ external AI models
-│ ├── schemas.py # ✅ Pydantic schemas (data validation)
+│ ├── schemas.py # ✅ Pydantic schemas (data validation mirrors from API)
 │ ├── context.py # ✅ Business logic layer
 │ ├── tasks.py # ✅ Celery tasks route to models
 │── /texts
@@ -72,6 +72,18 @@ We try to use plural to adhere to REST best practices.
 │── /tests # ✅ Tests mirror the /workers structure
 │── worker.py # ✅ Celery
 │── pytest.ini # ✅ Test configuration
+```
+
+```
+/clients
+│── /it_tests
+│ ├── generated/ # generated client
+│ ├── tests/
+│── /houdini
+│ ├── python/generated/ # generated client
+│── /nuke
+│ ├── python/generated/ # generated client
+│── openapi.json # API spec
 ```
 
 ## Model naming / pathing

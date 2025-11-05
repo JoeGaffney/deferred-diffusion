@@ -24,7 +24,7 @@ echo Installing requirements...
 pip uninstall diffusers
 pip install --upgrade -r api/requirements.txt 
 pip install --upgrade -r workers/requirements.txt 
-pip install --upgrade -r infra/requirements.txt 
+pip install --upgrade -r agentic/requirements.txt 
 pip install -r workers/requirements_no_deps.txt --no-deps
 
 echo installing nunchaku...

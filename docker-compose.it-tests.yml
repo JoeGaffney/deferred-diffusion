@@ -12,7 +12,6 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
 
   # Redis service as message broker
   redis:

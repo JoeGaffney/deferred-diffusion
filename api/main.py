@@ -6,7 +6,6 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from agentic import router as agentic
 from common.logger import logger
 from images import router as images
 from texts import router as texts
@@ -39,12 +38,6 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-app.include_router(images.router, prefix="/api")
-app.include_router(texts.router, prefix="/api")
-app.include_router(videos.router, prefix="/api")
-app.include_router(agentic.router, prefix="/api")
-
-
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     if request.method == "POST":
@@ -68,6 +61,11 @@ async def log_requests(request: Request, call_next):
     # Continue processing
     response = await call_next(request)
     return response
+
+
+app.include_router(images.router, prefix="/api")
+app.include_router(texts.router, prefix="/api")
+app.include_router(videos.router, prefix="/api")
 
 
 @app.get("/")

@@ -47,6 +47,8 @@ generate-clients-raw:
 	openapi-python-client generate --path clients/openapi.json --output-path clients/houdini/python/generated --overwrite
 	openapi-python-client generate --path clients/openapi.json --output-path clients/nuke/python/generated --overwrite
 	openapi-python-client generate --path clients/openapi.json --output-path clients/it_tests/generated --overwrite
+	openapi-python-client generate --path clients/openapi.json --output-path agentic/generated --overwrite
+
 
 # API Client generation
 generate-clients: generate-openapi-spec generate-clients-raw
