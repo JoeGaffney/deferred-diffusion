@@ -5,18 +5,19 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.texts import texts_create_local, texts_get
+from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models import (
     MessageContent,
     MessageItem,
     TextCreateResponse,
     TextRequest,
+    TextRequestModel,
     TextResponse,
 )
 from utils import image_a
 
-models = ["qwen-2"]
+models = [TextRequestModel("qwen-2")]
 
 
 @pytest.fixture
@@ -30,6 +31,7 @@ def api_client():
 def create_text(api_client, model):
     """Helper function to create a text and return its ID."""
     request = TextRequest(
+        model=model,
         messages=[
             MessageItem(
                 role="user",
@@ -44,7 +46,7 @@ def create_text(api_client, model):
         images=[image_a],
     )
 
-    response = texts_create_local.sync_detailed(client=api_client, model=model, body=request)
+    response = texts_create.sync_detailed(client=api_client, body=request)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None

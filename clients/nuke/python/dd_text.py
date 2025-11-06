@@ -5,17 +5,13 @@ import nuke
 from httpx import RemoteProtocolError
 
 from config import client
-from generated.api_client.api.texts import (
-    texts_create_external,
-    texts_create_local,
-    texts_get,
-)
+from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.models import (
     MessageItem,
     TextCreateResponse,
     TextRequest,
+    TextRequestModel,
     TextResponse,
-    TextsCreateExternalModel,
 )
 from generated.api_client.models.message_content import MessageContent
 from generated.api_client.types import UNSET
@@ -115,23 +111,9 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
     nuke.executeInMainThread(update_ui)
 
 
-def _api_call_local(node, model: str, body: TextRequest):
+def _api_call(node, body: TextRequest):
     try:
-        # Ensure model is of the correct Literal type
-        parsed = texts_create_local.sync(client=client, model="qwen-2", body=body)
-    except Exception as e:
-        raise RuntimeError(f"API call failed: {str(e)}") from e
-
-    if not isinstance(parsed, TextCreateResponse):
-        raise ValueError("Unexpected response type from API call.")
-
-    set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), iterations=100)
-
-
-def _api_call_external(node, model: str, body: TextRequest):
-    try:
-        parsed = texts_create_external.sync(client=client, model=TextsCreateExternalModel(model), body=body)
+        parsed = texts_create.sync(client=client, body=body)
     except Exception as e:
         raise RuntimeError(f"API call failed: {str(e)}") from e
 
@@ -146,7 +128,7 @@ def process_text(node):
     set_node_info(node, "", "")
 
     with nuke_error_handling(node):
-        external = get_node_value(node, "external", False, return_type=bool, mode="value")
+        model = TextRequestModel(get_node_value(node, "model", UNSET, mode="value"))
 
         # Get image inputs a and b as base64
         image_a = node_to_base64(node.input(1), nuke.frame())
@@ -158,15 +140,11 @@ def process_text(node):
             images.append(image_b)
 
         body = TextRequest(
+            model=model,
             messages=get_messages(node),
             images=images,
         )
-        if not external:
-            model = get_node_value(node, "model", "qwen-2", mode="value")
-            _api_call_local(node, model, body)
-        else:
-            model = get_node_value(node, "external_model", "", mode="value")
-            _api_call_external(node, model, body)
+        _api_call(node, body)
 
 
 def get_text(node):

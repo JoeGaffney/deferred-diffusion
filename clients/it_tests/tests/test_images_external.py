@@ -5,17 +5,17 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.images import images_create_external, images_get
+from generated.api_client.api.images import images_create, images_get
 from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models import (
     ImageCreateResponse,
     ImageRequest,
+    ImageRequestModel,
     ImageResponse,
-    ImagesCreateExternalModel,
 )
 from utils import image_to_base64, save_image_and_assert_file_exists
 
-models = [ImagesCreateExternalModel("flux-1-pro")]
+models = [ImageRequestModel("flux-1-pro")]
 
 
 @pytest.fixture
@@ -27,8 +27,8 @@ def api_client():
     )
 
 
-def create_image(api_client, model: ImagesCreateExternalModel, body: ImageRequest) -> UUID:
-    response = images_create_external.sync_detailed(client=api_client, model=model, body=body)
+def create_image(api_client, body: ImageRequest) -> UUID:
+    response = images_create.sync_detailed(client=api_client, body=body)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
@@ -42,8 +42,8 @@ def create_image(api_client, model: ImagesCreateExternalModel, body: ImageReques
 @pytest.mark.external
 @pytest.mark.parametrize("model", models)
 def test_create_image(api_client, model):
-    body = ImageRequest(prompt="A beautiful mountain landscape", width=512, height=512)
-    image_id = create_image(api_client, model, body)
+    body = ImageRequest(model=model, prompt="A beautiful mountain landscape", width=512, height=512)
+    image_id = create_image(api_client, body)
 
     for _ in range(20):  # Retry up to 20 times
         time.sleep(5)

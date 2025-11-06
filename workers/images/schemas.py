@@ -140,18 +140,19 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
 }
 
 
-def generate_model_docs(local=True):
+def generate_model_docs():
     docs = """ # Generate images using various diffusion models.
 - External models are processed through their respective APIs.
 - Local models are processed on your own GPU workers.
 - ControlNets and Adapters are unified as **references**.
 """
-    if local:
-        for model_name, model_info in MODEL_META_LOCAL.items():
-            docs += model_info.to_doc_format(model_name)
-    else:
-        for model_name, model_info in MODEL_META_EXTERNAL.items():
-            docs += model_info.to_doc_format(model_name)
+    docs += "# Local Models\n\n"
+    for model_name, model_info in MODEL_META_LOCAL.items():
+        docs += model_info.to_doc_format(model_name)
+
+    docs += "# External Models\n\n"
+    for model_name, model_info in MODEL_META_EXTERNAL.items():
+        docs += model_info.to_doc_format(model_name)
     return docs
 
 
@@ -176,6 +177,7 @@ class References(BaseModel):
 
 
 class ImageRequest(BaseModel):
+    model: ModelName
     prompt: str = Field(
         default="Detailed, 8k, photorealistic",
         description="Positive Prompt text",
@@ -206,6 +208,20 @@ class ImageRequest(BaseModel):
         default=False,
         description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
     )
+
+    @property
+    def external_model(self) -> bool:
+        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
+        return self.model in _MODEL_EXTERNAL_VALUES
+
+    @property
+    def task_name(self) -> ModelName:
+        return self.model
+
+    @property
+    def task_queue(self) -> str:
+        """Return the task queue based on whether the model is external or not."""
+        return "cpu" if self.external_model else "gpu"
 
 
 class ImageWorkerResponse(BaseModel):

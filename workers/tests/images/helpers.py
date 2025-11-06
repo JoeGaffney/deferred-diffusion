@@ -52,8 +52,8 @@ def text_to_image(model: ModelName, seed=42):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature.",
                 strength=0.5,
                 width=width,
@@ -73,8 +73,8 @@ def text_to_image_alt(model: ModelName, seed=42):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt=prompt,
                 strength=0.5,
                 width=width,
@@ -92,8 +92,8 @@ def image_to_image(model: ModelName):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="Change to night time and add rain and Lightning",
                 strength=0.5,
                 image=image_to_base64("../assets/color_v001.jpeg"),
@@ -109,8 +109,8 @@ def image_to_image_alt(model: ModelName):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="Change the car color to red, turn the headlights on",
                 strength=0.5,
                 image=image_to_base64("../assets/color_v003.png"),
@@ -126,8 +126,8 @@ def inpainting(model: ModelName):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="Photorealistic landscape of an elven castle, inspired by lord of the rings, highly detailed, 8k",
                 strength=0.5,
                 image=image_to_base64("../assets/inpaint.png"),
@@ -144,8 +144,8 @@ def inpainting_alt(model: ModelName):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="a tiger sitting on a park bench",
                 strength=0.9,
                 image=image_to_base64("../assets/inpaint_v003.png"),
@@ -162,8 +162,8 @@ def references_canny(model: ModelName):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
                 strength=0.5,
                 width=1152,
@@ -188,8 +188,8 @@ def references_depth(model: ModelName):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="Two people hiking in a mountainous landscape, vibrant colors, high detail, 8k resolution",
                 strength=0.5,
                 width=width,
@@ -214,8 +214,8 @@ def references_style(model: ModelName):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="a cat, masterpiece, best quality, high quality",
                 strength=0.75,
                 width=width,
@@ -241,8 +241,8 @@ def references_face(model: ModelName):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="a man walking, masterpiece, best quality, high quality",
                 strength=0.75,
                 width=width,

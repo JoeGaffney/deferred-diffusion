@@ -5,17 +5,17 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.videos import videos_create_external, videos_get
+from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models import (
     VideoCreateResponse,
     VideoRequest,
+    VideoRequestModel,
     VideoResponse,
-    VideosCreateExternalModel,
 )
 from utils import image_c, save_image_and_assert_file_exists
 
-models = [VideosCreateExternalModel("runway-gen-4")]
+models = [VideoRequestModel("runway-gen-4")]
 
 
 @pytest.fixture
@@ -26,10 +26,10 @@ def api_client():
     )
 
 
-def create_video(api_client, model: VideosCreateExternalModel, body: VideoRequest) -> UUID:
+def create_video(api_client, body: VideoRequest) -> UUID:
     """Helper function to create a video and return its ID."""
 
-    response = videos_create_external.sync_detailed(client=api_client, model=model, body=body)
+    response = videos_create.sync_detailed(client=api_client, body=body)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
@@ -44,11 +44,12 @@ def create_video(api_client, model: VideosCreateExternalModel, body: VideoReques
 @pytest.mark.parametrize("model", models)
 def test_create_video(api_client, model):
     body = VideoRequest(
+        model=model,
         image=image_c,
         prompt="A man with short gray hair plays a red electric guitar.",
         num_frames=24,
     )
-    video_id = create_video(api_client, model, body)
+    video_id = create_video(api_client, body)
 
     for _ in range(20):  # Retry up to 20 times
         time.sleep(10)

@@ -5,16 +5,11 @@ import nuke
 from httpcore import RemoteProtocolError
 
 from config import client
-from generated.api_client.api.videos import (
-    videos_create_external,
-    videos_create_local,
-    videos_get,
-)
+from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.models import (
     VideoCreateResponse,
     VideoRequest,
-    VideosCreateExternalModel,
-    VideosCreateLocalModel,
+    VideoRequestModel,
 )
 from generated.api_client.models.video_response import VideoResponse
 from generated.api_client.types import UNSET
@@ -88,22 +83,9 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
     nuke.executeInMainThread(update_ui)
 
 
-def _api_call(node, model: str, body: VideoRequest, output_video_path: str, current_frame: int):
+def _api_call(node, body: VideoRequest, output_video_path: str, current_frame: int):
     try:
-        parsed = videos_create_local.sync(client=client, model=VideosCreateLocalModel(model), body=body)
-    except Exception as e:
-        raise RuntimeError(f"API call failed: {str(e)}") from e
-
-    if not isinstance(parsed, VideoCreateResponse):
-        raise ValueError("Unexpected response type from API call.")
-
-    set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_video_path, current_frame, iterations=100)
-
-
-def _api_call_external(node, model: str, body: VideoRequest, output_video_path: str, current_frame: int):
-    try:
-        parsed = videos_create_external.sync(client=client, model=VideosCreateExternalModel(model), body=body)
+        parsed = videos_create.sync(client=client, body=body)
     except Exception as e:
         raise RuntimeError(f"API call failed: {str(e)}") from e
 
@@ -141,9 +123,9 @@ def process_video(node):
 
         width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
         high_quality = get_node_value(node, "high_quality", False, return_type=bool, mode="value")
-        external = get_node_value(node, "external", False, return_type=bool, mode="value")
 
         body = VideoRequest(
+            model=VideoRequestModel(get_node_value(node, "model", UNSET, mode="value")),
             image=image,
             last_image=last_image,
             video=video_base64,
@@ -155,12 +137,7 @@ def process_video(node):
             high_quality=high_quality,
         )
 
-        if not external:
-            model = get_node_value(node, "model", "", mode="value")
-            _api_call(node, model, body, output_video_path, current_frame)
-        else:
-            model = get_node_value(node, "external_model", "", mode="value")
-            _api_call_external(node, model, body, output_video_path, current_frame)
+        _api_call(node, body, output_video_path, current_frame)
 
 
 def get_video(node):

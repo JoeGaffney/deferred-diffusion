@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from images.schemas import (
@@ -9,8 +9,6 @@ from images.schemas import (
     ImageRequest,
     ImageResponse,
     ImageWorkerResponse,
-    ModelNameExternal,
-    ModelNameLocal,
     generate_model_docs,
 )
 from worker import celery_app
@@ -20,33 +18,14 @@ router = APIRouter(
 )
 
 
-def _create_task(model: str, queue: str, request: ImageRequest, response: Response) -> ImageCreateResponse:
+@router.post("", response_model=ImageCreateResponse, operation_id="images_create", description=generate_model_docs())
+def create(request: ImageRequest, response: Response):
     try:
-        result = celery_app.send_task(model, queue=queue, args=[request.model_dump()])
+        result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
         response.headers["Location"] = f"/images/{result.id}"
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
-
-
-@router.post(
-    "/local/{model}",
-    response_model=ImageCreateResponse,
-    operation_id="images_create_local",
-    description=generate_model_docs(local=True),
-)
-def create_local(model: ModelNameLocal, request: ImageRequest, response: Response):
-    return _create_task(model, "gpu", request, response)
-
-
-@router.post(
-    "/external/{model}",
-    response_model=ImageCreateResponse,
-    operation_id="images_create_external",
-    description=generate_model_docs(local=False),
-)
-def create_external(model: ModelNameExternal, request: ImageRequest, response: Response):
-    return _create_task(model, "cpu", request, response)
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")

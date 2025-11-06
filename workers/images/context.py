@@ -19,8 +19,8 @@ from utils.utils import (
 
 
 class ImageContext:
-    def __init__(self, model: ModelName, data: ImageRequest):
-        self.model = model
+    def __init__(self, data: ImageRequest):
+        self.model = data.model
         self.data = data
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
         self.width = copy.copy(data.width)
