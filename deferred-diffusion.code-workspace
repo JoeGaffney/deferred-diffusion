@@ -25,7 +25,7 @@
     },
     {
       "path": "agentic",
-      "name": "Agentic"
+      "name": "agentic"
     }
   ],
   "settings": {
@@ -33,10 +33,10 @@
     "python.analysis.extraPaths": [
       "./api",
       "./workers",
+      "./agentic",
       "./clients/it_tests",
       "./clients/houdini/python",
-      "./clients/nuke/python",
-      "./agentic"
+      "./clients/nuke/python"
     ],
     "python.analysis.exclude": ["**/venv/**", "**/.git/**"],
     "python.analysis.indexing": true,
