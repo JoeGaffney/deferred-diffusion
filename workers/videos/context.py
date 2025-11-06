@@ -18,8 +18,8 @@ from videos.schemas import ModelName, VideoRequest
 
 
 class VideoContext:
-    def __init__(self, model: ModelName, data: VideoRequest):
-        self.model = model
+    def __init__(self, data: VideoRequest):
+        self.model = data.model
         self.data = data
         self.width = copy.copy(data.width)
         self.height = copy.copy(data.height)

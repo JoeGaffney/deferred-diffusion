@@ -31,17 +31,19 @@ def validate_result(result, expected_keyword=None):
 @pytest.mark.basic
 def test_image_description():
     data = TextRequest(
+        model="qwen-2",
         messages=[
             MessageItem(role="user", content=[MessageContent(type="text", text="Describe this image.")]),
         ],
         images=[image_a],
     )
-    result = main(TextContext("qwen-2", data))
+    result = main(TextContext(data))
     validate_result(result)
 
 
 def test_image_prompt_generation():
     data = TextRequest(
+        model="qwen-2",
         messages=[
             MessageItem(
                 role="user",
@@ -54,12 +56,13 @@ def test_image_prompt_generation():
         ],
         images=[image_a],
     )
-    result = main(TextContext("qwen-2", data))
+    result = main(TextContext(data))
     validate_result(result)
 
 
 def test_image_video_comparison():
     data = TextRequest(
+        model="qwen-2",
         messages=[
             MessageItem(
                 role="user",
@@ -73,5 +76,5 @@ def test_image_video_comparison():
         ],
         images=[image_a, image_b],
     )
-    result = main(TextContext("qwen-2", data))
+    result = main(TextContext(data))
     validate_result(result)

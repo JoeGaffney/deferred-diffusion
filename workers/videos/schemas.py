@@ -86,21 +86,23 @@ MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
 }
 
 
-def generate_model_docs(local: bool = True):
+def generate_model_docs():
     """Generate documentation about available video models"""
     docs = "# Generate videos using various diffusion models.\n\n"
-    if local:
-        docs += "# Local Models\n\n"
-        for model_name, model_info in sorted(MODEL_META_LOCAL.items()):
-            docs += model_info.to_doc_format(model_name)
-    else:
-        docs += "# External Models\n\n"
-        for model_name, model_info in sorted(MODEL_META_EXTERNAL.items()):  # type: ignore
-            docs += model_info.to_doc_format(model_name)
+
+    docs += "# Local Models\n\n"
+    for model_name, model_info in sorted(MODEL_META_LOCAL.items()):
+        docs += model_info.to_doc_format(model_name)
+
+    docs += "# External Models\n\n"
+    for model_name, model_info in sorted(MODEL_META_EXTERNAL.items()):
+        docs += model_info.to_doc_format(model_name)
+
     return docs
 
 
 class VideoRequest(BaseModel):
+    model: ModelName
     prompt: str = Field(
         default="Slow camera zoom in, 4k, high quality, cinematic, realistic",
         description="Positive Prompt text",
@@ -138,6 +140,21 @@ class VideoRequest(BaseModel):
         default=False,
         description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
     )
+
+    @property
+    def external_model(self) -> bool:
+        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
+
+        return self.model in _MODEL_EXTERNAL_VALUES
+
+    @property
+    def task_name(self) -> ModelName:
+        return self.model
+
+    @property
+    def task_queue(self) -> str:
+        """Return the task queue based on whether the model is external or not."""
+        return "cpu" if self.external_model else "gpu"
 
 
 class VideoWorkerResponse(BaseModel):

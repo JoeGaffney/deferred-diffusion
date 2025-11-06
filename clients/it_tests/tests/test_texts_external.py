@@ -5,19 +5,19 @@ from uuid import UUID
 
 import pytest
 
-from generated.api_client.api.texts import texts_create_external, texts_get
+from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models import (
     MessageContent,
     MessageItem,
     TextCreateResponse,
     TextRequest,
+    TextRequestModel,
     TextResponse,
-    TextsCreateExternalModel,
 )
 from utils import image_a
 
-external_models = [TextsCreateExternalModel("gpt-4")]
+models = [TextRequestModel("gpt-4")]
 
 
 @pytest.fixture
@@ -31,6 +31,7 @@ def api_client():
 def create_text(api_client, model):
     """Helper function to create a text and return its ID."""
     request = TextRequest(
+        model=model,
         messages=[
             MessageItem(
                 role="user",
@@ -45,7 +46,7 @@ def create_text(api_client, model):
         images=[image_a],
     )
 
-    response = texts_create_external.sync_detailed(client=api_client, model=model, body=request)
+    response = texts_create.sync_detailed(client=api_client, body=request)
 
     assert response.status_code == HTTPStatus.OK
     assert response.parsed is not None
@@ -57,7 +58,7 @@ def create_text(api_client, model):
 
 
 @pytest.mark.external
-@pytest.mark.parametrize("model", external_models)
+@pytest.mark.parametrize("model", models)
 def test_create_text(api_client, model):
     """Test retrieving a text by ID."""
     text_id = create_text(api_client, model)

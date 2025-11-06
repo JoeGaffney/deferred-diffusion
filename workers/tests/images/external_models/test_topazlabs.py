@@ -20,8 +20,8 @@ def test_image_to_image(model):
 
     result = main(
         ImageContext(
-            model,
             ImageRequest(
+                model=model,
                 prompt="Change to night time and add rain and lighting",
                 strength=0.5,
                 image=image_to_base64("../assets/color_v001.jpeg"),
