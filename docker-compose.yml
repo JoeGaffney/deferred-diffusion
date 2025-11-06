@@ -13,6 +13,21 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
 
+  mpc:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: fastmcp run mcp_server.py:mcp --transport http --host 0.0.0.0 --port 5001
+    tty: true
+    stdin_open: true
+    ports:
+      - "5001:5001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
+
   # Redis service as message broker
   redis:
     image: redis:latest
