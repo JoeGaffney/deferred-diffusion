@@ -18,45 +18,46 @@ async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: lis
     chatbot.append({"role": "user", "content": prompt})
     yield gr.Textbox(interactive=False, value=""), chatbot, gr.skip()
 
-    async with chat_agent.run_stream(prompt, deps=deps, message_history=past_messages) as result:
-        for message in result.new_messages():
-            for call in message.parts:
-                if isinstance(call, ToolCallPart):
-                    call_args = call.args_as_json_str()
-                    metadata = {
-                        "title": f"🛠️ Using {call.tool_name}",
-                    }
-                    if call.tool_call_id is not None:
-                        metadata["id"] = call.tool_call_id
+    async with chat_agent.run_mcp_servers():
+        async with chat_agent.run_stream(prompt, deps=deps, message_history=past_messages) as result:
+            for message in result.new_messages():
+                for call in message.parts:
+                    if isinstance(call, ToolCallPart):
+                        call_args = call.args_as_json_str()
+                        metadata = {
+                            "title": f"🛠️ Using {call.tool_name}",
+                        }
+                        if call.tool_call_id is not None:
+                            metadata["id"] = call.tool_call_id
 
-                    gr_message = {
-                        "role": "assistant",
-                        "content": "Parameters: " + call_args,
-                        "metadata": metadata,
-                    }
-                    chatbot.append(gr_message)
-                if isinstance(call, ToolReturnPart):
-                    print("Tool return part received:", call)
-                    for gr_message in chatbot:
-                        if gr_message.get("metadata", {}).get("id", "") == call.tool_call_id:
-                            if isinstance(call.content, BaseModel):
-                                json_content = call.content.model_dump_json()
-                            else:
-                                json_content = json.dumps(call.content)
-                            gr_message["content"] += f"\nOutput: {json_content}"
+                        gr_message = {
+                            "role": "assistant",
+                            "content": "Parameters: " + call_args,
+                            "metadata": metadata,
+                        }
+                        chatbot.append(gr_message)
+                    if isinstance(call, ToolReturnPart):
+                        print("Tool return part received:", call)
+                        for gr_message in chatbot:
+                            if gr_message.get("metadata", {}).get("id", "") == call.tool_call_id:
+                                if isinstance(call.content, BaseModel):
+                                    json_content = call.content.model_dump_json()
+                                else:
+                                    json_content = json.dumps(call.content)
+                                gr_message["content"] += f"\nOutput: {json_content}"
 
-                print("Updated chatbot:", call)
+                    print("Updated chatbot:", call)
+                    yield gr.skip(), chatbot, gr.skip()
+
+            print("Streaming result completed.")
+            chatbot.append({"role": "assistant", "content": ""})
+            async for message in result.stream_text():
+                chatbot[-1]["content"] = message
                 yield gr.skip(), chatbot, gr.skip()
 
-        print("Streaming result completed.")
-        chatbot.append({"role": "assistant", "content": ""})
-        async for message in result.stream_text():
-            chatbot[-1]["content"] = message
-            yield gr.skip(), chatbot, gr.skip()
-
-        past_messages = result.all_messages()
-        print("Final past messages:", past_messages)
-        yield gr.Textbox(interactive=True), gr.skip(), past_messages
+            past_messages = result.all_messages()
+            print("Final past messages:", past_messages)
+            yield gr.Textbox(interactive=True), gr.skip(), past_messages
 
 
 # async def handle_retry(chatbot, past_messages: list, retry_data: gr.RetryData):
