@@ -9,12 +9,11 @@ from common.auth import verify_token
 from images.schemas import (
     MODEL_META,
     ImageCreateResponse,
+    ImageModelsResponse,
     ImageRequest,
     ImageResponse,
     ImageWorkerResponse,
     InferredMode,
-    ModelInfo,
-    ModelName,
     generate_model_docs,
 )
 from worker import celery_app
@@ -40,10 +39,7 @@ def create(request: ImageRequest, response: Response):
 
 
 @router.get(
-    "/models",
-    response_model=Dict[ModelName, ModelInfo],
-    summary="List image models",
-    operation_id="images_list_models",
+    "/models", response_model=ImageModelsResponse, summary="List image models", operation_id="images_list_models"
 )
 def models(
     mode: Optional[InferredMode] = Query(default=None),
@@ -63,7 +59,7 @@ def models(
     summary="Image model capability docs (Markdown)",
     operation_id="images_model_docs",
 )
-def docs():
+def image_model_docs():
     return generate_model_docs()
 
 

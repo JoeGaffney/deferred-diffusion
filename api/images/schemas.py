@@ -1,7 +1,7 @@
 from typing import Any, Dict, Literal, Optional, TypeAlias, Union, get_args
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, Field, model_validator
+from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -23,7 +23,7 @@ InferredMode: TypeAlias = Literal["text_to_image", "image_to_image", "inpainting
 Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
-class ModelInfo(BaseModel):
+class ImagesModelInfo(BaseModel):
     provider: Provider = Field(description="Source/provider identifier")
     external: bool = Field(description="True if the model is invoked via an external API")
     supported_modes: set[InferredMode] = Field(default_factory=set)
@@ -39,80 +39,80 @@ class ModelInfo(BaseModel):
 
 
 # Unified metadata
-MODEL_META: Dict[ModelName, ModelInfo] = {
-    "sd-xl": ModelInfo(
+MODEL_META: Dict[ModelName, ImagesModelInfo] = {
+    "sd-xl": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"text_to_image", "image_to_image", "inpainting"},
         references=True,
         description="Stable Diffusion XL variant with broad adapter/control support.",
     ),
-    "sd-3": ModelInfo(
+    "sd-3": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"text_to_image", "image_to_image", "inpainting"},
         description="Stable Diffusion 3.5 for complex compositions.",
     ),
-    "flux-1": ModelInfo(
+    "flux-1": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"text_to_image", "image_to_image", "inpainting"},
         references=True,
         description="FLUX dev model (Krea tuned). Uses Kontext for img2img, Fill for inpainting.",
     ),
-    "qwen-image": ModelInfo(
+    "qwen-image": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"text_to_image", "image_to_image", "inpainting"},
         references=True,
         description="Qwen image generation and manipulation.",
     ),
-    "depth-anything-2": ModelInfo(
+    "depth-anything-2": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"image_to_image"},
         description="Depth estimation pipeline.",
     ),
-    "segment-anything-2": ModelInfo(
+    "segment-anything-2": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"image_to_image"},
         description="Segmentation pipeline.",
     ),
-    "gpt-image-1": ModelInfo(
+    "gpt-image-1": ImagesModelInfo(
         provider="openai",
         external=True,
         supported_modes={"text_to_image", "image_to_image", "inpainting"},
         references=True,
         description="OpenAI image model.",
     ),
-    "runway-gen4-image": ModelInfo(
+    "runway-gen4-image": ImagesModelInfo(
         provider="runway",
         external=True,
         supported_modes={"text_to_image", "image_to_image"},
         references=True,
         description="Runway Gen-4 image model.",
     ),
-    "flux-1-pro": ModelInfo(
+    "flux-1-pro": ImagesModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text_to_image", "image_to_image", "inpainting"},
         description="FLUX 1.1 Pro variants via external provider.",
     ),
-    "topazlabs-upscale": ModelInfo(
+    "topazlabs-upscale": ImagesModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"image_to_image"},
         description="Topaz upscale model.",
     ),
-    "google-gemini-2": ModelInfo(
+    "google-gemini-2": ImagesModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text_to_image", "image_to_image"},
         references=True,
         description="Gemini multimodal image model.",
     ),
-    "bytedance-seedream-4": ModelInfo(
+    "bytedance-seedream-4": ImagesModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text_to_image", "image_to_image"},
@@ -214,7 +214,7 @@ class ImageRequest(BaseModel):
         return "text_to_image"
 
     @property
-    def meta(self) -> ModelInfo:
+    def meta(self) -> ImagesModelInfo:
         return MODEL_META[self.model]
 
     @property
@@ -250,9 +250,8 @@ class ImageResponse(BaseModel):
     status: str
     result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
@@ -262,16 +261,21 @@ class ImageResponse(BaseModel):
                 "error_message": None,
             }
         }
+    )
 
 
 class ImageCreateResponse(BaseModel):
     id: UUID
     status: str
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "PENDING",
             }
         }
+    )
+
+
+class ImageModelsResponse(BaseModel):
+    models: Dict[ModelName, ImagesModelInfo]

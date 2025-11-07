@@ -1,7 +1,7 @@
 from typing import Dict, List, Literal, Optional, TypeAlias, get_args
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 ModelNameLocal: TypeAlias = Literal["qwen-2"]
 
@@ -105,9 +105,8 @@ class TextResponse(BaseModel):
     status: str
     result: Optional[TextWorkerResponse] = None
     error_message: Optional[str] = None
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
@@ -118,16 +117,17 @@ class TextResponse(BaseModel):
                 "error_message": None,
             }
         }
+    )
 
 
 class TextCreateResponse(BaseModel):
     id: UUID
     status: str
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "PENDING",
             }
         }
+    )

@@ -1,7 +1,7 @@
 from typing import Dict, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, Field, model_validator
+from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -22,7 +22,7 @@ InferredMode: TypeAlias = Literal["text_to_video", "image_to_video", "video_to_v
 Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
-class ModelInfo(BaseModel):
+class VideosModelInfo(BaseModel):
     provider: Provider = Field(description="Source/provider identifier")
     external: bool = Field(description="True if the model is invoked via an external API")
     supported_modes: set[InferredMode] = Field(default_factory=set)
@@ -37,70 +37,70 @@ class ModelInfo(BaseModel):
 
 
 # Unified metadata (local + external)
-MODEL_META: Dict[ModelName, ModelInfo] = {
+MODEL_META: Dict[ModelName, VideosModelInfo] = {
     # Local
-    "ltx-video": ModelInfo(
+    "ltx-video": VideosModelInfo(
         provider="local",
         external=False,
         supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
         description="Fast but more limited video generation model. Good for quick iterations and less complex scenes.",
     ),
-    "wan-2": ModelInfo(
+    "wan-2": VideosModelInfo(
         provider="local",
         external=False,
         supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
         description="Wan 2.2, quality open-source video generation model. Good motion coherence for varied scenes.",
     ),
     # External
-    "runway-gen-4": ModelInfo(
+    "runway-gen-4": VideosModelInfo(
         provider="runway",
         external=True,
         supported_modes={"text_to_video", "image_to_video"},
         description="Runway Gen-4 general video generation (text/image to video).",
     ),
-    "runway-act-two": ModelInfo(
+    "runway-act-two": VideosModelInfo(
         provider="runway",
         external=True,
         supported_modes={"text_to_video", "image_to_video", "video_to_video"},
         description="Updates an input video with a reference image (image+video to video).",
     ),
-    "runway-upscale": ModelInfo(
+    "runway-upscale": VideosModelInfo(
         provider="runway",
         external=True,
         supported_modes={"video_to_video"},
         description="Video upscaling model (video-to-video).",
     ),
-    "runway-gen-4-aleph": ModelInfo(
+    "runway-gen-4-aleph": VideosModelInfo(
         provider="runway",
         external=True,
         supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
         description="Aleph variant: can enhance/alter existing video and use image references.",
     ),
-    "bytedance-seedance-1": ModelInfo(
+    "bytedance-seedance-1": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text_to_video", "image_to_video"},
         description="Seedance-1 fast general video generation.",
     ),
-    "kwaivgi-kling-2": ModelInfo(
+    "kwaivgi-kling-2": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text_to_video", "image_to_video"},
         description="Kling V2 high-quality text/image to video generation.",
     ),
-    "google-veo-3": ModelInfo(
+    "google-veo-3": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text_to_video", "image_to_video"},
         description="VEO-3 flagship model. Supports high_quality variant.",
     ),
-    "openai-sora-2": ModelInfo(
+    "openai-sora-2": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text_to_video", "image_to_video"},
         description="Sora 2 high-end text/image to video generation. Supports high_quality variant.",
     ),
-    "minimax-hailuo-2": ModelInfo(
+    "minimax-hailuo-2": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text_to_video"},
@@ -176,7 +176,7 @@ class VideoRequest(BaseModel):
         return "text_to_video"
 
     @property
-    def meta(self) -> ModelInfo:
+    def meta(self) -> VideosModelInfo:
         return MODEL_META[self.model]
 
     @property
@@ -212,9 +212,8 @@ class VideoResponse(BaseModel):
     status: str
     result: Optional[VideoWorkerResponse] = None
     error_message: Optional[str] = None
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
@@ -224,16 +223,21 @@ class VideoResponse(BaseModel):
                 "error_message": None,
             }
         }
+    )
 
 
 class VideoCreateResponse(BaseModel):
     id: UUID
     status: str
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "PENDING",
             }
         }
+    )
+
+
+class VideoModelsResponse(BaseModel):
+    models: Dict[ModelName, VideosModelInfo]

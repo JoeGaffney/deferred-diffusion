@@ -9,9 +9,8 @@ from common.auth import verify_token
 from videos.schemas import (
     MODEL_META,
     InferredMode,
-    ModelInfo,
-    ModelName,
     VideoCreateResponse,
+    VideoModelsResponse,
     VideoRequest,
     VideoResponse,
     VideoWorkerResponse,
@@ -33,21 +32,19 @@ def create(request: VideoRequest, response: Response):
 
 
 @router.get(
-    "/models",
-    response_model=Dict[ModelName, ModelInfo],
-    summary="List video models",
-    operation_id="videos_list_models",
+    "/models", response_model=VideoModelsResponse, summary="List video models", operation_id="videos_list_models"
 )
 def models(
     mode: Optional[InferredMode] = Query(default=None),
     external: Optional[bool] = Query(default=None),
 ):
-    # Filter by capability/provider/externality
-    return {
-        name: meta
-        for name, meta in MODEL_META.items()
-        if (external is None or meta.external == external) and (mode is None or meta.supports_inferred_mode(mode))
-    }
+    return VideoModelsResponse(
+        models={
+            name: meta
+            for name, meta in MODEL_META.items()
+            if (external is None or meta.external == external) and (mode is None or meta.supports_inferred_mode(mode))
+        }
+    )
 
 
 @router.get(
