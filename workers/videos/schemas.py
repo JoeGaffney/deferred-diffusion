@@ -1,23 +1,7 @@
-from typing import Dict, Literal, Optional, TypeAlias, Union, get_args
+from typing import Dict, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, Field
-
-ModelNameLocal: TypeAlias = Literal["ltx-video", "wan-2"]
-
-# External-only model names (convenience alias)
-ModelNameExternal: TypeAlias = Literal[
-    "runway-gen-4",
-    "runway-act-two",
-    "runway-upscale",
-    "runway-gen-4-aleph",
-    "bytedance-seedance-1",
-    "kwaivgi-kling-2",
-    "google-veo-3",
-    "openai-sora-2",
-    "minimax-hailuo-2",
-]
-
+from pydantic import Base64Bytes, BaseModel, Field, model_validator
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -34,71 +18,111 @@ ModelName: TypeAlias = Literal[
     "minimax-hailuo-2",
 ]
 
+InferredMode: TypeAlias = Literal["text_to_video", "image_to_video", "video_to_video", "first_last_frame"]
+Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
+
 
 class ModelInfo(BaseModel):
-    description: str
+    provider: Provider = Field(description="Source/provider identifier")
+    external: bool = Field(description="True if the model is invoked via an external API")
+    supported_modes: set[InferredMode] = Field(default_factory=set)
+    description: Optional[str] = None
 
-    def to_doc_format(self, model_name: str) -> str:
-        """Generate documentation for this model"""
-        doc = f"### {model_name}\n\n"
-        doc += f"{self.description}\n\n"
-        doc += "\n"
-        return doc
+    @property
+    def queue(self) -> str:
+        return "cpu" if self.external else "gpu"
+
+    def supports_inferred_mode(self, mode: InferredMode) -> bool:
+        return mode in self.supported_modes
 
 
-MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
+# Unified metadata (local + external)
+MODEL_META: Dict[ModelName, ModelInfo] = {
+    # Local
     "ltx-video": ModelInfo(
-        description="Fast but more limted video generation model. Good for quick iterations and less complex scenes.",
+        provider="local",
+        external=False,
+        supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
+        description="Fast but more limited video generation model. Good for quick iterations and less complex scenes.",
     ),
     "wan-2": ModelInfo(
-        description="Wan 2.2, best open-source video generation model. Good quality and motion coherence for a variety of scenes.",
+        provider="local",
+        external=False,
+        supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
+        description="Wan 2.2, quality open-source video generation model. Good motion coherence for varied scenes.",
     ),
-}
-
-MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
+    # External
     "runway-gen-4": ModelInfo(
-        description="Runway's latest Gen-4 showing it's age fast computer time. Good for a variety of video generation tasks with improved quality over Gen-3.",
+        provider="runway",
+        external=True,
+        supported_modes={"text_to_video", "image_to_video"},
+        description="Runway Gen-4 general video generation (text/image to video).",
     ),
     "runway-act-two": ModelInfo(
-        description="Runway's Act Two model updates a video with reference image. Ideal for enhancing existing footage with new visual elements while maintaining original motion and style.",
+        provider="runway",
+        external=True,
+        supported_modes={"text_to_video", "image_to_video", "video_to_video"},
+        description="Updates an input video with a reference image (image+video to video).",
     ),
     "runway-upscale": ModelInfo(
-        description="Runway's Upscale model for high-quality video upscaling. Utilizes advanced techniques to enhance video resolution and detail.",
+        provider="runway",
+        external=True,
+        supported_modes={"video_to_video"},
+        description="Video upscaling model (video-to-video).",
     ),
     "runway-gen-4-aleph": ModelInfo(
-        description="Runway's Gen-4 Aleph model, takes in video input as well as images and can enhance or change the video. Or even generate new video content based on the input images and video. Ideal for creative video transformations and enhancements.",
+        provider="runway",
+        external=True,
+        supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
+        description="Aleph variant: can enhance/alter existing video and use image references.",
     ),
     "bytedance-seedance-1": ModelInfo(
-        description="ByteDance's Seedance-1 model, Pretty strong overall and quite fast. Good for a variety of video generation tasks with decent quality and speed.",
+        provider="replicate",
+        external=True,
+        supported_modes={"text_to_video", "image_to_video"},
+        description="Seedance-1 fast general video generation.",
     ),
     "kwaivgi-kling-2": ModelInfo(
-        description="Kling V2 model by kwaivgi, designed for high-quality video generation from text prompts. Known for its ability to create detailed and coherent video sequences.",
+        provider="replicate",
+        external=True,
+        supported_modes={"text_to_video", "image_to_video"},
+        description="Kling V2 high-quality text/image to video generation.",
     ),
     "google-veo-3": ModelInfo(
-        description="Google's VEO-3 model, high end flagship model. Supports high_quality parameter for slower but higher quality variant.",
+        provider="replicate",
+        external=True,
+        supported_modes={"text_to_video", "image_to_video"},
+        description="VEO-3 flagship model. Supports high_quality variant.",
     ),
     "openai-sora-2": ModelInfo(
-        description="OpenAI's Sora 2 model, high-end video generation model known for producing high-quality and realistic videos from text prompts. Supports high_quality parameter for pro variant. Ideal for professional-grade video content creation.",
+        provider="replicate",
+        external=True,
+        supported_modes={"text_to_video", "image_to_video"},
+        description="Sora 2 high-end text/image to video generation. Supports high_quality variant.",
     ),
     "minimax-hailuo-2": ModelInfo(
-        description="Minimax's Hailuo-2.3 model, advanced video generation with support for both 6s and 10s duration videos. Supports 768p and 1080p resolutions with prompt optimization capabilities.",
+        provider="replicate",
+        external=True,
+        supported_modes={"text_to_video"},
+        description="Hailuo-2.3 text-to-video with multiple duration/resolution options.",
     ),
 }
 
 
 def generate_model_docs():
-    """Generate documentation about available video models"""
-    docs = "# Generate videos using various diffusion models.\n\n"
-
-    docs += "# Local Models\n\n"
-    for model_name, model_info in sorted(MODEL_META_LOCAL.items()):
-        docs += model_info.to_doc_format(model_name)
-
-    docs += "# External Models\n\n"
-    for model_name, model_info in sorted(MODEL_META_EXTERNAL.items()):
-        docs += model_info.to_doc_format(model_name)
-
-    return docs
+    header = (
+        "# Video Models\n"
+        "External models proxy to provider APIs; local models run on your GPU.\n\n"
+        "| Model | Provider | External | Queue | Modes | Description |\n"
+        "|-------|----------|:--------:|:-----:|-------|-------------|\n"
+    )
+    rows = []
+    for name, meta in MODEL_META.items():
+        modes = ", ".join(sorted(meta.supported_modes))
+        rows.append(
+            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | {modes} | {meta.description or ''} |"
+        )
+    return header + "\n".join(rows) + "\n"
 
 
 class VideoRequest(BaseModel):
@@ -114,7 +138,7 @@ class VideoRequest(BaseModel):
     seed: int = 42
     image: Optional[str] = Field(
         default=None,
-        description="Base64 image string",
+        description="Base64 image string used for image-to-video conditioning or reference.",
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
@@ -122,7 +146,7 @@ class VideoRequest(BaseModel):
     )
     last_image: Optional[str] = Field(
         default=None,
-        description="Optional Base64 image string for the last image/frame in image-to-video generation",
+        description="Optional Base64 image string for the last frame guidance in image-to-video generation (requires image).",
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
@@ -130,7 +154,7 @@ class VideoRequest(BaseModel):
     )
     video: Optional[str] = Field(
         default=None,
-        description="Optional Base64 video string for video input",
+        description="Optional Base64 video string for video-to-video transformation or upscaling.",
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "video/*",
@@ -142,10 +166,22 @@ class VideoRequest(BaseModel):
     )
 
     @property
-    def external_model(self) -> bool:
-        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
+    def inferred_mode(self) -> InferredMode:
+        if self.video:
+            return "video_to_video"
+        if self.image and self.last_image:
+            return "first_last_frame"
+        if self.image:
+            return "image_to_video"
+        return "text_to_video"
 
-        return self.model in _MODEL_EXTERNAL_VALUES
+    @property
+    def meta(self) -> ModelInfo:
+        return MODEL_META[self.model]
+
+    @property
+    def external_model(self) -> bool:
+        return self.meta.external
 
     @property
     def task_name(self) -> ModelName:
@@ -153,8 +189,18 @@ class VideoRequest(BaseModel):
 
     @property
     def task_queue(self) -> str:
-        """Return the task queue based on whether the model is external or not."""
-        return "cpu" if self.external_model else "gpu"
+        return self.meta.queue
+
+    @model_validator(mode="after")
+    def _validate_capabilities(self):
+        mode = self.inferred_mode
+        if not self.meta.supports_inferred_mode(mode):
+            raise ValueError(f"Model '{self.model}' does not support mode '{mode}'.")
+        if self.last_image and not self.image:
+            raise ValueError("last_image requires image.")
+        if self.video and not self.image:
+            raise ValueError("video requires image.")
+        return self
 
 
 class VideoWorkerResponse(BaseModel):

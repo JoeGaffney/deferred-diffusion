@@ -45,7 +45,7 @@ def create(request: ImageRequest, response: Response):
     summary="List image models",
     operation_id="images_list_models",
 )
-def list_image_models(
+def models(
     mode: Optional[InferredMode] = Query(default=None),
     external: Optional[bool] = Query(default=None),
 ):
@@ -63,7 +63,7 @@ def list_image_models(
     summary="Image model capability docs (Markdown)",
     operation_id="images_model_docs",
 )
-def image_model_docs():
+def docs():
     return generate_model_docs()
 
 

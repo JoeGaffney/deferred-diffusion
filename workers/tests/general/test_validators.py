@@ -13,7 +13,7 @@ def test_mask_requires_image():
 def test_gemini_rejects_inpainting():
     with pytest.raises(ValidationError) as e:
         ImageRequest(model="google-gemini-2", prompt="p", image="base64img", mask="base64mask")
-    assert "does not support mode 'image_to_image_inpainting'" in str(e.value)
+    assert "does not support mode 'inpainting'" in str(e.value)
 
 
 def test_references_not_supported_for_depth():

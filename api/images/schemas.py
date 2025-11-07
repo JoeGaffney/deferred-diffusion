@@ -19,16 +19,15 @@ ModelName: TypeAlias = Literal[
     "google-gemini-2",
     "bytedance-seedream-4",
 ]
-InferredMode: TypeAlias = Literal["text_to_image", "image_to_image", "image_to_image_inpainting"]
+InferredMode: TypeAlias = Literal["text_to_image", "image_to_image", "inpainting"]
+Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
 class ModelInfo(BaseModel):
-    provider: str = Field(description="Source/provider identifier (local, openai, runway, replicate, etc.)")
+    provider: Provider = Field(description="Source/provider identifier")
     external: bool = Field(description="True if the model is invoked via an external API")
-    text: bool = False
-    image: bool = False
-    mask: bool = False
-    references: bool = False
+    supported_modes: set[InferredMode] = Field(default_factory=set)
+    references: bool = False  # separate capability flag
     description: Optional[str] = None
 
     @property
@@ -36,13 +35,7 @@ class ModelInfo(BaseModel):
         return "cpu" if self.external else "gpu"
 
     def supports_inferred_mode(self, mode: InferredMode) -> bool:
-        if mode == "text_to_image":
-            return self.text
-        if mode == "image_to_image":
-            return self.image
-        if mode == "image_to_image_inpainting":
-            return self.image and self.mask
-        return False
+        return mode in self.supported_modes
 
 
 # Unified metadata
@@ -50,94 +43,79 @@ MODEL_META: Dict[ModelName, ModelInfo] = {
     "sd-xl": ModelInfo(
         provider="local",
         external=False,
-        text=True,
-        image=True,
-        mask=True,
+        supported_modes={"text_to_image", "image_to_image", "inpainting"},
         references=True,
         description="Stable Diffusion XL variant with broad adapter/control support.",
     ),
     "sd-3": ModelInfo(
         provider="local",
         external=False,
-        text=True,
-        image=True,
-        mask=True,
+        supported_modes={"text_to_image", "image_to_image", "inpainting"},
         description="Stable Diffusion 3.5 for complex compositions.",
     ),
     "flux-1": ModelInfo(
         provider="local",
         external=False,
-        text=True,
-        image=True,
-        mask=True,
+        supported_modes={"text_to_image", "image_to_image", "inpainting"},
         references=True,
         description="FLUX dev model (Krea tuned). Uses Kontext for img2img, Fill for inpainting.",
     ),
     "qwen-image": ModelInfo(
         provider="local",
         external=False,
-        text=True,
-        image=True,
-        mask=True,
+        supported_modes={"text_to_image", "image_to_image", "inpainting"},
         references=True,
         description="Qwen image generation and manipulation.",
     ),
     "depth-anything-2": ModelInfo(
         provider="local",
         external=False,
-        image=True,
+        supported_modes={"image_to_image"},
         description="Depth estimation pipeline.",
     ),
     "segment-anything-2": ModelInfo(
         provider="local",
         external=False,
-        image=True,
+        supported_modes={"image_to_image"},
         description="Segmentation pipeline.",
     ),
     "gpt-image-1": ModelInfo(
         provider="openai",
         external=True,
-        text=True,
-        image=True,
-        mask=True,
+        supported_modes={"text_to_image", "image_to_image", "inpainting"},
         references=True,
         description="OpenAI image model.",
     ),
     "runway-gen4-image": ModelInfo(
         provider="runway",
         external=True,
-        text=True,
-        image=True,
+        supported_modes={"text_to_image", "image_to_image"},
         references=True,
         description="Runway Gen-4 image model.",
     ),
     "flux-1-pro": ModelInfo(
         provider="replicate",
         external=True,
-        text=True,
-        image=True,
-        mask=True,
+        supported_modes={"text_to_image", "image_to_image", "inpainting"},
         description="FLUX 1.1 Pro variants via external provider.",
     ),
     "topazlabs-upscale": ModelInfo(
         provider="replicate",
         external=True,
-        image=True,
+        supported_modes={"image_to_image"},
         description="Topaz upscale model.",
     ),
     "google-gemini-2": ModelInfo(
         provider="replicate",
         external=True,
-        text=True,
-        image=True,
+        supported_modes={"text_to_image", "image_to_image"},
         references=True,
         description="Gemini multimodal image model.",
     ),
     "bytedance-seedream-4": ModelInfo(
         provider="replicate",
         external=True,
-        text=True,
-        image=True,
+        supported_modes={"text_to_image", "image_to_image"},
         references=True,
         description="Seedream image-to-image context model.",
     ),
@@ -148,15 +126,14 @@ def generate_model_docs():
     header = (
         "# Image Models\n"
         "External models proxy to provider APIs; local models run on your GPU.\n\n"
-        "| Model | Provider | External | Queue | Text | Image | Mask | References | Description |\n"
-        "|-------|----------|:--------:|:-----:|:----:|:-----:|:----:|:----------:|-------------|\n"
+        "| Model | Provider | External | Queue | Modes | References | Description |\n"
+        "|-------|----------|:--------:|:-----:|-------|:----------:|-------------|\n"
     )
     rows = []
     for name, meta in MODEL_META.items():
+        modes = ", ".join(sorted(meta.supported_modes))
         rows.append(
-            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | "
-            f"{'✓' if meta.text else '✗'} | {'✓' if meta.image else '✗'} | {'✓' if meta.mask else '✗'} | "
-            f"{'✓' if meta.references else '✗'} | {meta.description or ''} |"
+            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | {modes} | {'✓' if meta.references else '✗'} | {meta.description or ''} |"
         )
     return header + "\n".join(rows) + "\n"
 
@@ -231,7 +208,7 @@ class ImageRequest(BaseModel):
     @property
     def inferred_mode(self) -> InferredMode:
         if self.mask and self.image:
-            return "image_to_image_inpainting"
+            return "inpainting"
         if self.image:
             return "image_to_image"
         return "text_to_image"

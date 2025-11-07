@@ -1,10 +1,16 @@
+from typing import Dict, Literal, Optional
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import PlainTextResponse
 
 from common.auth import verify_token
 from videos.schemas import (
+    MODEL_META,
+    InferredMode,
+    ModelInfo,
+    ModelName,
     VideoCreateResponse,
     VideoRequest,
     VideoResponse,
@@ -24,6 +30,34 @@ def create(request: VideoRequest, response: Response):
         return VideoCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.get(
+    "/models",
+    response_model=Dict[ModelName, ModelInfo],
+    summary="List video models",
+    operation_id="videos_list_models",
+)
+def models(
+    mode: Optional[InferredMode] = Query(default=None),
+    external: Optional[bool] = Query(default=None),
+):
+    # Filter by capability/provider/externality
+    return {
+        name: meta
+        for name, meta in MODEL_META.items()
+        if (external is None or meta.external == external) and (mode is None or meta.supports_inferred_mode(mode))
+    }
+
+
+@router.get(
+    "/models/docs",
+    response_class=PlainTextResponse,
+    summary="Video model capability docs (Markdown)",
+    operation_id="videos_model_docs",
+)
+def docs():
+    return generate_model_docs()
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
