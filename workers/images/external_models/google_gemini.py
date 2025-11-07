@@ -49,13 +49,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
 
 
 def main(context: ImageContext) -> Image.Image:
-    mode = context.get_generation_mode()
-
-    if mode == "text_to_image":
-        if context.get_reference_images() != []:
-            return image_to_image_call(context)
-        return text_to_image_call(context)
-    elif mode == "img_to_img" or mode == "inpainting":
+    if context.color_image or context.get_reference_images() != []:
         return image_to_image_call(context)
 
-    raise ValueError(f"Invalid mode {mode}")
+    return text_to_image_call(context)

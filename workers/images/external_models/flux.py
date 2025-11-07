@@ -70,14 +70,9 @@ def inpainting_call(context: ImageContext) -> Image.Image:
 
 
 def main(context: ImageContext) -> Image.Image:
-    mode = context.get_generation_mode()
-
-    # OpenAI-specific handling of text_to_image with adapters
-    if mode == "text_to_image":
-        return text_to_image_call(context)
-    elif mode == "img_to_img":
-        return image_to_image_call(context)
-    elif mode == "img_to_img_inpainting":
+    if context.color_image and context.mask_image:
         return inpainting_call(context)
+    elif context.color_image:
+        return image_to_image_call(context)
 
-    raise ValueError(f"Invalid mode {mode} for OpenAI API")
+    return text_to_image_call(context)
