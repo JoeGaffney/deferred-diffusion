@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from pydantic_ai import ToolCallPart, ToolReturnPart
 
 from agents.chat_agent import Deps, chat_agent
+from utils.utils import CACHE_DIR
 from views.history import create_history_component
 
 TOOL_TO_DISPLAY_NAME = {"get_lat_lng": "Geocoding API", "get_weather": "Weather API"}
@@ -44,9 +45,36 @@ async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: lis
                                 if gr_message.get("metadata", {}).get("id", "") == id:
                                     if isinstance(call.content, BaseModel):
                                         json_content = call.content.model_dump_json()
+                                        content_dict = call.content.model_dump()
                                     else:
                                         json_content = json.dumps(call.content)
+                                        content_dict = call.content if isinstance(call.content, dict) else {}
+
+                                    # Check if there's a local file path for an image
+                                    local_file_path = None
+                                    if isinstance(content_dict, dict):
+                                        # Handle nested result structure
+                                        if "result" in content_dict and isinstance(content_dict["result"], dict):
+                                            local_file_path = content_dict["result"].get("local_file_path")
+                                        else:
+                                            local_file_path = content_dict.get("local_file_path")
+
                                     gr_message["content"] += f"\nOutput: {json_content}"
+
+                                    # Add image display if local file path exists and is an image
+                                    if local_file_path and str(local_file_path).lower().endswith((".png")):
+                                        media_message = {
+                                            "role": "assistant",
+                                            "content": gr.Image(value=local_file_path, label=local_file_path),
+                                        }
+                                        chatbot.append(media_message)
+                                    if local_file_path and str(local_file_path).lower().endswith((".mp4")):
+                                        media_message = {
+                                            "role": "assistant",
+                                            "content": gr.Video(value=local_file_path),
+                                        }
+                                        chatbot.append(media_message)
+
                     # must yield after each tool call part to stream properly ??
                     yield gr.skip(), chatbot, gr.skip()
 
@@ -110,5 +138,6 @@ with gr.Blocks() as demo:
     chatbot.retry(handle_retry, [chatbot, past_messages], [prompt, chatbot, past_messages])
     chatbot.undo(undo, [chatbot, past_messages], [prompt, chatbot, past_messages])
 
+
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(allowed_paths=[str(CACHE_DIR)])

@@ -13,30 +13,16 @@ from __future__ import annotations as _annotations
 
 import asyncio
 import base64
-import json
 import os
-import tempfile
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
-
-import logfire
 
 # from httpx import AsyncClient
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.mcp import (
-    CallToolFunc,
-    MCPServerStdio,
-    MCPServerStreamableHTTP,
-    ProcessToolCallback,
-    ToolResult,
-)
+from pydantic_ai.mcp import CallToolFunc, MCPServerStreamableHTTP, ToolResult
 
-# Create cache directory in system temp
-CACHE_DIR = Path(tempfile.gettempdir()) / "deferred_diffusion_cache"
-CACHE_DIR.mkdir(exist_ok=True)
-
+from utils.utils import CACHE_DIR
 
 # Create a global MCP server instance to avoid repeated connections
 _mcp_server = None

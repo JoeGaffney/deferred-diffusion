@@ -2,12 +2,18 @@ import asyncio
 import base64
 import io
 import os
+import tempfile
 import time
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 from PIL import Image
 
 from common.logger import logger
+
+CACHE_DIR = Path(tempfile.gettempdir()) / "deferred_diffusion_cache"
+CACHE_DIR.mkdir(exist_ok=True)
 
 
 def _convert_image_to_base64(image_path: str) -> Optional[str]:
