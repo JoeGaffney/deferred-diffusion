@@ -47,16 +47,6 @@ def models(
     )
 
 
-@router.get(
-    "/models/docs",
-    response_class=PlainTextResponse,
-    summary="Video model capability docs (Markdown)",
-    operation_id="videos_model_docs",
-)
-def docs():
-    return generate_model_docs()
-
-
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
 def get(id: UUID):
     result = AsyncResult(str(id), app=celery_app)

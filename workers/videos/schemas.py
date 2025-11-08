@@ -132,8 +132,8 @@ class VideoRequest(BaseModel):
         description="Positive Prompt text",
         json_schema_extra={"format": "multi_line"},
     )
-    height: int = 720
-    width: int = 1280
+    height: int = 480
+    width: int = 854
     num_frames: int = 48
     seed: int = 42
     image: Optional[str] = Field(

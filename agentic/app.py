@@ -10,9 +10,6 @@ from agents.chat_agent import Deps, chat_agent
 from utils.utils import CACHE_DIR
 from views.history import create_history_component
 
-TOOL_TO_DISPLAY_NAME = {"get_lat_lng": "Geocoding API", "get_weather": "Weather API"}
-
-# client = AsyncClient()
 deps = Deps(client=None)
 
 
@@ -65,13 +62,13 @@ async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: lis
                                     if local_file_path and str(local_file_path).lower().endswith((".png")):
                                         media_message = {
                                             "role": "assistant",
-                                            "content": gr.Image(value=local_file_path, label=local_file_path),
+                                            "content": gr.Image(value=local_file_path, height="33%", width="33%"),
                                         }
                                         chatbot.append(media_message)
                                     if local_file_path and str(local_file_path).lower().endswith((".mp4")):
                                         media_message = {
                                             "role": "assistant",
-                                            "content": gr.Video(value=local_file_path),
+                                            "content": gr.Video(value=local_file_path, height="33%", width="33%"),
                                         }
                                         chatbot.append(media_message)
 
@@ -112,20 +109,19 @@ with gr.Blocks() as demo:
         chatbot = gr.Chatbot(
             label="AI Assistant",
             type="messages",
-            avatar_images=(None, "https://ai.pydantic.dev/img/logo-white.svg"),
             examples=[
-                {"text": "What tools are available?"},
+                {"text": "What are your toolset calls?"},
                 {"text": "What image models are available?"},
                 {"text": "What local video models are available?"},
             ],
             height="75vh",
         )
-        with gr.Row():
-            prompt = gr.Textbox(
-                lines=1,
-                show_label=False,
-                placeholder="What image models are available?",
-            )
+        prompt = gr.Textbox(
+            lines=3,
+            show_label=False,
+            placeholder="What image models are available?",
+            submit_btn=True,
+        )
         # Create history component (includes button and modal with events)
         show_history_btn = create_history_component(past_messages)
 

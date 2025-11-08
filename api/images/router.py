@@ -1,9 +1,8 @@
-from typing import Dict, Literal, Optional
+from typing import Optional
 from uuid import UUID
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from fastapi.responses import PlainTextResponse
 
 from common.auth import verify_token
 from images.schemas import (
@@ -51,16 +50,6 @@ def models(
         for name, meta in MODEL_META.items()
         if (external is None or meta.external == external) and (mode is None or meta.supports_inferred_mode(mode))
     }
-
-
-@router.get(
-    "/models/docs",
-    response_class=PlainTextResponse,
-    summary="Image model capability docs (Markdown)",
-    operation_id="images_model_docs",
-)
-def image_model_docs():
-    return generate_model_docs()
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
