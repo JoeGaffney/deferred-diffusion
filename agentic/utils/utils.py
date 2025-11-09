@@ -5,12 +5,15 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
+from gradio.utils import get_upload_folder
 from PIL import Image
 
 from common.logger import logger
 
-CACHE_DIR = Path(tempfile.gettempdir()) / "deferred_diffusion_cache"
-CACHE_DIR.mkdir(exist_ok=True)
+# NOTE possiby better use gradio's upload folder location?
+# CACHE_DIR = Path(tempfile.gettempdir()) / "deferred_diffusion_cache"
+# CACHE_DIR.mkdir(exist_ok=True)
+CACHE_DIR = get_upload_folder()
 
 
 def _convert_image_to_base64(image_path: str) -> Optional[str]:

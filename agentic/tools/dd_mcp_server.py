@@ -30,7 +30,7 @@ def handle_image_get(data: dict) -> dict:
             # Generate filename from tool call info
             task_id = data.get("id", "unknown")
             filename = f"image_{task_id}.png"
-            file_path = CACHE_DIR / filename
+            file_path = f"{str(CACHE_DIR)}/{filename}"
 
             # Save to file
             with open(file_path, "wb") as f:
@@ -78,7 +78,7 @@ def handle_video_get(data: dict) -> dict:
             # Generate filename from tool call info
             task_id = data.get("id", "unknown")
             filename = f"video_{task_id}.mp4"
-            file_path = CACHE_DIR / filename
+            file_path = f"{str(CACHE_DIR)}/{filename}"
 
             # Save to file
             with open(file_path, "wb") as f:
@@ -148,7 +148,7 @@ def get_mcp_server():
     global _mcp_server
     if _mcp_server is None:
         _mcp_server = MCPServerStreamableHTTP(
-            "http://localhost:5001/mcp",
+            os.getenv("DDIFFUSION_MCP_ADDRESS", "http://localhost:5001/mcp"),
             headers={"Authorization": f"Bearer {os.getenv('DDIFFUSION_API_KEY')}"},
             process_tool_call=process_tool_call,
         )

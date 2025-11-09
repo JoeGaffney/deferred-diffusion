@@ -42,11 +42,6 @@ We try to use plural to adhere to REST best practices.
 │ ├── ...
 │── /videos
 │ ├── ...
-│── /agentic # Agentic area is a bit experimental
-│ ├── agents/
-│ ├── schemas.py
-│ ├── context.py
-│ ├── router.py
 │── /common # ✅ Shared components
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
 │── /tests # ✅ Tests mirror the /api structure
@@ -119,7 +114,7 @@ Developers who want to extend or modify available models can do so by editing th
 
 Each new model entry should include:
 
-1. A Pydantic schema entry in `ModelNameLocal` or `ModelNameExternal`
+1. A Pydantic schema entry in `ModelName`
 2. A corresponding task or pipeline implementation
 3. Updated tests under `tests/images`
 
@@ -180,7 +175,7 @@ Worker / API Response
 
 ## Building
 
-Run primarily in the docker containers because of the multi service workflows and the multi copies of model downloads.
+Run primarily in the docker containers because of the multi service workflows and to avoid multiple copies of model downloads.
 
 ```bash
 make all
@@ -280,63 +275,9 @@ docker-compose exec gpu-workers pytest tests/videos/external_models -vs
 
 ## Clients
 
-These are examples on how to simply get things on the path you could use rez or any other way preferred way to get the modules and plugins loaded.
+Example clients for Houdini and Nuke are provided in the `/clients` directory.
 
-Adjust directories depending on where you have the folders and the versions of your application. Examples are given for a windows environment.
-
-### Houdini Setup
-
-#### Python Modules
-
-The following need to be available to Houdini for the API client and agents to work.
-
-- httpx
-
-You can install like this to put on roaming path.
-
-```bash
-"C:\Program Files\Side Effects Software\Houdini 20.5\bin\hython.exe" -m pip install httpx
-```
-
-#### Env file
-
-```env
-HOUDINI_PATH = C:/development/deferred-diffusion/clients/houdini;&
-HOUDINI_OTLSCAN_PATH = C:/development/deferred-diffusion/clients/houdini;&
-PYTHONPATH = C:/development/deferred-diffusion/clients/houdini/python;&
-```
-
-### Nuke plug-in setup
-
-#### Python modules
-
-The following need to be available to Nuke for the API client to work.
-
-- httpx
-- attrs
-
-You can install like this.
-
-```bash
-"C:\Program Files\Nuke14.0\python.exe" -m pip install httpx attrs
-```
-
-#### Adding to the path
-
-Update your
-
-- C:\Users\USERNAME\.nuke\init.py
-
-```python
-import nuke
-
-# Centralized Nuke plugin path (your custom directory)
-custom_plugin_path = r"C:\development\deferred-diffusion\clients\nuke"
-
-# Add your custom plugin paths
-nuke.pluginAddPath(custom_plugin_path)
-print(f"Custom plugin paths from {custom_plugin_path} have been added.")
-```
+See [clients/README.md](clients/README.md) for detailed setup instructions.
 
 ## MISC
 

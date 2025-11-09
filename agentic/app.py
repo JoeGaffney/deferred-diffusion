@@ -136,4 +136,4 @@ with gr.Blocks() as demo:
 
 
 if __name__ == "__main__":
-    demo.launch(allowed_paths=[str(CACHE_DIR)])
+    demo.launch()  # NOTE possibly not required, allowed_paths=[str(CACHE_DIR)])

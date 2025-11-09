@@ -7,7 +7,6 @@ from pydantic_ai import Agent
 
 from common.logger import logger
 from tools.dd_mcp_server import get_mcp_server
-from utils.utils import CACHE_DIR
 
 
 @dataclass
@@ -17,20 +16,9 @@ class Deps:
 
 chat_agent = Agent(
     "openai:gpt-4.1-mini",
-    # 'Be concise, reply with one sentence.' is enough for some models (like openai) to use
-    # the below tools appropriately, but others like anthropic and gemini require a bit more direction.
-    # system_prompt=(
-    #     "You are are an expert in AI image and video generation "
-    #     "When retrieving images or videos do this as the end of the conversation and do incremental back off max 3 times "
-    # ),
     instructions=(
         "You are are an expert in AI image and video generation. "
-        "You help the user by generating images and videos based on their prompts. "
-        # "When retrieving 'images_get' or 'videos_get' do this as the end of the conversation and do with an incremental back off max 3 times. As sometimes they can take time to generate."
-        # "You give guidance on how to improve prompts for better results. "
-        # "You know about various AI image and video generation models and their capabilities. "
-        # "Some are local and some are external models."
-        # "You can help the user edit existing images and videos as well."
+        "You help the user by generating images and videos based on their prompts."
     ),
     deps_type=Deps,
     toolsets=[get_mcp_server()],

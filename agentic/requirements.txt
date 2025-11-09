@@ -1,6 +1,4 @@
 pydantic
-pydantic-ai-slim[openai]
+pydantic-ai-slim[openai,mcp]
 gradio
-redis
 pillow
-mypy
