@@ -8,8 +8,6 @@ import pytest
 from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.client import AuthenticatedClient
 from generated.api_client.models import (
-    MessageContent,
-    MessageItem,
     TextCreateResponse,
     TextRequest,
     TextRequestModel,
@@ -32,17 +30,7 @@ def create_text(api_client, model):
     """Helper function to create a text and return its ID."""
     request = TextRequest(
         model=model,
-        messages=[
-            MessageItem(
-                role="user",
-                content=[
-                    MessageContent(
-                        type_="input_text",
-                        text="Generate a prompt for SD image generation to generate similar images.",
-                    ),
-                ],
-            ),
-        ],
+        prompt="Generate a prompt for SD image generation to generate similar images.",
         images=[image_a],
     )
 

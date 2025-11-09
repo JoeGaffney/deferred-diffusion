@@ -201,3 +201,16 @@ def load_video_frames_if_exists(base64_bytes: Optional[str]) -> Optional[list[Im
 
     pil_images = load_video(video_path)
     return pil_images
+
+
+def load_video_into_file(base64_bytes: Optional[str]) -> str | None:
+    """Load video from Base64 string and return the file path."""
+    video_bytes = load_video_bytes_if_exists(base64_bytes)
+    if video_bytes is None:
+        return None
+
+    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
+    with open(video_path, "wb") as f:
+        f.write(video_bytes)
+
+    return video_path

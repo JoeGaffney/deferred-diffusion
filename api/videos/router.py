@@ -1,14 +1,11 @@
-from typing import Dict, Literal, Optional
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from videos.schemas import (
     MODEL_META,
-    InferredMode,
     VideoCreateResponse,
     VideoModelsResponse,
     VideoRequest,
@@ -34,17 +31,8 @@ def create(request: VideoRequest, response: Response):
 @router.get(
     "/models", response_model=VideoModelsResponse, summary="List video models", operation_id="videos_list_models"
 )
-def models(
-    mode: Optional[InferredMode] = Query(default=None),
-    external: Optional[bool] = Query(default=None),
-):
-    return VideoModelsResponse(
-        models={
-            name: meta
-            for name, meta in MODEL_META.items()
-            if (external is None or meta.external == external) and (mode is None or meta.supports_inferred_mode(mode))
-        }
-    )
+def models():
+    return VideoModelsResponse(models={name: meta for name, meta in MODEL_META.items()})
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")

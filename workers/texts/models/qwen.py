@@ -1,5 +1,6 @@
 import copy
 import traceback
+from typing import Any, Dict
 
 import torch
 from qwen_vl_utils import process_vision_info
@@ -8,11 +9,15 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from common.logger import log_pretty, logger
 from common.pipeline_helpers import decorator_global_pipeline_cache, get_quantized_model
 from texts.context import TextContext
-from utils.utils import load_image_from_base64, time_info_decorator
+from utils.utils import (
+    load_image_from_base64,
+    load_video_into_file,
+    time_info_decorator,
+)
 
 
 @decorator_global_pipeline_cache
-def get_pipeline(model_id):
+def get_pipeline(model_id) -> Qwen2_5_VLForConditionalGeneration:
     model = get_quantized_model(
         model_id=model_id,
         subfolder="",
@@ -21,7 +26,6 @@ def get_pipeline(model_id):
         torch_dtype=torch.bfloat16,
     )
 
-    # model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16).to("cuda")
     return model.to("cuda")
 
 
@@ -41,32 +45,46 @@ def get_processor(model_id):
     return processor
 
 
-def main(context: TextContext):
+def main(context: TextContext) -> str:
     model = get_pipeline("Qwen/Qwen2.5-VL-3B-Instruct")
     processor = get_processor("Qwen/Qwen2.5-VL-3B-Instruct")
 
-    messages = [message.model_dump() for message in context.data.messages]
-    original_messages = copy.deepcopy(messages)
+    system_message: Dict[str, Any] = {
+        "role": "user",
+        "content": [{"type": "text", "text": context.data.system_prompt}],
+    }
+    message: Dict[str, Any] = {
+        "role": "system",
+        "content": [{"type": "text", "text": context.data.prompt}],
+    }
 
-    # apply image and video to last message
-    last_message = messages[-1]
     for image in context.data.images:
-        last_message_content = last_message.get("content", [])
         pil_image = load_image_from_base64(image)
-        last_message_content.append(
+        message["content"].append(
             {
-                "type": "image",
+                "type": "input_image",
                 "image": pil_image,
             }
         )
+
+    for video in context.data.videos:
+        video_path = load_video_into_file(video)
+        if video_path:
+            message["content"].append(
+                {
+                    "type": "input_video",
+                    "video": f"file://{video_path}",
+                }
+            )
+
     logger.info(f"Running qwen with {len(context.data.images)} images and {len(context.data.videos)} videos")
 
     # Preparation for inference
-    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    text = processor.apply_chat_template([system_message, message], tokenize=False, add_generation_prompt=True)
 
     # only reprocess the images and videos in the last message
     try:
-        image_inputs, video_inputs = process_vision_info([last_message])
+        image_inputs, video_inputs = process_vision_info([message])
     except Exception as e:
         error_message = f"Error during vision info processing: {e}\n{traceback.format_exc()}"
         logger.error(error_message)
@@ -98,23 +116,4 @@ def main(context: TextContext):
         inputs = inputs.to("cpu")  # Move inputs back to CPU
         del inputs, generated_ids, generated_ids_trimmed, output_text, image_inputs, video_inputs
 
-    # we keep only the original as we may have altered adding video and image to the last message
-    chain_of_thought = original_messages
-    chain_of_thought.append(
-        {
-            "role": "assistant",
-            "content": [
-                {
-                    "type": "output_text",
-                    "text": output,
-                }
-            ],
-        }
-    )
-    result = {
-        "response": output,
-        "chain_of_thought": chain_of_thought,
-    }
-
-    log_pretty("qwen result", result)
-    return result
+    return output

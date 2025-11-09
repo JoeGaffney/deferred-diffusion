@@ -23,7 +23,8 @@ def truncate_strings(data: Any, max_length: int = 100) -> Any:
         return data
 
 
-app = FastAPI(title="Deferred Diffusion API")
+# NOTE imporant keep name API as clients will use the title
+app = FastAPI(title="API")
 
 
 @app.exception_handler(RequestValidationError)

@@ -1,8 +1,7 @@
-from typing import Optional
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from images.schemas import (
@@ -12,7 +11,6 @@ from images.schemas import (
     ImageRequest,
     ImageResponse,
     ImageWorkerResponse,
-    InferredMode,
     generate_model_docs,
 )
 from worker import celery_app
@@ -40,16 +38,8 @@ def create(request: ImageRequest, response: Response):
 @router.get(
     "/models", response_model=ImageModelsResponse, summary="List image models", operation_id="images_list_models"
 )
-def models(
-    mode: Optional[InferredMode] = Query(default=None),
-    external: Optional[bool] = Query(default=None),
-):
-    # Filter by capability/provider/externality
-    return {
-        name: meta
-        for name, meta in MODEL_META.items()
-        if (external is None or meta.external == external) and (mode is None or meta.supports_inferred_mode(mode))
-    }
+def models():
+    return {name: meta for name, meta in MODEL_META.items()}
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")

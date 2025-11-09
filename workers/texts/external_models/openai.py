@@ -1,9 +1,9 @@
 import copy
-from typing import Dict
+from typing import Any, Dict
 
 from openai import OpenAI
 
-from common.logger import log_pretty, logger
+from common.logger import logger
 from texts.context import TextContext
 from texts.schemas import ModelName
 
@@ -14,16 +14,24 @@ OPEN_AI_MODEL_MAP: Dict[ModelName, str] = {
 }
 
 
-def main(context: TextContext):
+def main(context: TextContext) -> str:
     client = OpenAI()
-    messages = [message.model_dump() for message in context.data.messages]
-    original_messages = copy.deepcopy(messages)
+    message: Dict[str, Any] = {
+        "role": "user",
+        "content": [{"type": "input_text", "text": context.data.prompt}],
+    }
+
+    system_message: Dict[str, Any] = {
+        "role": "system",
+        "content": [{"type": "input_text", "text": context.data.system_prompt}],
+    }
 
     # apply image and video to last message
-    last_message = messages[-1]
     for image in context.data.images:
-        last_message_content = last_message.get("content", [])
-        last_message_content.append(
+        if message.get("content") is None:
+            message["content"] = []
+
+        message["content"].append(
             {
                 "type": "input_image",
                 "image_url": f"data:image/png;base64,{image}",
@@ -31,29 +39,16 @@ def main(context: TextContext):
         )
 
     model = OPEN_AI_MODEL_MAP.get(context.model, "gpt-4o-mini")
-    response = client.responses.create(
-        model=model,
-        input=messages,  # type: ignore
-    )
+    try:
+        response = client.responses.create(
+            model=model,
+            input=[message],  # type: ignore
+            instructions=context.data.system_prompt,
+        )
+    except Exception as e:
+        logger.error(f"OpenAI API call failed: {str(e)}")
+        raise
 
     output = response.output_text
 
-    # we keep only the original as we may have altered adding video and image to the last message
-    chain_of_thought = original_messages
-    chain_of_thought.append(
-        {
-            "role": "assistant",
-            "content": [
-                {
-                    "type": "output_text",
-                    "text": output,
-                }
-            ],
-        }
-    )
-    result = {
-        "response": output,
-        "chain_of_thought": chain_of_thought,
-    }
-
-    return result
+    return output

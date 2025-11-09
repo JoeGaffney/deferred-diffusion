@@ -3,87 +3,84 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-ModelNameLocal: TypeAlias = Literal["qwen-2"]
-
-ModelNameExternal: TypeAlias = Literal["gpt-4o", "gpt-4", "gpt-5"]
-
 ModelName: TypeAlias = Literal["qwen-2", "gpt-4o", "gpt-4", "gpt-5"]
+Provider: TypeAlias = Literal["local", "openai"]
 
 
-class ModelInfo(BaseModel):
+class TextsModelInfo(BaseModel):
+    provider: Provider = Field(description="Source/provider identifier")
+    external: bool = Field(description="True if the model is invoked via an external API")
     description: Optional[str] = None
 
-    def to_doc_format(self, model_name: str) -> str:
-        """Generate documentation for this model"""
-        doc = f"## {model_name}\n\n"
-        doc += f"{self.description}\n"
-        doc += "\n"
-        return doc
+    @property
+    def queue(self) -> str:
+        return "cpu" if self.external else "gpu"
 
 
-MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
-    "qwen-2": ModelInfo(
+MODEL_META: Dict[ModelName, TextsModelInfo] = {
+    "qwen-2": TextsModelInfo(
+        provider="local",
+        external=False,
         description="Qwen-2 is a high-performance language model optimized for text generation and conversation. Excels at reasoning, creative writing, and multi-turn conversations.",
     ),
-}
-
-MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
-    "gpt-4o": ModelInfo(
+    "gpt-4o": TextsModelInfo(
+        provider="openai",
+        external=True,
         description="OpenAI's GPT-4o model with enhanced multimodal capabilities. (mini variant)",
     ),
-    "gpt-4": ModelInfo(
+    "gpt-4": TextsModelInfo(
+        provider="openai",
+        external=True,
         description="OpenAI's GPT-4 model with advanced reasoning capabilities. (4.1 mini variant)",
     ),
-    "gpt-5": ModelInfo(
+    "gpt-5": TextsModelInfo(
+        provider="openai",
+        external=True,
         description="OpenAI's latest GPT-5 model with cutting-edge performance across all text generation tasks. (mini variant)",
     ),
 }
 
 
 def generate_model_docs():
-    docs = """ # Generate text using various language models.
-- External models are processed through their respective APIs.
-- Temperature controls randomness: lower values (0.1-0.3) for focused responses, higher values (0.7-1.0) for creative output.
-- Messages support conversation context with role-based structure (system, user, assistant).
-- Image and video references can be included for multimodal processing (where supported).
-"""
-    docs += "# Local Models\n\n"
-    for model_name, model_info in MODEL_META_LOCAL.items():
-        docs += model_info.to_doc_format(model_name)
-
-    docs += "# External Models\n\n"
-    for model_name, model_info in MODEL_META_EXTERNAL.items():
-        docs += model_info.to_doc_format(model_name)
-    return docs
-
-
-class TextContent(BaseModel):
-    type: str = "text"
-    text: str
-
-
-class MessageContent(BaseModel):
-    type: str
-    text: str = ""
-
-
-class MessageItem(BaseModel):
-    role: str
-    content: List[MessageContent]
+    header = (
+        "# Text Models\n"
+        "External models proxy to provider APIs; local models run on your GPU.\n\n"
+        "| Model | Provider | External | Queue | Description |\n"
+        "|-------|----------|:--------:|:-----:|-------------|\n"
+    )
+    rows = []
+    for name, meta in MODEL_META.items():
+        rows.append(
+            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | {meta.description or ''} |"
+        )
+    return header + "\n".join(rows) + "\n"
 
 
 class TextRequest(BaseModel):
     model: ModelName = Field(description="model", default="qwen-2")
-    temperature: float = 0.7
-    seed: int = 42
-    messages: list[MessageItem] = Field(description="List of messages", default=[])
+    prompt: str = Field(description="Prompt text", default="")
+    system_prompt: str = Field(
+        description="System prompt",
+        default=(
+            "You are a helpful AI assistant specialized in visual effects, image generation, and creative workflows. "
+            "You excel at analyzing images and videos, describing visual content, and generating detailed prompts for AI image/video generation models. "
+            "When given images or videos, provide clear, detailed descriptions focusing on visual elements, composition, lighting, style, and technical aspects. "
+            "When asked to create prompts, generate specific, detailed descriptions that would work well with AI generation models like Flux, Runway, or Stable Diffusion. "
+            "Provide concise, actionable responses optimized for creative production pipelines. "
+            "Do not ask for clarification - provide the best possible response based on the given input."
+            "Use any images or videos provided in the conversation to inform your responses."
+        ),
+    )
     images: List[str] = Field(description="Image references", default=[])
     videos: List[str] = Field(description="Video references", default=[])
 
     @property
+    def meta(self) -> TextsModelInfo:
+        return MODEL_META[self.model]
+
+    @property
     def external_model(self) -> bool:
-        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
-        return self.model in _MODEL_EXTERNAL_VALUES
+        return self.meta.external
 
     @property
     def task_name(self) -> ModelName:
@@ -92,12 +89,11 @@ class TextRequest(BaseModel):
     @property
     def task_queue(self) -> str:
         """Return the task queue based on whether the model is external or not."""
-        return "cpu" if self.external_model else "gpu"
+        return self.meta.queue
 
 
 class TextWorkerResponse(BaseModel):
     response: str
-    chain_of_thought: list
 
 
 class TextResponse(BaseModel):
@@ -131,3 +127,7 @@ class TextCreateResponse(BaseModel):
             }
         }
     )
+
+
+class TextModelsResponse(BaseModel):
+    models: Dict[ModelName, TextsModelInfo]
