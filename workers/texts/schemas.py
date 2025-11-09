@@ -62,12 +62,13 @@ class TextRequest(BaseModel):
     system_prompt: str = Field(
         description="System prompt",
         default=(
-            "You are a helpful AI assistant specialized in visual effects, image generation, and creative workflows. "
+            "You are a helpful AI assistant specialized in visual effects, filmmaking, image generation, and creative workflows. "
             "You excel at analyzing images and videos, describing visual content, and generating detailed prompts for AI image/video generation models. "
             "When given images or videos, provide clear, detailed descriptions focusing on visual elements, composition, lighting, style, and technical aspects. "
             "When asked to create prompts, generate specific, detailed descriptions that would work well with AI generation models like Flux, Runway, or Stable Diffusion. "
             "Provide concise, actionable responses optimized for creative production pipelines. "
             "Do not ask for clarification - provide the best possible response based on the given input."
+            "Do not describe what you are doing or ask follow up questions."
             "Use any images or videos provided in the conversation to inform your responses."
         ),
     )
@@ -108,7 +109,6 @@ class TextResponse(BaseModel):
                 "status": "SUCCESS",
                 "result": {
                     "response": "This is a response from the model",
-                    "chain_of_thought": ["Step 1", "Step 2", "Conclusion"],
                 },
                 "error_message": None,
             }

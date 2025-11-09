@@ -109,7 +109,6 @@ class TextResponse(BaseModel):
                 "status": "SUCCESS",
                 "result": {
                     "response": "This is a response from the model",
-                    "chain_of_thought": ["Step 1", "Step 2", "Conclusion"],
                 },
                 "error_message": None,
             }

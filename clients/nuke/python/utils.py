@@ -341,30 +341,6 @@ def get_references(node) -> list[References]:
     return result
 
 
-def get_previous_text_messages(node) -> str:
-    if node is None:
-        return ""
-
-    if node.Class() != "Group":
-        return ""
-    node_type_knob = node.knob("node_type")
-    if not (node_type_knob and node_type_knob.value() == "dd_text"):
-        return ""
-
-    # NOTE some issues here with how nuke handles json encoded text so we read from text knob directly
-    # k = node["chain_of_thought"]
-    # chain_of_thought = k.value()
-    # nuke.tprint(f"chain_of_thought: {chain_of_thought}")
-
-    # k = node["chain_of_thought_alt"]
-    # chain_of_thought_alt = k.value()
-    # nuke.tprint(f"chain_of_thought_alt: {chain_of_thought_alt}")
-
-    chain_of_thought = get_node_value(node, "chain_of_thought_alt", "[]", mode=MODE_VALUE)
-    nuke.tprint(f"chain_of_thought: {chain_of_thought}")
-    return chain_of_thought
-
-
 def replace_hashes_with_frame(path_with_hashes, frame):
     num_hashes = path_with_hashes.count("#")
     if num_hashes == 0:

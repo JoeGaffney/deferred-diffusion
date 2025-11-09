@@ -5,9 +5,7 @@ from worker import celery_app
 
 def process_result(context, result: str):
     """Process the result from text model and return standardized response."""
-    if isinstance(result, dict):
-        return TextWorkerResponse(response=result).model_dump()
-    raise ValueError("Text generation failed")
+    return TextWorkerResponse(response=result).model_dump()
 
 
 # Helper to validate request and build context to avoid duplication across tasks
