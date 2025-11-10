@@ -1,29 +1,7 @@
 from typing import Any, Dict, Literal, Optional, TypeAlias, Union, get_args
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, Field
-
-ModelNameLocal: TypeAlias = Literal[
-    "sd-xl",
-    "sd-3",
-    "flux-1",
-    "qwen-image",
-    "depth-anything-2",
-    "segment-anything-2",
-    "real-esrgan-x4",
-]
-
-
-# External-only model names (convenience alias)
-ModelNameExternal: TypeAlias = Literal[
-    "gpt-image-1",
-    "runway-gen4-image",
-    "flux-1-pro",
-    "topazlabs-upscale",
-    "google-gemini-2",
-    "bytedance-seedream-4",
-]
-
+from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -41,119 +19,123 @@ ModelName: TypeAlias = Literal[
     "google-gemini-2",
     "bytedance-seedream-4",
 ]
+InferredMode: TypeAlias = Literal["text-to-image", "image-to-image", "inpainting"]
+Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
-class ModelInfo(BaseModel):
-    references: bool = Field(default=False, description="Supports image references as input")
-    image: bool = Field(default=False, description="Supports input image for image-to-image generation")
-    mask: bool = Field(default=False, description="Supports input mask for inpainting")
-    text: bool = Field(default=False, description="Supports text-to-image generation")
+class ImagesModelInfo(BaseModel):
+    provider: Provider = Field(description="Source/provider identifier")
+    external: bool = Field(description="True if the model is invoked via an external API")
+    supported_modes: set[InferredMode] = Field(default_factory=set)
+    references: bool = False  # separate capability flag
     description: Optional[str] = None
 
-    def to_doc_format(self, model_name: str) -> str:
-        """Generate documentation for this model"""
-        doc = f"## {model_name}\n\n"
-        doc += f"{self.description}\n"
-        doc += f"- **Text (text-to-image):** {'✓' if self.text else '✗'}\n"
-        doc += f"- **Image (image-to-image):** {'✓' if self.image else '✗'}\n"
-        doc += f"- **Mask (inpainting):** {'✓' if self.mask else '✗'}\n"
-        doc += f"- **References (controlnets and adapters):** {'✓' if self.references else '✗'}\n"
+    @property
+    def queue(self) -> str:
+        return "cpu" if self.external else "gpu"
 
-        doc += "\n"
-        return doc
+    def supports_inferred_mode(self, mode: InferredMode) -> bool:
+        return mode in self.supported_modes
 
 
-MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
-    "sd-xl": ModelInfo(
+# Unified metadata
+MODEL_META: Dict[ModelName, ImagesModelInfo] = {
+    "sd-xl": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        text=True,
-        image=True,
-        mask=True,
-        description="Stable Diffusion XL variant supports the most control nets and IP adapters. It excels at generating high-quality, detailed images with complex prompts and multiple subjects.",
+        description="Stable Diffusion XL variant with broad adapter/control support.",
     ),
-    "sd-3": ModelInfo(
-        text=True,
-        image=True,
-        mask=True,
-        description="Stable Diffusion 3.5 offers superior prompt understanding and composition. Excels at complex scenes, concept art, and handling multiple subjects with accurate interactions.",
+    "sd-3": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        description="Stable Diffusion 3.5 for complex compositions.",
     ),
-    "flux-1": ModelInfo(
-        text=True,
-        image=True,
-        mask=True,
+    "flux-1": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        description="FLUX Krea model is flux-1 dev trained with opinions from krea for more photorealistic results. Will use flux Kontext for image to image and flux fill for inpainting.",
+        description="FLUX dev model (Krea tuned). Uses Kontext for img2img, Fill for inpainting.",
     ),
-    "qwen-image": ModelInfo(
-        text=True,
-        image=True,
-        mask=True,
+    "qwen-image": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        description="Qwen model specializes in generating high-quality images from textual descriptions. It excels at understanding nuanced prompts and delivering detailed visuals.",
+        description="Qwen image generation and manipulation.",
     ),
-    "depth-anything-2": ModelInfo(
-        image=True,
-        description="Advanced depth estimation model. Creates high-quality depth maps from any image for 3D visualization, AR applications, and as input for ControlNet pipelines.",
+    "depth-anything-2": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"image-to-image"},
+        description="Depth estimation pipeline.",
     ),
-    "segment-anything-2": ModelInfo(
-        image=True,
-        description="State-of-the-art image segmentation model. Precisely identifies and segments objects, people, and features for compositing, editing, and analysis.",
+    "segment-anything-2": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"image-to-image"},
+        description="Segmentation pipeline.",
     ),
-}
-
-MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
-    "gpt-image-1": ModelInfo(
+    "gpt-image-1": ImagesModelInfo(
+        provider="openai",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        text=True,
-        image=True,
-        mask=True,
-        description="OpenAI's advanced image generation model with exceptional understanding of complex prompts. Excels at photorealistic imagery, accurate object rendering, and following detailed instructions.",
+        description="OpenAI image model.",
     ),
-    "runway-gen4-image": ModelInfo(
+    "runway-gen4-image": ImagesModelInfo(
+        provider="runway",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image"},
         references=True,
-        text=True,
-        image=True,
-        description="Runway's Gen-4 image model delivering high-fidelity results with strong coherence. Particularly good at combinging multiple references into a single, cohesive image.",
+        description="Runway Gen-4 image model.",
     ),
-    "flux-1-pro": ModelInfo(
-        text=True,
-        image=True,
-        mask=True,
-        description="Pro variants of FLUX 1.1 with enhanced capabilities. Will use flux Kontext pro for image to image and flux fill pro for inpainting.",
+    "flux-1-pro": ImagesModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        description="FLUX 1.1 Pro variants via external provider.",
     ),
-    "topazlabs-upscale": ModelInfo(
-        image=True,
-        description="Topaz Labs' advanced image upscaling model. Specializes in enhancing image resolution while preserving fine details and textures, ideal for professional photography and print work.",
+    "topazlabs-upscale": ImagesModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"image-to-image"},
+        description="Topaz upscale model.",
     ),
-    "google-gemini-2": ModelInfo(
-        text=True,
-        image=True,
+    "google-gemini-2": ImagesModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image"},
         references=True,
-        description="Google's Gemini 2.5 model for advanced image generation and manipulation. Aka nano bannana",
+        description="Gemini multimodal image model.",
     ),
-    "bytedance-seedream-4": ModelInfo(
-        text=True,
-        image=True,
+    "bytedance-seedream-4": ImagesModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image"},
         references=True,
-        description="Supreme image to image context model from Bytedance. Excels at transforming input images based on textual prompts while maintaining core elements of the original image.",
+        description="Seedream image-to-image context model.",
     ),
 }
 
 
 def generate_model_docs():
-    docs = """ # Generate images using various diffusion models.
-- External models are processed through their respective APIs.
-- Local models are processed on your own GPU workers.
-- ControlNets and Adapters are unified as **references**.
-"""
-    docs += "# Local Models\n\n"
-    for model_name, model_info in MODEL_META_LOCAL.items():
-        docs += model_info.to_doc_format(model_name)
-
-    docs += "# External Models\n\n"
-    for model_name, model_info in MODEL_META_EXTERNAL.items():
-        docs += model_info.to_doc_format(model_name)
-    return docs
+    header = (
+        "# Image Models\n"
+        "External models proxy to provider APIs; local models run on your GPU.\n\n"
+        "| Model | Provider | External | Queue | Modes | References | Description |\n"
+        "|-------|----------|:--------:|:-----:|-------|:----------:|-------------|\n"
+    )
+    rows = []
+    for name, meta in MODEL_META.items():
+        modes = ", ".join(sorted(meta.supported_modes))
+        rows.append(
+            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | {modes} | {'✓' if meta.references else '✗'} | {meta.description or ''} |"
+        )
+    return header + "\n".join(rows) + "\n"
 
 
 class References(BaseModel):
@@ -186,10 +168,18 @@ class ImageRequest(BaseModel):
     height: int = 720
     width: int = 1280
     seed: int = 42
-    strength: float = 0.5
+    strength: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="How strongly to follow the input image when transforming it (image-to-image/inpainting only). Ignored for text-to-image.",
+    )
     image: Optional[str] = Field(
         default=None,
-        description="Optional Base64 image string",
+        description=(
+            "Base64 string image. If provided (and no mask), runs image-to-image using this as the starting point. "
+            "PNG/JPEG recommended. Combine with prompt to guide the transformation."
+        ),
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
@@ -197,22 +187,39 @@ class ImageRequest(BaseModel):
     )
     mask: Optional[str] = Field(
         default=None,
-        description="Optional Base64 image string",
+        description=(
+            "Base64 string image mask for inpainting. Must be provided together with 'image'. "
+            "Non-zero/opaque regions indicate areas to modify. Triggers inpainting when supported."
+        ),
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
         },
     )
-    references: list[References] = []
+    references: list[References] = Field(
+        default_factory=list,
+        description="Optional control/adapters (style/depth/canny/pose/etc.) applied across models when supported.",
+    )
     high_quality: bool = Field(
         default=False,
-        description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
+        description="Use higher quality models and steps when available. May increase cost/latency. For example some external models have pro variants.",
     )
 
     @property
+    def inferred_mode(self) -> InferredMode:
+        if self.mask and self.image:
+            return "inpainting"
+        if self.image:
+            return "image-to-image"
+        return "text-to-image"
+
+    @property
+    def meta(self) -> ImagesModelInfo:
+        return MODEL_META[self.model]
+
+    @property
     def external_model(self) -> bool:
-        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
-        return self.model in _MODEL_EXTERNAL_VALUES
+        return self.meta.external
 
     @property
     def task_name(self) -> ModelName:
@@ -220,8 +227,18 @@ class ImageRequest(BaseModel):
 
     @property
     def task_queue(self) -> str:
-        """Return the task queue based on whether the model is external or not."""
-        return "cpu" if self.external_model else "gpu"
+        return self.meta.queue
+
+    @model_validator(mode="after")
+    def _validate_capabilities(self):
+        mode = self.inferred_mode
+        if not self.meta.supports_inferred_mode(mode):
+            raise ValueError(f"Model '{self.model}' does not support mode '{mode}'.")
+        if self.mask and not self.image:
+            raise ValueError("mask requires image.")
+        if self.references and not self.meta.references:
+            raise ValueError(f"Model '{self.model}' does not support references.")
+        return self
 
 
 class ImageWorkerResponse(BaseModel):
@@ -233,9 +250,8 @@ class ImageResponse(BaseModel):
     status: str
     result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
@@ -245,16 +261,21 @@ class ImageResponse(BaseModel):
                 "error_message": None,
             }
         }
+    )
 
 
 class ImageCreateResponse(BaseModel):
     id: UUID
     status: str
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "PENDING",
             }
         }
+    )
+
+
+class ImageModelsResponse(BaseModel):
+    models: Dict[ModelName, ImagesModelInfo]

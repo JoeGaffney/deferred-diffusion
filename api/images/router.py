@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from images.schemas import (
+    MODEL_META,
     ImageCreateResponse,
+    ImageModelsResponse,
     ImageRequest,
     ImageResponse,
     ImageWorkerResponse,
@@ -18,7 +20,12 @@ router = APIRouter(
 )
 
 
-@router.post("", response_model=ImageCreateResponse, operation_id="images_create", description=generate_model_docs())
+@router.post(
+    "",
+    response_model=ImageCreateResponse,
+    description=generate_model_docs(),
+    operation_id="images_create",
+)
 def create(request: ImageRequest, response: Response):
     try:
         result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
@@ -26,6 +33,13 @@ def create(request: ImageRequest, response: Response):
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.get(
+    "/models", response_model=ImageModelsResponse, summary="List image models", operation_id="images_list_models"
+)
+def models():
+    return ImageModelsResponse(models={name: meta for name, meta in MODEL_META.items()})
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")

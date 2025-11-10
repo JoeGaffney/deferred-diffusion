@@ -1,4 +1,5 @@
 services:
+  # API service (stateless)
   api:
     build:
       context: .
@@ -13,13 +14,29 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
 
+  # Model Context Protocol service - for allowing LLM tools
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: fastmcp run mcp_server.py:mcp --transport http --host 0.0.0.0 --port 5001
+    tty: true
+    stdin_open: true
+    ports:
+      - "5001:5001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
+
   # Redis service as message broker
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
 
-  # Celery worker service
+  # Celery worker services
   gpu-workers:
     command: celery -A worker worker --loglevel=info --pool=threads --concurrency=1 -Q gpu
     build:
@@ -85,6 +102,7 @@ services:
     deploy:
       replicas: 1 # Number of container
 
+  # Task monitoring service
   flower:
     image: mher/flower:latest
     environment:
@@ -96,6 +114,20 @@ services:
       - gpu-workers
       - cpu-workers
       - redis
+
+  # Agentic orchestration and UI service
+  agentic:
+    build:
+      context: .
+      dockerfile: Dockerfile.agentic
+    ports:
+      - "7000:7000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DDIFFUSION_API_KEY=${DDIFFUSION_API_KEY}
+      - DDIFFUSION_MCP_ADDRESS=http://mcp:5001/mcp
+    depends_on:
+      - mcp
 
   # Model loader service to sync models from a shared directory
   model-loader:

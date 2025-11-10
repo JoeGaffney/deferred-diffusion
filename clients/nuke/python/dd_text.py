@@ -1,4 +1,3 @@
-import json
 import time
 
 import nuke
@@ -7,17 +6,14 @@ from httpx import RemoteProtocolError
 from config import client
 from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.models import (
-    MessageItem,
     TextCreateResponse,
     TextRequest,
     TextRequestModel,
     TextResponse,
 )
-from generated.api_client.models.message_content import MessageContent
 from generated.api_client.types import UNSET
 from utils import (
     get_node_value,
-    get_previous_text_messages,
     node_to_base64,
     nuke_error_handling,
     polling_message,
@@ -25,36 +21,6 @@ from utils import (
     set_node_value,
     threaded,
 )
-
-
-def get_messages(node):
-
-    # grab the previous messages from the input node
-    previous_messages_str = get_previous_text_messages(node.input(0))
-    nuke.tprint(f"previous_messages: {previous_messages_str}")
-
-    prompt = get_node_value(node, "prompt", "", mode="get")
-    message = [
-        MessageItem(
-            role="user",
-            content=[
-                MessageContent(type_="input_text", text=prompt),
-            ],
-        )
-    ]
-    previous_messages = []
-    try:
-        raw_previous = json.loads(previous_messages_str)
-        for msg in raw_previous:
-            contents = []
-            for content_item in msg.get("content", []):
-                contents.append(
-                    MessageContent(type_=content_item.get("type", "input_text"), text=content_item.get("text", ""))
-                )
-            previous_messages.append(MessageItem(role=msg.get("role", "user"), content=contents))
-    except Exception as e:
-        previous_messages = []
-    return previous_messages + message
 
 
 def create_dd_text_node():
@@ -100,10 +66,6 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
             if not parsed.status == "SUCCESS" or not parsed.result:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
-            chain_of_thought_str = json.dumps(parsed.result.chain_of_thought)
-            set_node_value(node, "chain_of_thought", chain_of_thought_str)
-            set_node_value(node, "chain_of_thought_alt", chain_of_thought_str)
-
             response_str = str(parsed.result.response)
             set_node_value(node, "response", response_str)
             set_node_info(node, "COMPLETE", "")
@@ -129,10 +91,11 @@ def process_text(node):
 
     with nuke_error_handling(node):
         model = TextRequestModel(get_node_value(node, "model", UNSET, mode="value"))
+        prompt = get_node_value(node, "prompt", "", mode="get")
 
         # Get image inputs a and b as base64
-        image_a = node_to_base64(node.input(1), nuke.frame())
-        image_b = node_to_base64(node.input(2), nuke.frame())
+        image_a = node_to_base64(node.input(0), nuke.frame())
+        image_b = node_to_base64(node.input(1), nuke.frame())
         images = []
         if image_a:
             images.append(image_a)
@@ -141,7 +104,7 @@ def process_text(node):
 
         body = TextRequest(
             model=model,
-            messages=get_messages(node),
+            prompt=prompt,
             images=images,
         )
         _api_call(node, body)

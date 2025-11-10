@@ -16,39 +16,22 @@ Group {
  addUserKnob {43 prompt l Prompt t "Describe what you want the model to generate." -STARTLINE}
  prompt "Make me a prompt suitable for stable diffusion image generation - be creative please."
  addUserKnob {43 response l Response t "Generated response from the model."}
- addUserKnob {20 Output}
- addUserKnob {43 chain_of_thought l "Chain of Thought" t "Model reasoning and explanation."}
- addUserKnob {26 chain_of_thought_alt l "" +STARTLINE T chain}
- addUserKnob {20 endGroup n -1}
  addUserKnob {20 HelpTab l Help}
  addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
  addUserKnob {22 task_button l "Task Monitor" t "Open the task monitoring page in your browser." -STARTLINE T "import dd_help\ndd_help.open_task()"}
 }
  Input {
   inputs 0
-  name text_node
-  xpos -78
-  ypos -140
- }
- Input {
-  inputs 0
   name a
   xpos -78
   ypos -140
-  number 1
+  number 0
  }
  Input {
   inputs 0
   name b
   xpos 54
   ypos -137
-  number 2
- }
- Output {
-  inputs 0
-  name Output1
-  selected true
-  xpos 41
-  ypos -13
+  number 1
  }
 end_group

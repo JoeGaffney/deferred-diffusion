@@ -1,23 +1,7 @@
-from typing import Dict, Literal, Optional, TypeAlias, Union, get_args
+from typing import Dict, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, Field
-
-ModelNameLocal: TypeAlias = Literal["ltx-video", "wan-2"]
-
-# External-only model names (convenience alias)
-ModelNameExternal: TypeAlias = Literal[
-    "runway-gen-4",
-    "runway-act-two",
-    "runway-upscale",
-    "runway-gen-4-aleph",
-    "bytedance-seedance-1",
-    "kwaivgi-kling-2",
-    "google-veo-3",
-    "openai-sora-2",
-    "minimax-hailuo-2",
-]
-
+from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -34,71 +18,111 @@ ModelName: TypeAlias = Literal[
     "minimax-hailuo-2",
 ]
 
-
-class ModelInfo(BaseModel):
-    description: str
-
-    def to_doc_format(self, model_name: str) -> str:
-        """Generate documentation for this model"""
-        doc = f"### {model_name}\n\n"
-        doc += f"{self.description}\n\n"
-        doc += "\n"
-        return doc
+InferredMode: TypeAlias = Literal["text-to-video", "image-to-video", "video-to-video", "first-last-image"]
+Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
-MODEL_META_LOCAL: Dict[ModelNameLocal, ModelInfo] = {
-    "ltx-video": ModelInfo(
-        description="Fast but more limted video generation model. Good for quick iterations and less complex scenes.",
-    ),
-    "wan-2": ModelInfo(
-        description="Wan 2.2, best open-source video generation model. Good quality and motion coherence for a variety of scenes.",
-    ),
-}
+class VideosModelInfo(BaseModel):
+    provider: Provider = Field(description="Source/provider identifier")
+    external: bool = Field(description="True if the model is invoked via an external API")
+    supported_modes: set[InferredMode] = Field(default_factory=set)
+    description: Optional[str] = None
 
-MODEL_META_EXTERNAL: Dict[ModelNameExternal, ModelInfo] = {
-    "runway-gen-4": ModelInfo(
-        description="Runway's latest Gen-4 showing it's age fast computer time. Good for a variety of video generation tasks with improved quality over Gen-3.",
+    @property
+    def queue(self) -> str:
+        return "cpu" if self.external else "gpu"
+
+    def supports_inferred_mode(self, mode: InferredMode) -> bool:
+        return mode in self.supported_modes
+
+
+# Unified metadata (local + external)
+MODEL_META: Dict[ModelName, VideosModelInfo] = {
+    # Local
+    "ltx-video": VideosModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-video", "image-to-video", "first-last-image", "video-to-video"},
+        description="Fast but more limited video generation model. Good for quick iterations and less complex scenes.",
     ),
-    "runway-act-two": ModelInfo(
-        description="Runway's Act Two model updates a video with reference image. Ideal for enhancing existing footage with new visual elements while maintaining original motion and style.",
+    "wan-2": VideosModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-video", "image-to-video", "first-last-image", "video-to-video"},
+        description="Wan 2.2, quality open-source video generation model. Will fall back to Wan VACE 2.1 for video-to-video.",
     ),
-    "runway-upscale": ModelInfo(
-        description="Runway's Upscale model for high-quality video upscaling. Utilizes advanced techniques to enhance video resolution and detail.",
+    # External
+    "runway-gen-4": VideosModelInfo(
+        provider="runway",
+        external=True,
+        supported_modes={"image-to-video"},
+        description="Runway Gen-4 general video generation fast but limited.",
     ),
-    "runway-gen-4-aleph": ModelInfo(
-        description="Runway's Gen-4 Aleph model, takes in video input as well as images and can enhance or change the video. Or even generate new video content based on the input images and video. Ideal for creative video transformations and enhancements.",
+    "runway-act-two": VideosModelInfo(
+        provider="runway",
+        external=True,
+        supported_modes={"video-to-video"},
+        description="Matches animation from a reference video to a character reference image.",
     ),
-    "bytedance-seedance-1": ModelInfo(
-        description="ByteDance's Seedance-1 model, Pretty strong overall and quite fast. Good for a variety of video generation tasks with decent quality and speed.",
+    "runway-upscale": VideosModelInfo(
+        provider="runway",
+        external=True,
+        supported_modes={"video-to-video"},
+        description="Video upscaling model.",
     ),
-    "kwaivgi-kling-2": ModelInfo(
-        description="Kling V2 model by kwaivgi, designed for high-quality video generation from text prompts. Known for its ability to create detailed and coherent video sequences.",
+    "runway-gen-4-aleph": VideosModelInfo(
+        provider="runway",
+        external=True,
+        supported_modes={"video-to-video"},
+        description="Aleph can enhance/alter existing video and use image references.",
     ),
-    "google-veo-3": ModelInfo(
-        description="Google's VEO-3 model, high end flagship model. Supports high_quality parameter for slower but higher quality variant.",
+    "bytedance-seedance-1": VideosModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        description="Seedance-1 flagship model. Great all rounder. Supports high_quality variant.",
     ),
-    "openai-sora-2": ModelInfo(
-        description="OpenAI's Sora 2 model, high-end video generation model known for producing high-quality and realistic videos from text prompts. Supports high_quality parameter for pro variant. Ideal for professional-grade video content creation.",
+    "kwaivgi-kling-2": VideosModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        description="Kling 2.5 flagship model. Great at first-last frame coherence.",
     ),
-    "minimax-hailuo-2": ModelInfo(
-        description="Minimax's Hailuo-2.3 model, advanced video generation with support for both 6s and 10s duration videos. Supports 768p and 1080p resolutions with prompt optimization capabilities.",
+    "google-veo-3": VideosModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        description="VEO-3.1 flagship model. Expensive.",
+    ),
+    "openai-sora-2": VideosModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-video", "image-to-video"},
+        description="Sora 2 openai flagship model. Expensive and not great at image-to-video.",
+    ),
+    "minimax-hailuo-2": VideosModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-video", "image-to-video"},
+        description="Hailuo-2.3 great physics understanding.",
     ),
 }
 
 
 def generate_model_docs():
-    """Generate documentation about available video models"""
-    docs = "# Generate videos using various diffusion models.\n\n"
-
-    docs += "# Local Models\n\n"
-    for model_name, model_info in sorted(MODEL_META_LOCAL.items()):
-        docs += model_info.to_doc_format(model_name)
-
-    docs += "# External Models\n\n"
-    for model_name, model_info in sorted(MODEL_META_EXTERNAL.items()):
-        docs += model_info.to_doc_format(model_name)
-
-    return docs
+    header = (
+        "# Video Models\n"
+        "External models proxy to provider APIs; local models run on your GPU.\n\n"
+        "| Model | Provider | External | Queue | Modes | Description |\n"
+        "|-------|----------|:--------:|:-----:|-------|-------------|\n"
+    )
+    rows = []
+    for name, meta in MODEL_META.items():
+        modes = ", ".join(sorted(meta.supported_modes))
+        rows.append(
+            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | {modes} | {meta.description or ''} |"
+        )
+    return header + "\n".join(rows) + "\n"
 
 
 class VideoRequest(BaseModel):
@@ -108,13 +132,13 @@ class VideoRequest(BaseModel):
         description="Positive Prompt text",
         json_schema_extra={"format": "multi_line"},
     )
-    height: int = 720
-    width: int = 1280
+    height: int = 480
+    width: int = 854
     num_frames: int = 48
     seed: int = 42
     image: Optional[str] = Field(
         default=None,
-        description="Base64 image string",
+        description="Base64 image string used for image-to-video conditioning or reference.",
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
@@ -122,7 +146,7 @@ class VideoRequest(BaseModel):
     )
     last_image: Optional[str] = Field(
         default=None,
-        description="Optional Base64 image string for the last image/frame in image-to-video generation",
+        description="Optional Base64 image string for the last frame guidance in image-to-video generation (requires image).",
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
@@ -130,7 +154,7 @@ class VideoRequest(BaseModel):
     )
     video: Optional[str] = Field(
         default=None,
-        description="Optional Base64 video string for video input",
+        description="Optional Base64 video string for video-to-video transformation or upscaling.",
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "video/*",
@@ -142,10 +166,22 @@ class VideoRequest(BaseModel):
     )
 
     @property
-    def external_model(self) -> bool:
-        _MODEL_EXTERNAL_VALUES = tuple(get_args(ModelNameExternal))
+    def inferred_mode(self) -> InferredMode:
+        if self.video:
+            return "video-to-video"
+        if self.image and self.last_image:
+            return "first-last-image"
+        if self.image:
+            return "image-to-video"
+        return "text-to-video"
 
-        return self.model in _MODEL_EXTERNAL_VALUES
+    @property
+    def meta(self) -> VideosModelInfo:
+        return MODEL_META[self.model]
+
+    @property
+    def external_model(self) -> bool:
+        return self.meta.external
 
     @property
     def task_name(self) -> ModelName:
@@ -153,8 +189,16 @@ class VideoRequest(BaseModel):
 
     @property
     def task_queue(self) -> str:
-        """Return the task queue based on whether the model is external or not."""
-        return "cpu" if self.external_model else "gpu"
+        return self.meta.queue
+
+    @model_validator(mode="after")
+    def _validate_capabilities(self):
+        mode = self.inferred_mode
+        if not self.meta.supports_inferred_mode(mode):
+            raise ValueError(f"Model '{self.model}' does not support mode '{mode}'.")
+        if self.last_image and not self.image:
+            raise ValueError("last_image requires image.")
+        return self
 
 
 class VideoWorkerResponse(BaseModel):
@@ -166,9 +210,8 @@ class VideoResponse(BaseModel):
     status: str
     result: Optional[VideoWorkerResponse] = None
     error_message: Optional[str] = None
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
@@ -178,16 +221,21 @@ class VideoResponse(BaseModel):
                 "error_message": None,
             }
         }
+    )
 
 
 class VideoCreateResponse(BaseModel):
     id: UUID
     status: str
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "PENDING",
             }
         }
+    )
+
+
+class VideoModelsResponse(BaseModel):
+    models: Dict[ModelName, VideosModelInfo]

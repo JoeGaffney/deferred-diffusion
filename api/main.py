@@ -23,6 +23,7 @@ def truncate_strings(data: Any, max_length: int = 100) -> Any:
         return data
 
 
+# NOTE imporant keep name API as clients will use the title
 app = FastAPI(title="API")
 
 

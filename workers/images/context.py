@@ -57,15 +57,6 @@ class ImageContext:
             self.width = int(self.width * scale_factor)
             self.height = int(self.height * scale_factor)
 
-    def get_generation_mode(self) -> Literal["text_to_image", "img_to_img", "img_to_img_inpainting"]:
-        """Get generation mode, can be overridden by specific models."""
-        if self.data.image is None:
-            return "text_to_image"
-        elif self.data.mask:
-            return "img_to_img_inpainting"
-        else:
-            return "img_to_img"
-
     def get_dimension_type(self) -> Literal["square", "landscape", "portrait"]:
         """Determine the image dimension type based on width and height ratio."""
         if self.width > self.height:

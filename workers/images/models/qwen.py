@@ -193,13 +193,8 @@ def inpainting_call(context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
-    mode = context.get_generation_mode()
-
-    if mode == "text_to_image":
-        return text_to_image_call(context)
-    elif mode == "img_to_img":
-        return image_edit_call(context)
-    elif mode == "img_to_img_inpainting":
+    if context.color_image and context.mask_image:
         return inpainting_call(context)
-
-    raise ValueError(f"Unknown mode: {mode}")
+    if context.color_image or context.get_reference_images() != []:
+        return image_edit_call(context)
+    return text_to_image_call(context)

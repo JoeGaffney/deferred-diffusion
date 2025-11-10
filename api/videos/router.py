@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from videos.schemas import (
+    MODEL_META,
     VideoCreateResponse,
+    VideoModelsResponse,
     VideoRequest,
     VideoResponse,
     VideoWorkerResponse,
@@ -24,6 +26,13 @@ def create(request: VideoRequest, response: Response):
         return VideoCreateResponse(id=result.id, status=result.status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
+
+@router.get(
+    "/models", response_model=VideoModelsResponse, summary="List video models", operation_id="videos_list_models"
+)
+def models():
+    return VideoModelsResponse(models={name: meta for name, meta in MODEL_META.items()})
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")

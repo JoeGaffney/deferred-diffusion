@@ -1,5 +1,3 @@
-import os
-import pprint
 from dataclasses import dataclass
 
 from pydantic_ai import Agent, RunContext
@@ -99,9 +97,6 @@ def get_agent():
 
 
 def main(request: SequenceRequest) -> SequenceResponse:
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise ValueError("OPENAI_API_KEY environment variable is not set.")
-
     sequence_agent = get_agent()
     deps = SequenceDependencies(scene_id=2, db=SequenceDatabase(), data=request)
     result = sequence_agent.run_sync(request.prompt, deps=deps)
