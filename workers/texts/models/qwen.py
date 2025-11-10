@@ -50,11 +50,11 @@ def main(context: TextContext) -> str:
     processor = get_processor("Qwen/Qwen2.5-VL-3B-Instruct")
 
     system_message: Dict[str, Any] = {
-        "role": "user",
+        "role": "system",
         "content": [{"type": "text", "text": context.data.system_prompt}],
     }
     message: Dict[str, Any] = {
-        "role": "system",
+        "role": "user",
         "content": [{"type": "text", "text": context.data.prompt}],
     }
 

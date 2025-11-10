@@ -30,7 +30,7 @@ def create(request: TextRequest, response: Response):
 
 @router.get("/models", response_model=TextModelsResponse, summary="List text models", operation_id="texts_list_models")
 def models():
-    return {name: meta for name, meta in MODEL_META.items()}
+    return TextModelsResponse(models={name: meta for name, meta in MODEL_META.items()})
 
 
 @router.get("/{id}", response_model=TextResponse, operation_id="texts_get")

@@ -39,7 +39,7 @@ def create(request: ImageRequest, response: Response):
     "/models", response_model=ImageModelsResponse, summary="List image models", operation_id="images_list_models"
 )
 def models():
-    return {name: meta for name, meta in MODEL_META.items()}
+    return ImageModelsResponse(models={name: meta for name, meta in MODEL_META.items()})
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")

@@ -19,7 +19,7 @@ ModelName: TypeAlias = Literal[
     "google-gemini-2",
     "bytedance-seedream-4",
 ]
-InferredMode: TypeAlias = Literal["text_to_image", "image_to_image", "inpainting"]
+InferredMode: TypeAlias = Literal["text-to-image", "image-to-image", "inpainting"]
 Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
@@ -43,79 +43,79 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
     "sd-xl": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text_to_image", "image_to_image", "inpainting"},
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="Stable Diffusion XL variant with broad adapter/control support.",
     ),
     "sd-3": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text_to_image", "image_to_image", "inpainting"},
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         description="Stable Diffusion 3.5 for complex compositions.",
     ),
     "flux-1": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text_to_image", "image_to_image", "inpainting"},
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="FLUX dev model (Krea tuned). Uses Kontext for img2img, Fill for inpainting.",
     ),
     "qwen-image": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text_to_image", "image_to_image", "inpainting"},
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="Qwen image generation and manipulation.",
     ),
     "depth-anything-2": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"image_to_image"},
+        supported_modes={"image-to-image"},
         description="Depth estimation pipeline.",
     ),
     "segment-anything-2": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"image_to_image"},
+        supported_modes={"image-to-image"},
         description="Segmentation pipeline.",
     ),
     "gpt-image-1": ImagesModelInfo(
         provider="openai",
         external=True,
-        supported_modes={"text_to_image", "image_to_image", "inpainting"},
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="OpenAI image model.",
     ),
     "runway-gen4-image": ImagesModelInfo(
         provider="runway",
         external=True,
-        supported_modes={"text_to_image", "image_to_image"},
+        supported_modes={"text-to-image", "image-to-image"},
         references=True,
         description="Runway Gen-4 image model.",
     ),
     "flux-1-pro": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text_to_image", "image_to_image", "inpainting"},
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
         description="FLUX 1.1 Pro variants via external provider.",
     ),
     "topazlabs-upscale": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"image_to_image"},
+        supported_modes={"image-to-image"},
         description="Topaz upscale model.",
     ),
     "google-gemini-2": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text_to_image", "image_to_image"},
+        supported_modes={"text-to-image", "image-to-image"},
         references=True,
         description="Gemini multimodal image model.",
     ),
     "bytedance-seedream-4": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text_to_image", "image_to_image"},
+        supported_modes={"text-to-image", "image-to-image"},
         references=True,
         description="Seedream image-to-image context model.",
     ),
@@ -210,8 +210,8 @@ class ImageRequest(BaseModel):
         if self.mask and self.image:
             return "inpainting"
         if self.image:
-            return "image_to_image"
-        return "text_to_image"
+            return "image-to-image"
+        return "text-to-image"
 
     @property
     def meta(self) -> ImagesModelInfo:

@@ -67,7 +67,7 @@ class TextRequest(BaseModel):
             "When given images or videos, provide clear, detailed descriptions focusing on visual elements, composition, lighting, style, and technical aspects. "
             "When asked to create prompts, generate specific, detailed descriptions that would work well with AI generation models like Flux, Runway, or Stable Diffusion. "
             "Provide concise, actionable responses optimized for creative production pipelines. "
-            "Do not ask for clarification - provide the best possible response based on the given input."
+            "Do not ask for clarification - provide the best possible response based on the given input. "
             "Do not describe what you are doing or ask follow up questions."
             "Use any images or videos provided in the conversation to inform your responses."
         ),

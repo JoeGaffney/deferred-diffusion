@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from pydantic_ai import ToolCallPart, ToolReturnPart
 
 from agents.chat_agent import Deps, chat_agent
-from utils.utils import CACHE_DIR
 from views.history import create_history_component
 
 deps = Deps(client=None)
@@ -136,4 +135,4 @@ with gr.Blocks() as demo:
 
 
 if __name__ == "__main__":
-    demo.launch()  # NOTE possibly not required, allowed_paths=[str(CACHE_DIR)])
+    demo.launch()

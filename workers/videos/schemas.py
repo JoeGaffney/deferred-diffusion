@@ -18,7 +18,7 @@ ModelName: TypeAlias = Literal[
     "minimax-hailuo-2",
 ]
 
-InferredMode: TypeAlias = Literal["text_to_video", "image_to_video", "video_to_video", "first_last_frame"]
+InferredMode: TypeAlias = Literal["text-to-video", "image-to-video", "video-to-video", "first-last-frame"]
 Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
