@@ -18,7 +18,7 @@ ModelName: TypeAlias = Literal[
     "minimax-hailuo-2",
 ]
 
-InferredMode: TypeAlias = Literal["text-to-video", "image-to-video", "video-to-video", "first-last-frame"]
+InferredMode: TypeAlias = Literal["text-to-video", "image-to-video", "video-to-video", "first-last-image"]
 Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
@@ -42,69 +42,69 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
     "ltx-video": VideosModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
+        supported_modes={"text-to-video", "image-to-video", "first-last-image", "video-to-video"},
         description="Fast but more limited video generation model. Good for quick iterations and less complex scenes.",
     ),
     "wan-2": VideosModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
-        description="Wan 2.2, quality open-source video generation model. Good motion coherence for varied scenes.",
+        supported_modes={"text-to-video", "image-to-video", "first-last-image", "video-to-video"},
+        description="Wan 2.2, quality open-source video generation model. Will fall back to Wan VACE 2.1 for video-to-video.",
     ),
     # External
     "runway-gen-4": VideosModelInfo(
         provider="runway",
         external=True,
-        supported_modes={"text_to_video", "image_to_video"},
-        description="Runway Gen-4 general video generation (text/image to video).",
+        supported_modes={"image-to-video"},
+        description="Runway Gen-4 general video generation fast but limited.",
     ),
     "runway-act-two": VideosModelInfo(
         provider="runway",
         external=True,
-        supported_modes={"text_to_video", "image_to_video", "video_to_video"},
-        description="Updates an input video with a reference image (image+video to video).",
+        supported_modes={"video-to-video"},
+        description="Matches animation from a reference video to a character reference image.",
     ),
     "runway-upscale": VideosModelInfo(
         provider="runway",
         external=True,
-        supported_modes={"video_to_video"},
-        description="Video upscaling model (video-to-video).",
+        supported_modes={"video-to-video"},
+        description="Video upscaling model.",
     ),
     "runway-gen-4-aleph": VideosModelInfo(
         provider="runway",
         external=True,
-        supported_modes={"text_to_video", "image_to_video", "first_last_frame", "video_to_video"},
-        description="Aleph variant: can enhance/alter existing video and use image references.",
+        supported_modes={"video-to-video"},
+        description="Aleph can enhance/alter existing video and use image references.",
     ),
     "bytedance-seedance-1": VideosModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text_to_video", "image_to_video"},
-        description="Seedance-1 fast general video generation.",
+        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        description="Seedance-1 flagship model. Great all rounder. Supports high_quality variant.",
     ),
     "kwaivgi-kling-2": VideosModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text_to_video", "image_to_video"},
-        description="Kling V2 high-quality text/image to video generation.",
+        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        description="Kling 2.5 flagship model. Great at first-last frame coherence.",
     ),
     "google-veo-3": VideosModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text_to_video", "image_to_video"},
-        description="VEO-3 flagship model. Supports high_quality variant.",
+        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        description="VEO-3.1 flagship model. Expensive.",
     ),
     "openai-sora-2": VideosModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text_to_video", "image_to_video"},
-        description="Sora 2 high-end text/image to video generation. Supports high_quality variant.",
+        supported_modes={"text-to-video", "image-to-video"},
+        description="Sora 2 openai flagship model. Expensive and not great at image-to-video.",
     ),
     "minimax-hailuo-2": VideosModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text_to_video"},
-        description="Hailuo-2.3 text-to-video with multiple duration/resolution options.",
+        supported_modes={"text-to-video", "image-to-video"},
+        description="Hailuo-2.3 great physics understanding.",
     ),
 }
 
@@ -168,12 +168,12 @@ class VideoRequest(BaseModel):
     @property
     def inferred_mode(self) -> InferredMode:
         if self.video:
-            return "video_to_video"
+            return "video-to-video"
         if self.image and self.last_image:
-            return "first_last_frame"
+            return "first-last-image"
         if self.image:
-            return "image_to_video"
-        return "text_to_video"
+            return "image-to-video"
+        return "text-to-video"
 
     @property
     def meta(self) -> VideosModelInfo:
@@ -198,8 +198,6 @@ class VideoRequest(BaseModel):
             raise ValueError(f"Model '{self.model}' does not support mode '{mode}'.")
         if self.last_image and not self.image:
             raise ValueError("last_image requires image.")
-        if self.video and not self.image:
-            raise ValueError("video requires image.")
         return self
 
 
