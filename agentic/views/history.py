@@ -1,4 +1,5 @@
 import json
+from typing import Union
 
 import gradio as gr
 
@@ -16,20 +17,19 @@ def _show_past_messages_json(past_messages: list):
 
 def _show_deps_state(deps: Deps):
     """Format deps state for display"""
-    if not deps or (not deps.images and not deps.videos):
-        return "No media generated yet"
 
     state_info = {
         "total_images": len(deps.images),
         "total_videos": len(deps.videos),
-        "pending_tasks": len(deps.get_pending_tasks()),
+        "pending_videos": len(deps.get_pending_videos_ids()),
+        "pending_images": len(deps.get_pending_images_ids()),
         "completed_media": len(deps.get_completed_media()),
         "images": [
             {
                 "id": img.id,
                 "status": img.status,
                 "model": img.model,
-                "prompt": img.prompt[:100] + "..." if len(img.prompt) > 100 else img.prompt,
+                "prompt": img.prompt,
                 "local_file_path": img.local_file_path,
             }
             for img in deps.images
@@ -39,7 +39,7 @@ def _show_deps_state(deps: Deps):
                 "id": vid.id,
                 "status": vid.status,
                 "model": vid.model,
-                "prompt": vid.prompt[:100] + "..." if len(vid.prompt) > 100 else vid.prompt,
+                "prompt": vid.prompt,
                 "local_file_path": vid.local_file_path,
             }
             for vid in deps.videos
@@ -49,7 +49,7 @@ def _show_deps_state(deps: Deps):
     return json.dumps(state_info, indent=2)
 
 
-def create_history_component(past_messages_state, deps_object):
+def create_history_component(past_messages_state: gr.State, deps_state: gr.State):
     """Create history component that accesses deps directly"""
 
     with gr.Accordion("History & State", open=False) as history_accordion:
@@ -78,8 +78,10 @@ def create_history_component(past_messages_state, deps_object):
         outputs=[history_json],
     )
 
-    # Set up periodic refresh for deps (every 30 seconds, same as timer)
-    deps_timer = gr.Timer(30)
-    deps_timer.tick(fn=lambda: _show_deps_state(deps_object), outputs=[deps_json])
+    deps_state.change(
+        fn=_show_deps_state,
+        inputs=[deps_state],
+        outputs=[deps_json],
+    )
 
     return history_accordion, deps_json  # Return the deps display componen

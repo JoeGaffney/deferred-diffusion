@@ -8,10 +8,9 @@ from pydantic_ai import ToolCallPart, ToolReturnPart
 
 from agents.chat_agent import chat_agent
 from agents.fetch_agent import fetch_agent
+from common.logger import logger
 from common.state import Deps
 from views.history import create_history_component
-
-deps = Deps()
 
 
 def add_media_content(content_dict: dict, chatbot: list[dict]):
@@ -42,9 +41,9 @@ def add_media_content(content_dict: dict, chatbot: list[dict]):
         chatbot.append(media_message)
 
 
-async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: list):
+async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: list, deps: Deps):
     chatbot.append({"role": "user", "content": prompt})
-    yield gr.Textbox(interactive=False, value=""), chatbot, gr.skip()
+    yield gr.Textbox(interactive=False, value=""), chatbot, gr.skip(), gr.skip()
 
     async with chat_agent.run_mcp_servers():
         async with chat_agent.run_stream(prompt, deps=deps, message_history=past_messages) as result:
@@ -53,7 +52,6 @@ async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: lis
                     if isinstance(call, ToolCallPart):
                         call_args = call.args_as_json_str()
                         metadata = {"title": f"🛠️ Using {call.tool_name}", "id": call.tool_call_id or ""}
-
                         gr_message = {
                             "role": "assistant",
                             "content": "Parameters: " + call_args,
@@ -75,32 +73,35 @@ async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: lis
                                     else:
                                         json_content = json.dumps(call.content)
                                         content_dict = call.content if isinstance(call.content, dict) else {}
+
                                     gr_message["content"] += f"\nOutput: {json_content}"
                                     add_media_content(content_dict, chatbot)
                                     deps.add_or_update_media(content_dict, call.tool_name or "")
                     # must yield after each tool call part to stream properly ??
-                    yield gr.skip(), chatbot, gr.skip()
+                    yield gr.skip(), chatbot, gr.skip(), gr.skip()
 
+            # Finally, stream the main output
             chatbot.append({"role": "assistant", "content": ""})
+            assistant_index = len(chatbot) - 1
             async for message in result.stream_text():
-                chatbot[-1]["content"] = message
-                yield gr.skip(), chatbot, gr.skip()
+                chatbot[assistant_index]["content"] = message
+                yield gr.skip(), chatbot, gr.skip(), gr.skip()
 
+            logger.info(f"Stream Deps: {deps.images}, {deps.videos}")
             past_messages.extend(result.new_messages())
-            yield gr.Textbox(interactive=True), gr.skip(), past_messages
+            yield gr.Textbox(interactive=True), gr.skip(), past_messages, deps.clone()
 
 
-async def check_completed_generations(past_messages: list, chatbot: list[dict]):
+async def check_completed_generations(chatbot: list[dict], past_messages: list, deps: Deps):
     """Silently check for completed generations and add media to chat"""
     prompt = "fetch any incomplete generations that are in PENDING or STARTED state"
+    logger.info(f"Checking for completed generations... {deps.images}, {deps.videos}")
+    if not deps.get_pending_images_ids() and not deps.get_pending_videos_ids():
+        return gr.skip(), gr.skip(), gr.skip()
 
-    if not deps.get_pending_task_ids():
-        return chatbot, past_messages
-
-    print("Checking for completed generations...")
+    has_updates = False
     async with fetch_agent.run_mcp_servers():
         result = await fetch_agent.run(prompt, deps=deps, message_history=[])
-        valid_message = []
         for message in result.new_messages():
             for call in message.parts:
                 if isinstance(call, ToolReturnPart):
@@ -112,21 +113,23 @@ async def check_completed_generations(past_messages: list, chatbot: list[dict]):
                     # Only add media content - no tool call display
                     add_media_content(content_dict, chatbot)
                     deps.add_or_update_media(content_dict, call.tool_name or "")
-                    valid_message.append(message)
+                    has_updates = True
 
-        if valid_message:
+        if has_updates:
             # Update past_messages but don't show the tool calls in chat
             past_messages.extend(result.new_messages())
-            chatbot.append({"role": "assistant", "content": result.output or ""})
+            if result.output:
+                chatbot.append({"role": "assistant", "content": result.output or ""})
 
-    return chatbot, past_messages
+    # to avoid overwriting the UI if no updates
+    return chatbot, past_messages, deps.clone()
 
 
-async def handle_retry(chatbot, past_messages: list, retry_data: gr.RetryData):
+async def handle_retry(chatbot, past_messages: list, deps: Deps, retry_data: gr.RetryData):
     new_history = chatbot[: retry_data.index]
     previous_prompt = chatbot[retry_data.index]["content"]
     past_messages = past_messages[: retry_data.index]
-    async for update in stream_from_agent(previous_prompt, new_history, past_messages):
+    async for update in stream_from_agent(previous_prompt, new_history, past_messages, deps):
         yield update
 
 
@@ -140,9 +143,9 @@ def select_data(message: gr.SelectData) -> str:
     return message.value["text"]
 
 
-with gr.Blocks() as demo:
-    past_messages = gr.State([])
-    deps_trigger = gr.State(0)  # Simple trigger counter
+with gr.Blocks(fill_height=True) as demo:
+    past_messages = gr.State([], time_to_live=None)
+    deps = gr.State(Deps(), time_to_live=None)
 
     with gr.Column(scale=10):
         chatbot = gr.Chatbot(
@@ -166,11 +169,11 @@ with gr.Blocks() as demo:
 
     generation = prompt.submit(
         stream_from_agent,
-        inputs=[prompt, chatbot, past_messages],
-        outputs=[prompt, chatbot, past_messages],
+        inputs=[prompt, chatbot, past_messages, deps],
+        outputs=[prompt, chatbot, past_messages, deps],
     )
     chatbot.example_select(select_data, None, [prompt])
-    chatbot.retry(handle_retry, [chatbot, past_messages], [prompt, chatbot, past_messages])
+    chatbot.retry(handle_retry, [chatbot, past_messages, deps], [prompt, chatbot, past_messages, deps])
     chatbot.undo(undo, [chatbot, past_messages], [prompt, chatbot, past_messages])
 
     # Add timer for automatic checking
@@ -178,8 +181,8 @@ with gr.Blocks() as demo:
     # Timer event for checking completed generations
     timer.tick(
         check_completed_generations,
-        inputs=[past_messages, chatbot],
-        outputs=[chatbot, past_messages],
+        inputs=[chatbot, past_messages, deps],
+        outputs=[chatbot, past_messages, deps],
     )
 
 if __name__ == "__main__":
