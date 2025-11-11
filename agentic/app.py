@@ -6,10 +6,12 @@ import gradio as gr
 from pydantic import BaseModel
 from pydantic_ai import ToolCallPart, ToolReturnPart
 
-from agents.chat_agent import Deps, chat_agent
+from agents.chat_agent import chat_agent
+from agents.fetch_agent import fetch_agent
+from common.state import Deps
 from views.history import create_history_component
 
-deps = Deps(client=None)
+deps = Deps()
 
 
 def add_media_content(content_dict: dict, chatbot: list[dict]):
@@ -75,7 +77,7 @@ async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: lis
                                         content_dict = call.content if isinstance(call.content, dict) else {}
                                     gr_message["content"] += f"\nOutput: {json_content}"
                                     add_media_content(content_dict, chatbot)
-
+                                    deps.add_or_update_media(content_dict, call.tool_name or "")
                     # must yield after each tool call part to stream properly ??
                     yield gr.skip(), chatbot, gr.skip()
 
@@ -91,9 +93,13 @@ async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: lis
 async def check_completed_generations(past_messages: list, chatbot: list[dict]):
     """Silently check for completed generations and add media to chat"""
     prompt = "fetch any incomplete generations that are in PENDING or STARTED state"
+
+    if not deps.get_pending_task_ids():
+        return chatbot, past_messages
+
     print("Checking for completed generations...")
-    async with chat_agent.run_mcp_servers():
-        result = await chat_agent.run(prompt, deps=deps, message_history=past_messages)
+    async with fetch_agent.run_mcp_servers():
+        result = await fetch_agent.run(prompt, deps=deps, message_history=[])
         valid_message = []
         for message in result.new_messages():
             for call in message.parts:
@@ -105,10 +111,13 @@ async def check_completed_generations(past_messages: list, chatbot: list[dict]):
 
                     # Only add media content - no tool call display
                     add_media_content(content_dict, chatbot)
+                    deps.add_or_update_media(content_dict, call.tool_name or "")
                     valid_message.append(message)
 
-        # Update past_messages but don't show the tool calls in chat
-        past_messages.extend(result.new_messages())
+        if valid_message:
+            # Update past_messages but don't show the tool calls in chat
+            past_messages.extend(result.new_messages())
+            chatbot.append({"role": "assistant", "content": result.output or ""})
 
     return chatbot, past_messages
 
@@ -133,6 +142,7 @@ def select_data(message: gr.SelectData) -> str:
 
 with gr.Blocks() as demo:
     past_messages = gr.State([])
+    deps_trigger = gr.State(0)  # Simple trigger counter
 
     with gr.Column(scale=10):
         chatbot = gr.Chatbot(
@@ -152,7 +162,7 @@ with gr.Blocks() as demo:
             submit_btn=True,
         )
         # Create history component (includes button and modal with events)
-        show_history_btn = create_history_component(past_messages)
+        show_history_btn = create_history_component(past_messages, deps)
 
     generation = prompt.submit(
         stream_from_agent,
@@ -166,7 +176,11 @@ with gr.Blocks() as demo:
     # Add timer for automatic checking
     timer = gr.Timer(30)  # 30 seconds
     # Timer event for checking completed generations
-    timer.tick(check_completed_generations, inputs=[past_messages, chatbot], outputs=[chatbot, past_messages])
+    timer.tick(
+        check_completed_generations,
+        inputs=[past_messages, chatbot],
+        outputs=[chatbot, past_messages],
+    )
 
 if __name__ == "__main__":
     demo.launch()

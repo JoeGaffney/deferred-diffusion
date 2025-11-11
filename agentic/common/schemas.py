@@ -120,3 +120,15 @@ class SequenceResponse(BaseModel):
     protagonist: CharacterResponse | None = Field(description="Description of the protagonist")
     antagonist: CharacterResponse | None = Field(description="Description of the antagonist")
     shots: List[ShotResponse] = Field(description="Sequence of shots in the scene")
+
+
+class Media(BaseModel):
+    id: str = Field(description="Unique identifier for the media")
+    status: str = Field(
+        description="Status of the media generation, e.g., PENDING, STARTED, FAILED, COMPLETED", default="PENDING"
+    )
+    model: str = Field(description="Model used for generating the media", default="")
+    prompt: str = Field(description="Prompt used for generating the media", default="")
+    base64_data: str = Field(description="Base64 encoded media data", default="")
+    local_file_path: str = Field(description="Local file path to the media", default="")
+    type: str = Field(description="Type of media, e.g., image, video", default="image")
