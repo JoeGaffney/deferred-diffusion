@@ -32,6 +32,23 @@ def _show_deps_state(deps: Deps):
     }
 
 
+def _get_media_gallery_items(deps: Deps):
+    """Extract local file paths for media gallery display"""
+    media_paths = []
+
+    # Get images with local_file_path
+    for img in deps.images:
+        if hasattr(img, "local_file_path") and img.local_file_path:
+            media_paths.append(img.local_file_path)
+
+    # Get videos with local_file_path
+    for vid in deps.videos:
+        if hasattr(vid, "local_file_path") and vid.local_file_path:
+            media_paths.append(vid.local_file_path)
+
+    return media_paths
+
+
 def create_history_component(past_messages_state: gr.State, deps_state: gr.State):
     """Create history component that accesses deps directly"""
 
@@ -52,7 +69,13 @@ def create_history_component(past_messages_state: gr.State, deps_state: gr.State
                         show_label=True,
                     )
 
-    # Auto-update messages (no need for json.dumps now)
+                with gr.Tab("Media Gallery"):
+                    media_gallery = gr.Gallery(
+                        object_fit="contain",
+                        columns=4,
+                    )
+
+    # Auto-updates
     past_messages_state.change(
         fn=_show_past_messages_json,
         inputs=[past_messages_state],
@@ -65,4 +88,10 @@ def create_history_component(past_messages_state: gr.State, deps_state: gr.State
         outputs=[deps_json],
     )
 
-    return history_accordion, deps_json
+    deps_state.change(
+        fn=_get_media_gallery_items,
+        inputs=[deps_state],
+        outputs=[media_gallery],
+    )
+
+    return history_accordion, deps_json, media_gallery
