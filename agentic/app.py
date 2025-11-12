@@ -43,87 +43,78 @@ def get_content_dict_from_call(call: ToolReturnPart) -> dict:
         return call.content if isinstance(call.content, dict) else {}
 
 
-async def stream_from_agent(prompt: str, chatbot: list[gr.ChatMessage], past_messages: list, deps: Deps):
+async def run_agent_with_feedback(prompt: str, chatbot: list[gr.ChatMessage], past_messages: list, deps: Deps):
     chatbot.append(gr.ChatMessage(role="user", content=prompt))
+    chatbot.append(gr.ChatMessage(role="assistant", content="🤔 Processing..."))
     yield gr.Textbox(interactive=False, value=""), chatbot, gr.skip(), gr.skip()
 
+    result = None
     try:
         async with chat_agent.run_mcp_servers():
-            async with chat_agent.run_stream(prompt, deps=deps, message_history=past_messages) as result:
-                tool_calls: dict[str, ToolCallCoupling] = {}  # Track calls by ID
-
-                # First pass: collect all tool interactions
-                for message in result.new_messages():
-                    for call in message.parts:
-                        if isinstance(call, ToolCallPart):
-                            if call.tool_call_id:
-                                tool_calls[call.tool_call_id] = ToolCallCoupling(
-                                    tool_call_id=call.tool_call_id,
-                                    tool_call=call,
-                                )
-                        elif isinstance(call, ToolReturnPart):
-                            if call.tool_call_id and call.tool_call_id in tool_calls:
-                                tool_calls[call.tool_call_id].tool_return = call
-
-                # Second pass: apply all completed tool calls together
-                for coupling in tool_calls.values():
-                    if coupling.tool_call and coupling.tool_return:
-                        # Add tool call message
-                        metadata = MetadataDict(
-                            title=f"🛠️ Using {coupling.tool_call.tool_name}",
-                            id=coupling.tool_call_id or "",
-                            status="done",
-                        )
-                        call_args = coupling.tool_call.args_as_dict()
-                        content = {"Arguments": call_args}
-
-                        # Add tool return message
-                        content_dict = get_content_dict_from_call(coupling.tool_return)
-                        content["Result"] = content_dict
-
-                        chatbot.append(
-                            gr.ChatMessage(
-                                role="assistant",
-                                content=str(json.dumps(content, indent=2)),
-                                metadata=metadata,
-                            )
-                        )
-
-                        media_content = get_media_content(content_dict)
-                        if media_content:
-                            chatbot.append(gr.ChatMessage(role="assistant", content=media_content))
-
-                        deps.add_or_update_media(content_dict, coupling.tool_return.tool_name or "")
-
-                # Single yield after all tool interactions are processed
-                if tool_calls:
-                    yield gr.skip(), chatbot, gr.skip(), gr.skip()
-
-                # Finally, stream the main output
-                chatbot.append(
-                    gr.ChatMessage(
-                        role="assistant",
-                        content="",
-                    )
-                )
-                assistant_index = len(chatbot) - 1
-                async for message in result.stream_text():
-                    chatbot[assistant_index].content = message
-                    yield gr.skip(), chatbot, gr.skip(), gr.skip()
-
-                logger.info(f"Stream Deps: {deps.images}, {deps.videos}")
-                past_messages.extend(result.new_messages())
-
-        yield gr.Textbox(interactive=True), gr.skip(), past_messages, deps.clone()
+            result = await chat_agent.run(prompt, deps=deps, message_history=past_messages)
     except Exception as e:
-        logger.error(f"Error during agent streaming: {e}")
-        chatbot.append(
-            gr.ChatMessage(
-                role="assistant",
-                content=f"Error: {str(e)}",
-            )
-        )
+        chatbot.pop()  # Remove "thinking" message
+        logger.error(f"Error: {e}")
+        chatbot.append(gr.ChatMessage(role="assistant", content=f"Error: {str(e)}"))
         yield gr.Textbox(interactive=True), chatbot, gr.skip(), gr.skip()
+        return
+
+    chatbot.pop()  # Remove "thinking" message
+    if result is None:
+        chatbot.append(gr.ChatMessage(role="assistant", content="Error: No response from agent"))
+        yield gr.Textbox(interactive=True), chatbot, gr.skip(), gr.skip()
+        return
+
+    tool_calls: dict[str, ToolCallCoupling] = {}  # Track calls by ID
+
+    # First pass: collect all tool interactions
+    for message in result.new_messages():
+        for call in message.parts:
+            if isinstance(call, ToolCallPart):
+                if call.tool_call_id:
+                    tool_calls[call.tool_call_id] = ToolCallCoupling(
+                        tool_call_id=call.tool_call_id,
+                        tool_call=call,
+                    )
+            elif isinstance(call, ToolReturnPart):
+                if call.tool_call_id and call.tool_call_id in tool_calls:
+                    tool_calls[call.tool_call_id].tool_return = call
+
+    # Second pass: apply all completed tool calls together
+    for coupling in tool_calls.values():
+        if coupling.tool_call and coupling.tool_return:
+            # Add tool call message
+            metadata = MetadataDict(
+                title=f"🛠️ Using {coupling.tool_call.tool_name}",
+                id=coupling.tool_call_id or "",
+                status="done",
+            )
+            call_args = coupling.tool_call.args_as_dict()
+            content = {"Arguments": call_args}
+
+            # Add tool return message
+            content_dict = get_content_dict_from_call(coupling.tool_return)
+            content["Result"] = content_dict
+
+            chatbot.append(
+                gr.ChatMessage(
+                    role="assistant",
+                    content=str(json.dumps(content, indent=2)),
+                    metadata=metadata,
+                )
+            )
+
+            media_content = get_media_content(content_dict)
+            if media_content:
+                chatbot.append(gr.ChatMessage(role="assistant", content=media_content))
+
+            deps.add_or_update_media(content_dict, coupling.tool_return.tool_name or "")
+
+    # Finally, render the agent's final output message
+    if result.output:
+        chatbot.append(gr.ChatMessage(role="assistant", content=result.output))
+
+    yield gr.Textbox(interactive=True), chatbot, past_messages, deps.clone()
 
 
 async def check_completed_generations(chatbot: list[gr.ChatMessage], past_messages: list, deps: Deps):
@@ -173,7 +164,7 @@ async def handle_retry(chatbot, past_messages: list, deps: Deps, retry_data: gr.
     new_history = chatbot[: retry_data.index]
     previous_prompt = chatbot[retry_data.index]["content"]
     past_messages = past_messages[: retry_data.index]
-    async for update in stream_from_agent(previous_prompt, new_history, past_messages, deps):
+    async for update in run_agent_with_feedback(previous_prompt, new_history, past_messages, deps):
         yield update
 
 
@@ -212,7 +203,7 @@ with gr.Blocks(fill_height=True) as demo:
         create_history_component(past_messages, deps)
 
     generation = prompt.submit(
-        stream_from_agent,
+        run_agent_with_feedback,
         inputs=[prompt, chatbot, past_messages, deps],
         outputs=[prompt, chatbot, past_messages, deps],
     )
@@ -222,7 +213,6 @@ with gr.Blocks(fill_height=True) as demo:
 
     # Add timer for automatic checking
     timer = gr.Timer(30)  # 30 seconds
-    # Timer event for checking completed generations
     timer.tick(
         check_completed_generations,
         inputs=[chatbot, past_messages, deps],
