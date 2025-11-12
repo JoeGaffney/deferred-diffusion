@@ -9,11 +9,12 @@ from pydantic_ai import ToolCallPart, ToolReturnPart
 from agents.chat_agent import chat_agent
 from agents.fetch_agent import fetch_agent
 from common.logger import logger
+from common.schemas import ToolCallCoupling
 from common.state import Deps
 from views.history import create_history_component
 
 
-def add_media_content(content_dict: dict, chatbot: list[dict]):
+def get_media_content(content_dict: dict) -> gr.components.Component | None:
     """
     Checks for local file paths in the content_dict and appends appropriate media messages to the chatbot.
     Supports PNG images and MP4 videos.
@@ -28,17 +29,10 @@ def add_media_content(content_dict: dict, chatbot: list[dict]):
 
     # Add image display if local file path exists and is an image
     if local_file_path and str(local_file_path).lower().endswith(".png"):
-        media_message = {
-            "role": "assistant",
-            "content": gr.Image(value=local_file_path, height="33%", width="33%"),
-        }
-        chatbot.append(media_message)
+        return gr.Image(value=local_file_path, height="33%", width="33%")
     if local_file_path and str(local_file_path).lower().endswith(".mp4"):
-        media_message = {
-            "role": "assistant",
-            "content": gr.Video(value=local_file_path, height="33%", width="33%"),
-        }
-        chatbot.append(media_message)
+        return gr.Video(value=local_file_path, height="33%", width="33%")
+    return None
 
 
 async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: list, deps: Deps):
@@ -47,38 +41,66 @@ async def stream_from_agent(prompt: str, chatbot: list[dict], past_messages: lis
 
     async with chat_agent.run_mcp_servers():
         async with chat_agent.run_stream(prompt, deps=deps, message_history=past_messages) as result:
+            tool_calls: dict[str, ToolCallCoupling] = {}  # Track calls by ID
+
+            # First pass: collect all tool interactions
             for message in result.new_messages():
                 for call in message.parts:
                     if isinstance(call, ToolCallPart):
-                        call_args = call.args_as_json_str()
-                        metadata = {"title": f"🛠️ Using {call.tool_name}", "id": call.tool_call_id or ""}
-                        gr_message = {
+                        if call.tool_call_id:
+                            tool_calls[call.tool_call_id] = ToolCallCoupling(
+                                tool_call_id=call.tool_call_id,
+                                tool_call=call,
+                            )
+                    elif isinstance(call, ToolReturnPart):
+                        if call.tool_call_id and call.tool_call_id in tool_calls:
+                            tool_calls[call.tool_call_id].tool_return = call
+
+            # Second pass: apply all completed tool calls together
+            for coupling in tool_calls.values():
+                if coupling.tool_call and coupling.tool_return:
+                    # Add tool call message
+                    metadata = {
+                        "title": f"🛠️ Using {coupling.tool_call.tool_name}",
+                        "id": coupling.tool_call_id or "",
+                        # "status": "done",
+                    }
+                    call_args = coupling.tool_call.args_as_dict()
+                    content = {"Arguments": call_args}
+
+                    # Add tool return message
+                    if isinstance(coupling.tool_return.content, BaseModel):
+                        json_content = coupling.tool_return.content.model_dump_json()
+                        content_dict = coupling.tool_return.content.model_dump()
+                        content["Result"] = content_dict
+                    else:
+                        json_content = json.dumps(coupling.tool_return.content)
+                        content_dict = (
+                            coupling.tool_return.content if isinstance(coupling.tool_return.content, dict) else {}
+                        )
+                        content["Result"] = content_dict
+
+                    chatbot.append(
+                        {
                             "role": "assistant",
-                            "content": "Parameters: " + call_args,
+                            "content": gr.JSON(value=content),
                             "metadata": metadata,
                         }
-                        chatbot.append(gr_message)
-                    elif isinstance(call, ToolReturnPart):
-                        id = call.tool_call_id or ""
-                        for gr_message in chatbot:
-                            valid = False
-                            if gr_message and gr_message.get("metadata") != None:
-                                valid = True
+                    )
 
-                            if valid:
-                                if gr_message.get("metadata", {}).get("id", "") == id:
-                                    if isinstance(call.content, BaseModel):
-                                        json_content = call.content.model_dump_json()
-                                        content_dict = call.content.model_dump()
-                                    else:
-                                        json_content = json.dumps(call.content)
-                                        content_dict = call.content if isinstance(call.content, dict) else {}
+                    media_content = get_media_content(content_dict)
+                    if media_content:
+                        media_message = {
+                            "role": "assistant",
+                            "content": media_content,
+                        }
+                        chatbot.append(media_message)
 
-                                    gr_message["content"] += f"\nOutput: {json_content}"
-                                    add_media_content(content_dict, chatbot)
-                                    deps.add_or_update_media(content_dict, call.tool_name or "")
-                    # must yield after each tool call part to stream properly ??
-                    yield gr.skip(), chatbot, gr.skip(), gr.skip()
+                    deps.add_or_update_media(content_dict, coupling.tool_return.tool_name or "")
+
+            # Single yield after all tool interactions are processed
+            if tool_calls:
+                yield gr.skip(), chatbot, gr.skip(), gr.skip()
 
             # Finally, stream the main output
             chatbot.append({"role": "assistant", "content": ""})
@@ -101,7 +123,7 @@ async def check_completed_generations(chatbot: list[dict], past_messages: list, 
 
     has_updates = False
     async with fetch_agent.run_mcp_servers():
-        result = await fetch_agent.run(prompt, deps=deps, message_history=[])
+        result = await fetch_agent.run(prompt, deps=deps, message_history=past_messages)
         for message in result.new_messages():
             for call in message.parts:
                 if isinstance(call, ToolReturnPart):
@@ -111,7 +133,14 @@ async def check_completed_generations(chatbot: list[dict], past_messages: list, 
                         content_dict = call.content if isinstance(call.content, dict) else {}
 
                     # Only add media content - no tool call display
-                    add_media_content(content_dict, chatbot)
+                    media_content = get_media_content(content_dict)
+                    if media_content:
+                        media_message = {
+                            "role": "assistant",
+                            "content": media_content,
+                        }
+                        chatbot.append(media_message)
+
                     deps.add_or_update_media(content_dict, call.tool_name or "")
                     has_updates = True
 

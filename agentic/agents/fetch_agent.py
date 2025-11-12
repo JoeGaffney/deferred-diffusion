@@ -14,6 +14,7 @@ fetch_agent = Agent(
         "You retrieve pending images by using the get_pending_images_ids. "
         "You then call images_get to check their status and retrieve them when ready. "
         "You do the same for videos using get_pending_videos_ids and videos_get. "
+        "Provide details of model and prompt used when returning media."
     ),
     deps_type=Deps,
     toolsets=[get_mcp_server()],

@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import Base64Bytes, BaseModel, Field, computed_field, field_serializer
+from pydantic_ai import ToolCallPart, ToolReturnPart
 
 
 class ShotCharacterResponse(BaseModel):
@@ -132,3 +133,9 @@ class Media(BaseModel):
     base64_data: str = Field(description="Base64 encoded media data", default="")
     local_file_path: str = Field(description="Local file path to the media", default="")
     type: str = Field(description="Type of media, e.g., image, video", default="image")
+
+
+class ToolCallCoupling(BaseModel):
+    tool_call_id: str = Field(description="Unique identifier for the tool call")
+    tool_call: Optional[ToolCallPart] = None
+    tool_return: Optional[ToolReturnPart] = None
