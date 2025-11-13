@@ -69,6 +69,8 @@ We try to use plural to adhere to REST best practices.
 │── pytest.ini # ✅ Test configuration
 ```
 
+## Clients
+
 ```
 /clients
 │── /it_tests
@@ -80,6 +82,16 @@ We try to use plural to adhere to REST best practices.
 │ ├── python/generated/ # generated client
 │── openapi.json # API spec
 ```
+
+Example clients for Houdini and Nuke are provided in the `/clients` directory.
+
+See [clients/README.md](clients/README.md) for detailed setup instructions.
+
+## Agentic
+
+Example Agentic layer which is a bit experimental that demonstrates connection to the MCP server.
+
+See [agentic/README.md](agentic/README.md) for more information.
 
 ## Model naming / pathing
 
@@ -273,19 +285,13 @@ docker-compose exec gpu-workers pytest tests/texts/external_models -vs
 docker-compose exec gpu-workers pytest tests/videos/external_models -vs
 ```
 
-## Clients
-
-Example clients for Houdini and Nuke are provided in the `/clients` directory.
-
-See [clients/README.md](clients/README.md) for detailed setup instructions.
-
 ## MISC
 
 ### Docker helpers
 
 To optimize volumes and virtual disk useful after model deletions
 
-#### Kill Docker Desktop and related processes
+Kill Docker Desktop and related processes
 
 ```bash
 Stop-Process -Name "Docker Desktop" -Force -ErrorAction SilentlyContinue
@@ -294,6 +300,8 @@ Stop-Process -Name "vmmemWSL" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "wslhost" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "wsl" -Force -ErrorAction SilentlyContinue
 ```
+
+Then make sure docker and WSL are closed.
 
 ```bash
 Optimize-VHD -Path "Y:\DOCKER\DockerDesktopWSL\disk\docker_data.vhdx" -Mode Full

@@ -47,7 +47,6 @@ generate-clients-raw:
 	openapi-python-client generate --path clients/openapi.json --output-path clients/houdini/python/generated --overwrite
 	openapi-python-client generate --path clients/openapi.json --output-path clients/nuke/python/generated --overwrite
 	openapi-python-client generate --path clients/openapi.json --output-path clients/it_tests/generated --overwrite
-	openapi-python-client generate --path clients/openapi.json --output-path agentic/generated --overwrite
 
 
 # API Client generation
@@ -68,6 +67,11 @@ test-worker: up
 
 test-worker-basic: up
 	docker compose exec gpu-workers pytest -m "basic" -vs
+
+# make it-tests TEST_PATH=test_image_local.py
+it-tests: generate-clients
+	cd clients/it_tests && pytest tests/$(TEST_PATH) -vs
+	cd ../..
 
 it-tests-local: generate-clients
 	cd clients/it_tests && pytest -m "local" -vs

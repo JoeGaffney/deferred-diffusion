@@ -124,7 +124,6 @@ async def process_tool_call(
     # Handle case where data might be a JSON string
     data = result
     logger.info(f"Processing tool call: {name}, {tool_args}, {type(data)}")
-    logger.info(f"result: {data}")
 
     # Now data should be a dict (either originally or after JSON parsing)
     if name == "images_get":

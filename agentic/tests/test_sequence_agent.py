@@ -28,8 +28,6 @@ def test_sequence_agent_with_references():
         SequenceRequest(
             prompt="Create a sequence about an adventure.",
             scene_reference_image=image_to_base64("../../assets/color_v001.jpeg"),
-            # protagonist_reference_image=image_to_base64("../../assets/face_v001.jpeg"),
-            # antagonist_reference_image=image_to_base64("../../assets/face_v002.jpeg"),
         )
     )
 
