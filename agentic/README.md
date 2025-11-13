@@ -31,4 +31,4 @@ It is **local-first**, supports **multi-step, multi-modal workflows**, and maint
 
 ## Dev notes
 
-base64 encoded strings are massive and fill up context we wrap these at the call level and convert to a file path.
+base64 encoded strings are massive and fill up context we wrap these at the call level and convert to and from file paths.
