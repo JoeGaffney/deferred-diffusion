@@ -1,10 +1,7 @@
 from __future__ import annotations as _annotations
 
-import asyncio
-
 from pydantic_ai import Agent, RunContext
 
-from common.logger import logger
 from common.state import Deps
 from tools.dd_mcp_server import get_mcp_server
 

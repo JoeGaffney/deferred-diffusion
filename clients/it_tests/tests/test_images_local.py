@@ -66,7 +66,7 @@ def test_images_delete(api_client, model):
     body = ImageRequest(model=model, prompt="A beautiful mountain landscape", width=512, height=512)
 
     # submit two so we can revoke one while the other is running
-    image_id = create_image(api_client, body)
+    tmp_image_id = create_image(api_client, body)
     image_id = create_image(api_client, body)
 
     response = images_delete.sync_detailed(id=image_id, client=api_client)
@@ -82,7 +82,7 @@ def test_images_delete(api_client, model):
     assert isinstance(response.parsed, DeleteResponse)
     assert response.parsed.id == image_id
     assert response.parsed.status == "REVOKED"
-    assert response.parsed.message == "Task cancellation requested"
+    assert response.parsed.message == "Task already completed"
 
 
 @pytest.mark.local

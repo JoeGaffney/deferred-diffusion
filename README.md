@@ -87,9 +87,9 @@ Example clients for Houdini and Nuke are provided in the `/clients` directory.
 
 See [clients/README.md](clients/README.md) for detailed setup instructions.
 
-## Agnetic
+## Agentic
 
-Example agentic layer which is a bit experimental that demonstrates connection to the MCP server.
+Example Agentic layer which is a bit experimental that demonstrates connection to the MCP server.
 
 See [agentic/README.md](agentic/README.md) for more information.
 

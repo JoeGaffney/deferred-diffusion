@@ -11,7 +11,6 @@ from common.schemas import Media
 class Deps:
     images: list[Media] = field(default_factory=list)
     videos: list[Media] = field(default_factory=list)
-    version: int = 0  # increments on any mutation
 
     def clone(self) -> "Deps":
         # New instance, new lists (same Media objects)
@@ -51,7 +50,7 @@ class Deps:
                 result_data = call_dict["result"]
                 existing_media.local_file_path = result_data.get("local_file_path", existing_media.local_file_path)
                 existing_media.base64_data = result_data.get("base64_data", existing_media.base64_data)
-            logger.warning(f"Updated {media_type} {task_id} status: {existing_media.status}")
+            logger.info(f"Updated {media_type} {task_id} status: {existing_media.status}")
         else:
             # Create new media entry
             result_data = call_dict.get("result", {}) if isinstance(call_dict.get("result"), dict) else {}
