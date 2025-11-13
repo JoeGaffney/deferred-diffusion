@@ -134,7 +134,12 @@ class VideoRequest(BaseModel):
     )
     height: int = 480
     width: int = 854
-    num_frames: int = 48
+    num_frames: int = Field(
+        default=48,
+        description="Preferred number of frames to generate. External models will round to the nearest supported duration (e.g., 5s or 10s intervals). Values above 100 frames will automatically use the next available duration range.",
+        ge=24,
+        le=250,
+    )
     seed: int = 42
     image: Optional[str] = Field(
         default=None,

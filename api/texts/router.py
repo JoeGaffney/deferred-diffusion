@@ -4,6 +4,7 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from common.auth import verify_token
+from common.schemas import DeleteResponse
 from texts.schemas import (
     MODEL_META,
     TextCreateResponse,
@@ -13,6 +14,7 @@ from texts.schemas import (
     TextWorkerResponse,
     generate_model_docs,
 )
+from utils.utils import cancel_task
 from worker import celery_app
 
 router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify_token)])
@@ -55,3 +57,8 @@ def get(id: UUID):
         response.error_message = f"Task failed with error: {str(result.result)}"
 
     return response
+
+
+@router.delete("/{id}", response_model=DeleteResponse, operation_id="texts_delete")
+def delete(id: UUID):
+    return cancel_task(id, celery_app)

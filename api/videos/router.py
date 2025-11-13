@@ -4,6 +4,8 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
+from common.schemas import DeleteResponse
+from utils.utils import cancel_task
 from videos.schemas import (
     MODEL_META,
     VideoCreateResponse,
@@ -57,3 +59,8 @@ def get(id: UUID):
         response.error_message = f"Task failed with error: {str(result.result)}"
 
     return response
+
+
+@router.delete("/{id}", response_model=DeleteResponse, operation_id="videos_delete")
+def delete(id: UUID):
+    return cancel_task(id, celery_app)

@@ -69,6 +69,11 @@ test-worker: up
 test-worker-basic: up
 	docker compose exec gpu-workers pytest -m "basic" -vs
 
+# make it-tests TEST_PATH=test_image_local.py
+it-tests: generate-clients
+	cd clients/it_tests && pytest tests/$(TEST_PATH) -vs
+	cd ../..
+
 it-tests-local: generate-clients
 	cd clients/it_tests && pytest -m "local" -vs
 	cd ../..
