@@ -7,7 +7,6 @@ gguf
 imageio
 imageio-ffmpeg
 openai
-openapi-python-client
 opencv-python
 protobuf
 pydantic

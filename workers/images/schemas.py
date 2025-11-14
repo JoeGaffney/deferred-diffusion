@@ -1,7 +1,9 @@
-from typing import Any, Dict, Literal, Optional, TypeAlias, Union, get_args
+from typing import Any, Dict, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
+
+from common.schemas import TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -247,7 +249,7 @@ class ImageWorkerResponse(BaseModel):
 
 class ImageResponse(BaseModel):
     id: UUID
-    status: str
+    status: TaskStatus
     result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
     model_config = ConfigDict(
@@ -266,7 +268,7 @@ class ImageResponse(BaseModel):
 
 class ImageCreateResponse(BaseModel):
     id: UUID
-    status: str
+    status: TaskStatus
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

@@ -13,6 +13,7 @@ from generated.api_client.models import (
 )
 from generated.api_client.types import UNSET
 from utils import (
+    COMPLETED_STATUS,
     get_node_value,
     node_to_base64,
     nuke_error_handling,
@@ -38,10 +39,8 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
             parsed = texts_get.sync(id, client=client)
             if not isinstance(parsed, TextResponse):
                 break
-            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
-                break
 
-            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
+            if parsed.status in COMPLETED_STATUS:
                 break
 
             def progress_update(parsed=parsed, count=count):

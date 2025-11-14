@@ -10,9 +10,11 @@ from generated.api_client.models import (
     ImageRequest,
     ImageRequestModel,
     ImageResponse,
+    TaskStatus,
 )
 from generated.api_client.types import UNSET
 from utils import (
+    COMPLETED_STATUS,
     base64_to_file,
     get_node_value,
     get_output_path,
@@ -35,7 +37,7 @@ def create_dd_image_node():
 
 @threaded
 def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=5):
-    set_node_info(node, "PENDING", "")
+    set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
         time.sleep(sleep_time)
@@ -44,8 +46,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             parsed = images_get.sync(id, client=client)
             if not isinstance(parsed, ImageResponse):
                 break
-
-            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
+            if parsed.status in COMPLETED_STATUS:
                 break
 
             def progress_update(parsed=parsed, count=count):
@@ -68,7 +69,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             if not isinstance(parsed, ImageResponse):
                 raise ValueError("Unexpected response type from API call.")
 
-            if not parsed.status == "SUCCESS" or not parsed.result:
+            if not parsed.status == TaskStatus.SUCCESS or not parsed.result:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
             # Save the image to the specified path
@@ -79,7 +80,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             set_node_value(output_read, "file", output_path)
             update_read_range(output_read)
 
-            set_node_info(node, "COMPLETE", "")
+            set_node_info(node, TaskStatus.SUCCESS, "")
 
     nuke.executeInMainThread(update_ui)
 
@@ -99,7 +100,7 @@ def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: i
 
 def process_image(node):
     """Process the node using the API"""
-    set_node_info(node, "", "")
+    set_node_info(node, None, "")
     current_frame = nuke.frame()
 
     with nuke_error_handling(node):

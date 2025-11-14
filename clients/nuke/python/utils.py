@@ -10,7 +10,7 @@ from typing import List, Literal, Optional
 
 import nuke
 
-from generated.api_client.models.references import References, ReferencesMode
+from generated.api_client.models import References, ReferencesMode, TaskStatus
 from generated.api_client.types import UNSET
 
 NODE_CONTROLNET = "dd_controlnet"
@@ -26,6 +26,15 @@ MODE_EVALUATE = "evaluate"
 KnobAccessMode = Literal["get", "value", "evaluate"]
 
 
+COMPLETED_STATUS = [
+    TaskStatus.SUCCESS,
+    TaskStatus.FAILURE,
+    TaskStatus.REVOKED,
+    TaskStatus.REJECTED,
+    TaskStatus.IGNORED,
+]
+
+
 # Decorators
 def threaded(fn):
     def wrapper(*args, **kwargs):
@@ -37,20 +46,24 @@ def threaded(fn):
     return wrapper
 
 
-def set_node_info(node, status, message):
+def set_node_info(node, status: TaskStatus | None, message: str = ""):
     # Update the node label to show current status
-    status_text = f"[{status}]"
+    if status is None:
+        status_text = "[]"
+    else:
+        status_text = f"[{status}]"
+
     node["label"].setValue(status_text)
     if message:
         node["label"].setValue(f"{status_text}\n{message}")
 
-    if status == "COMPLETE":
+    if status == TaskStatus.SUCCESS:
         node["tile_color"].setValue(0x00CC00FF)  # Green
-    elif status == "PENDING":
+    elif status == TaskStatus.PENDING:
         node["tile_color"].setValue(0xCCCC00FF)  # Yellow
-    elif status in ["RUNNING", "IN_PROGRESS", "STARTED"]:
+    elif status in [TaskStatus.STARTED]:
         node["tile_color"].setValue(0x0000CCFF)  # Blue
-    elif status == ["FAILED", "ERROR", "FAILURE"]:
+    elif status in [TaskStatus.FAILURE]:
         node["tile_color"].setValue(0xCC0000FF)  # Red
     else:
         node["tile_color"].setValue(0x888888FF)  # Grey

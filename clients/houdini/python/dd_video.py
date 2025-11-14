@@ -2,8 +2,12 @@ import hou
 
 from config import client
 from generated.api_client.api.videos import videos_create, videos_get
-from generated.api_client.models import VideoCreateResponse, VideoRequest, VideoResponse
-from generated.api_client.models.video_request_model import VideoRequestModel
+from generated.api_client.models import (
+    VideoCreateResponse,
+    VideoRequest,
+    VideoRequestModel,
+    VideoResponse,
+)
 from generated.api_client.types import UNSET
 from utils import (
     base64_to_image,
@@ -18,11 +22,11 @@ from utils import (
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, wait=False):
+def _api_get_call(node, id, output_path: str):
     set_node_info(node, "PENDING", "")
 
     try:
-        parsed = videos_get.sync(id, client=client, wait=wait)
+        parsed = videos_get.sync(id, client=client)
     except Exception as e:
 
         def handle_error(error=e):
@@ -61,7 +65,7 @@ def _api_call(node, body: VideoRequest, output_image_path: str):
         raise ValueError("Unexpected response type from API call.")
 
     node.parm("task_id").set(str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_image_path, wait=True)
+    _api_get_call(node, str(parsed.id), output_image_path)
 
 
 def main(node):
@@ -74,7 +78,7 @@ def main(node):
             raise ValueError("Input image is required.")
 
         body = VideoRequest(
-            model=VideoRequestModel(params.get("model", "LTX-Video")),
+            model=VideoRequestModel(params.get("model", UNSET)),
             image=image,
             prompt=params.get("prompt", ""),
             seed=params.get("seed", 0),
@@ -91,4 +95,4 @@ def main_get(node):
             raise ValueError("Task ID is required to get the image.")
 
         output_image_path = get_output_path(node, movie=False)
-        _api_get_call(node, task_id, output_image_path, wait=False)
+        _api_get_call(node, task_id, output_image_path)

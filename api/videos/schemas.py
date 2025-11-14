@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
+from common.schemas import TaskStatus
+
 # User facing choice
 ModelName: TypeAlias = Literal[
     "ltx-video",
@@ -212,7 +214,7 @@ class VideoWorkerResponse(BaseModel):
 
 class VideoResponse(BaseModel):
     id: UUID
-    status: str
+    status: TaskStatus
     result: Optional[VideoWorkerResponse] = None
     error_message: Optional[str] = None
     model_config = ConfigDict(
@@ -231,7 +233,7 @@ class VideoResponse(BaseModel):
 
 class VideoCreateResponse(BaseModel):
     id: UUID
-    status: str
+    status: TaskStatus
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

@@ -1,7 +1,9 @@
-from typing import Dict, List, Literal, Optional, TypeAlias, get_args
+from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from common.schemas import TaskStatus
 
 ModelName: TypeAlias = Literal["qwen-2", "gpt-4o", "gpt-4", "gpt-5"]
 Provider: TypeAlias = Literal["local", "openai"]
@@ -99,7 +101,7 @@ class TextWorkerResponse(BaseModel):
 
 class TextResponse(BaseModel):
     id: UUID
-    status: str
+    status: TaskStatus
     result: Optional[TextWorkerResponse] = None
     error_message: Optional[str] = None
     model_config = ConfigDict(
@@ -118,7 +120,7 @@ class TextResponse(BaseModel):
 
 class TextCreateResponse(BaseModel):
     id: UUID
-    status: str
+    status: TaskStatus
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

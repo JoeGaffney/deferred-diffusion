@@ -14,6 +14,7 @@ from generated.api_client.models import (
 from generated.api_client.models.video_response import VideoResponse
 from generated.api_client.types import UNSET
 from utils import (
+    COMPLETED_STATUS,
     base64_to_file,
     get_node_value,
     get_output_path,
@@ -44,7 +45,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             parsed = videos_get.sync(id, client=client)
             if not isinstance(parsed, VideoResponse):
                 break
-            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
+            if parsed.status in COMPLETED_STATUS:
                 break
 
             def progress_update(parsed=parsed, count=count):
