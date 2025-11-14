@@ -28,7 +28,7 @@ from utils import (
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, expanded_path: str, iterations=1, sleep_time=5):
+def _api_get_call(node, id, output_path: str, expanded_path: str, iterations=100, sleep_time=5):
     set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):

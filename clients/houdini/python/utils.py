@@ -11,7 +11,6 @@ from typing import Optional
 import hou
 
 from generated.api_client.models import References, ReferencesMode, TaskStatus
-from generated.api_client.types import Response
 
 COMPLETED_STATUS = [
     TaskStatus.SUCCESS,
@@ -67,7 +66,7 @@ def houdini_error_handling(node):
         hou.ui.displayMessage(str(e))
     except Exception as e:
         set_node_info(node, TaskStatus.FAILURE, str(e))
-        traceback.print_exc()
+        # traceback.print_exc()
         hou.ui.displayMessage(str(e), severity=hou.severityType.Error)
 
 

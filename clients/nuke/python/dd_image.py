@@ -36,7 +36,7 @@ def create_dd_image_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=5):
+def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100, sleep_time=5):
     set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
@@ -95,7 +95,7 @@ def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: i
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_image_path, current_frame, iterations=100)
+    _api_get_call(node, str(parsed.id), output_image_path, current_frame)
 
 
 def process_image(node):
