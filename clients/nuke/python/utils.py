@@ -46,7 +46,7 @@ def threaded(fn):
     return wrapper
 
 
-def set_node_info(node, status: TaskStatus | None, message: str = ""):
+def set_node_info(node, status: Optional[TaskStatus], message: str = ""):
     # Update the node label to show current status
     if status is None:
         status_text = "[]"

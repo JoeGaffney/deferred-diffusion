@@ -33,9 +33,13 @@ def threaded(fn):
     return wrapper
 
 
-def set_node_info(node, status: TaskStatus | str, message: str):
-    node.setUserData("nodeinfo_api_status", str(status))
-    node.setUserData("nodeinfo_api_message", str(message))
+def set_node_info(node, status: TaskStatus | None, message: str):
+    if status is None:
+        node.setUserData("nodeinfo_api_status", str(""))
+        node.setUserData("nodeinfo_api_message", str(""))
+    else:
+        node.setUserData("nodeinfo_api_status", str(status))
+        node.setUserData("nodeinfo_api_message", str(message))
 
     if status == TaskStatus.SUCCESS:
         node.setColor(hou.Color((0.0, 0.8, 0.0)))
@@ -59,10 +63,10 @@ def houdini_error_handling(node):
     try:
         yield
     except ValueError as e:
-        set_node_info(node, "ERROR", str(e))
+        set_node_info(node, TaskStatus.FAILURE, str(e))
         hou.ui.displayMessage(str(e))
     except Exception as e:
-        set_node_info(node, "ERROR", str(e))
+        set_node_info(node, TaskStatus.FAILURE, str(e))
         traceback.print_exc()
         hou.ui.displayMessage(str(e), severity=hou.severityType.Error)
 

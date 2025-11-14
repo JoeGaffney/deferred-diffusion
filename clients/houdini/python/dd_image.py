@@ -10,8 +10,8 @@ from generated.api_client.models import (
     ImageRequest,
     ImageRequestModel,
     ImageResponse,
+    TaskStatus,
 )
-from generated.api_client.models.task_status import TaskStatus
 from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
@@ -90,7 +90,7 @@ def _api_call(node, body: ImageRequest, output_image_path: str):
 
 
 def process_image(node):
-    set_node_info(node, "", "")
+    set_node_info(node, None, "")
     with houdini_error_handling(node):
         params = get_node_parameters(node)
         output_image_path = get_output_path(node, movie=False)
