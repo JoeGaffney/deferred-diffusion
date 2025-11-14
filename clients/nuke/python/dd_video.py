@@ -7,6 +7,7 @@ from httpcore import RemoteProtocolError
 from config import client
 from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.models import (
+    TaskStatus,
     VideoCreateResponse,
     VideoRequest,
     VideoRequestModel,
@@ -36,7 +37,7 @@ def create_dd_video_node():
 
 @threaded
 def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=10):
-    set_node_info(node, "PENDING", "")
+    set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
         time.sleep(sleep_time)
@@ -67,7 +68,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
         with nuke_error_handling(node):
             if not isinstance(parsed, VideoResponse):
                 raise ValueError("Unexpected response type from API call.")
-            if not parsed.status == "SUCCESS" or not parsed.result:
+            if not parsed.status == TaskStatus.SUCCESS or not parsed.result:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
             # Save the movie to the specified path
@@ -79,7 +80,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
 
             # Set the time offset to the current frame
             set_node_value(node, "time_offset", current_frame)
-            set_node_info(node, "COMPLETE", "")
+            set_node_info(node, TaskStatus.SUCCESS, "")
 
     nuke.executeInMainThread(update_ui)
 
@@ -98,7 +99,7 @@ def _api_call(node, body: VideoRequest, output_video_path: str, current_frame: i
 
 
 def process_video(node):
-    set_node_info(node, "", "")
+    set_node_info(node, None, "")
     current_frame = nuke.frame()
 
     with nuke_error_handling(node):

@@ -6,6 +6,7 @@ from httpx import RemoteProtocolError
 from config import client
 from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.models import (
+    TaskStatus,
     TextCreateResponse,
     TextRequest,
     TextRequestModel,
@@ -31,7 +32,7 @@ def create_dd_text_node():
 
 @threaded
 def _api_get_call(node, id, iterations=1, sleep_time=5):
-    set_node_info(node, "PENDING", "")
+    set_node_info(node, TaskStatus.PENDING, "")
     for count in range(1, iterations + 1):
         time.sleep(sleep_time)
 
@@ -67,7 +68,7 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
 
             response_str = str(parsed.result.response)
             set_node_value(node, "response", response_str)
-            set_node_info(node, "COMPLETE", "")
+            set_node_info(node, TaskStatus.SUCCESS, "")
 
     nuke.executeInMainThread(update_ui)
 
@@ -86,7 +87,7 @@ def _api_call(node, body: TextRequest):
 
 
 def process_text(node):
-    set_node_info(node, "", "")
+    set_node_info(node, None, "")
 
     with nuke_error_handling(node):
         model = TextRequestModel(get_node_value(node, "model", UNSET, mode="value"))

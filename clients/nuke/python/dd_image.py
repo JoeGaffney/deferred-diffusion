@@ -99,7 +99,6 @@ def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: i
 
 
 def process_image(node):
-    """Process the node using the API"""
     set_node_info(node, None, "")
     current_frame = nuke.frame()
 
@@ -133,7 +132,6 @@ def process_image(node):
 
 
 def get_image(node):
-    """Get an image using a task ID"""
     current_frame = nuke.frame()
 
     with nuke_error_handling(node):
