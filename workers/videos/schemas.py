@@ -29,6 +29,9 @@ class VideosModelInfo(BaseModel):
     external: bool = Field(description="True if the model is invoked via an external API")
     supported_modes: set[InferredMode] = Field(default_factory=set)
     description: Optional[str] = None
+    high_quality_variant: Optional[bool] = Field(
+        description="Has a higher quality / pro variant. This can increase cost/latency.", default=False
+    )
 
     @property
     def queue(self) -> str:
@@ -83,6 +86,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=True,
         supported_modes={"text-to-video", "image-to-video", "first-last-image"},
         description="Seedance-1 flagship model. Great all rounder. Supports high_quality variant.",
+        high_quality_variant=True,
     ),
     "kwaivgi-kling-2": VideosModelInfo(
         provider="replicate",
@@ -95,18 +99,21 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=True,
         supported_modes={"text-to-video", "image-to-video", "first-last-image"},
         description="VEO-3.1 flagship model. Expensive.",
+        high_quality_variant=True,
     ),
     "openai-sora-2": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text-to-video", "image-to-video"},
         description="Sora 2 openai flagship model. Expensive and not great at image-to-video.",
+        high_quality_variant=True,
     ),
     "minimax-hailuo-2": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text-to-video", "image-to-video"},
         description="Hailuo-2.3 great physics understanding.",
+        high_quality_variant=True,
     ),
 }
 

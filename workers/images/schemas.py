@@ -31,6 +31,9 @@ class ImagesModelInfo(BaseModel):
     supported_modes: set[InferredMode] = Field(default_factory=set)
     references: bool = False  # separate capability flag
     description: Optional[str] = None
+    high_quality_variant: Optional[bool] = Field(
+        description="Has a higher quality / pro variant. This can increase cost/latency.", default=False
+    )
 
     @property
     def queue(self) -> str:
@@ -87,6 +90,7 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="OpenAI image model.",
+        high_quality_variant=True,
     ),
     "runway-gen4-image": ImagesModelInfo(
         provider="runway",
