@@ -1,8 +1,9 @@
 fastapi
-openapi-python-client
+openapi-python-client==0.26.2 # still supports python 3.9
 pydantic
 uvicorn
 celery
 redis
 mypy
 fastmcp
+pytest

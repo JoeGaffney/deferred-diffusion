@@ -1,7 +1,9 @@
-from typing import Any, Dict, Literal, Optional, TypeAlias, Union, get_args
+from typing import Any, Dict, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
+
+from common.schemas import TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -29,6 +31,9 @@ class ImagesModelInfo(BaseModel):
     supported_modes: set[InferredMode] = Field(default_factory=set)
     references: bool = False  # separate capability flag
     description: Optional[str] = None
+    high_quality_variant: Optional[bool] = Field(
+        description="Has a higher quality / pro variant. This can increase cost/latency.", default=False
+    )
 
     @property
     def queue(self) -> str:
@@ -85,6 +90,7 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="OpenAI image model.",
+        high_quality_variant=True,
     ),
     "runway-gen4-image": ImagesModelInfo(
         provider="runway",
@@ -247,7 +253,7 @@ class ImageWorkerResponse(BaseModel):
 
 class ImageResponse(BaseModel):
     id: UUID
-    status: str
+    status: TaskStatus
     result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
     model_config = ConfigDict(
@@ -266,7 +272,7 @@ class ImageResponse(BaseModel):
 
 class ImageCreateResponse(BaseModel):
     id: UUID
-    status: str
+    status: TaskStatus
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

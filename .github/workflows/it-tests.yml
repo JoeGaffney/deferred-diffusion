@@ -40,8 +40,8 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install openapi-python-client and pytest
-      run: pip install openapi-python-client pytest
+    - name: Install requirements
+      run: pip install -r api/requirements.txt
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3

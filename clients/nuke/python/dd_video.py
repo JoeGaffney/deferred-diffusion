@@ -7,6 +7,7 @@ from httpcore import RemoteProtocolError
 from config import client
 from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.models import (
+    TaskStatus,
     VideoCreateResponse,
     VideoRequest,
     VideoRequestModel,
@@ -14,6 +15,7 @@ from generated.api_client.models import (
 from generated.api_client.models.video_response import VideoResponse
 from generated.api_client.types import UNSET
 from utils import (
+    COMPLETED_STATUS,
     base64_to_file,
     get_node_value,
     get_output_path,
@@ -34,8 +36,8 @@ def create_dd_video_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, sleep_time=10):
-    set_node_info(node, "PENDING", "")
+def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100, sleep_time=10):
+    set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
         time.sleep(sleep_time)
@@ -44,7 +46,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
             parsed = videos_get.sync(id, client=client)
             if not isinstance(parsed, VideoResponse):
                 break
-            if parsed.status in ["SUCCESS", "COMPLETED", "ERROR", "FAILED", "FAILURE"]:
+            if parsed.status in COMPLETED_STATUS:
                 break
 
             def progress_update(parsed=parsed, count=count):
@@ -66,7 +68,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
         with nuke_error_handling(node):
             if not isinstance(parsed, VideoResponse):
                 raise ValueError("Unexpected response type from API call.")
-            if not parsed.status == "SUCCESS" or not parsed.result:
+            if not parsed.status == TaskStatus.SUCCESS or not parsed.result:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
             # Save the movie to the specified path
@@ -78,7 +80,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=1, 
 
             # Set the time offset to the current frame
             set_node_value(node, "time_offset", current_frame)
-            set_node_info(node, "COMPLETE", "")
+            set_node_info(node, TaskStatus.SUCCESS, "")
 
     nuke.executeInMainThread(update_ui)
 
@@ -93,11 +95,11 @@ def _api_call(node, body: VideoRequest, output_video_path: str, current_frame: i
         raise ValueError("Unexpected response type from API call.")
 
     set_node_value(node, "task_id", str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_video_path, current_frame, iterations=100)
+    _api_get_call(node, str(parsed.id), output_video_path, current_frame)
 
 
 def process_video(node):
-    set_node_info(node, "", "")
+    set_node_info(node, None, "")
     current_frame = nuke.frame()
 
     with nuke_error_handling(node):

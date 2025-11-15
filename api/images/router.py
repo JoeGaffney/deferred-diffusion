@@ -4,7 +4,7 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
-from common.schemas import DeleteResponse
+from common.schemas import DeleteResponse, TaskStatus
 from images.schemas import (
     MODEL_META,
     ImageCreateResponse,
@@ -60,7 +60,7 @@ def get(id: UUID):
             result_data = ImageWorkerResponse.model_validate(result.result)
             response.result = result_data
         except Exception as e:
-            response.status = "ERROR"
+            response.status = TaskStatus.FAILURE
             response.error_message = f"Error parsing result: {str(e)}"
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"

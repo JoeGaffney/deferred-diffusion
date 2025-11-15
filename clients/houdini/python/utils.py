@@ -1,6 +1,4 @@
 import base64
-import io
-import json
 import os
 import shutil
 import tempfile
@@ -12,12 +10,15 @@ from typing import Optional
 
 import hou
 
-from config import MAX_ADDITIONAL_IMAGES
-from generated.api_client.models.control_net_schema import ControlNetSchema
-from generated.api_client.models.control_net_schema_model import ControlNetSchemaModel
-from generated.api_client.models.ip_adapter_model import IpAdapterModel
-from generated.api_client.models.ip_adapter_model_model import IpAdapterModelModel
-from generated.api_client.types import Response
+from generated.api_client.models import References, ReferencesMode, TaskStatus
+
+COMPLETED_STATUS = [
+    TaskStatus.SUCCESS,
+    TaskStatus.FAILURE,
+    TaskStatus.REVOKED,
+    TaskStatus.REJECTED,
+    TaskStatus.IGNORED,
+]
 
 
 # Decorators
@@ -31,16 +32,41 @@ def threaded(fn):
     return wrapper
 
 
+def set_node_info(node, status: TaskStatus | None, message: str):
+    if status is None:
+        node.setUserData("nodeinfo_api_status", str(""))
+        node.setUserData("nodeinfo_api_message", str(""))
+    else:
+        node.setUserData("nodeinfo_api_status", str(status))
+        node.setUserData("nodeinfo_api_message", str(message))
+
+    if status == TaskStatus.SUCCESS:
+        node.setColor(hou.Color((0.0, 0.8, 0.0)))
+    elif status == TaskStatus.PENDING:
+        node.setColor(hou.Color((0.5, 0.5, 0.0)))
+    elif status in [TaskStatus.STARTED]:
+        node.setColor(hou.Color((0.0, 0.0, 0.8)))
+    elif status in [TaskStatus.FAILURE]:
+        node.setColor(hou.Color((0.8, 0.0, 0.0)))
+    else:
+        node.setColor(hou.Color((0.5, 0.5, 0.5)))
+
+
+def polling_message(count, iterations, sleep_time):
+    current_time = count * sleep_time
+    return f"🔄 {count}/{iterations} • {current_time}s"
+
+
 @contextmanager
 def houdini_error_handling(node):
     try:
         yield
     except ValueError as e:
-        set_node_info(node, "ERROR", str(e))
+        set_node_info(node, TaskStatus.FAILURE, str(e))
         hou.ui.displayMessage(str(e))
     except Exception as e:
-        set_node_info(node, "ERROR", str(e))
-        traceback.print_exc()
+        set_node_info(node, TaskStatus.FAILURE, str(e))
+        # traceback.print_exc()
         hou.ui.displayMessage(str(e), severity=hou.severityType.Error)
 
 
@@ -60,44 +86,6 @@ def get_output_path(node, movie=False) -> str:
 
     output_image_path = f"$HIP/deferred-diffusion/{node_name}/{time_stamp}.{extension}"
     return output_image_path
-
-
-def handle_api_response(response: Response, expected_type, error_prefix="API Call Failed"):
-    """Validates API response and returns parsed data or None if validation fails."""
-    if response.status_code != 200:
-        raise ApiResponseError(f"{error_prefix}: {response}", status_code=response.status_code, response=response)
-
-    if not isinstance(response.parsed, expected_type):
-        raise ApiResponseError(
-            f"Invalid response type {type(expected_type)}: {type(response.parsed)}", response=response
-        )
-
-    return response.parsed
-
-
-class ApiResponseError(Exception):
-    """Exception raised for API response errors."""
-
-    def __init__(self, message, status="FAILED", status_code=None, response=None):
-        self.message = message
-        self.status = status
-        self.status_code = status_code
-        self.response = response
-        super().__init__(self.message)
-
-
-def set_node_info(node, status, message):
-    node.setUserData("nodeinfo_api_status", str(status))
-    node.setUserData("nodeinfo_api_message", str(message))
-
-    if status == "COMPLETE":
-        node.setColor(hou.Color((0.0, 0.8, 0.0)))
-    elif status == "PENDING":
-        node.setColor(hou.Color((0.5, 0.5, 0.0)))
-    elif status == "FAILED" or status == "ERROR" or status == "FAILURE":
-        node.setColor(hou.Color((0.8, 0.0, 0.0)))
-    else:
-        node.setColor(hou.Color((0.5, 0.5, 0.5)))
 
 
 def save_tmp_image(node, node_name):
@@ -250,45 +238,16 @@ def get_node_parameters(node):
     return params
 
 
-def get_control_nets(node) -> list[ControlNetSchema]:
+def get_references(node) -> list[References]:
     # only the control_net nodes are valid inputs
     valid_inputs = []
     for i in node.inputs():
         if i:
-            if i.type().name() == "deferred_diffusion::control_net":
+            if i.type().name() == "deferred_diffusion::references":
                 valid_inputs.append(i)
 
     result = []
     for current in valid_inputs:
-
-        params = get_node_parameters(current)
-        image = input_to_base64(current, "src")
-        if image is None:
-            continue
-
-        tmp = ControlNetSchema(
-            model=ControlNetSchemaModel(params.get("model", "")),
-            image=image,
-            conditioning_scale=params.get("conditioning_scale", 0.5),
-        )
-        result.append(tmp)
-
-    return result
-
-
-# Get the parameter template group
-def get_ip_adapters(node) -> list[IpAdapterModel]:
-    # only the adapter nodes are valid inputs
-    valid_inputs = []
-    for i in node.inputs():
-        if i:
-            if i.type().name() == "deferred_diffusion::ip_adapter":
-                valid_inputs.append(i)
-
-    result = []
-    for current in valid_inputs:
-
-        print("get_ip_adapters", current, current.name())
 
         params = get_node_parameters(current)
         image = input_to_base64(current, "src")
@@ -297,35 +256,12 @@ def get_ip_adapters(node) -> list[IpAdapterModel]:
         if image is None:
             continue
 
-        tmp = IpAdapterModel(
-            model=IpAdapterModelModel(params.get("model", "")),
+        tmp = References(
+            mode=ReferencesMode(params.get("model", "")),
             image=image,
             mask=mask,
-            scale=params.get("scale", 0.5),
-            scale_layers=params.get("scale_layers", "all"),
+            strength=params.get("strength", 0.5),
         )
         result.append(tmp)
 
     return result
-
-
-def add_spare_params(node, prefix, params):
-    parm_group = node.parmTemplateGroup()
-    for param_name, param_value in params.items():
-        # Skip if the parameter already exists
-        unique_name = f"{prefix}_{param_name}"
-
-        try:
-            # Create string parameter with proper name and value
-            parm_template = hou.StringParmTemplate(
-                name=unique_name,
-                label=unique_name,
-                num_components=1,
-                default_value=[str(param_value)],  # Convert value to string
-            )
-            parm_group.addParmTemplate(parm_template)
-        except Exception as e:
-            print(f"Error adding parameter {param_name}: {e}")
-
-    # Apply the parameter template
-    node.setParmTemplateGroup(parm_group)
