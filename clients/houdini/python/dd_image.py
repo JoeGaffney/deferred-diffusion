@@ -108,7 +108,6 @@ def process_image(node):
             seed=params.get("seed", UNSET),
             strength=params.get("strength", UNSET),
             references=get_references(node),
-            high_quality=params.get("high_quality", False),
         )
 
         _api_call(node, body, output_image_path)

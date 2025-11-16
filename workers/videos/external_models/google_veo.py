@@ -14,7 +14,7 @@ def get_aspect_ratio(context: VideoContext) -> str:
 
 
 def main(context: VideoContext):
-    model = "google/veo-3.1" if context.data.high_quality else "google/veo-3.1-fast"
+    model = "google/veo-3.1"
     duration = 8 if context.long_video() else 4
     generate_audio = False  # cheaper without audio
 

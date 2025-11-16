@@ -31,7 +31,7 @@ def resize_image_to_aspect_ratio(image, context: VideoContext) -> Image.Image:
 def main(context: VideoContext):
     client = OpenAI()
 
-    model: Literal["sora-2", "sora-2-pro"] = "sora-2-pro" if context.data.high_quality else "sora-2"
+    model: Literal["sora-2", "sora-2-pro"] = "sora-2-pro"
     size = get_aspect_ratio(context)
     seconds: Literal["4", "8"] = "8" if context.long_video() else "4"
 

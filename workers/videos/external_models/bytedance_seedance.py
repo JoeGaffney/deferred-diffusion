@@ -14,7 +14,7 @@ def get_aspect_ratio(context: VideoContext) -> str:
 
 
 def main(context: VideoContext):
-    model = "bytedance/seedance-1-pro" if context.data.high_quality else "bytedance/seedance-1-pro-fast"
+    model = "bytedance/seedance-1-pro"
     duration = 10 if context.long_video() else 5
     payload = {
         "prompt": context.data.prompt,

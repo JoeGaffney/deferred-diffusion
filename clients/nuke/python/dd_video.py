@@ -124,7 +124,6 @@ def process_video(node):
             video_base64 = image_to_base64(video)
 
         width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
-        high_quality = get_node_value(node, "high_quality", False, return_type=bool, mode="value")
 
         body = VideoRequest(
             model=VideoRequestModel(get_node_value(node, "model", UNSET, mode="value")),
@@ -136,7 +135,6 @@ def process_video(node):
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
             width=int(width_height[0]),
             height=int(width_height[1]),
-            high_quality=high_quality,
         )
 
         _api_call(node, body, output_video_path, current_frame)

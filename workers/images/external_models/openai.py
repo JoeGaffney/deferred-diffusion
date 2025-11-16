@@ -43,7 +43,7 @@ def process_openai_image_output(output: ImagesResponse) -> Image.Image:
 
 def text_to_image_call(context: ImageContext):
     client = OpenAI()
-    model = "gpt-image-1" if context.data.high_quality else "gpt-image-1-mini"
+    model = "gpt-image-1-mini"
 
     result = client.images.generate(
         model=model,
@@ -57,7 +57,7 @@ def text_to_image_call(context: ImageContext):
 
 def image_to_image_call(context: ImageContext):
     client = OpenAI()
-    model = "gpt-image-1" if context.data.high_quality else "gpt-image-1-mini"
+    model = "gpt-image-1-mini"
 
     # gather all possible reference images
     reference_images = []

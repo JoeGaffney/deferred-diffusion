@@ -126,7 +126,7 @@ def text_to_video(context: VideoContext):
         height=context.height,
         prompt_embeds=prompt_embeds,
         negative_prompt_embeds=negative_prompt_embeds,
-        num_inference_steps=8 if context.data.high_quality else 4,
+        num_inference_steps=8,
         num_frames=context.data.num_frames,
         guidance_scale=1.0,
         generator=context.get_generator(),
@@ -152,7 +152,7 @@ def image_to_video(context: VideoContext):
         last_image=context.last_image,  # type: ignore
         prompt_embeds=prompt_embeds,
         negative_prompt_embeds=negative_prompt_embeds,
-        num_inference_steps=8 if context.data.high_quality else 4,
+        num_inference_steps=8,
         num_frames=context.data.num_frames,
         guidance_scale=1.0,
         generator=context.get_generator(),

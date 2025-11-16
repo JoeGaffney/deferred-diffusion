@@ -202,7 +202,6 @@ def first_frame_last_frame(model: ModelName):
                 last_image=image_to_base64("../assets/last_frame_v001.png"),
                 prompt="a dramatic dolly zoom",
                 num_frames=24,
-                high_quality=False,
             ),
         )
     )

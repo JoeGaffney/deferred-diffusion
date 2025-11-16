@@ -5,7 +5,7 @@ from videos.context import VideoContext
 
 
 def main(context: VideoContext):
-    model = "minimax/hailuo-2.3" if context.data.high_quality else "minimax/hailuo-2.3-fast"
+    model = "minimax/hailuo-2.3"
     duration = 10 if context.long_video() else 6
 
     payload = {

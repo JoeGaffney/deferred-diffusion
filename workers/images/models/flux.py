@@ -147,7 +147,7 @@ def text_to_image_call(context: ImageContext):
     args = {
         "width": context.width,
         "height": context.height,
-        "num_inference_steps": 40 if context.data.high_quality else 20,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "guidance_scale": 2.5,
     }
@@ -172,7 +172,7 @@ def image_to_image_call(context: ImageContext):
         "width": context.width,
         "height": context.height,
         "image": context.color_image,
-        "num_inference_steps": 40 if context.data.high_quality else 20,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "guidance_scale": 2.0,
     }
@@ -191,7 +191,7 @@ def inpainting_call(context: ImageContext):
         "height": context.height,
         "image": context.color_image,
         "mask_image": context.mask_image,
-        "num_inference_steps": 40 if context.data.high_quality else 20,
+        "num_inference_steps": 30,
         "generator": context.generator,
         "guidance_scale": 30,
         "strength": context.data.strength,
