@@ -48,7 +48,7 @@ def get_scheduler():
 
 
 @decorator_global_pipeline_cache
-def get_pipeline(model_id) -> QwenImagePipeline:
+def get_pipeline(model_id, inpainting: bool) -> QwenImagePipeline | QwenImageInpaintPipeline:
     if _use_nunchaku:
         rank = 128  # you can also use the rank=128 model to improve the quality
         model_paths = {
@@ -65,14 +65,25 @@ def get_pipeline(model_id) -> QwenImagePipeline:
             torch_dtype=torch.bfloat16,
         )
 
-    pipe = QwenImagePipeline.from_pretrained(
-        model_id,
-        text_encoder=None,
-        tokenizer=None,
-        scheduler=get_scheduler(),
-        transformer=transformer,
-        torch_dtype=torch.bfloat16,
-    )
+    if inpainting:
+        pipe = QwenImageInpaintPipeline.from_pretrained(
+            model_id,
+            text_encoder=None,
+            tokenizer=None,
+            scheduler=get_scheduler(),
+            transformer=transformer,
+            torch_dtype=torch.bfloat16,
+        )
+    else:
+        pipe = QwenImagePipeline.from_pretrained(
+            model_id,
+            text_encoder=None,
+            tokenizer=None,
+            scheduler=get_scheduler(),
+            transformer=transformer,
+            torch_dtype=torch.bfloat16,
+        )
+
     if not _use_nunchaku:
         pipe.load_lora_weights(
             "lightx2v/Qwen-Image-Lightning", weight_name="Qwen-Image-Lightning-8steps-V2.0-bf16.safetensors"
@@ -115,7 +126,7 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
 
 def text_to_image_call(context: ImageContext):
     prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
-    pipe = get_pipeline("Qwen/Qwen-Image")
+    pipe = get_pipeline("Qwen/Qwen-Image", inpainting=False)
 
     args = {
         "width": context.width,
@@ -135,10 +146,6 @@ def text_to_image_call(context: ImageContext):
 
 
 def image_edit_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_edit_encode(
-        context.data.prompt
-    )  # + "Ultra HD, 4K, cinematic composition.")
-    pipe = get_edit_pipeline("ovedrive/Qwen-Image-Edit-2509-4bit")
 
     # gather all possible reference images
     reference_images = []
@@ -148,6 +155,11 @@ def image_edit_call(context: ImageContext):
     for current in context.get_reference_images():
         if current is not None:
             reference_images.append(current)
+
+    prompt_embeds, prompt_embeds_mask = qwen_edit_encode(
+        context.data.prompt, reference_images  # + "Ultra HD, 4K, cinematic composition."
+    )
+    pipe = get_edit_pipeline("ovedrive/Qwen-Image-Edit-2509-4bit")
 
     args = {
         "width": context.width,
@@ -169,8 +181,7 @@ def image_edit_call(context: ImageContext):
 
 def inpainting_call(context: ImageContext):
     prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
-
-    pipe = QwenImageInpaintPipeline.from_pipe(get_pipeline("ovedrive/qwen-image-4bit"))
+    pipe = get_pipeline("ovedrive/qwen-image-4bit", inpainting=True)
 
     args = {
         "width": context.width,

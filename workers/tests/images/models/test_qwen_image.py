@@ -29,9 +29,9 @@ def test_text_to_image_alt(model):
     text_to_image_alt(model)
 
 
-# @pytest.mark.parametrize("model", models)
-# def test_inpainting(model):
-#     inpainting(model)
+@pytest.mark.parametrize("model", models)
+def test_inpainting(model):
+    inpainting(model)
 
 
 @pytest.mark.parametrize("model", models)
