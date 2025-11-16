@@ -146,6 +146,10 @@ def text_to_image_call(context: ImageContext):
 
 
 def image_edit_call(context: ImageContext):
+    # see https://github.com/huggingface/diffusers/pull/12453/files
+    import diffusers.pipelines.qwenimage.pipeline_qwenimage_edit_plus as qwen_edit_module
+
+    qwen_edit_module.VAE_IMAGE_SIZE = context.width * context.height
 
     # gather all possible reference images
     reference_images = []
@@ -156,9 +160,7 @@ def image_edit_call(context: ImageContext):
         if current is not None:
             reference_images.append(current)
 
-    prompt_embeds, prompt_embeds_mask = qwen_edit_encode(
-        context.data.prompt, reference_images  # + "Ultra HD, 4K, cinematic composition."
-    )
+    prompt_embeds, prompt_embeds_mask = qwen_edit_encode(context.data.prompt, reference_images)
     pipe = get_edit_pipeline("ovedrive/Qwen-Image-Edit-2509-4bit")
 
     args = {
