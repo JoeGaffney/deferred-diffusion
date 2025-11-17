@@ -27,7 +27,7 @@ def typed_task(name: ModelName, queue: str):
 # Explicit internal model tasks (lazy-import model implementation inside each task)
 @typed_task(name="sd-3", queue="gpu")
 def sd_3(request_dict):
-    from images.models.sd3 import main
+    from images.local.sd_3 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -36,7 +36,7 @@ def sd_3(request_dict):
 
 @typed_task(name="flux-1", queue="gpu")
 def flux_1(request_dict):
-    from images.models.flux import main
+    from images.local.flux_1 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -45,7 +45,7 @@ def flux_1(request_dict):
 
 @typed_task(name="qwen-image", queue="gpu")
 def qwen_image(request_dict):
-    from images.models.qwen import main
+    from images.local.qwen_image import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -54,7 +54,7 @@ def qwen_image(request_dict):
 
 @typed_task(name="depth-anything-2", queue="gpu")
 def depth_anything_2(request_dict):
-    from images.models.depth_anything import main
+    from images.local.depth_anything_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -63,7 +63,7 @@ def depth_anything_2(request_dict):
 
 @typed_task(name="segment-anything-2", queue="gpu")
 def segment_anything_2(request_dict):
-    from images.models.segment_anything import main
+    from images.local.segment_anything_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -72,7 +72,7 @@ def segment_anything_2(request_dict):
 
 @typed_task(name="real-esrgan-x4", queue="gpu")
 def real_esrgan_x4(request_dict):
-    from images.models.real_esrgan import main
+    from images.local.real_esrgan_x4 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -81,7 +81,7 @@ def real_esrgan_x4(request_dict):
 
 @typed_task(name="sd-xl", queue="gpu")
 def sd_xl(request_dict):
-    from images.models.sdxl import main
+    from images.local.sd_xl import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -91,7 +91,7 @@ def sd_xl(request_dict):
 # Explicit external model tasks
 @typed_task(name="gpt-image-1", queue="cpu")
 def gpt_image_1(request_dict):
-    from images.external_models.openai import main
+    from images.external.gpt_image_1 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -100,7 +100,7 @@ def gpt_image_1(request_dict):
 
 @typed_task(name="runway-gen4-image", queue="cpu")
 def runway_gen4_image(request_dict):
-    from images.external_models.runway import main
+    from images.external.runway_gen4_image import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -109,7 +109,7 @@ def runway_gen4_image(request_dict):
 
 @typed_task(name="flux-1-pro", queue="cpu")
 def flux_1_pro(request_dict):
-    from images.external_models.flux import main
+    from images.external.flux_1_pro import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -118,7 +118,7 @@ def flux_1_pro(request_dict):
 
 @typed_task(name="topazlabs-upscale", queue="cpu")
 def topazlabs_upscale(request_dict):
-    from images.external_models.topazlabs import main
+    from images.external.topazlabs_upscale import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -126,8 +126,8 @@ def topazlabs_upscale(request_dict):
 
 
 @typed_task(name="google-gemini-2", queue="cpu")
-def google_gemini_2(request_dict):
-    from images.external_models.google_gemini import main
+def gemini_2(request_dict):
+    from images.external.google_gemini_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -135,8 +135,8 @@ def google_gemini_2(request_dict):
 
 
 @typed_task(name="bytedance-seedream-4", queue="cpu")
-def bytedance_seedream_4(request_dict):
-    from images.external_models.bytedance import main
+def seedream_4(request_dict):
+    from images.external.bytedance_seedream_4 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

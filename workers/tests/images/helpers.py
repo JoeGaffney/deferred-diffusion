@@ -21,20 +21,20 @@ def main(context: ImageContext) -> Image.Image:
     model = context.model
 
     MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
-        "sd-xl": ("images.models.sdxl", "main"),
-        "sd-3": ("images.models.sd3", "main"),
-        "flux-1": ("images.models.flux", "main"),
-        "qwen-image": ("images.models.qwen", "main"),
-        "depth-anything-2": ("images.models.depth_anything", "main"),
-        "segment-anything-2": ("images.models.segment_anything", "main"),
-        "real-esrgan-x4": ("images.models.real_esrgan", "main"),
+        "sd-xl": ("images.local.sd_xl", "main"),
+        "sd-3": ("images.local.sd_3", "main"),
+        "flux-1": ("images.local.flux_1", "main"),
+        "qwen-image": ("images.local.qwen_image", "main"),
+        "depth-anything-2": ("images.local.depth_anything_2", "main"),
+        "segment-anything-2": ("images.local.segment_anything_2", "main"),
+        "real-esrgan-x4": ("images.local.real_esrgan_x4", "main"),
         # external implementations (match celery task targets)
-        "gpt-image-1": ("images.external_models.openai", "main"),
-        "runway-gen4-image": ("images.external_models.runway", "main"),
-        "flux-1-pro": ("images.external_models.flux", "main"),
-        "topazlabs-upscale": ("images.external_models.topazlabs", "main"),
-        "google-gemini-2": ("images.external_models.google_gemini", "main"),
-        "bytedance-seedream-4": ("images.external_models.bytedance", "main"),
+        "gpt-image-1": ("images.external.gpt_image_1", "main"),
+        "runway-gen4-image": ("images.external.runway_gen4_image", "main"),
+        "flux-1-pro": ("images.external.flux_1_pro", "main"),
+        "topazlabs-upscale": ("images.external.topazlabs_upscale", "main"),
+        "google-gemini-2": ("images.external.google_gemini_2", "main"),
+        "bytedance-seedream-4": ("images.external.bytedance_seedream_4", "main"),
     }
 
     if model not in MODEL_NAME_TO_CALLABLE:

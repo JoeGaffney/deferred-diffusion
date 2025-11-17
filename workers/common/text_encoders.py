@@ -1,4 +1,5 @@
 import gc
+import math
 import time
 from collections import OrderedDict
 from functools import wraps
@@ -14,6 +15,7 @@ from diffusers import (
     StableDiffusion3Pipeline,
     WanPipeline,
 )
+from PIL import Image
 from transformers import (
     Qwen2_5_VLForConditionalGeneration,
     T5EncoderModel,
@@ -320,18 +322,36 @@ def _pipeline_qwen_edit_text_encoder(torch_dtype=torch.float32, device="cpu"):
 
 
 @time_info_decorator
-def qwen_edit_encode(prompt, torch_dtype=torch.float32, device="cpu"):
+def qwen_edit_encode(prompt, images: list[Image.Image], torch_dtype=torch.float32, device="cpu"):
     if prompt == "":
         return None, None
 
-    cached = get_prompt_from_cache("qwen", prompt)
+    # NOTE not sure we can cache this one well since it depends on images too ?
+    cached = get_prompt_from_cache("qwen_edit", prompt)
     if cached is not None:
         return cached
 
     pipe = _pipeline_qwen_edit_text_encoder(torch_dtype=torch_dtype, device=device)
+
+    # Preprocess images for condition encoding (similar to pipeline.__call__)
+    CONDITION_IMAGE_SIZE = 384 * 384
+
+    def calculate_dimensions(target_area, ratio):
+
+        width = math.sqrt(target_area * ratio)
+        height = width / ratio
+        width = round(width / 32) * 32
+        height = round(height / 32) * 32
+        return width, height
+
+    condition_images = []
+    for img in images:
+        image_width, image_height = img.size
+        condition_width, condition_height = calculate_dimensions(CONDITION_IMAGE_SIZE, image_width / image_height)
+        condition_images.append(pipe.image_processor.resize(img, condition_height, condition_width))
+
     prompt_embeds, prompt_embeds_mask = pipe.encode_prompt(
-        prompt=prompt,
-        max_sequence_length=256,
+        prompt=prompt, max_sequence_length=256, image=condition_images  # type: ignore
     )
 
     prompt_embeds = convert_tensor(prompt_embeds)

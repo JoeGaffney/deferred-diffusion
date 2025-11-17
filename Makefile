@@ -58,12 +58,12 @@ generate-clients: generate-openapi-spec generate-clients-raw
 
 # Example test commands:
 # make test-worker TEST_PATH=images
-# make test-worker TEST_PATH=images/models/test_flux.py
-# make test-worker TEST_PATH=images/external_models/test_replicate.py
+# make test-worker TEST_PATH=images/local/test_flux_1.py
+# make test-worker TEST_PATH=images/external/test_flux_1_pro.py
 # make test-worker TEST_PATH=texts
 # make test-worker TEST_PATH=videos
-# make test-worker TEST_PATH=videos/models/test_wan.py
-# make test-worker TEST_PATH=videos/external_models/test_replicate.py
+# make test-worker TEST_PATH=videos/local/test_wan.py
+# make test-worker TEST_PATH=videos/external/test_runway_gen4.py
 test-worker: up
 	docker compose exec gpu-workers pytest tests/$(TEST_PATH) -vs
 

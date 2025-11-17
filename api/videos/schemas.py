@@ -12,7 +12,6 @@ ModelName: TypeAlias = Literal[
     "runway-gen-4",
     "runway-act-two",
     "runway-upscale",
-    "runway-gen-4-aleph",
     "bytedance-seedance-1",
     "kwaivgi-kling-2",
     "google-veo-3",
@@ -29,9 +28,6 @@ class VideosModelInfo(BaseModel):
     external: bool = Field(description="True if the model is invoked via an external API")
     supported_modes: set[InferredMode] = Field(default_factory=set)
     description: Optional[str] = None
-    high_quality_variant: Optional[bool] = Field(
-        description="Has a higher quality / pro variant. This can increase cost/latency.", default=False
-    )
 
     @property
     def queue(self) -> str:
@@ -60,8 +56,8 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
     "runway-gen-4": VideosModelInfo(
         provider="runway",
         external=True,
-        supported_modes={"image-to-video"},
-        description="Runway Gen-4 general video generation fast but limited.",
+        supported_modes={"image-to-video", "video-to-video"},
+        description="Runway Gen-4 family. Uses standard Gen-4 for image-to-video and Aleph variant for video-to-video.",
     ),
     "runway-act-two": VideosModelInfo(
         provider="runway",
@@ -75,18 +71,11 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         supported_modes={"video-to-video"},
         description="Video upscaling model.",
     ),
-    "runway-gen-4-aleph": VideosModelInfo(
-        provider="runway",
-        external=True,
-        supported_modes={"video-to-video"},
-        description="Aleph can enhance/alter existing video and use image references.",
-    ),
     "bytedance-seedance-1": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text-to-video", "image-to-video", "first-last-image"},
-        description="Seedance-1 flagship model. Great all rounder. Supports high_quality variant.",
-        high_quality_variant=True,
+        description="Seedance-1 flagship model. Great all rounder.",
     ),
     "kwaivgi-kling-2": VideosModelInfo(
         provider="replicate",
@@ -99,21 +88,18 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=True,
         supported_modes={"text-to-video", "image-to-video", "first-last-image"},
         description="VEO-3.1 flagship model. Expensive.",
-        high_quality_variant=True,
     ),
     "openai-sora-2": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text-to-video", "image-to-video"},
         description="Sora 2 openai flagship model. Expensive and not great at image-to-video.",
-        high_quality_variant=True,
     ),
     "minimax-hailuo-2": VideosModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text-to-video", "image-to-video"},
         description="Hailuo-2.3 great physics understanding.",
-        high_quality_variant=True,
     ),
 }
 
@@ -173,10 +159,6 @@ class VideoRequest(BaseModel):
             "contentEncoding": "base64",
             "contentMediaType": "video/*",
         },
-    )
-    high_quality: bool = Field(
-        default=False,
-        description="Use high quality model variant when available (may cost more and take longer). Will use higher steps in local models.",
     )
 
     @property
