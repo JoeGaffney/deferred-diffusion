@@ -5,26 +5,20 @@ from openai import OpenAI
 
 from common.logger import logger
 from texts.context import TextContext
-from texts.schemas import ModelName
-
-OPEN_AI_MODEL_MAP: Dict[ModelName, str] = {
-    "gpt-4o": "gpt-4o-mini",
-    "gpt-4": "gpt-4.1-mini",
-    "gpt-5": "gpt-5-mini",
-}
 
 
-def main(context: TextContext) -> str:
+def main(context: TextContext, model_path="gpt-4o-mini") -> str:
     client = OpenAI()
     message: Dict[str, Any] = {
         "role": "user",
         "content": [{"type": "input_text", "text": context.data.prompt}],
     }
 
-    system_message: Dict[str, Any] = {
-        "role": "system",
-        "content": [{"type": "input_text", "text": context.data.system_prompt}],
-    }
+    # NOTE: system message is passed via 'instructions' parameter
+    # system_message: Dict[str, Any] = {
+    #     "role": "system",
+    #     "content": [{"type": "input_text", "text": context.data.system_prompt}],
+    # }
 
     # apply image and video to last message
     for image in context.data.images:
@@ -38,10 +32,9 @@ def main(context: TextContext) -> str:
             }
         )
 
-    model = OPEN_AI_MODEL_MAP.get(context.model, "gpt-4o-mini")
     try:
         response = client.responses.create(
-            model=model,
+            model=model_path,
             input=[message],  # type: ignore
             instructions=context.data.system_prompt,
         )
@@ -52,3 +45,15 @@ def main(context: TextContext) -> str:
     output = response.output_text
 
     return output
+
+
+def main_gpt_4o(context: TextContext) -> str:
+    return main(context, model_path="gpt-4o-mini")
+
+
+def main_gpt_4(context: TextContext) -> str:
+    return main(context, model_path="gpt-4.1-mini")
+
+
+def main_gpt_5(context: TextContext) -> str:
+    return main(context, model_path="gpt-5-mini")

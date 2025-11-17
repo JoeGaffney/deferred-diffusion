@@ -2,7 +2,7 @@ import pytest
 
 from tests.utils import image_to_base64
 from texts.context import TextContext
-from texts.models.qwen import main
+from texts.external.openai_gpt import main_gpt_4 as main
 from texts.schemas import TextRequest
 
 image_a = image_to_base64("../assets/color_v001.jpeg")
@@ -24,7 +24,7 @@ def validate_result(result: str, expected_keyword=None):
 @pytest.mark.basic
 def test_image_description():
     data = TextRequest(
-        model="qwen-2",
+        model="gpt-4",
         prompt="Describe this image.",
         images=[image_a],
     )
@@ -34,7 +34,7 @@ def test_image_description():
 
 def test_image_prompt_generation():
     data = TextRequest(
-        model="qwen-2",
+        model="gpt-4",
         prompt="Generate a prompt for SD image generation to generate similar images.",
         images=[image_a],
     )
@@ -44,7 +44,7 @@ def test_image_prompt_generation():
 
 def test_image_video_comparison():
     data = TextRequest(
-        model="qwen-2",
+        model="gpt-5",
         prompt="Tell me the differences between the images and videos. I want to know the differences not the content of each.",
         images=[image_b],
         videos=[video_a],
