@@ -53,11 +53,11 @@ We try to use plural to adhere to REST best practices.
 ```
 /workers
 │── /images # Grouped by results type
-│ ├── models/ # ✅ AI models (ML/DL models, weights, configs)
-│ ├── external_models/ # ✅ external AI models
+│ ├── local/ # ✅ Local AI model pipeline tasks (GPU queue)
+│ ├── external/ # ✅ External AI model pipeline tasks (CPU queue)
 │ ├── schemas.py # ✅ Pydantic schemas (data validation mirrors from API)
 │ ├── context.py # ✅ Business logic layer
-│ ├── tasks.py # ✅ Celery tasks route to models
+│ ├── tasks.py # ✅ Celery tasks route to local or external tasks. Name should match module
 │── /texts
 │ ├── ...
 │── /videos
@@ -111,7 +111,7 @@ The model pipelines themselves serve as the source of truth for what models are 
 
 #### Model Registration Philosophy
 
-Model definitions are **version-controlled in code**, not loaded dynamically from configuration files.
+Model definitions are **version-controlled in code**, not loaded dynamically from configuration files. We match celery task names to the module names for clarity.
 
 This design choice ensures:
 
@@ -271,18 +271,18 @@ DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
 Tests are included inside the containers these can be ran to verify and also to download any missing models.
 
 ```bash
-docker-compose exec gpu-workers pytest tests/images/models/test_flux.py -vs
-docker-compose exec gpu-workers pytest tests/images/models -vs
-docker-compose exec gpu-workers pytest tests/texts/models -vs
-docker-compose exec gpu-workers pytest tests/videos/models -vs
+docker-compose exec gpu-workers pytest tests/images/local/test_flux.py -vs
+docker-compose exec gpu-workers pytest tests/images/local -vs
+docker-compose exec gpu-workers pytest tests/texts/local -vs
+docker-compose exec gpu-workers pytest tests/videos/local -vs
 ```
 
 The external tests are split out.
 
 ```bash
-docker-compose exec gpu-workers pytest tests/images/external_models -vs
-docker-compose exec gpu-workers pytest tests/texts/external_models -vs
-docker-compose exec gpu-workers pytest tests/videos/external_models -vs
+docker-compose exec gpu-workers pytest tests/images/external -vs
+docker-compose exec gpu-workers pytest tests/texts/external -vs
+docker-compose exec gpu-workers pytest tests/videos/external -vs
 ```
 
 ## MISC
