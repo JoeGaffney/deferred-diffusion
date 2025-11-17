@@ -12,7 +12,6 @@ ModelName: TypeAlias = Literal[
     "runway-gen-4",
     "runway-act-two",
     "runway-upscale",
-    "runway-gen-4-aleph",
     "bytedance-seedance-1",
     "kwaivgi-kling-2",
     "google-veo-3",
@@ -57,8 +56,8 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
     "runway-gen-4": VideosModelInfo(
         provider="runway",
         external=True,
-        supported_modes={"image-to-video"},
-        description="Runway Gen-4 general video generation fast but limited.",
+        supported_modes={"image-to-video", "video-to-video"},
+        description="Runway Gen-4 family. Uses standard Gen-4 for image-to-video and Aleph variant for video-to-video.",
     ),
     "runway-act-two": VideosModelInfo(
         provider="runway",
@@ -71,12 +70,6 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=True,
         supported_modes={"video-to-video"},
         description="Video upscaling model.",
-    ),
-    "runway-gen-4-aleph": VideosModelInfo(
-        provider="runway",
-        external=True,
-        supported_modes={"video-to-video"},
-        description="Aleph can enhance/alter existing video and use image references.",
     ),
     "bytedance-seedance-1": VideosModelInfo(
         provider="replicate",

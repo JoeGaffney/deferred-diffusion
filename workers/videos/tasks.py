@@ -25,7 +25,7 @@ def typed_task(name: ModelName, queue: str):
 # Explicit internal model tasks (lazy-import model implementation inside each task)
 @typed_task(name="ltx-video", queue="gpu")
 def ltx_video(request_dict):
-    from videos.models.ltx import main
+    from videos.local.ltx_video import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -34,7 +34,7 @@ def ltx_video(request_dict):
 
 @typed_task(name="wan-2", queue="gpu")
 def wan_2(request_dict):
-    from videos.models.wan import main
+    from videos.local.wan_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -44,7 +44,7 @@ def wan_2(request_dict):
 # Explicit external model tasks
 @typed_task(name="runway-gen-4", queue="cpu")
 def runway_gen_4(request_dict):
-    from videos.external_models.runway import main
+    from videos.external.runway_gen_4 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -53,7 +53,7 @@ def runway_gen_4(request_dict):
 
 @typed_task(name="runway-act-two", queue="cpu")
 def runway_act_two(request_dict):
-    from videos.external_models.runway_act import main
+    from videos.external.runway_act_two import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -62,16 +62,7 @@ def runway_act_two(request_dict):
 
 @typed_task(name="runway-upscale", queue="cpu")
 def runway_upscale(request_dict):
-    from videos.external_models.runway_upscale import main
-
-    context = validate_request_and_context(request_dict)
-    result = main(context)
-    return process_result(context, result)
-
-
-@typed_task(name="runway-gen-4-aleph", queue="cpu")
-def runway_gen_4_aleph(request_dict):
-    from videos.external_models.runway_aleph import main
+    from videos.external.runway_upscale import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -80,7 +71,7 @@ def runway_gen_4_aleph(request_dict):
 
 @typed_task(name="bytedance-seedance-1", queue="cpu")
 def bytedance_seedance_1(request_dict):
-    from videos.external_models.bytedance_seedance import main
+    from videos.external.bytedance_seedance_1 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -89,7 +80,7 @@ def bytedance_seedance_1(request_dict):
 
 @typed_task(name="kwaivgi-kling-2", queue="cpu")
 def kwaivgi_kling_2(request_dict):
-    from videos.external_models.kling import main
+    from videos.external.kwaivgi_kling_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -98,7 +89,7 @@ def kwaivgi_kling_2(request_dict):
 
 @typed_task(name="google-veo-3", queue="cpu")
 def google_veo_3(request_dict):
-    from videos.external_models.google_veo import main
+    from videos.external.google_veo_3 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -107,7 +98,7 @@ def google_veo_3(request_dict):
 
 @typed_task(name="openai-sora-2", queue="cpu")
 def openai_sora_2(request_dict):
-    from videos.external_models.openai import main
+    from videos.external.openai_sora_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -116,7 +107,7 @@ def openai_sora_2(request_dict):
 
 @typed_task(name="minimax-hailuo-2", queue="cpu")
 def minimax_hailuo_2(request_dict):
-    from videos.external_models.minimax_hailuo import main
+    from videos.external.minimax_hailuo_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

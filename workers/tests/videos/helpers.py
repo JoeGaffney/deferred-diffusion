@@ -16,18 +16,16 @@ def main(context: VideoContext):
     model = context.model
 
     MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
-        "ltx-video": ("videos.models.ltx", "main"),
-        "wan-2": ("videos.models.wan", "main"),
-        # external implementations (match celery task targets)
-        "runway-gen-4": ("videos.external_models.runway", "main"),
-        "runway-act-two": ("videos.external_models.runway_act", "main"),
-        "runway-upscale": ("videos.external_models.runway_upscale", "main"),
-        "runway-gen-4-aleph": ("videos.external_models.runway_aleph", "main"),
-        "bytedance-seedance-1": ("videos.external_models.bytedance_seedance", "main"),
-        "kwaivgi-kling-2": ("videos.external_models.kling", "main"),
-        "google-veo-3": ("videos.external_models.google_veo", "main"),
-        "openai-sora-2": ("videos.external_models.openai", "main"),
-        "minimax-hailuo-2": ("videos.external_models.minimax_hailuo", "main"),
+        "ltx-video": ("videos.local.ltx_video", "main"),
+        "wan-2": ("videos.local.wan_2", "main"),
+        "runway-gen-4": ("videos.external.runway_gen_4", "main"),
+        "runway-act-two": ("videos.external.runway_act_two", "main"),
+        "runway-upscale": ("videos.external.runway_upscale", "main"),
+        "bytedance-seedance-1": ("videos.external.bytedance_seedance_1", "main"),
+        "kwaivgi-kling-2": ("videos.external.kwaivgi_kling_2", "main"),
+        "google-veo-3": ("videos.external.google_veo_3", "main"),
+        "openai-sora-2": ("videos.external.openai_sora_2", "main"),
+        "minimax-hailuo-2": ("videos.external.minimax_hailuo_2", "main"),
     }
 
     if model not in MODEL_NAME_TO_CALLABLE:
