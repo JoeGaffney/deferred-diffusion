@@ -356,5 +356,5 @@ def qwen_edit_encode(prompt, images: list[Image.Image], torch_dtype=torch.float3
 
     prompt_embeds = convert_tensor(prompt_embeds)
     prompt_embeds_mask = convert_tensor(prompt_embeds_mask, dtype=torch.long)
-    set_prompt_in_cache("qwen", prompt, (prompt_embeds, prompt_embeds_mask))
+    set_prompt_in_cache("qwen_edit", prompt, (prompt_embeds, prompt_embeds_mask))
     return prompt_embeds, prompt_embeds_mask

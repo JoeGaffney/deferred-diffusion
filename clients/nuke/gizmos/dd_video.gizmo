@@ -13,7 +13,12 @@ Group {
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest video for this task." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.get_video(node)"}
  addUserKnob {26 ""}
  addUserKnob {43 prompt l Prompt t "Describe the video you want to generate."}
- prompt "Detailed, cinematic, high quality"
+ prompt "Detailed, cinematic, high quality
+ 
+ 
+ "
+addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_vido.video_prompt_optimizer(node)" t "Optimize the prompt."}
+
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
  width_height {1280 720}
  addUserKnob {2 video l "Video (Input)" t "Must be mp4 under 16mb"}

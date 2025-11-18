@@ -13,7 +13,11 @@ Group {
  addUserKnob {22 get_task l "Get Task" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)" t "Fetch the latest image for this task."}
  addUserKnob {26 ""}
  addUserKnob {43 prompt l "Prompt" t "Describe the image you want to generate."}
- prompt "Detailed, 8k, photorealistic"
+ prompt "Detailed, 8k, photorealistic
+ 
+ 
+ "
+addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.image_prompt_optimizer(node)" t "Optimize the prompt."}
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
  width_height {1280 720}
  addUserKnob {7 strength l "Strength" t "Prompt strength for img2img. 0.0 keeps the image, 1.0 follows the prompt; in between blends their influence."}

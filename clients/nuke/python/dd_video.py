@@ -5,6 +5,7 @@ import nuke
 from httpcore import RemoteProtocolError
 
 from config import client
+from dd_text import prompt_optimizer
 from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.models import (
     TaskStatus,
@@ -108,9 +109,8 @@ def process_video(node):
             raise ValueError("Output video path is required.")
 
         image_node = node.input(0)
-        image = node_to_base64(image_node, current_frame)
-
         last_image_node = node.input(1)
+        image = node_to_base64(image_node, current_frame)
         last_image = node_to_base64(last_image_node, current_frame)
 
         # video input we extract from a file path parameter at the moment
@@ -150,3 +150,34 @@ def get_video(node):
 
         output_video_path = get_output_path(node, movie=True)
         _api_get_call(node, task_id, output_video_path, current_frame, iterations=1, sleep_time=0)
+
+
+def image_prompt_optimizer(node):
+    current_frame = nuke.frame()
+    model = get_node_value(node, "model", "sd-xl", mode="value")
+    prompt = get_node_value(node, "prompt", "", mode="get")
+    image_node = node.input(0)
+    last_image_node = node.input(1)
+
+    system_prompt = (
+        "You are an expert prompt optimizer for AI video generation models. "
+        "Given a basic prompt, generate an optimized prompt that accurately describes the video content, action, camera movement, style, and composition. "
+        "The optimized prompt should be detailed, specific, and suitable for use with AI video generation models."
+        "If images are provided, use them to inform your response. "
+        "Don't mention the images in the prompt unless necessary. "
+        "We more want the action of what will be happening in the video. "
+        "Rather than describing a single frame, focus on the sequence of events and visual storytelling. "
+        f"The model the prompt is intended for is: {model}."
+        "Only provide the optimized prompt as your response without any additional explanations or commentary."
+    )
+
+    images = []
+    image = node_to_base64(image_node, current_frame)
+    if image:
+        images.append(image)
+
+    last_image = node_to_base64(last_image_node, current_frame)
+    if last_image:
+        images.append(last_image)
+
+    prompt_optimizer(node, prompt, system_prompt, images)
