@@ -227,6 +227,10 @@ class ImageRequest(BaseModel):
     def task_queue(self) -> str:
         return self.meta.queue
 
+    @property
+    def cleaned_prompt(self) -> str:
+        return " ".join(self.prompt.split())
+
     @model_validator(mode="after")
     def _validate_capabilities(self):
         mode = self.inferred_mode

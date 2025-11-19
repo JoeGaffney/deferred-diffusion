@@ -37,7 +37,7 @@ def video_to_video(context: VideoContext):
         task = client.video_to_video.create(
             model="gen4_aleph",
             video_uri=video_uri,
-            prompt_text=context.data.prompt,
+            prompt_text=context.data.cleaned_prompt,
             references=references,  # type: ignore
             ratio=ratio,
             seed=context.data.seed,
@@ -72,7 +72,7 @@ def main(context: VideoContext):
         task = client.image_to_video.create(
             model=model,
             prompt_image=image_uri,
-            prompt_text=context.data.prompt,
+            prompt_text=context.data.cleaned_prompt,
             ratio=ratio,
             duration=duration,
             seed=context.data.seed,

@@ -149,12 +149,18 @@ def image_prompt_optimizer(node):
     image = node_to_base64(image_node, current_frame)
 
     system_prompt = (
-        "You are an expert prompt optimizer for AI image generation models. "
-        "Given a basic prompt, generate an optimized prompt that accurately describes the image content, style, and composition. "
-        "The optimized prompt should be detailed, specific, and suitable for use with AI image generation models."
-        "If images are provided, use them to inform your response. "
-        f"The model the prompt is intended for is: {model}."
-        "Only provide the optimized prompt as your response without any additional explanations or commentary."
+        "You are an expert AI image prompt optimizer. Given a basic prompt and an optional reference image, "
+        "generate a structured prompt suitable for AI image generation. "
+        f"The model the prompt is intended for is {model}. "
+        ""
+        "Your response must follow this template strictly, with each category separated by a new line, "
+        "and keep each category as concise as possible: \n"
+        "Subject/Objects: main subjects and objects, their appearance\n"
+        "Environment/Background: key setting and atmosphere\n"
+        "Style/Lighting: visual style, lighting, color palette, mood\n"
+        "Composition/Camera: framing, perspective, and focal points\n"
+        "Use the reference image only as inspiration for style or content, do not replicate it literally. "
+        "Output only the optimized prompt, with no extra commentary."
     )
 
     images = []

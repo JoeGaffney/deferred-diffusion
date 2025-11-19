@@ -19,7 +19,7 @@ def get_size(
 
 
 def text_to_image_call(context: ImageContext) -> Image.Image:
-    payload = {"prompt": context.data.prompt, "output_format": "png", "aspect_ratio": get_size(context)}
+    payload = {"prompt": context.data.cleaned_prompt, "output_format": "png", "aspect_ratio": get_size(context)}
 
     output = replicate_run("google/gemini-2.5-flash-image", payload)
 
@@ -39,7 +39,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         raise ValueError("No reference images provided")
 
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "image_input": reference_images,
         "output_format": "png",
     }

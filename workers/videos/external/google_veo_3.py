@@ -19,7 +19,7 @@ def main(context: VideoContext):
     generate_audio = False  # cheaper without audio
 
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
         "duration": duration,

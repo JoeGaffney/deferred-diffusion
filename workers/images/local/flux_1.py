@@ -151,7 +151,7 @@ def text_to_image_call(context: ImageContext):
         "generator": context.generator,
         "guidance_scale": 2.5,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, "")
+    args = apply_prompt_embeddings(args, context.data.cleaned_prompt, "")
     if context.control_nets.is_enabled():
         args["control_image"] = context.control_nets.get_images()
         args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
@@ -176,7 +176,7 @@ def image_to_image_call(context: ImageContext):
         "generator": context.generator,
         "guidance_scale": 2.0,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, "")
+    args = apply_prompt_embeddings(args, context.data.cleaned_prompt, "")
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
 
@@ -196,7 +196,7 @@ def inpainting_call(context: ImageContext):
         "guidance_scale": 30,
         "strength": context.data.strength,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, "")
+    args = apply_prompt_embeddings(args, context.data.cleaned_prompt, "")
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()

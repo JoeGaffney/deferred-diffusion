@@ -152,23 +152,32 @@ def get_video(node):
         _api_get_call(node, task_id, output_video_path, current_frame, iterations=1, sleep_time=0)
 
 
-def image_prompt_optimizer(node):
+def video_prompt_optimizer(node):
     current_frame = nuke.frame()
-    model = get_node_value(node, "model", "sd-xl", mode="value")
+    model = get_node_value(node, "model", "wan-2", mode="value")
     prompt = get_node_value(node, "prompt", "", mode="get")
     image_node = node.input(0)
     last_image_node = node.input(1)
 
     system_prompt = (
-        "You are an expert prompt optimizer for AI video generation models. "
-        "Given a basic prompt, generate an optimized prompt that accurately describes the video content, action, camera movement, style, and composition. "
-        "The optimized prompt should be detailed, specific, and suitable for use with AI video generation models."
-        "If images are provided, use them to inform your response. "
-        "Don't mention the images in the prompt unless necessary. "
-        "We more want the action of what will be happening in the video. "
-        "Rather than describing a single frame, focus on the sequence of events and visual storytelling. "
-        f"The model the prompt is intended for is: {model}."
-        "Only provide the optimized prompt as your response without any additional explanations or commentary."
+        "You are an expert AI video prompt optimizer. Given a basic prompt and optional reference images, "
+        "generate a structured prompt suitable for a single shot AI video generation. "
+        f"The model the prompt is intended for is {model}. "
+        ""
+        "Your response must follow this template strictly, with each category separated by a new line, "
+        "and keep each category as concise as possible: \n"
+        "Action/Events: movement, events, progression\n"
+        "Camera/Movement: perspective, angles, motion, transitions\n"
+        "Environment/Setting: locations, time of day, atmosphere\n"
+        "Style/Lighting/Rendering: visual style, lighting, color palette\n"
+        "Characters/Objects: appearance and interactions\n"
+        "Use reference images only as inspiration, not literal replication. "
+        "Include cinematic and temporal keywords (e.g., slow motion, tracking shot, fade) where relevant. "
+        ""
+        "If multiple images are provided, treat the first as the start and the last as the end of the shot; "
+        "use intermediates to inform transitions. If only one image is provided, use it for style, setting, and characters. "
+        "If no images are provided, rely on the text prompt alone. "
+        "Output only the optimized prompt, with no extra commentary."
     )
 
     images = []

@@ -45,7 +45,7 @@ def get_aspect_ratio(context: ImageContext) -> str:
 
 def text_to_image_call(context: ImageContext) -> Image.Image:
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "aspect_ratio": get_aspect_ratio(context),
     }
 
@@ -73,7 +73,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         raise ValueError("No reference images provided")
 
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "aspect_ratio": get_aspect_ratio(context),
         "reference_images": reference_images,
         "reference_tags": reference_tags,

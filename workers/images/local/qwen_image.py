@@ -125,7 +125,9 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
 
 
 def text_to_image_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(
+        context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
+    )
     pipe = get_pipeline("Qwen/Qwen-Image", inpainting=False)
 
     args = {
@@ -160,7 +162,7 @@ def image_edit_call(context: ImageContext):
         if current is not None:
             reference_images.append(current)
 
-    prompt_embeds, prompt_embeds_mask = qwen_edit_encode(context.data.prompt, reference_images)
+    prompt_embeds, prompt_embeds_mask = qwen_edit_encode(context.data.cleaned_prompt, reference_images)
     pipe = get_edit_pipeline("ovedrive/Qwen-Image-Edit-2509-4bit")
 
     args = {
@@ -182,7 +184,9 @@ def image_edit_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    prompt_embeds, prompt_embeds_mask = qwen_encode(context.data.prompt + " Ultra HD, 4K, cinematic composition.")
+    prompt_embeds, prompt_embeds_mask = qwen_encode(
+        context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
+    )
     pipe = get_pipeline("ovedrive/qwen-image-4bit", inpainting=True)
 
     args = {

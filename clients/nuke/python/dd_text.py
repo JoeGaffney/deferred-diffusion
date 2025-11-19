@@ -118,7 +118,7 @@ def get_text(node):
         _api_get_call(node, task_id, iterations=1, sleep_time=5)
 
 
-def prompt_optimizer(node, prompt: str, system_prompt: str, images: list, model="gpt-4"):
+def prompt_optimizer(node, prompt: str, system_prompt: str, images: list, model="gpt-5"):
     model = TextRequestModel(model)
     body = TextRequest(
         model=model,

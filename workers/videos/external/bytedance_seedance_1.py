@@ -17,7 +17,7 @@ def main(context: VideoContext):
     model = "bytedance/seedance-1-pro"
     duration = 10 if context.long_video() else 5
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
         "duration": duration,
@@ -27,8 +27,6 @@ def main(context: VideoContext):
         payload["image"] = convert_pil_to_bytes(context.image)
 
     if context.last_image:
-        # Force pro model for last frame support
-        model = "bytedance/seedance-1-pro"
         payload["last_frame_image"] = convert_pil_to_bytes(context.last_image)
 
     output = replicate_run(model, payload)

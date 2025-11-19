@@ -76,7 +76,7 @@ def text_to_image_call(context: ImageContext):
         "generator": context.generator,
         "guidance_scale": 4.0,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
+    args = apply_prompt_embeddings(args, context.data.cleaned_prompt, _negative_prompt_default)
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
@@ -98,7 +98,7 @@ def image_to_image_call(context: ImageContext):
         "strength": context.data.strength,
         "guidance_scale": 4.0,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
+    args = apply_prompt_embeddings(args, context.data.cleaned_prompt, _negative_prompt_default)
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()
@@ -121,7 +121,7 @@ def inpainting_call(context: ImageContext):
         "strength": context.data.strength,
         "guidance_scale": 4.0,
     }
-    args = apply_prompt_embeddings(args, context.data.prompt, _negative_prompt_default)
+    args = apply_prompt_embeddings(args, context.data.cleaned_prompt, _negative_prompt_default)
 
     processed_image = pipe.__call__(**args).images[0]
     context.cleanup()

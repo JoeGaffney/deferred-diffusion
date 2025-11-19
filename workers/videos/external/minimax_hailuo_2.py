@@ -9,7 +9,7 @@ def main(context: VideoContext):
     duration = 10 if context.long_video() else 6
 
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "duration": duration,
         "resolution": "768p",
         "prompt_optimizer": True,
