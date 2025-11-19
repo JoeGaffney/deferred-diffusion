@@ -115,7 +115,6 @@ def process_video(node):
 
         # video input we extract from a file path parameter at the moment
         video = get_node_value(node, "video", UNSET, mode="get")
-        nuke.tprint(f"Processing video: {video}")
         video_base64 = UNSET
         if video and video != UNSET and video != "":
             # Check if the video file exists

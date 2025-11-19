@@ -4,6 +4,7 @@ import hou
 from httpx import RemoteProtocolError
 
 from config import client
+from dd_text import prompt_optimizer
 from generated.api_client.api.images import images_create, images_get
 from generated.api_client.models import (
     ImageCreateResponse,
@@ -123,3 +124,32 @@ def get_image(node):
         _api_get_call(
             node, task_id, output_image_path, hou.expandString(output_image_path), iterations=1, sleep_time=0
         )
+
+
+def image_prompt_optimizer(node):
+    params = get_node_parameters(node)
+    model = params.get("model", "sd-xl")
+    prompt = params.get("prompt", "")
+    image = input_to_base64(node, "src")
+
+    system_prompt = (
+        "You are an expert AI image prompt optimizer. Given a basic prompt and an optional reference image, "
+        "generate a structured prompt suitable for AI image generation. "
+        f"The model the prompt is intended for is {model}. "
+        ""
+        "Your response must follow this template strictly, with each category separated by a new line, "
+        "and keep each category as concise as possible: \n"
+        "Subject/Objects: main subjects and objects, their appearance\n"
+        "Environment/Background: key setting and atmosphere\n"
+        "Style/Lighting: visual style, lighting, color palette, mood\n"
+        "Composition/Camera: framing, perspective, and focal points\n"
+        ""
+        "Use the reference image only as inspiration for style or content, do not replicate it literally. "
+        "Output only the optimized prompt, with no extra commentary."
+    )
+
+    images = []
+    if image:
+        images.append(image)
+
+    prompt_optimizer(node, prompt, system_prompt, images)

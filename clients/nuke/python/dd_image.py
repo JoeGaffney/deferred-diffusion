@@ -159,6 +159,7 @@ def image_prompt_optimizer(node):
         "Environment/Background: key setting and atmosphere\n"
         "Style/Lighting: visual style, lighting, color palette, mood\n"
         "Composition/Camera: framing, perspective, and focal points\n"
+        ""
         "Use the reference image only as inspiration for style or content, do not replicate it literally. "
         "Output only the optimized prompt, with no extra commentary."
     )

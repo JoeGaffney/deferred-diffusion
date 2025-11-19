@@ -25,7 +25,7 @@ from utils import (
 
 
 @threaded
-def _api_get_call(node, id, iterations=1, sleep_time=5):
+def _api_get_call(node, id, iterations=1, sleep_time=5, set_value="response"):
     set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
@@ -62,7 +62,7 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
             if not parsed.status == TaskStatus.SUCCESS or not parsed.result:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
-            node.parm("response").set(parsed.result.response)
+            node.parm(set_value).set(parsed.result.response)
             set_node_info(node, TaskStatus.SUCCESS, "")
 
     hou.ui.postEventCallback(update_ui)
@@ -104,3 +104,23 @@ def get_text(node):
             raise ValueError("Task ID is required to get the text.")
 
         _api_get_call(node, task_id, iterations=1, sleep_time=0)
+
+
+def prompt_optimizer(node, prompt: str, system_prompt: str, images: list, model="gpt-5"):
+    model = TextRequestModel(model)
+    body = TextRequest(
+        model=model,
+        prompt=prompt,
+        system_prompt=system_prompt,
+        images=images,
+    )
+
+    try:
+        parsed = texts_create.sync(client=client, body=body)
+    except Exception as e:
+        raise RuntimeError(f"API call failed: {str(e)}") from e
+
+    if not isinstance(parsed, TextCreateResponse):
+        raise ValueError("Unexpected response type from API call.")
+
+    _api_get_call(node, str(parsed.id), sleep_time=1, iterations=100, set_value="prompt")
