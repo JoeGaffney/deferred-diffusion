@@ -7,6 +7,7 @@ from config import client
 from dd_text import prompt_optimizer
 from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.models import (
+    SystemPrompt,
     TaskStatus,
     VideoCreateResponse,
     VideoRequest,
@@ -137,27 +138,6 @@ def video_prompt_optimizer(node):
     image = input_to_base64(node, "src")
     last_image = input_to_base64(node, "last_image")
 
-    system_prompt = (
-        "You are an expert AI video prompt optimizer. Given a basic prompt and optional reference images, "
-        "generate a structured prompt suitable for a single shot AI video generation. "
-        f"The model the prompt is intended for is {model}. "
-        ""
-        "Your response must follow this template strictly, with each category separated by a new line, "
-        "and keep each category as concise as possible: \n"
-        "Action/Events: movement, events, progression\n"
-        "Camera/Movement: perspective, angles, motion, transitions\n"
-        "Environment/Setting: locations, time of day, atmosphere\n"
-        "Style/Lighting/Rendering: visual style, lighting, color palette\n"
-        "Characters/Objects: appearance and interactions\n"
-        "Use reference images only as inspiration, not literal replication. "
-        "Include cinematic and temporal keywords (e.g., slow motion, tracking shot, fade) where relevant. "
-        ""
-        "If multiple images are provided, treat the first as the start and the last as the end of the shot; "
-        "use intermediates to inform transitions. If only one image is provided, use it for style, setting, and characters. "
-        "If no images are provided, rely on the text prompt alone. "
-        "Output only the optimized prompt, with no extra commentary."
-    )
-
     images = []
     if image:
         images.append(image)
@@ -165,4 +145,4 @@ def video_prompt_optimizer(node):
     if last_image:
         images.append(last_image)
 
-    prompt_optimizer(node, prompt, system_prompt, images)
+    prompt_optimizer(node, prompt, SystemPrompt.VIDEO_OPTIMIZER_A, images)

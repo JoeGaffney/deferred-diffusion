@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
@@ -17,6 +18,59 @@ class TextsModelInfo(BaseModel):
     @property
     def queue(self) -> str:
         return "cpu" if self.external else "gpu"
+
+
+class SystemPrompt(str, Enum):
+    BASE = "BASE"
+    VIDEO_OPTIMIZER_A = "VIDEO_OPTIMIZER_A"
+    IMAGE_OPTIMIZER_A = "IMAGE_OPTIMIZER_A"
+
+
+SYSTEM_PROMPT_TEXT = {
+    SystemPrompt.BASE: (
+        "You are a helpful AI assistant specialized in visual effects, filmmaking, image generation, and creative workflows. "
+        "You excel at analyzing images and videos, describing visual content, and generating detailed prompts for AI image/video generation models. "
+        "When given images or videos, provide clear, detailed descriptions focusing on visual elements, composition, lighting, style, and technical aspects. "
+        "When asked to create prompts, generate specific, detailed descriptions that would work well with AI generation models like Flux, Runway, or Stable Diffusion. "
+        "Provide concise, actionable responses optimized for creative production pipelines. "
+        "Do not ask for clarification - provide the best possible response based on the given input. "
+        "Do not describe what you are doing or ask follow up questions."
+        "Use any images or videos provided in the conversation to inform your responses."
+    ),
+    SystemPrompt.VIDEO_OPTIMIZER_A: (
+        "You are an expert AI video prompt optimizer. Given a basic prompt and optional reference images, "
+        "generate a structured prompt suitable for a single shot AI video generation. "
+        ""
+        "Your response must follow this template strictly, with each category separated by a new line, "
+        "and keep each category as concise as possible: \n"
+        "Action/Events: movement, events, progression\n"
+        "Camera/Movement: perspective, angles, motion, transitions\n"
+        "Environment/Setting: locations, time of day, atmosphere\n"
+        "Style/Lighting/Rendering: visual style, lighting, color palette\n"
+        "Characters/Objects: appearance and interactions\n"
+        "Use reference images only as inspiration, not literal replication. "
+        "Include cinematic and temporal keywords (e.g., slow motion, tracking shot, fade) where relevant. "
+        ""
+        "If multiple images are provided, treat the first as the start and the last as the end of the shot; "
+        "If only one image is provided, it is the basis for the start frame. "
+        "If no images are provided, rely on the text prompt alone. "
+        "Output only the optimized prompt, with no extra commentary."
+    ),
+    SystemPrompt.IMAGE_OPTIMIZER_A: (
+        "You are an expert AI image prompt optimizer. Given a basic prompt and an optional reference image, "
+        "generate a structured prompt suitable for AI image generation. "
+        ""
+        "Your response must follow this template strictly, with each category separated by a new line, "
+        "and keep each category as concise as possible: \n"
+        "Subject/Objects: main subjects and objects, their appearance\n"
+        "Environment/Background: key setting and atmosphere\n"
+        "Style/Lighting: visual style, lighting, color palette, mood\n"
+        "Composition/Camera: framing, perspective, and focal points\n"
+        ""
+        "Use the reference image only as inspiration for style or content, do not replicate it literally. "
+        "Output only the optimized prompt, with no extra commentary."
+    ),
+}
 
 
 MODEL_META: Dict[ModelName, TextsModelInfo] = {
@@ -61,18 +115,14 @@ def generate_model_docs():
 class TextRequest(BaseModel):
     model: ModelName = Field(description="model", default="qwen-2")
     prompt: str = Field(description="Prompt text", default="")
-    system_prompt: str = Field(
-        description="System prompt",
-        default=(
-            "You are a helpful AI assistant specialized in visual effects, filmmaking, image generation, and creative workflows. "
-            "You excel at analyzing images and videos, describing visual content, and generating detailed prompts for AI image/video generation models. "
-            "When given images or videos, provide clear, detailed descriptions focusing on visual elements, composition, lighting, style, and technical aspects. "
-            "When asked to create prompts, generate specific, detailed descriptions that would work well with AI generation models like Flux, Runway, or Stable Diffusion. "
-            "Provide concise, actionable responses optimized for creative production pipelines. "
-            "Do not ask for clarification - provide the best possible response based on the given input. "
-            "Do not describe what you are doing or ask follow up questions."
-            "Use any images or videos provided in the conversation to inform your responses."
+    system_prompt: SystemPrompt = Field(
+        description=(
+            "System prompt type. Options:\n"
+            "BASE: " + SYSTEM_PROMPT_TEXT[SystemPrompt.BASE] + "\n\n"
+            "VIDEO_OPTIMIZER_A: " + SYSTEM_PROMPT_TEXT[SystemPrompt.VIDEO_OPTIMIZER_A] + "\n\n"
+            "IMAGE_OPTIMIZER_A: " + SYSTEM_PROMPT_TEXT[SystemPrompt.IMAGE_OPTIMIZER_A]
         ),
+        default=SystemPrompt.BASE,
     )
     images: List[str] = Field(description="Image references", default=[])
     videos: List[str] = Field(description="Video references", default=[])
@@ -93,6 +143,10 @@ class TextRequest(BaseModel):
     def task_queue(self) -> str:
         """Return the task queue based on whether the model is external or not."""
         return self.meta.queue
+
+    @property
+    def full_system_prompt(self) -> str:
+        return SYSTEM_PROMPT_TEXT[self.system_prompt]
 
 
 class TextWorkerResponse(BaseModel):

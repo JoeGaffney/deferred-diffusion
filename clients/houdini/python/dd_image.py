@@ -11,6 +11,7 @@ from generated.api_client.models import (
     ImageRequest,
     ImageRequestModel,
     ImageResponse,
+    SystemPrompt,
     TaskStatus,
 )
 from generated.api_client.types import UNSET
@@ -132,24 +133,8 @@ def image_prompt_optimizer(node):
     prompt = params.get("prompt", "")
     image = input_to_base64(node, "src")
 
-    system_prompt = (
-        "You are an expert AI image prompt optimizer. Given a basic prompt and an optional reference image, "
-        "generate a structured prompt suitable for AI image generation. "
-        f"The model the prompt is intended for is {model}. "
-        ""
-        "Your response must follow this template strictly, with each category separated by a new line, "
-        "and keep each category as concise as possible: \n"
-        "Subject/Objects: main subjects and objects, their appearance\n"
-        "Environment/Background: key setting and atmosphere\n"
-        "Style/Lighting: visual style, lighting, color palette, mood\n"
-        "Composition/Camera: framing, perspective, and focal points\n"
-        ""
-        "Use the reference image only as inspiration for style or content, do not replicate it literally. "
-        "Output only the optimized prompt, with no extra commentary."
-    )
-
     images = []
     if image:
         images.append(image)
 
-    prompt_optimizer(node, prompt, system_prompt, images)
+    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER_A, images)

@@ -6,6 +6,7 @@ from httpx import RemoteProtocolError
 from config import client
 from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.models import (
+    SystemPrompt,
     TaskStatus,
     TextCreateResponse,
     TextRequest,
@@ -118,7 +119,7 @@ def get_text(node):
         _api_get_call(node, task_id, iterations=1, sleep_time=5)
 
 
-def prompt_optimizer(node, prompt: str, system_prompt: str, images: list, model="gpt-5"):
+def prompt_optimizer(node, prompt: str, system_prompt: SystemPrompt, images: list, model="gpt-5"):
     model = TextRequestModel(model)
     body = TextRequest(
         model=model,
