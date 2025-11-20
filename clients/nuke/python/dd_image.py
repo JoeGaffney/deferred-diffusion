@@ -153,4 +153,4 @@ def image_prompt_optimizer(node):
     if image:
         images.append(image)
 
-    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER_A, images)
+    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images)

@@ -137,12 +137,14 @@ def video_prompt_optimizer(node):
     prompt = params.get("prompt", "")
     image = input_to_base64(node, "src")
     last_image = input_to_base64(node, "last_image")
+    system_prompt = SystemPrompt.VIDEO_OPTIMIZER
 
     images = []
     if image:
         images.append(image)
 
     if last_image:
+        system_prompt = SystemPrompt.VIDEO_TRANSITION
         images.append(last_image)
 
-    prompt_optimizer(node, prompt, SystemPrompt.VIDEO_OPTIMIZER_A, images)
+    prompt_optimizer(node, prompt, system_prompt, images)
