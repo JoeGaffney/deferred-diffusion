@@ -25,9 +25,9 @@ def typed_task(name: ModelName, queue: str):
 
 
 # Explicit internal model tasks (lazy-import model implementation inside each task)
-@typed_task(name="sd-3", queue="gpu")
-def sd_3(request_dict):
-    from images.local.sd_3 import main
+@typed_task(name="sd-xl", queue="gpu")
+def sd_xl(request_dict):
+    from images.local.sd_xl import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -73,15 +73,6 @@ def segment_anything_2(request_dict):
 @typed_task(name="real-esrgan-x4", queue="gpu")
 def real_esrgan_x4(request_dict):
     from images.local.real_esrgan_x4 import main
-
-    context = validate_request_and_context(request_dict)
-    result = main(context)
-    return process_result(context, result)
-
-
-@typed_task(name="sd-xl", queue="gpu")
-def sd_xl(request_dict):
-    from images.local.sd_xl import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

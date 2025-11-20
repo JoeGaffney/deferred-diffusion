@@ -4,13 +4,7 @@ import psutil
 import pytest
 import torch
 
-from common.text_encoders import (
-    flux_encode,
-    ltx_encode,
-    qwen_encode,
-    sd3_encode,
-    wan_encode,
-)
+from common.text_encoders import flux_encode, ltx_encode, qwen_encode, wan_encode
 
 TEXT_TO_IMAGE_PROMPT = "A serene scene of a woman lying on lush green grass in a sunlit meadow. She has long flowing hair spread out around her, eyes closed, with a peaceful expression on her face. She's wearing a light summer dress that gently ripples in the breeze. Around her, wildflowers bloom in soft pastel colors, and sunlight filters through the leaves of nearby trees, casting dappled shadows. The mood is calm, dreamy, and connected to nature."
 IMAGE_TO_IMAGE_PROMPT = "Change to night time and add rain and lighting"
@@ -36,13 +30,6 @@ def test_flux_text_encoder_cpu(prompt):
     flux_out = flux_encode(prompt, torch_dtype=torch_dtype, device="cpu")
     assert flux_out is not None
     report_cpu_memory("FLUX ENCODE:")
-
-
-@pytest.mark.parametrize("prompt", prompts)
-def test_sd3_text_encoder_cpu(prompt):
-    sd3_out = sd3_encode(prompt, torch_dtype=torch_dtype, device="cpu")
-    assert sd3_out is not None
-    report_cpu_memory("SD3 ENCODE:")
 
 
 @pytest.mark.parametrize("prompt", prompts)

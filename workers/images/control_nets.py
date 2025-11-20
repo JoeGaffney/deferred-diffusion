@@ -12,8 +12,8 @@ from utils.utils import load_image_if_exists
 
 # NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
-def load_controlnet(model, model_family: ModelName):
-    if model_family == "flux-1":
+def load_controlnet(model, model: ModelName):
+    if model == "flux-1":
         return FluxControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
 
     return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch.bfloat16, device_map="cpu")
@@ -32,21 +32,21 @@ CONTROL_NET_MODEL_CONFIG: Dict[ModelName, Dict[str, str]] = {
 }
 
 
-def get_controlnet_model(model_family: ModelName, controlnet_model: str) -> str:
-    config = CONTROL_NET_MODEL_CONFIG.get(model_family)
+def get_controlnet_model(model: ModelName, controlnet_model: str) -> str:
+    config = CONTROL_NET_MODEL_CONFIG.get(model)
     if not config:
-        raise ControlNetConfigError(f"ControlNet model config for {model_family} not found")
+        raise ControlNetConfigError(f"ControlNet model config for {model} not found")
 
     controlnet_model_path = config.get(controlnet_model)
     if not controlnet_model_path:
-        raise ControlNetConfigError(f"ControlNet model path for {controlnet_model} not found in {model_family}")
+        raise ControlNetConfigError(f"ControlNet model path for {controlnet_model} not found in {model}")
 
     return controlnet_model_path
 
 
 class ControlNet:
-    def __init__(self, data: References, model_family: ModelName, width, height):
-        self.model = get_controlnet_model(model_family, data.mode)
+    def __init__(self, data: References, model: ModelName, width, height):
+        self.model = get_controlnet_model(model, data.mode)
         self.conditioning_scale = max(0.01, data.strength)
         self.image = load_image_if_exists(data.image)
 
@@ -54,7 +54,7 @@ class ControlNet:
             raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")
 
         self.image = self.image.resize([width, height])
-        self.loaded_controlnet = load_controlnet(self.model, model_family)
+        self.loaded_controlnet = load_controlnet(self.model, model)
 
     # we load then offload to match the same behavior as cpu offloading
     def get_loaded_controlnet(self):
@@ -65,13 +65,17 @@ class ControlNet:
 
 
 class ControlNets:
-    def __init__(self, control_nets: list[References], model_family: ModelName, width, height):
+    def __init__(self, control_nets: list[References], model: ModelName, width, height):
         self.control_nets: list[ControlNet] = []
+
+        if model not in CONTROL_NET_MODEL_CONFIG:
+            logger.debug(f"Model {model} does not support ControlNets")
+            return
 
         # Handle initialization errors and create valid control nets
         for data in control_nets:
             try:
-                control_net = ControlNet(data, model_family, width, height)
+                control_net = ControlNet(data, model, width, height)
                 self.control_nets.append(control_net)
             except ControlNetConfigError as e:
                 logger.warning(f"Failed to initialize ControlNet: {e}")

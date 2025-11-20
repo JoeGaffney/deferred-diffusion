@@ -22,7 +22,6 @@ def main(context: ImageContext) -> Image.Image:
 
     MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
         "sd-xl": ("images.local.sd_xl", "main"),
-        "sd-3": ("images.local.sd_3", "main"),
         "flux-1": ("images.local.flux_1", "main"),
         "qwen-image": ("images.local.qwen_image", "main"),
         "depth-anything-2": ("images.local.depth_anything_2", "main"),

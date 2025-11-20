@@ -8,7 +8,6 @@ from common.schemas import TaskStatus
 # User facing choice
 ModelName: TypeAlias = Literal[
     "sd-xl",
-    "sd-3",
     "flux-1",
     "qwen-image",
     "depth-anything-2",
@@ -49,12 +48,6 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="Stable Diffusion XL variant with broad adapter/control support.",
-    ),
-    "sd-3": ImagesModelInfo(
-        provider="local",
-        external=False,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
-        description="Stable Diffusion 3.5 for complex compositions.",
     ),
     "flux-1": ImagesModelInfo(
         provider="local",
