@@ -134,6 +134,15 @@ def gemini_2(request_dict):
     return process_result(context, result)
 
 
+@typed_task(name="google-gemini-3", queue="cpu")
+def gemini_3(request_dict):
+    from images.external.google_gemini_3 import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
 @typed_task(name="bytedance-seedream-4", queue="cpu")
 def seedream_4(request_dict):
     from images.external.bytedance_seedream_4 import main

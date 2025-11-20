@@ -19,6 +19,7 @@ ModelName: TypeAlias = Literal[
     "flux-1-pro",
     "topazlabs-upscale",
     "google-gemini-2",
+    "google-gemini-3",
     "bytedance-seedream-4",
 ]
 InferredMode: TypeAlias = Literal["text-to-image", "image-to-image", "inpainting"]
@@ -113,6 +114,13 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image"},
         references=True,
         description="Gemini multimodal image model.",
+    ),
+    "google-gemini-3": ImagesModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image"},
+        references=True,
+        description="Gemini 3 Pro image model.",
     ),
     "bytedance-seedream-4": ImagesModelInfo(
         provider="replicate",

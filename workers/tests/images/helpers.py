@@ -34,6 +34,7 @@ def main(context: ImageContext) -> Image.Image:
         "flux-1-pro": ("images.external.flux_1_pro", "main"),
         "topazlabs-upscale": ("images.external.topazlabs_upscale", "main"),
         "google-gemini-2": ("images.external.google_gemini_2", "main"),
+        "google-gemini-3": ("images.external.google_gemini_3", "main"),
         "bytedance-seedream-4": ("images.external.bytedance_seedream_4", "main"),
     }
 
