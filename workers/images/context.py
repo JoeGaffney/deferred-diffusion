@@ -9,13 +9,7 @@ from common.logger import logger
 from images.adapters import Adapters
 from images.control_nets import ControlNets
 from images.schemas import ImageRequest, ModelName
-from utils.utils import (
-    ensure_divisible,
-    get_tmp_dir,
-    load_image_if_exists,
-    resize_image,
-    save_copy_with_timestamp,
-)
+from utils.utils import ensure_divisible, get_tmp_dir, load_image_if_exists
 
 
 class ImageContext:
@@ -48,15 +42,6 @@ class ImageContext:
         if self.color_image:
             self.color_image = self.color_image.resize([self.width, self.height])
 
-    def ensure_max_dimension(self, delta: int = 1024):
-        if self.width < delta or self.height < delta:
-            # Calculate scale factor to get closest dimension to 1024
-            scale_factor = max(delta / self.width, delta / self.height)
-
-            # Apply scaling and ensure divisibility by 16
-            self.width = int(self.width * scale_factor)
-            self.height = int(self.height * scale_factor)
-
     def get_dimension_type(self) -> Literal["square", "landscape", "portrait"]:
         """Determine the image dimension type based on width and height ratio."""
         if self.width > self.height:
@@ -80,13 +65,10 @@ class ImageContext:
     # NOTE could be moved to utils
     def save_image(self, image):
         # Create a temporary file with .png extension
-        with tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".png", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(dir=get_tmp_dir(self.model), suffix=".png", delete=False) as tmp_file:
             # tmp_file will be closed automatically when exiting the with block
             image.save(tmp_file, format="PNG")
             path = tmp_file.name
-
-        # Save the image to the temporary file
-        logger.info(f"Image saved to temporary file: {path} size: {image.size}")
-        save_copy_with_timestamp(path)
+            logger.info(f"Image saved at {path}")
 
         return path

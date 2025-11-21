@@ -12,11 +12,13 @@ from utils.utils import load_image_if_exists
 
 # NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
-def load_controlnet(model, model: ModelName):
+def load_controlnet(controlnet_model, model: ModelName):
     if model == "flux-1":
-        return FluxControlNetModel.from_pretrained(model, torch_dtype=torch.bfloat16, device_map="cpu")
+        return FluxControlNetModel.from_pretrained(controlnet_model, torch_dtype=torch.bfloat16, device_map="cpu")
 
-    return ControlNetModel.from_pretrained(model, variant="fp16", torch_dtype=torch.bfloat16, device_map="cpu")
+    return ControlNetModel.from_pretrained(
+        controlnet_model, variant="fp16", torch_dtype=torch.bfloat16, device_map="cpu"
+    )
 
 
 CONTROL_NET_MODEL_CONFIG: Dict[ModelName, Dict[str, str]] = {

@@ -70,17 +70,17 @@ class VideoContext:
     def long_video(self) -> bool:
         return self.data.num_frames > 100
 
-    def tmp_video_path(self):
-        return tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
+    def tmp_video_path(self, model="") -> str:
+        return tempfile.NamedTemporaryFile(dir=get_tmp_dir(model), suffix=".mp4").name
 
     def save_video(self, video, fps=24):
-        path = self.tmp_video_path()
+        path = self.tmp_video_path(self.model)
         path = export_to_video(video, output_video_path=path, fps=fps, quality=9)
         logger.info(f"Video saved at {path}")
         return path
 
     def save_video_url(self, url):
-        path = self.tmp_video_path()
+        path = self.tmp_video_path(model=self.model)
 
         response = requests.get(url, stream=True)
         if response.status_code == 200:

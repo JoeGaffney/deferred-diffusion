@@ -50,8 +50,11 @@ def get_16_9_resolution(resolution: Resolutions) -> Tuple[int, int]:
     return resolutions_16_9.get(resolution, (960, 540))
 
 
-def get_tmp_dir() -> str:
-    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion")
+def get_tmp_dir(model="") -> str:
+    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "workers")
+    if model:
+        subdir = os.path.join(subdir, model)
+
     os.makedirs(subdir, exist_ok=True)
     return subdir
 
@@ -64,19 +67,6 @@ def ensure_path_exists(path):
         except Exception as e:
             print(e)
             pass
-
-
-def save_copy_with_timestamp(path):
-    if os.path.exists(path):
-        directory, filename = os.path.split(path)
-        name, ext = os.path.splitext(filename)
-
-        # Create the timestamped path
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-3]  # Keep only 3 digits of milliseconds
-        timestamp_path = os.path.join(directory, "tmp", f"{name}_{timestamp}{ext}")
-        ensure_path_exists(timestamp_path)
-
-        shutil.copy(path, timestamp_path)
 
 
 def ensure_divisible(value: int, divisor=16) -> int:

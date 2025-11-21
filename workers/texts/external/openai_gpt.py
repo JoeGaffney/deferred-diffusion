@@ -17,7 +17,7 @@ def main(context: TextContext, model_path="gpt-4o-mini") -> str:
     # NOTE: system message is passed via 'instructions' parameter
     # system_message: Dict[str, Any] = {
     #     "role": "system",
-    #     "content": [{"type": "input_text", "text": context.data.system_prompt}],
+    #     "content": [{"type": "input_text", "text": context.data.full_system_prompt}],
     # }
 
     # apply image and video to last message
@@ -36,7 +36,7 @@ def main(context: TextContext, model_path="gpt-4o-mini") -> str:
         response = client.responses.create(
             model=model_path,
             input=[message],  # type: ignore
-            instructions=context.data.system_prompt,
+            instructions=context.data.full_system_prompt,
         )
     except Exception as e:
         logger.error(f"OpenAI API call failed: {str(e)}")

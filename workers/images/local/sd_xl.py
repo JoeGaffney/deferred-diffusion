@@ -158,7 +158,6 @@ def inpainting_call(context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
-    context.ensure_max_dimension(720)
     context.ensure_divisible(16)
 
     if context.color_image and context.mask_image:
