@@ -1,7 +1,9 @@
 from typing import Literal
 
 from runwayml import RunwayML
-from runwayml.types.text_to_image_create_params import ContentModeration
+from runwayml.types.image_to_video_create_params import (
+    Gen4TurboContentModeration as ContentModeration,
+)
 
 from utils.utils import pill_to_base64
 from videos.context import VideoContext

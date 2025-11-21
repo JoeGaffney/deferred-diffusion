@@ -1,4 +1,4 @@
-.PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests create-release
+.PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests create-release mypy-check
 
 VERSION ?= latest
 PROJECT_NAME ?= deferred-diffusion
@@ -55,6 +55,14 @@ generate-clients-raw:
 generate-clients: generate-openapi-spec generate-clients-raw
 	@echo "API clients generated successfully."
 
+
+mypy-api:
+	docker compose exec api mypy .
+
+mypy-worker:
+	docker compose exec gpu-workers mypy .
+
+mypy-checks: mypy-api mypy-worker
 
 # Example test commands:
 # make test-worker TEST_PATH=images

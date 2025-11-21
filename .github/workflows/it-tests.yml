@@ -64,6 +64,10 @@ jobs:
       run: |
         make generate-clients-raw
 
+    - name: Run mypy checks
+      run: |
+        make mypy-checks
+
     - name: Run IT Tests - External
       run: |
         make it-tests-external-ci

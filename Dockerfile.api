@@ -20,8 +20,8 @@ WORKDIR /app/api
 # Let mypy resolve absolute imports from /app
 ENV PYTHONPATH=/app/api
 
-# Run mypy to catch runtime-like type errors
-RUN mypy .
+# Run mypy to catch runtime-like type errors (commented out for faster builds) Can be run via Makefile
+# RUN mypy .
 
 # Expose the port FastAPI runs on
 EXPOSE 5000
