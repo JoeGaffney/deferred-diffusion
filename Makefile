@@ -55,14 +55,15 @@ generate-clients-raw:
 generate-clients: generate-openapi-spec generate-clients-raw
 	@echo "API clients generated successfully."
 
-
+# Mypy type checks
 mypy-api:
 	docker compose exec api mypy .
 
 mypy-worker:
 	docker compose exec gpu-workers mypy .
 
-mypy-checks: mypy-api mypy-worker
+mypy-cpu-workers:
+	docker compose exec cpu-workers mypy .
 
 # Example test commands:
 # make test-worker TEST_PATH=images

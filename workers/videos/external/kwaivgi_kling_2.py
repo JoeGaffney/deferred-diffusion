@@ -33,7 +33,6 @@ def main(context: VideoContext):
         else:
             payload["start_image"] = convert_pil_to_bytes(context.image)
 
-    print(payload)
     output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)
 

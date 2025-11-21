@@ -64,9 +64,13 @@ jobs:
       run: |
         make generate-clients-raw
 
-    - name: Run mypy checks
+    - name: Run mypy on api
       run: |
-        make mypy-checks
+        make mypy-api
+
+    - name: Run mypy on cpu-workers
+      run: |
+        make mypy-cpu-workers
 
     - name: Run IT Tests - External
       run: |
