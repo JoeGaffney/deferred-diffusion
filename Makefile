@@ -98,41 +98,41 @@ tag-and-push: build
 create-client-release: generate-clients-raw
 # Create release directory with combined project-version name
 	if not exist releases mkdir releases
-	if exist releases\$(VERSION)\$(PROJECT_NAME) rmdir /S /Q releases\$(VERSION)\$(PROJECT_NAME)
-	mkdir releases\$(VERSION)\$(PROJECT_NAME)
+	if exist releases\$(PROJECT_NAME) rmdir /S /Q releases\$(PROJECT_NAME)
+	mkdir releases\$(PROJECT_NAME)
 
 # Copy deployment docker-compose.yml to release folder
-	copy docker-compose.release.yml releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml
-	copy README.md releases\$(VERSION)\$(PROJECT_NAME)\README.md
+	copy docker-compose.release.yml releases\$(PROJECT_NAME)\docker-compose.yml
+	copy README.md releases\$(PROJECT_NAME)\README.md
 
 # Update docker-compose.yml to use versioned images
-	powershell -Command "(Get-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', '$(REPO_USERNAME)/$(REPO):api-$(VERSION)' -replace 'deferred-diffusion-workers:latest', '$(REPO_USERNAME)/$(REPO):worker-$(VERSION)' | Set-Content releases\$(VERSION)\$(PROJECT_NAME)\docker-compose.yml"
+	powershell -Command "(Get-Content releases\$(PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', '$(REPO_USERNAME)/$(REPO):api-$(VERSION)' -replace 'deferred-diffusion-workers:latest', '$(REPO_USERNAME)/$(REPO):worker-$(VERSION)' | Set-Content releases\$(PROJECT_NAME)\docker-compose.yml"
 
 # Copy directories with exclusions
-	xcopy /E /I /Y clients releases\$(VERSION)\$(PROJECT_NAME)\clients
+	xcopy /E /I /Y clients releases\$(PROJECT_NAME)\clients
 
 # Create release archive
-	cd releases\$(VERSION) && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
-	@echo Release files created in releases\$(VERSION)\$(PROJECT_NAME)
-	@echo Archive created: releases\$(VERSION)\$(PROJECT_NAME)-$(VERSION).tar.gz
+	cd releases && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
+	@echo Release files created in releases/$(PROJECT_NAME)
+	@echo Archive created: releases/$(PROJECT_NAME)-$(VERSION).tar.gz
 
 create-client-release-linux: generate-clients-raw
 # Create release directory with combined project-version name
-	mkdir -p releases/$(VERSION)/$(PROJECT_NAME)
-	rm -rf releases/$(VERSION)/$(PROJECT_NAME)/* 2>/dev/null || true
+	mkdir -p releases/$(PROJECT_NAME)
+	rm -rf releases/$(PROJECT_NAME)/* 2>/dev/null || true
 
 # Copy deployment docker-compose.yml to release folder
-	cp docker-compose.release.yml releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
-	cp README.md releases/$(VERSION)/$(PROJECT_NAME)/README.md
+	cp docker-compose.release.yml releases/$(PROJECT_NAME)/docker-compose.yml
+	cp README.md releases/$(PROJECT_NAME)/README.md
 
 # Update docker-compose.yml to use versioned images
-	sed -i 's/deferred-diffusion-api:latest/$(REPO_USERNAME)\/$(REPO):api-$(VERSION)/g' releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
-	sed -i 's/deferred-diffusion-workers:latest/$(REPO_USERNAME)\/$(REPO):worker-$(VERSION)/g' releases/$(VERSION)/$(PROJECT_NAME)/docker-compose.yml
+	sed -i 's/deferred-diffusion-api:latest/$(REPO_USERNAME)\/$(REPO):api-$(VERSION)/g' releases/$(PROJECT_NAME)/docker-compose.yml
+	sed -i 's/deferred-diffusion-workers:latest/$(REPO_USERNAME)\/$(REPO):worker-$(VERSION)/g' releases/$(PROJECT_NAME)/docker-compose.yml
 
 # Copy directories with exclusions
-	cp -r clients releases/$(VERSION)/$(PROJECT_NAME)/
+	cp -r clients releases/$(PROJECT_NAME)/
 
 # Create release archive
-	cd releases/$(VERSION) && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
-	@echo Release files created in releases/$(VERSION)/$(PROJECT_NAME)
-	@echo Archive created: releases/$(VERSION)/$(PROJECT_NAME)-$(VERSION).tar.gz
+	cd releases && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
+	@echo Release files created in releases/$(PROJECT_NAME)
+	@echo Archive created: releases/$(PROJECT_NAME)-$(VERSION).tar.gz
