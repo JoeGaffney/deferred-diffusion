@@ -25,6 +25,7 @@ opencv-python
 protobuf
 qwen-vl-utils
 sam2
+sam3
 sentencepiece
 torchao
 transformers

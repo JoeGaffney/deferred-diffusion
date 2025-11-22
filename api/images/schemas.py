@@ -11,7 +11,8 @@ ModelName: TypeAlias = Literal[
     "flux-1",
     "qwen-image",
     "depth-anything-2",
-    "segment-anything-2",
+    "sam-2-image",
+    "sam-3-image",
     "real-esrgan-x4",
     "gpt-image-1",
     "runway-gen4-image",
@@ -69,11 +70,17 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"image-to-image"},
         description="Depth estimation pipeline.",
     ),
-    "segment-anything-2": ImagesModelInfo(
+    "sam-2-image": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"image-to-image"},
-        description="Segmentation pipeline.",
+        description="Meta's SAM 2 Segmentation pipeline.",
+    ),
+    "sam-3-image": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"image-to-image"},
+        description="Meta's SAM 3 Segmentation pipeline.",
     ),
     "gpt-image-1": ImagesModelInfo(
         provider="openai",

@@ -61,9 +61,18 @@ def depth_anything_2(request_dict):
     return process_result(context, result)
 
 
-@typed_task(name="segment-anything-2", queue="gpu")
-def segment_anything_2(request_dict):
-    from images.local.segment_anything_2 import main
+@typed_task(name="sam-2-image", queue="gpu")
+def sam_2_image(request_dict):
+    from images.local.sam_2_image import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="sam-3-image", queue="gpu")
+def sam_3_image(request_dict):
+    from images.local.sam_3_image import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
