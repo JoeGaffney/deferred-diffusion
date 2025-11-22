@@ -99,21 +99,21 @@ IP_ADAPTER_MODEL_CONFIG: Dict[ModelName, Dict[str, IpAdapterModelConfig]] = {
 }
 
 
-def get_ip_adapter_config(model_family: ModelName, adapter_type: str) -> IpAdapterModelConfig:
-    config = IP_ADAPTER_MODEL_CONFIG.get(model_family)
+def get_ip_adapter_config(model: ModelName, adapter_type: str) -> IpAdapterModelConfig:
+    config = IP_ADAPTER_MODEL_CONFIG.get(model)
     if not config:
-        raise IPAdapterConfigError(f"IP-Adapter model config for {model_family} not found")
+        raise IPAdapterConfigError(f"IP-Adapter model config for {model} not found")
 
     ip_adapter_config = config.get(adapter_type)
     if not ip_adapter_config:
-        raise IPAdapterConfigError(f"IP-Adapter model path for {adapter_type} not found in {model_family}")
+        raise IPAdapterConfigError(f"IP-Adapter model path for {adapter_type} not found in {model}")
 
     return ip_adapter_config
 
 
 class IpAdapter:
-    def __init__(self, data: References, model_family: ModelName, width, height):
-        self.config = get_ip_adapter_config(model_family, data.mode)
+    def __init__(self, data: References, model: ModelName, width, height):
+        self.config = get_ip_adapter_config(model, data.mode)
         self.scale = max(0.01, data.strength)
         self.model = self.config.model
 
@@ -137,13 +137,17 @@ class IpAdapter:
 
 
 class Adapters:
-    def __init__(self, adapters: list[References], model_family: ModelName, width, height):
+    def __init__(self, adapters: list[References], model: ModelName, width, height):
         self.adapters: list[IpAdapter] = []
+
+        if model not in list(IP_ADAPTER_MODEL_CONFIG.keys()):
+            logger.debug(f"Model {model} does not support IP-Adapters")
+            return
 
         # Handle initialization errors and create valid adapters
         for data in adapters:
             try:
-                adapter = IpAdapter(data, model_family, width, height)
+                adapter = IpAdapter(data, model, width, height)
                 self.adapters.append(adapter)
             except IPAdapterConfigError as e:
                 logger.warning(f"Failed to initialize IP-Adapter: {e}")

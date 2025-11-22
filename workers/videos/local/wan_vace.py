@@ -62,7 +62,7 @@ def video_to_video(context: VideoContext):
     if context.image is None:
         raise ValueError("No reference image provided for video generation")
 
-    prompt_embeds = wan_encode(context.data.prompt)
+    prompt_embeds = wan_encode(context.data.cleaned_prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
 
     pipe = get_pipeline(model_id="Wan-AI/Wan2.1-VACE-14B-diffusers")

@@ -12,7 +12,6 @@ from diffusers import (
     LTXConditionPipeline,
     QwenImageEditPlusPipeline,
     QwenImagePipeline,
-    StableDiffusion3Pipeline,
     WanPipeline,
 )
 from PIL import Image
@@ -189,48 +188,6 @@ def flux_encode(prompt, torch_dtype=torch.float32, device="cpu"):
 
 
 @decorator_global_text_encoder_cache
-def _pipeline_sd3_text_encoder(torch_dtype=torch.float32, device="cpu"):
-    return StableDiffusion3Pipeline.from_pretrained(
-        "stabilityai/stable-diffusion-3.5-large",
-        text_encoder_3=T5EncoderModel.from_pretrained(
-            "black-forest-labs/FLUX.1-schnell",
-            subfolder="text_encoder_2",
-            torch_dtype=torch_dtype,
-        ),
-        transformer=None,
-        vae=None,
-        scheduler=None,
-        image_encoder=None,
-        feature_extractor=None,
-        torch_dtype=torch_dtype,
-    ).to(device)
-
-
-@time_info_decorator
-def sd3_encode(prompt, torch_dtype=torch.float32, device="cpu"):
-    if prompt == "":
-        return None, None
-
-    cached = get_prompt_from_cache("sd3", prompt)
-    if cached is not None:
-        return cached
-
-    pipe = _pipeline_sd3_text_encoder(torch_dtype=torch_dtype, device=device)
-    prompt_embeds, _, pooled_prompt_embeds, _ = pipe.encode_prompt(
-        prompt=prompt,
-        prompt_2=prompt,
-        prompt_3=prompt,
-        do_classifier_free_guidance=False,
-        max_sequence_length=256,
-    )
-    prompt_embeds = convert_tensor(prompt_embeds)
-    pooled_prompt_embeds = convert_tensor(pooled_prompt_embeds)
-
-    set_prompt_in_cache("sd3", prompt, (prompt_embeds, pooled_prompt_embeds))
-    return prompt_embeds, pooled_prompt_embeds
-
-
-@decorator_global_text_encoder_cache
 def _pipeline_ltx_text_encoder(torch_dtype=torch.float32, device="cpu"):
     return LTXConditionPipeline.from_pretrained(
         "Lightricks/LTX-Video-0.9.7-distilled",
@@ -356,5 +313,5 @@ def qwen_edit_encode(prompt, images: list[Image.Image], torch_dtype=torch.float3
 
     prompt_embeds = convert_tensor(prompt_embeds)
     prompt_embeds_mask = convert_tensor(prompt_embeds_mask, dtype=torch.long)
-    set_prompt_in_cache("qwen", prompt, (prompt_embeds, prompt_embeds_mask))
+    set_prompt_in_cache("qwen_edit", prompt, (prompt_embeds, prompt_embeds_mask))
     return prompt_embeds, prompt_embeds_mask

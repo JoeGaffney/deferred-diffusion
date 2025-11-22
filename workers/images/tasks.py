@@ -25,9 +25,9 @@ def typed_task(name: ModelName, queue: str):
 
 
 # Explicit internal model tasks (lazy-import model implementation inside each task)
-@typed_task(name="sd-3", queue="gpu")
-def sd_3(request_dict):
-    from images.local.sd_3 import main
+@typed_task(name="sd-xl", queue="gpu")
+def sd_xl(request_dict):
+    from images.local.sd_xl import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -79,15 +79,6 @@ def real_esrgan_x4(request_dict):
     return process_result(context, result)
 
 
-@typed_task(name="sd-xl", queue="gpu")
-def sd_xl(request_dict):
-    from images.local.sd_xl import main
-
-    context = validate_request_and_context(request_dict)
-    result = main(context)
-    return process_result(context, result)
-
-
 # Explicit external model tasks
 @typed_task(name="gpt-image-1", queue="cpu")
 def gpt_image_1(request_dict):
@@ -128,6 +119,15 @@ def topazlabs_upscale(request_dict):
 @typed_task(name="google-gemini-2", queue="cpu")
 def gemini_2(request_dict):
     from images.external.google_gemini_2 import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="google-gemini-3", queue="cpu")
+def gemini_3(request_dict):
+    from images.external.google_gemini_3 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

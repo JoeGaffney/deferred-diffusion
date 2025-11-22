@@ -23,6 +23,7 @@ services:
     stdin_open: true
     volumes:
       - hf_cache:/WORKSPACE
+      # - Y:/OUTPUTS:/tmp/deferred-diffusion # Optional: Uncomment and update path to persist outputs
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -56,6 +57,7 @@ services:
     stdin_open: true
     volumes:
       - hf_cache:/WORKSPACE
+      # - Y:/OUTPUTS:/tmp/deferred-diffusion # Optional: Uncomment and update path to persist outputs
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0

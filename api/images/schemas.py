@@ -8,7 +8,6 @@ from common.schemas import TaskStatus
 # User facing choice
 ModelName: TypeAlias = Literal[
     "sd-xl",
-    "sd-3",
     "flux-1",
     "qwen-image",
     "depth-anything-2",
@@ -19,6 +18,7 @@ ModelName: TypeAlias = Literal[
     "flux-1-pro",
     "topazlabs-upscale",
     "google-gemini-2",
+    "google-gemini-3",
     "bytedance-seedream-4",
 ]
 InferredMode: TypeAlias = Literal["text-to-image", "image-to-image", "inpainting"]
@@ -48,12 +48,6 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="Stable Diffusion XL variant with broad adapter/control support.",
-    ),
-    "sd-3": ImagesModelInfo(
-        provider="local",
-        external=False,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
-        description="Stable Diffusion 3.5 for complex compositions.",
     ),
     "flux-1": ImagesModelInfo(
         provider="local",
@@ -113,6 +107,13 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image"},
         references=True,
         description="Gemini multimodal image model.",
+    ),
+    "google-gemini-3": ImagesModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image"},
+        references=True,
+        description="Gemini 3 Pro image model.",
     ),
     "bytedance-seedream-4": ImagesModelInfo(
         provider="replicate",
@@ -226,6 +227,10 @@ class ImageRequest(BaseModel):
     @property
     def task_queue(self) -> str:
         return self.meta.queue
+
+    @property
+    def cleaned_prompt(self) -> str:
+        return " ".join(self.prompt.split())
 
     @model_validator(mode="after")
     def _validate_capabilities(self):

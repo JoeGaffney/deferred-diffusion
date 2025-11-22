@@ -14,16 +14,12 @@ def get_aspect_ratio(context: VideoContext) -> str:
 
 
 def main(context: VideoContext):
-    if context.image is None:
-        raise ValueError("Input image is None. Please provide a valid image.")
-
     model = "kwaivgi/kling-v2.5-turbo-pro"
     duration = 10 if context.long_video() else 5
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
-        "mode": "standard",
         "duration": duration,
     }
 
@@ -35,7 +31,7 @@ def main(context: VideoContext):
             payload["mode"] = "pro"
             model = "kwaivgi/kling-v2.1"
         else:
-            payload["image"] = convert_pil_to_bytes(context.image)
+            payload["start_image"] = convert_pil_to_bytes(context.image)
 
     output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)

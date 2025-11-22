@@ -51,7 +51,7 @@ def main(context: TextContext) -> str:
 
     system_message: Dict[str, Any] = {
         "role": "system",
-        "content": [{"type": "text", "text": context.data.system_prompt}],
+        "content": [{"type": "text", "text": context.data.full_system_prompt}],
     }
     message: Dict[str, Any] = {
         "role": "user",

@@ -1,5 +1,6 @@
 import base64
 import os
+import tempfile
 from typing import Optional
 
 from PIL import Image
@@ -8,11 +9,17 @@ from pydantic import Base64Bytes
 from utils.utils import ensure_path_exists
 
 
+def get_tmp_dir() -> str:
+    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "tests")
+    os.makedirs(subdir, exist_ok=True)
+    return subdir
+
+
 def setup_output_file(model_id, mode, suffix="", extension="png"):
     """Prepare output path and delete existing file if needed."""
     model_id_nice = model_id.replace("/", "_").replace(":", "_")
     suffix_nice = f"_{suffix}" if suffix != "" else ""
-    output_name = f"../tmp/output/{model_id_nice}/{model_id_nice}_{mode}{suffix_nice}.{extension}"
+    output_name = f"{get_tmp_dir()}/{model_id_nice}/{model_id_nice}_{mode}{suffix_nice}.{extension}"
 
     if os.path.exists(output_name):
         os.remove(output_name)

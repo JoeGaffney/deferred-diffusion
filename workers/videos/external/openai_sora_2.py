@@ -43,7 +43,7 @@ def main(context: VideoContext):
     try:
         video = client.videos.create_and_poll(
             model=model,
-            prompt=context.data.prompt,
+            prompt=context.data.cleaned_prompt,
             input_reference=reference_image or Omit(),
             size=size,
             seconds=seconds,

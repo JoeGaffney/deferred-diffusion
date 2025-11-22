@@ -4,7 +4,7 @@ from PIL import Image
 
 from common.replicate_helpers import process_replicate_image_output, replicate_run
 from images.context import ImageContext
-from utils.utils import convert_pil_to_bytes, pill_to_base64
+from utils.utils import convert_pil_to_bytes
 
 
 def get_size(
@@ -19,9 +19,13 @@ def get_size(
 
 
 def text_to_image_call(context: ImageContext) -> Image.Image:
-    payload = {"prompt": context.data.cleaned_prompt, "output_format": "png", "aspect_ratio": get_size(context)}
+    payload = {
+        "prompt": context.data.cleaned_prompt,
+        "output_format": "png",
+        "aspect_ratio": get_size(context),
+    }
 
-    output = replicate_run("google/gemini-2.5-flash-image", payload)
+    output = replicate_run("google/nano-banana-pro", payload)
 
     return process_replicate_image_output(output)
 
@@ -43,7 +47,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         "image_input": reference_images,
         "output_format": "png",
     }
-    output = replicate_run("google/nano-banana", payload)
+    output = replicate_run("google/nano-banana-pro", payload)
 
     return process_replicate_image_output(output)
 

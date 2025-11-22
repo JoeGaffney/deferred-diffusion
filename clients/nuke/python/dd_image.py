@@ -4,12 +4,14 @@ import nuke
 from httpx import RemoteProtocolError
 
 from config import client
+from dd_text import prompt_optimizer
 from generated.api_client.api.images import images_create, images_get
 from generated.api_client.models import (
     ImageCreateResponse,
     ImageRequest,
     ImageRequestModel,
     ImageResponse,
+    SystemPrompt,
     TaskStatus,
 )
 from generated.api_client.types import UNSET
@@ -110,7 +112,6 @@ def process_image(node):
         image_node = node.input(0)
         mask_node = node.input(1)
         aux_node = node.input(2)
-
         image = node_to_base64(image_node, current_frame)
         mask = node_to_base64(mask_node, current_frame)
         width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
@@ -139,3 +140,17 @@ def get_image(node):
 
         output_image_path = get_output_path(node, movie=False)
         _api_get_call(node, task_id, output_image_path, current_frame, iterations=1, sleep_time=0)
+
+
+def image_prompt_optimizer(node):
+    current_frame = nuke.frame()
+    model = get_node_value(node, "model", "sd-xl", mode="value")
+    prompt = get_node_value(node, "prompt", "", mode="get")
+    image_node = node.input(0)
+    image = node_to_base64(image_node, current_frame)
+
+    images = []
+    if image:
+        images.append(image)
+
+    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images)

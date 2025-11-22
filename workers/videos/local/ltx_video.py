@@ -42,7 +42,7 @@ def get_pipeline(model_id):
 
 
 def image_to_video(context: VideoContext):
-    prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
+    prompt_embeds, prompt_attention_mask = ltx_encode(context.data.cleaned_prompt)
     negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(_negative_prompt_default)
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
@@ -79,7 +79,7 @@ def image_to_video(context: VideoContext):
 
 
 def text_to_video(context: VideoContext):
-    prompt_embeds, prompt_attention_mask = ltx_encode(context.data.prompt)
+    prompt_embeds, prompt_attention_mask = ltx_encode(context.data.cleaned_prompt)
     negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(_negative_prompt_default)
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 

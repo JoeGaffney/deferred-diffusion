@@ -239,28 +239,21 @@ def get_node_parameters(node):
 
 
 def get_references(node) -> list[References]:
-    # only the control_net nodes are valid inputs
-    valid_inputs = []
-    for i in node.inputs():
-        if i:
-            if i.type().name() == "deferred_diffusion::references":
-                valid_inputs.append(i)
-
+    params = get_node_parameters(node)
     result = []
-    for current in valid_inputs:
 
-        params = get_node_parameters(current)
-        image = input_to_base64(current, "src")
-        mask = input_to_base64(current, "mask")
+    for current in ["reference_a", "reference_b", "reference_c"]:
+        image = input_to_base64(node, f"{current}")
+        mask = input_to_base64(node, f"{current}_mask")
 
         if image is None:
             continue
 
         tmp = References(
-            mode=ReferencesMode(params.get("model", "")),
+            mode=ReferencesMode(params.get(f"{current}_mode", "style")),
             image=image,
             mask=mask,
-            strength=params.get("strength", 0.5),
+            strength=params.get(f"{current}_strength", 0.5),
         )
         result.append(tmp)
 

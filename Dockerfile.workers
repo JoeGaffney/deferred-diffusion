@@ -38,7 +38,7 @@ WORKDIR /app/workers
 # Let mypy resolve absolute imports from /app
 ENV PYTHONPATH=/app/workers
 
-# Run mypy to catch runtime-like type errors
+# Run mypy to catch runtime-like type errors (commented out for faster builds) Can be run via Makefile
 # RUN mypy .
 
 # Command to run Celery worker

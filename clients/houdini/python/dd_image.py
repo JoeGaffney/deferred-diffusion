@@ -4,12 +4,14 @@ import hou
 from httpx import RemoteProtocolError
 
 from config import client
+from dd_text import prompt_optimizer
 from generated.api_client.api.images import images_create, images_get
 from generated.api_client.models import (
     ImageCreateResponse,
     ImageRequest,
     ImageRequestModel,
     ImageResponse,
+    SystemPrompt,
     TaskStatus,
 )
 from generated.api_client.types import UNSET
@@ -123,3 +125,16 @@ def get_image(node):
         _api_get_call(
             node, task_id, output_image_path, hou.expandString(output_image_path), iterations=1, sleep_time=0
         )
+
+
+def image_prompt_optimizer(node):
+    params = get_node_parameters(node)
+    model = params.get("model", "sd-xl")
+    prompt = params.get("prompt", "")
+    image = input_to_base64(node, "src")
+
+    images = []
+    if image:
+        images.append(image)
+
+    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images)

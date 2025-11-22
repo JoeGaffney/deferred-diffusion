@@ -4,8 +4,10 @@ import hou
 from httpx import RemoteProtocolError
 
 from config import client
+from dd_text import prompt_optimizer
 from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.models import (
+    SystemPrompt,
     TaskStatus,
     VideoCreateResponse,
     VideoRequest,
@@ -28,7 +30,7 @@ from utils import (
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, expanded_path: str, iterations=100, sleep_time=5):
+def _api_get_call(node, id, output_path: str, expanded_path: str, iterations=100, sleep_time=10):
     set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
@@ -94,15 +96,26 @@ def process_video(node):
         params = get_node_parameters(node)
         output_video_path = get_output_path(node, movie=True)
         image = input_to_base64(node, "src")
-        if not image:
-            raise ValueError("Input image is required.")
+        last_image = input_to_base64(node, "last_image")
+
+        # NOTE park video for now
+        # video = params.get("video", UNSET)
+        # video_base64 = UNSET
+        # if video and video != UNSET and video != "":
+        #     # Check if the video file exists
+        #     if not os.path.exists(video):
+        #         raise ValueError(f"Video file does not exist: {video}")
+        #     video_base64 = input_to_base64(video)
 
         body = VideoRequest(
             model=VideoRequestModel(params.get("model", UNSET)),
             image=image,
+            last_image=last_image,
             prompt=params.get("prompt", ""),
             seed=params.get("seed", 0),
             num_frames=params.get("num_frames", UNSET),
+            width=params.get("width", UNSET),
+            height=params.get("height", UNSET),
         )
 
         _api_call(node, body, output_video_path)
@@ -116,3 +129,22 @@ def get_video(node):
 
         output_path = get_output_path(node, movie=True)
         _api_get_call(node, task_id, output_path, hou.expandString(output_path), iterations=1, sleep_time=0)
+
+
+def video_prompt_optimizer(node):
+    params = get_node_parameters(node)
+    model = params.get("model", "sd-xl")
+    prompt = params.get("prompt", "")
+    image = input_to_base64(node, "src")
+    last_image = input_to_base64(node, "last_image")
+    system_prompt = SystemPrompt.VIDEO_OPTIMIZER
+
+    images = []
+    if image:
+        images.append(image)
+
+    if last_image:
+        system_prompt = SystemPrompt.VIDEO_TRANSITION
+        images.append(last_image)
+
+    prompt_optimizer(node, prompt, system_prompt, images)

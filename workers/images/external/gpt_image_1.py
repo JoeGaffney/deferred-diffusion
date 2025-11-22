@@ -48,7 +48,7 @@ def text_to_image_call(context: ImageContext):
     result = client.images.generate(
         model=model,
         quality=_quality,
-        prompt=context.data.prompt,
+        prompt=context.data.cleaned_prompt,
         size=get_size(context),
     )
 
@@ -74,7 +74,7 @@ def image_to_image_call(context: ImageContext):
     result = client.images.edit(
         model=model,
         quality=_quality,
-        prompt=context.data.prompt,
+        prompt=context.data.cleaned_prompt,
         size=get_size(context),
         image=reference_images,
     )
@@ -98,7 +98,7 @@ def inpainting_call(context: ImageContext):
         result = client.images.edit(
             model=model,
             quality=_quality,
-            prompt=context.data.prompt,
+            prompt=context.data.cleaned_prompt,
             size=get_size(context),  # type: ignore
             image=[convert_pil_to_bytes(context.color_image)],
             mask=convert_pil_to_bytes(converted_mask),

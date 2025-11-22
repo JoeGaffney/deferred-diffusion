@@ -14,7 +14,7 @@ def main(context: ImageContext, mode="mask"):
     clear_global_pipeline_cache()
     model = LangSAM(sam_type="sam2.1_hiera_base_plus")
     image_pil = context.color_image.convert("RGB")
-    text_prompt = context.data.prompt
+    text_prompt = context.data.cleaned_prompt
 
     results = model.predict([image_pil], [text_prompt], box_threshold=0.3, text_threshold=0.25)
     # model.to("cpu")  # Move model to CPU after inference

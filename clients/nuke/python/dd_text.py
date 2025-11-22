@@ -6,6 +6,7 @@ from httpx import RemoteProtocolError
 from config import client
 from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.models import (
+    SystemPrompt,
     TaskStatus,
     TextCreateResponse,
     TextRequest,
@@ -31,7 +32,7 @@ def create_dd_text_node():
 
 
 @threaded
-def _api_get_call(node, id, iterations=1, sleep_time=5):
+def _api_get_call(node, id, iterations=1, sleep_time=5, set_value="response"):
     set_node_info(node, TaskStatus.PENDING, "")
     for count in range(1, iterations + 1):
         time.sleep(sleep_time)
@@ -67,7 +68,7 @@ def _api_get_call(node, id, iterations=1, sleep_time=5):
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
             response_str = str(parsed.result.response)
-            set_node_value(node, "response", response_str)
+            set_node_value(node, set_value, response_str)
             set_node_info(node, TaskStatus.SUCCESS, "")
 
     nuke.executeInMainThread(update_ui)
@@ -116,3 +117,23 @@ def get_text(node):
         if not task_id or task_id == "":
             raise ValueError("Task ID is required to get the text.")
         _api_get_call(node, task_id, iterations=1, sleep_time=5)
+
+
+def prompt_optimizer(node, prompt: str, system_prompt: SystemPrompt, images: list, model="gpt-5"):
+    model = TextRequestModel(model)
+    body = TextRequest(
+        model=model,
+        prompt=prompt,
+        system_prompt=system_prompt,
+        images=images,
+    )
+
+    try:
+        parsed = texts_create.sync(client=client, body=body)
+    except Exception as e:
+        raise RuntimeError(f"API call failed: {str(e)}") from e
+
+    if not isinstance(parsed, TextCreateResponse):
+        raise ValueError("Unexpected response type from API call.")
+
+    _api_get_call(node, str(parsed.id), sleep_time=1, iterations=100, set_value="prompt")

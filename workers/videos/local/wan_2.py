@@ -116,7 +116,7 @@ def get_pipeline_t2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> 
 
 
 def text_to_video(context: VideoContext):
-    prompt_embeds = wan_encode(context.data.prompt)
+    prompt_embeds = wan_encode(context.data.cleaned_prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
     pipe = get_pipeline_t2v(model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers", high_noise=True)
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
@@ -140,7 +140,7 @@ def image_to_video(context: VideoContext):
     if context.image is None:
         raise ValueError("No input image provided for image-to-video generation")
 
-    prompt_embeds = wan_encode(context.data.prompt)
+    prompt_embeds = wan_encode(context.data.cleaned_prompt)
     negative_prompt_embeds = wan_encode(_negative_prompt)
     pipe = get_pipeline_i2v(model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers", high_noise=True)
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())

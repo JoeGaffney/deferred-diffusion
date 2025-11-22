@@ -5,8 +5,10 @@ import nuke
 from httpcore import RemoteProtocolError
 
 from config import client
+from dd_text import prompt_optimizer
 from generated.api_client.api.videos import videos_create, videos_get
 from generated.api_client.models import (
+    SystemPrompt,
     TaskStatus,
     VideoCreateResponse,
     VideoRequest,
@@ -108,14 +110,12 @@ def process_video(node):
             raise ValueError("Output video path is required.")
 
         image_node = node.input(0)
-        image = node_to_base64(image_node, current_frame)
-
         last_image_node = node.input(1)
+        image = node_to_base64(image_node, current_frame)
         last_image = node_to_base64(last_image_node, current_frame)
 
         # video input we extract from a file path parameter at the moment
         video = get_node_value(node, "video", UNSET, mode="get")
-        nuke.tprint(f"Processing video: {video}")
         video_base64 = UNSET
         if video and video != UNSET and video != "":
             # Check if the video file exists
@@ -150,3 +150,24 @@ def get_video(node):
 
         output_video_path = get_output_path(node, movie=True)
         _api_get_call(node, task_id, output_video_path, current_frame, iterations=1, sleep_time=0)
+
+
+def video_prompt_optimizer(node):
+    current_frame = nuke.frame()
+    model = get_node_value(node, "model", "wan-2", mode="value")
+    prompt = get_node_value(node, "prompt", "", mode="get")
+    image_node = node.input(0)
+    last_image_node = node.input(1)
+    system_prompt = SystemPrompt.VIDEO_OPTIMIZER
+
+    images = []
+    image = node_to_base64(image_node, current_frame)
+    if image:
+        images.append(image)
+
+    last_image = node_to_base64(last_image_node, current_frame)
+    if last_image:
+        system_prompt = SystemPrompt.VIDEO_TRANSITION
+        images.append(last_image)
+
+    prompt_optimizer(node, prompt, system_prompt, images)

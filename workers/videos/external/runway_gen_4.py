@@ -1,7 +1,9 @@
 from typing import Literal
 
 from runwayml import RunwayML
-from runwayml.types.text_to_image_create_params import ContentModeration
+from runwayml.types.image_to_video_create_params import (
+    Gen4TurboContentModeration as ContentModeration,
+)
 
 from utils.utils import pill_to_base64
 from videos.context import VideoContext
@@ -37,7 +39,7 @@ def video_to_video(context: VideoContext):
         task = client.video_to_video.create(
             model="gen4_aleph",
             video_uri=video_uri,
-            prompt_text=context.data.prompt,
+            prompt_text=context.data.cleaned_prompt,
             references=references,  # type: ignore
             ratio=ratio,
             seed=context.data.seed,
@@ -72,7 +74,7 @@ def main(context: VideoContext):
         task = client.image_to_video.create(
             model=model,
             prompt_image=image_uri,
-            prompt_text=context.data.prompt,
+            prompt_text=context.data.cleaned_prompt,
             ratio=ratio,
             duration=duration,
             seed=context.data.seed,

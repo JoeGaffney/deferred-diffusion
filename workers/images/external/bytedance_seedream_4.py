@@ -20,7 +20,7 @@ def get_size(
 
 def main(context: ImageContext) -> Image.Image:
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "size": "2K",
         "aspect_ratio": get_size(context),
         "sequential_image_generation": "disabled",

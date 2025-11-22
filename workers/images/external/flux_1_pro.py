@@ -21,7 +21,7 @@ def get_size(
 def text_to_image_call(context: ImageContext) -> Image.Image:
 
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "aspect_ratio": get_size(context),
         "output_format": "png",
         "safety_tolerance": 6,
@@ -39,7 +39,7 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
         raise ValueError("No color image provided")
 
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "input_image": convert_pil_to_bytes(context.color_image),
         "output_format": "png",
         "safety_tolerance": 6,
@@ -56,7 +56,7 @@ def inpainting_call(context: ImageContext) -> Image.Image:
         raise ValueError("No color image or mask image provided")
 
     payload = {
-        "prompt": context.data.prompt,
+        "prompt": context.data.cleaned_prompt,
         "image": convert_pil_to_bytes(context.color_image),
         "mask": convert_pil_to_bytes(context.mask_image),
         "output_format": "png",

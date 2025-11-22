@@ -1,28 +1,30 @@
+celery==5.5.3
+mypy==1.18.2
+openai==2.8.1
+pydantic==2.12.4
+pytest==9.0.1
+redis==7.0.1
+replicate==1.0.7
+runwayml==4.1.0
+
+# We take recent commits from diffusers and nunchaku wheels
+git+https://github.com/huggingface/diffusers.git@051c8a1c0f5c393a447bef18081fdf94c2a3ab9e
+https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch2.6-cp312-cp312-win_amd64.whl ; sys_platform == "win32"
+https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch2.7-cp311-cp311-linux_x86_64.whl ; sys_platform == "linux"
+
+# Unpinned or loosely pinned dependencies
 accelerate
 bitsandbytes
-# Note: we take recent commits from diffusers for latest features
-git+https://github.com/huggingface/diffusers.git@051c8a1c0f5c393a447bef18081fdf94c2a3ab9e
+cachetools
 ftfy
 gguf
+hf_xet
 imageio
 imageio-ffmpeg
-openai
 opencv-python
 protobuf
-pydantic
 qwen-vl-utils
-runwayml
-sentencepiece
-transformers
-hf_xet
-celery
-redis
-pytest
-torchao
-cachetools
-replicate
 sam2
-# there is no pypi for this, so we install from git
-https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch2.7-cp311-cp311-linux_x86_64.whl ; sys_platform == "linux"
-https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch2.6-cp312-cp312-win_amd64.whl ; sys_platform == "win32"
-mypy
+sentencepiece
+torchao
+transformers

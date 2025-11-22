@@ -79,10 +79,10 @@ def nuke_error_handling(node):
     try:
         yield
     except ValueError as e:
-        set_node_info(node, "ERROR", str(e))
+        set_node_info(node, TaskStatus.FAILURE, str(e))
         nuke.message(str(e))
     except Exception as e:
-        set_node_info(node, "ERROR", str(e))
+        set_node_info(node, TaskStatus.FAILURE, str(e))
         traceback.print_exc()
         nuke.message(str(e))
 
@@ -309,9 +309,7 @@ def node_to_base64(input_node, current_frame):
     nuke.tprint(f"Temporary image path: {temp_path} - {temp_write.name()}")
 
     try:
-        # NOTE test excute Render the current frame
         nuke.execute(temp_write.name(), current_frame, current_frame)
-        # nuke.render(temp_write.name(), current_frame, current_frame)
         nuke.tprint(f"Temporary image saved to: {temp_path}")
 
         result = image_to_base64(temp_path)
