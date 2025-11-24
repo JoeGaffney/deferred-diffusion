@@ -11,8 +11,8 @@ ModelName: TypeAlias = Literal[
     "flux-1",
     "qwen-image",
     "depth-anything-2",
-    "sam-2-image",
-    "sam-3-image",
+    "sam-2",
+    "sam-3",
     "real-esrgan-x4",
     "gpt-image-1",
     "runway-gen4-image",
@@ -70,13 +70,13 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"image-to-image"},
         description="Depth estimation pipeline.",
     ),
-    "sam-2-image": ImagesModelInfo(
+    "sam-2": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"image-to-image"},
         description="Meta's SAM 2 Segmentation pipeline.",
     ),
-    "sam-3-image": ImagesModelInfo(
+    "sam-3": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"image-to-image"},
@@ -228,8 +228,8 @@ class ImageRequest(BaseModel):
         return self.meta.external
 
     @property
-    def task_name(self) -> ModelName:
-        return self.model
+    def task_name(self) -> str:
+        return f"images.{self.model}"
 
     @property
     def task_queue(self) -> str:

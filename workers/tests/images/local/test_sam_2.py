@@ -11,7 +11,7 @@ from tests.utils import (
     setup_output_file,
 )
 
-models: List[ModelName] = ["sam-3-image", "sam-2-image"]
+models: List[ModelName] = ["sam-2"]
 
 
 @pytest.mark.parametrize("model", models)

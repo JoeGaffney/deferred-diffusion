@@ -25,10 +25,9 @@ def main(context: ImageContext) -> Image.Image:
         "flux-1": ("images.local.flux_1", "main"),
         "qwen-image": ("images.local.qwen_image", "main"),
         "depth-anything-2": ("images.local.depth_anything_2", "main"),
-        "sam-2-image": ("images.local.sam_2_image", "main"),
-        "sam-3-image": ("images.local.sam_3_image", "main"),
+        "sam-2": ("images.local.sam_2", "main"),
+        "sam-3": ("images.local.sam_3", "main"),
         "real-esrgan-x4": ("images.local.real_esrgan_x4", "main"),
-        # external implementations (match celery task targets)
         "gpt-image-1": ("images.external.gpt_image_1", "main"),
         "runway-gen4-image": ("images.external.runway_gen4_image", "main"),
         "flux-1-pro": ("images.external.flux_1_pro", "main"),

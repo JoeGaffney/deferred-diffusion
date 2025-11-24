@@ -180,8 +180,8 @@ class VideoRequest(BaseModel):
         return self.meta.external
 
     @property
-    def task_name(self) -> ModelName:
-        return self.model
+    def task_name(self) -> str:
+        return f"videos.{self.model}"
 
     @property
     def task_queue(self) -> str:

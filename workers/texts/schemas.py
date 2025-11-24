@@ -189,8 +189,8 @@ class TextRequest(BaseModel):
         return self.meta.external
 
     @property
-    def task_name(self) -> ModelName:
-        return self.model
+    def task_name(self) -> str:
+        return f"texts.{self.model}"
 
     @property
     def task_queue(self) -> str:
