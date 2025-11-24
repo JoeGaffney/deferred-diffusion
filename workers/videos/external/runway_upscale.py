@@ -1,5 +1,3 @@
-from typing import Literal, cast
-
 from runwayml import RunwayML
 
 from common.logger import logger
@@ -7,14 +5,12 @@ from videos.context import VideoContext
 
 
 def main(context: VideoContext):
-    client = RunwayML()
-
-    video = context.data.video
-    if video is None:
+    if context.data.video is None:
         raise ValueError("Input video is None. Please provide a valid video.")
 
-    video = video.replace("\n", "").replace("\r", "")
-    video_uri = f"data:video/mp4;base64,{video}"
+    client = RunwayML()
+
+    video_uri = f"data:video/mp4;base64,{context.data.video}"
 
     try:
         task = client.video_upscale.create(

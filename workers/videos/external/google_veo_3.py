@@ -15,15 +15,12 @@ def get_aspect_ratio(context: VideoContext) -> str:
 
 def main(context: VideoContext):
     model = "google/veo-3.1"
-    duration = 8 if context.long_video() else 4
-    generate_audio = False  # cheaper without audio
-
     payload = {
         "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
-        "duration": duration,
-        "generate_audio": generate_audio,
+        "duration": 4 if context.duration_in_seconds() <= 4 else 8,
+        "generate_audio": False,  # cheaper without audio
     }
 
     if context.image:

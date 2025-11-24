@@ -6,14 +6,13 @@ from videos.context import VideoContext
 
 def main(context: VideoContext):
     model = "minimax/hailuo-2.3"
-    duration = 10 if context.long_video() else 6
-
     payload = {
         "prompt": context.data.cleaned_prompt,
-        "duration": duration,
-        "resolution": "768p",
-        "prompt_optimizer": True,
+        "duration": 5 if context.duration_in_seconds() <= 5 else 10,
+        "resolution": "1080p" if context.get_resolution_type() == "1080p" else "768p",
+        "prompt_optimizer": False,
     }
+
     # Add first frame image if available
     if context.image:
         payload["first_frame_image"] = convert_pil_to_bytes(context.image)

@@ -69,7 +69,7 @@ def video_to_video(context: VideoContext):
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
 
     # Adjust num_frames to meet WanVACE requirements and limit to available frames
-    num_frames = min(context.data.num_frames, len(context.video_frames))
+    num_frames = min(context.capped_num_frames(), len(context.video_frames))
     num_frames = context.ensure_frames_divisible(num_frames, 4)
 
     # Use existing video frames, resized to target dimensions

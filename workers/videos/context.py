@@ -41,15 +41,16 @@ class VideoContext:
             return "portrait"
         return "square"
 
-    def get_is_720p(self) -> bool:
-        offset = 100
-        # 720p is 1280x720 = 921,600 pixels total
-        result = (self.width * self.height) >= (1280 * 720) - offset
-        logger.info(f"Is 720p: {result} for dimensions {self.width}x{self.height}")
-        return result
+    def get_resolution_type(self, offset: int = 100) -> Literal["480p", "720p", "1080p"]:
+        pixels = self.width * self.height
+        if pixels >= 1920 * 1080 - offset:
+            return "1080p"  # 1080p is 1920x1080 = 2,073,600 pixels total
+        elif pixels >= 1280 * 720 - offset:
+            return "720p"  # 720p is 1280x720 = 921,600 pixels total
+        return "480p"
 
     def get_flow_shift(self) -> float:
-        return 5.0 if self.get_is_720p() else 3.0
+        return 5.0 if self.get_resolution_type() == "720p" else 3.0
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value
@@ -60,15 +61,14 @@ class VideoContext:
         if self.last_image:
             self.last_image = self.last_image.resize([self.width, self.height])
 
+    def capped_num_frames(self, cap: int = 100) -> int:
+        return max(24, min(self.data.num_frames, cap))
+
     def ensure_frames_divisible(self, current_frames, divisor: int = 4) -> int:
         return ((current_frames - 1) // divisor) * divisor + 1
 
-    def get_divisible_num_frames(self, divisor: int = 4) -> int:
-        current_frames = self.data.num_frames
-        return self.ensure_frames_divisible(current_frames, divisor)
-
-    def long_video(self) -> bool:
-        return self.data.num_frames > 100
+    def duration_in_seconds(self, fps=24) -> int:
+        return max(1, int(self.data.num_frames / fps))
 
     def tmp_video_path(self, model="") -> str:
         return tempfile.NamedTemporaryFile(dir=get_tmp_dir(model), suffix=".mp4").name

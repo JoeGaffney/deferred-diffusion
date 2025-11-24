@@ -45,6 +45,7 @@ def image_to_video(context: VideoContext):
     prompt_embeds, prompt_attention_mask = ltx_encode(context.data.cleaned_prompt)
     negative_prompt_embeds, negative_prompt_attention_mask = ltx_encode(_negative_prompt_default)
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
+    num_frames = context.capped_num_frames()
 
     condition1 = LTXVideoCondition(
         image=context.image,
@@ -53,9 +54,10 @@ def image_to_video(context: VideoContext):
     conditions = [condition1]
 
     if context.video_frames:
+        num_frames = min(num_frames, len(context.video_frames))
         video_condition = LTXVideoCondition(
             image=context.image,
-            video=context.video_frames[: context.data.num_frames],
+            video=context.video_frames[:num_frames],
             frame_index=0,
         )
         conditions.append(video_condition)
@@ -69,7 +71,7 @@ def image_to_video(context: VideoContext):
         negative_prompt_embeds=negative_prompt_embeds,
         negative_prompt_attention_mask=negative_prompt_attention_mask,
         num_inference_steps=10,
-        num_frames=context.data.num_frames,
+        num_frames=num_frames,
         generator=context.get_generator(),
         guidance_scale=1.0,
     ).frames[0]
@@ -91,7 +93,7 @@ def text_to_video(context: VideoContext):
         negative_prompt_embeds=negative_prompt_embeds,
         negative_prompt_attention_mask=negative_prompt_attention_mask,
         num_inference_steps=10,
-        num_frames=context.data.num_frames,
+        num_frames=context.capped_num_frames(),
         generator=context.get_generator(),
         guidance_scale=1.0,
     ).frames[0]

@@ -15,12 +15,12 @@ def get_aspect_ratio(context: VideoContext) -> str:
 
 def main(context: VideoContext):
     model = "bytedance/seedance-1-pro"
-    duration = 10 if context.long_video() else 5
     payload = {
         "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
-        "duration": duration,
+        "duration": 5 if context.duration_in_seconds() <= 5 else 10,
+        "resolution": "1080p" if context.get_resolution_type() == "1080p" else "720p",
     }
 
     if context.image:
