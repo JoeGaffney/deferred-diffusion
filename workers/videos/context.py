@@ -61,9 +61,6 @@ class VideoContext:
         if self.last_image:
             self.last_image = self.last_image.resize([self.width, self.height])
 
-    def capped_num_frames(self, cap: int = 100) -> int:
-        return max(24, min(self.data.num_frames, cap))
-
     def ensure_frames_divisible(self, current_frames, divisor: int = 4) -> int:
         return ((current_frames - 1) // divisor) * divisor + 1
 
