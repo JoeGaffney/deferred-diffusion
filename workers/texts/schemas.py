@@ -21,6 +21,7 @@ class TextsModelInfo(BaseModel):
 
 
 class SystemPrompt(str, Enum):
+    NONE = "NONE"
     BASE = "BASE"
     IMAGE_OPTIMIZER = "IMAGE_OPTIMIZER"
     VIDEO_OPTIMIZER = "VIDEO_OPTIMIZER"
@@ -28,6 +29,7 @@ class SystemPrompt(str, Enum):
 
 
 SYSTEM_PROMPT_TEXT = {
+    SystemPrompt.NONE: "",
     SystemPrompt.BASE: (
         "You are a helpful AI assistant specialized in visual effects, filmmaking, and creative workflows. "
         "You excel at analyzing images and videos, describing visual content in detail, and providing expert feedback. "
@@ -141,6 +143,7 @@ class TextRequest(BaseModel):
     system_prompt: SystemPrompt = Field(
         description=(
             "System prompt type. Options:\n"
+            "NONE: Will use the model's default behavior.\n\n"
             "BASE: " + SYSTEM_PROMPT_TEXT[SystemPrompt.BASE] + "\n\n"
             "IMAGE_OPTIMIZER: " + SYSTEM_PROMPT_TEXT[SystemPrompt.IMAGE_OPTIMIZER] + "\n\n"
             "VIDEO_OPTIMIZER: " + SYSTEM_PROMPT_TEXT[SystemPrompt.VIDEO_OPTIMIZER] + "\n\n"
