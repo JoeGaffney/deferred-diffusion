@@ -10,7 +10,7 @@ def main(context: VideoContext):
 
     client = RunwayML()
 
-    video_uri = f"data:video/mp4;base64,{context.data.video}"
+    video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
 
     try:
         task = client.video_upscale.create(

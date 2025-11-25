@@ -13,8 +13,11 @@ from utils.utils import (
     get_tmp_dir,
     load_image_if_exists,
     load_video_frames_if_exists,
+    mp4_to_base64_decoded,
 )
-from videos.schemas import ModelName, VideoRequest
+from videos.schemas import VideoRequest
+
+ONE_MB_IN_BYTES = 1 * 1024 * 1024
 
 
 class VideoContext:
@@ -27,7 +30,7 @@ class VideoContext:
         if self.image:
             self.width, self.height = self.image.size
 
-        self.video_frames = load_video_frames_if_exists(data.video)
+        self.video_frames = load_video_frames_if_exists(data.video, model=self.model)
         self.last_image = load_image_if_exists(data.last_image)
 
     def get_generator(self, device="cuda"):
@@ -90,3 +93,29 @@ class VideoContext:
             raise Exception(f"Failed to download file. Status code: {response.status_code}")
 
         return path
+
+    def get_compressed_video(self, fps=24, mb_limit=15) -> str:
+        if not self.data.video:
+            raise ValueError("No video available.")
+
+        if len(self.data.video) < mb_limit * ONE_MB_IN_BYTES:
+            logger.info(
+                f"Video size {len(self.data.video)/(ONE_MB_IN_BYTES):.2f} MB is within limit ({mb_limit} MB), no compression needed."
+            )
+            return self.data.video
+
+        if not self.video_frames:
+            raise ValueError("No video frames available.")
+
+        tmp_path = self.tmp_video_path(model=self.model)
+        path = export_to_video(self.video_frames, output_video_path=tmp_path, fps=fps, quality=9)
+        logger.info(f"Compressed video saved at {path}")
+
+        # convert and check size once more abort if still too large
+        compressed_video = mp4_to_base64_decoded(path)
+        if len(compressed_video) >= mb_limit * ONE_MB_IN_BYTES:
+            raise ValueError(
+                f"Compressed video size {len(compressed_video)/(ONE_MB_IN_BYTES):.2f} MB still exceeds limit of {mb_limit} MB."
+            )
+
+        return compressed_video

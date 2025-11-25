@@ -68,7 +68,7 @@ def main(context: TextContext) -> str:
         )
 
     for video in context.data.videos:
-        video_path = load_video_into_file(video)
+        video_path = load_video_into_file(video, model=context.model)
         if video_path:
             message["content"].append(
                 {

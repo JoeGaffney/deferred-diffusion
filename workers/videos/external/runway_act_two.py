@@ -28,7 +28,7 @@ def main(context: VideoContext):
     client = RunwayML()
 
     image_uri = f"data:image/png;base64,{pill_to_base64(context.image)}"
-    video_uri = f"data:video/mp4;base64,{context.data.video}"
+    video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
     ratio = get_aspect_ratio(context)
 
     try:

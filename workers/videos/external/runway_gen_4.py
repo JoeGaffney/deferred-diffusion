@@ -26,7 +26,7 @@ def video_to_video(context: VideoContext):
 
     model: Literal["gen4_aleph"] = "gen4_aleph"
     ratio: Literal["1280:720", "720:1280", "960:960"] = "1280:720"
-    video_uri = f"data:video/mp4;base64,{context.data.video}"
+    video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
     references = []
     if context.image:
         image_uri = f"data:image/png;base64,{pill_to_base64(context.image)}"
