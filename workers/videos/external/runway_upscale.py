@@ -1,6 +1,4 @@
-from runwayml import RunwayML
-
-from common.logger import logger
+from common.replicate_helpers import process_replicate_video_output, replicate_run
 from videos.context import VideoContext
 
 
@@ -8,19 +6,13 @@ def main(context: VideoContext):
     if context.data.video is None:
         raise ValueError("Input video is None. Please provide a valid video.")
 
-    client = RunwayML()
-
+    model = "runwayml/upscale-v1"
     video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
+    payload = {
+        "video": video_uri,
+    }
 
-    try:
-        task = client.video_upscale.create(
-            model="upscale_v1",
-            video_uri=video_uri,
-        ).wait_for_task_output()
-    except Exception as e:
-        raise RuntimeError(f"Error calling RunwayML API: {e}")
+    output = replicate_run(model, payload)
+    video_url = process_replicate_video_output(output)
 
-    if task.status == "SUCCEEDED" and task.output:
-        return context.save_video_url(task.output[0])
-
-    raise Exception(f"Task failed: {task}")
+    return context.save_video_url(video_url)

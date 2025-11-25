@@ -39,7 +39,6 @@ class VideosModelInfo(BaseModel):
 
 # Unified metadata (local + external)
 MODEL_META: Dict[ModelName, VideosModelInfo] = {
-    # Local
     "ltx-video": VideosModelInfo(
         provider="local",
         external=False,
@@ -52,9 +51,8 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         supported_modes={"text-to-video", "image-to-video", "first-last-image", "video-to-video"},
         description="Wan 2.2, quality open-source video generation model. Will fall back to Wan VACE 2.1 for video-to-video.",
     ),
-    # External
     "runway-gen-4": VideosModelInfo(
-        provider="runway",
+        provider="replicate",
         external=True,
         supported_modes={"image-to-video", "video-to-video"},
         description="Runway Gen-4 family. Uses standard Gen-4 for image-to-video and Aleph variant for video-to-video.",
@@ -66,10 +64,10 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         description="Matches animation from a reference video to a character reference image.",
     ),
     "runway-upscale": VideosModelInfo(
-        provider="runway",
+        provider="replicate",
         external=True,
         supported_modes={"video-to-video"},
-        description="Video upscaling model.",
+        description="Runway's video upscaling model.",
     ),
     "bytedance-seedance-1": VideosModelInfo(
         provider="replicate",
