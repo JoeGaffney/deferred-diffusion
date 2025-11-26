@@ -9,6 +9,7 @@ from common.schemas import TaskStatus
 ModelName: TypeAlias = Literal[
     "sd-xl",
     "flux-1",
+    "flux-2",
     "qwen-image",
     "depth-anything-2",
     "sam-2",
@@ -56,6 +57,13 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="FLUX dev model (Krea tuned). Uses Kontext for img2img, Fill for inpainting.",
+    ),
+    "flux-2": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        references=True,
+        description="FLUX 2.0 dev model with edit capabilities.",
     ),
     "qwen-image": ImagesModelInfo(
         provider="local",

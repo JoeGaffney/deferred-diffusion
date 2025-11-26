@@ -8,7 +8,7 @@ replicate==1.0.7
 runwayml==4.1.0
 
 # We take recent commits from diffusers and nunchaku wheels
-git+https://github.com/huggingface/diffusers.git@051c8a1c0f5c393a447bef18081fdf94c2a3ab9e
+git+https://github.com/huggingface/diffusers.git@5ffb73d4aeac9eaef8366d7b21872d64009bd1c7
 https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch2.6-cp312-cp312-win_amd64.whl ; sys_platform == "win32"
 https://github.com/nunchaku-tech/nunchaku/releases/download/v1.0.1/nunchaku-1.0.1+torch2.7-cp311-cp311-linux_x86_64.whl ; sys_platform == "linux"
 

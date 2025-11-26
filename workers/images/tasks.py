@@ -43,6 +43,15 @@ def flux_1(request_dict):
     return process_result(context, result)
 
 
+@typed_task(name="flux-2", queue="gpu")
+def flux_2(request_dict):
+    from images.local.flux_2 import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
 @typed_task(name="qwen-image", queue="gpu")
 def qwen_image(request_dict):
     from images.local.qwen_image import main
