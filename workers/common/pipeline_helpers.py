@@ -2,13 +2,13 @@ import gc
 import os
 import time
 from collections import OrderedDict
-from functools import lru_cache, wraps
+from functools import wraps
 from typing import Literal, Optional, Union
 
 import torch
 from accelerate.hooks import CpuOffload
 from cachetools.keys import hashkey
-from diffusers import DiffusionPipeline, GGUFQuantizationConfig
+from diffusers import GGUFQuantizationConfig
 from huggingface_hub import hf_hub_download
 from transformers import BitsAndBytesConfig, TorchAoConfig
 

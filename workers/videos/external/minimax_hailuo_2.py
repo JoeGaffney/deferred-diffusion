@@ -8,8 +8,8 @@ def main(context: VideoContext):
     model = "minimax/hailuo-2.3"
     payload = {
         "prompt": context.data.cleaned_prompt,
-        "duration": 5 if context.duration_in_seconds() <= 5 else 10,
-        "resolution": "1080p" if context.get_resolution_type() == "1080p" else "768p",
+        "duration": 6 if context.duration_in_seconds() <= 5 else 10,
+        "resolution": "1080p" if context.is_1080p_or_higher() else "768p",
         "prompt_optimizer": False,
     }
 

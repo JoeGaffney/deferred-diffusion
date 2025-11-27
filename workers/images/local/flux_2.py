@@ -50,7 +50,7 @@ def text_to_image_call(context: ImageContext):
     reference_images = []
     if context.mask_image and context.color_image:
         prompt = (
-            "Use image 1 for the mask region for inpainting. And use image 2 for the base image only alter the mask region and aim for a seemless blend. "
+            "Use image 1 for the mask region for inpainting. And use image 2 for the base image only alter the mask region and aim for a seamless blend. "
             + prompt
         )
         reference_images.append(context.mask_image)

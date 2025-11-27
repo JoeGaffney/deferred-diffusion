@@ -1,5 +1,4 @@
 import copy
-import math
 import tempfile
 from typing import Literal
 
@@ -7,6 +6,7 @@ import requests
 import torch
 from diffusers.utils import export_to_video
 
+from common.config import ONE_MB_IN_BYTES
 from common.logger import logger
 from utils.utils import (
     ensure_divisible,
@@ -16,8 +16,6 @@ from utils.utils import (
     mp4_to_base64_decoded,
 )
 from videos.schemas import VideoRequest
-
-ONE_MB_IN_BYTES = 1 * 1024 * 1024
 
 
 class VideoContext:
@@ -44,16 +42,18 @@ class VideoContext:
             return "portrait"
         return "square"
 
-    def get_resolution_type(self, offset: int = 100) -> Literal["480p", "720p", "1080p"]:
-        pixels = self.width * self.height
-        if pixels >= 1920 * 1080 - offset:
-            return "1080p"  # 1080p is 1920x1080 = 2,073,600 pixels total
-        elif pixels >= 1280 * 720 - offset:
-            return "720p"  # 720p is 1280x720 = 921,600 pixels total
-        return "480p"
+    def is_720p_or_higher(self) -> bool:
+        if self.width >= 1280 or self.height >= 1280:
+            return True
+        return False
+
+    def is_1080p_or_higher(self) -> bool:
+        if self.width >= 1920 or self.height >= 1920:
+            return True
+        return False
 
     def get_flow_shift(self) -> float:
-        return 5.0 if self.get_resolution_type() == "720p" else 3.0
+        return 5.0 if self.is_720p_or_higher() else 3.0
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value

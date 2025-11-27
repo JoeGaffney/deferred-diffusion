@@ -72,7 +72,7 @@ def depth_anything_2(request_dict):
 
 @typed_task(name="sam-2", queue="gpu")
 def sam_2_image(request_dict):
-    from images.local.sam_2_image import main
+    from images.local.sam_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -81,7 +81,7 @@ def sam_2_image(request_dict):
 
 @typed_task(name="sam-3", queue="gpu")
 def sam_3_image(request_dict):
-    from images.local.sam_3_image import main
+    from images.local.sam_3 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
