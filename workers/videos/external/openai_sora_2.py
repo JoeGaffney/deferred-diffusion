@@ -33,7 +33,7 @@ def main(context: VideoContext):
 
     model: Literal["sora-2", "sora-2-pro"] = "sora-2-pro"
     size = get_aspect_ratio(context)
-    seconds: Literal["4", "8"] = "8" if context.long_video() else "4"
+    seconds: Literal["4", "8"] = "4" if context.duration_in_seconds() <= 4 else "8"
 
     # NOTE sora seems terrible at image to video
     reference_image = None

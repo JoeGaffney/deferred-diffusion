@@ -9,9 +9,11 @@ from common.schemas import TaskStatus
 ModelName: TypeAlias = Literal[
     "sd-xl",
     "flux-1",
+    "flux-2",
     "qwen-image",
     "depth-anything-2",
-    "segment-anything-2",
+    "sam-2",
+    "sam-3",
     "real-esrgan-x4",
     "gpt-image-1",
     "runway-gen4-image",
@@ -56,6 +58,13 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         references=True,
         description="FLUX dev model (Krea tuned). Uses Kontext for img2img, Fill for inpainting.",
     ),
+    "flux-2": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        references=True,
+        description="FLUX 2.0 dev model with edit capabilities.",
+    ),
     "qwen-image": ImagesModelInfo(
         provider="local",
         external=False,
@@ -69,11 +78,17 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"image-to-image"},
         description="Depth estimation pipeline.",
     ),
-    "segment-anything-2": ImagesModelInfo(
+    "sam-2": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"image-to-image"},
-        description="Segmentation pipeline.",
+        description="Meta's SAM 2 Segmentation pipeline.",
+    ),
+    "sam-3": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"image-to-image"},
+        description="Meta's SAM 3 Segmentation pipeline.",
     ),
     "gpt-image-1": ImagesModelInfo(
         provider="openai",
@@ -221,8 +236,8 @@ class ImageRequest(BaseModel):
         return self.meta.external
 
     @property
-    def task_name(self) -> ModelName:
-        return self.model
+    def task_name(self) -> str:
+        return f"images.{self.model}"
 
     @property
     def task_queue(self) -> str:

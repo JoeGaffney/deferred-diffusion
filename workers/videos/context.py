@@ -1,5 +1,4 @@
 import copy
-import math
 import tempfile
 from typing import Literal
 
@@ -7,14 +6,16 @@ import requests
 import torch
 from diffusers.utils import export_to_video
 
+from common.config import ONE_MB_IN_BYTES
 from common.logger import logger
 from utils.utils import (
     ensure_divisible,
     get_tmp_dir,
     load_image_if_exists,
     load_video_frames_if_exists,
+    mp4_to_base64_decoded,
 )
-from videos.schemas import ModelName, VideoRequest
+from videos.schemas import VideoRequest
 
 
 class VideoContext:
@@ -27,7 +28,7 @@ class VideoContext:
         if self.image:
             self.width, self.height = self.image.size
 
-        self.video_frames = load_video_frames_if_exists(data.video)
+        self.video_frames = load_video_frames_if_exists(data.video, model=self.model)
         self.last_image = load_image_if_exists(data.last_image)
 
     def get_generator(self, device="cuda"):
@@ -41,15 +42,18 @@ class VideoContext:
             return "portrait"
         return "square"
 
-    def get_is_720p(self) -> bool:
-        offset = 100
-        # 720p is 1280x720 = 921,600 pixels total
-        result = (self.width * self.height) >= (1280 * 720) - offset
-        logger.info(f"Is 720p: {result} for dimensions {self.width}x{self.height}")
-        return result
+    def is_720p_or_higher(self) -> bool:
+        if self.width >= 1280 or self.height >= 1280:
+            return True
+        return False
+
+    def is_1080p_or_higher(self) -> bool:
+        if self.width >= 1920 or self.height >= 1920:
+            return True
+        return False
 
     def get_flow_shift(self) -> float:
-        return 5.0 if self.get_is_720p() else 3.0
+        return 5.0 if self.is_720p_or_higher() else 3.0
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value
@@ -63,12 +67,8 @@ class VideoContext:
     def ensure_frames_divisible(self, current_frames, divisor: int = 4) -> int:
         return ((current_frames - 1) // divisor) * divisor + 1
 
-    def get_divisible_num_frames(self, divisor: int = 4) -> int:
-        current_frames = self.data.num_frames
-        return self.ensure_frames_divisible(current_frames, divisor)
-
-    def long_video(self) -> bool:
-        return self.data.num_frames > 100
+    def duration_in_seconds(self, fps=24) -> int:
+        return max(1, int(self.data.num_frames / fps))
 
     def tmp_video_path(self, model="") -> str:
         return tempfile.NamedTemporaryFile(dir=get_tmp_dir(model), suffix=".mp4").name
@@ -93,3 +93,29 @@ class VideoContext:
             raise Exception(f"Failed to download file. Status code: {response.status_code}")
 
         return path
+
+    def get_compressed_video(self, fps=24, mb_limit=15) -> str:
+        if not self.data.video:
+            raise ValueError("No video available.")
+
+        if len(self.data.video) < mb_limit * ONE_MB_IN_BYTES:
+            logger.info(
+                f"Video size {len(self.data.video)/(ONE_MB_IN_BYTES):.2f} MB is within limit ({mb_limit} MB), no compression needed."
+            )
+            return self.data.video
+
+        if not self.video_frames:
+            raise ValueError("No video frames available.")
+
+        tmp_path = self.tmp_video_path(model=self.model)
+        path = export_to_video(self.video_frames, output_video_path=tmp_path, fps=fps, quality=9)
+        logger.info(f"Compressed video saved at {path}")
+
+        # convert and check size once more abort if still too large
+        compressed_video = mp4_to_base64_decoded(path)
+        if len(compressed_video) >= mb_limit * ONE_MB_IN_BYTES:
+            raise ValueError(
+                f"Compressed video size {len(compressed_video)/(ONE_MB_IN_BYTES):.2f} MB still exceeds limit of {mb_limit} MB."
+            )
+
+        return compressed_video

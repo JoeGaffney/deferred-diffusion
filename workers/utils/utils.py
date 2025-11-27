@@ -1,11 +1,8 @@
 import base64
 import io
-import math
 import os
-import shutil
 import tempfile
 import time
-from datetime import datetime
 from typing import Literal, Optional, Tuple
 
 from diffusers.utils import export_to_video, load_video
@@ -76,7 +73,7 @@ def ensure_divisible(value: int, divisor=16) -> int:
     return (value // divisor) * divisor
 
 
-def resize_image(image, division=16, scale=1.0, max_width=2048, max_height=2048) -> Image.Image:
+def resize_image(image, division=16, scale=1.0, max_width=4096, max_height=4096) -> Image.Image:
     orig_width, orig_height = image.size
     aspect_ratio = orig_width / orig_height
 
@@ -149,6 +146,12 @@ def mp4_to_base64(file_path: str) -> bytes:
         return base64.b64encode(video_file.read())
 
 
+def mp4_to_base64_decoded(file_path: str) -> str:
+    """Convert an MP4 file to base64 encoded str."""
+    with open(file_path, "rb") as video_file:
+        return base64.b64encode(video_file.read()).decode("utf-8")
+
+
 def pill_to_base64(image):
     buffered = io.BytesIO()
     image.save(buffered, format="PNG")
@@ -179,13 +182,13 @@ def load_video_bytes_if_exists(base64_bytes: Optional[str]) -> Optional[bytes]:
         raise ValueError(f"Invalid Base64 video data: {type(base64_bytes)} {e}") from e
 
 
-def load_video_frames_if_exists(base64_bytes: Optional[str]) -> Optional[list[Image.Image]]:
+def load_video_frames_if_exists(base64_bytes: Optional[str], model="") -> Optional[list[Image.Image]]:
     """Load video from Base64 string and return frames as PIL images."""
     video_bytes = load_video_bytes_if_exists(base64_bytes)
     if video_bytes is None:
         return None
 
-    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
+    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(model=model), suffix=".mp4").name
     with open(video_path, "wb") as f:
         f.write(video_bytes)
 
@@ -193,13 +196,13 @@ def load_video_frames_if_exists(base64_bytes: Optional[str]) -> Optional[list[Im
     return pil_images
 
 
-def load_video_into_file(base64_bytes: Optional[str]) -> str | None:
+def load_video_into_file(base64_bytes: Optional[str], model="") -> str | None:
     """Load video from Base64 string and return the file path."""
     video_bytes = load_video_bytes_if_exists(base64_bytes)
     if video_bytes is None:
         return None
 
-    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
+    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(model=model), suffix=".mp4").name
     with open(video_path, "wb") as f:
         f.write(video_bytes)
 

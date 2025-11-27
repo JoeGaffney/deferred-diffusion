@@ -1,89 +1,61 @@
 from typing import Literal
 
-from runwayml import RunwayML
-from runwayml.types.image_to_video_create_params import (
-    Gen4TurboContentModeration as ContentModeration,
-)
-
-from utils.utils import pill_to_base64
+from common.replicate_helpers import process_replicate_video_output, replicate_run
+from utils.utils import convert_pil_to_bytes
 from videos.context import VideoContext
 
 
-def get_aspect_ratio(context: VideoContext) -> Literal["1280:720", "720:1280", "960:960"]:
+def get_aspect_ratio(context: VideoContext) -> Literal["16:9", "9:16", "1:1"]:
     dimension_type = context.get_dimension_type()
     if dimension_type == "landscape":
-        return "1280:720"
+        return "16:9"
     elif dimension_type == "portrait":
-        return "720:1280"
-    return "960:960"
+        return "9:16"
+    return "1:1"
 
 
 def video_to_video(context: VideoContext):
-    client = RunwayML()
-
-    video = context.data.video
-    if video is None:
+    if context.data.video is None:
         raise ValueError("Input video is None. Please provide a valid video.")
 
-    ratio: Literal["1280:720", "720:1280", "960:960"] = "1280:720"
-    video_uri = f"data:video/mp4;base64,{video}"
+    model = "runwayml/gen4-aleph"
+    video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
+    payload = {
+        "prompt": context.data.cleaned_prompt,
+        "seed": context.data.seed,
+        "aspect_ratio": get_aspect_ratio(context),
+        "video": video_uri,
+    }
 
-    references = []
-    image = context.image
-    if image:
-        image_uri = f"data:image/png;base64,{pill_to_base64(image)}"
-        references.append({"type": "image", "uri": image_uri})
-        ratio = get_aspect_ratio(context)
+    if context.image:
+        payload["reference_image"] = convert_pil_to_bytes(context.image)
 
-    try:
-        task = client.video_to_video.create(
-            model="gen4_aleph",
-            video_uri=video_uri,
-            prompt_text=context.data.cleaned_prompt,
-            references=references,  # type: ignore
-            ratio=ratio,
-            seed=context.data.seed,
-            content_moderation=ContentModeration(public_figure_threshold="low"),
-        ).wait_for_task_output()
-    except Exception as e:
-        raise RuntimeError(f"Error calling RunwayML API: {e}")
+    output = replicate_run(model, payload)
+    video_url = process_replicate_video_output(output)
 
-    if task.status == "SUCCEEDED" and task.output:
-        return context.save_video_url(task.output[0])
+    return context.save_video_url(video_url)
 
-    raise Exception(f"Task failed: {task}")
+
+def image_to_video(context: VideoContext):
+    if context.image is None:
+        raise ValueError("Input image is None. Please provide a valid image.")
+
+    model = "runwayml/gen4-turbo"
+    payload = {
+        "prompt": context.data.cleaned_prompt,
+        "seed": context.data.seed,
+        "aspect_ratio": get_aspect_ratio(context),
+        "duration": 5 if context.duration_in_seconds() <= 5 else 10,
+        "image": convert_pil_to_bytes(context.image),
+    }
+
+    output = replicate_run(model, payload)
+    video_url = process_replicate_video_output(output)
+
+    return context.save_video_url(video_url)
 
 
 def main(context: VideoContext):
     if context.data.video:
         return video_to_video(context)
-
-    client = RunwayML()
-    model: Literal["gen4_turbo"] = "gen4_turbo"
-    ratio = get_aspect_ratio(context)
-    duration: Literal[5, 10] = 10 if context.long_video() else 5
-
-    image = context.image
-    if image is None:
-        raise ValueError("Input image is None. Please provide a valid image.")
-
-    # encode image to base64
-    image_uri = f"data:image/png;base64,{pill_to_base64(image)}"
-
-    try:
-        task = client.image_to_video.create(
-            model=model,
-            prompt_image=image_uri,
-            prompt_text=context.data.cleaned_prompt,
-            ratio=ratio,
-            duration=duration,
-            seed=context.data.seed,
-            content_moderation=ContentModeration(public_figure_threshold="low"),
-        ).wait_for_task_output()
-    except Exception as e:
-        raise RuntimeError(f"Error calling RunwayML API: {e}")
-
-    if task.status == "SUCCEEDED" and task.output:
-        return context.save_video_url(task.output[0])
-
-    raise Exception(f"Task failed: {task}")
+    return image_to_video(context)

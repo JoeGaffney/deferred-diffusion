@@ -2,8 +2,8 @@ import gc
 import os
 import time
 from collections import OrderedDict
-from functools import lru_cache, wraps
-from typing import Literal, Union
+from functools import wraps
+from typing import Literal, Optional, Union
 
 import torch
 from accelerate.hooks import CpuOffload
@@ -25,6 +25,7 @@ _original_pre_forward = CpuOffload.pre_forward
 
 @time_info_decorator
 def patched_pre_forward(self, module, *args, **kwargs):
+    """Patched pre_forward to log timiing for offloading."""
     return _original_pre_forward(self, module, *args, **kwargs)
 
 
@@ -126,8 +127,7 @@ def decorator_global_pipeline_cache(func):
     return wrapper
 
 
-@time_info_decorator
-def optimize_pipeline(pipe, disable_safety_checker=True, offload=True, vae_tiling=True):
+def optimize_pipeline(pipe, offload=True, vae_tiling=True):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
@@ -140,11 +140,15 @@ def optimize_pipeline(pipe, disable_safety_checker=True, offload=True, vae_tilin
     if vae_tiling:
         try:
             pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
-            pipe.vae.enable_slicing()
         except:
             pass  # VAE tiling is not available for all models
 
-    if disable_safety_checker:
+        try:
+            pipe.vae.enable_slicing()  # Enable VAE slicing to reduce memory usage
+        except:
+            pass  # VAE slicing is not available for all models
+
+    if hasattr(pipe, "disable_safety_checker"):
         pipe.safety_checker = dummy_safety_checker
 
     return pipe
@@ -180,7 +184,12 @@ def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
 
 @time_info_decorator
 def get_quantized_model(
-    model_id, subfolder, model_class, target_precision: Literal[4, 8, 16] = 8, torch_dtype=torch.float16
+    model_id,
+    subfolder,
+    model_class,
+    target_precision: Literal[4, 8, 16] = 8,
+    torch_dtype=torch.float16,
+    offload: bool = False,
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -197,9 +206,14 @@ def get_quantized_model(
         model instance
     """
 
+    # if we will be offloading, load to CPU
+    args = {}
+    if offload:
+        args["device_map"] = "cpu"
+
     if target_precision == 16:
-        logger.warning(f"Quantization disabled for {model_id} subfolder {subfolder}")
-        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype)
+        logger.debug(f"Quantization disabled for {model_id} subfolder {subfolder}")
+        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype, **args)
 
     load_in_4bit = target_precision == 4
     quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit=load_in_4bit)
@@ -224,7 +238,7 @@ def get_quantized_model(
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
         model = model_class.from_pretrained(
-            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors
+            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors, **args
         )
     except Exception as e:
         logger.error(f"Failed to load quantized model from {quant_dir}: {e}")

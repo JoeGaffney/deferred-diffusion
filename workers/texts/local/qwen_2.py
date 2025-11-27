@@ -48,15 +48,21 @@ def get_processor(model_id):
 def main(context: TextContext) -> str:
     model = get_pipeline("Qwen/Qwen2.5-VL-3B-Instruct")
     processor = get_processor("Qwen/Qwen2.5-VL-3B-Instruct")
+    messages = []
 
-    system_message: Dict[str, Any] = {
-        "role": "system",
-        "content": [{"type": "text", "text": context.data.full_system_prompt}],
-    }
+    # Allow default system prompt to be empty
+    if context.data.full_system_prompt:
+        system_message: Dict[str, Any] = {
+            "role": "system",
+            "content": [{"type": "text", "text": context.data.full_system_prompt}],
+        }
+        messages.append(system_message)
+
     message: Dict[str, Any] = {
         "role": "user",
         "content": [{"type": "text", "text": context.data.prompt}],
     }
+    messages.append(message)
 
     for image in context.data.images:
         pil_image = load_image_from_base64(image)
@@ -68,7 +74,7 @@ def main(context: TextContext) -> str:
         )
 
     for video in context.data.videos:
-        video_path = load_video_into_file(video)
+        video_path = load_video_into_file(video, model=context.model)
         if video_path:
             message["content"].append(
                 {
@@ -80,7 +86,7 @@ def main(context: TextContext) -> str:
     logger.info(f"Running qwen with {len(context.data.images)} images and {len(context.data.videos)} videos")
 
     # Preparation for inference
-    text = processor.apply_chat_template([system_message, message], tokenize=False, add_generation_prompt=True)
+    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
     # only reprocess the images and videos in the last message
     try:

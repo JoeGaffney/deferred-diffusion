@@ -30,7 +30,7 @@ We try to use plural to adhere to REST best practices.
 
 ### **Scalability for AI Projects**
 
-- AI models often require **domain-specific logic**. Keeping `schemas.py`, `context.py`, and `models/` in the same module makes it easier to extend functionality.
+- AI models often require **domain-specific logic**. Keeping `schemas.py`, `context.py`, and `tasks/` in the same module makes it easier to extend functionality.
 - If a new AI domain (`audio`, `3D`, etc.) is introduced, the structure remains consistent just duplicate the existing pattern.
 
 ```
@@ -122,7 +122,8 @@ This design choice ensures:
 Developers who want to extend or modify available models can do so by editing the typed definitions directly in code:
 
 - `api/images/schemas.py`
-- `workers/images/tasks.py` or `workers/images/models/`
+- `workers/images/tasks.py`
+- `workers/images/local/...`
 
 Each new model entry should include:
 
@@ -161,10 +162,11 @@ ImageContext / VideoContext
     │
     ▼
 Pipeline Function (pure function)
-    ├─ Calls one of:
+    ├─ Calls:
           - text_to_image_call(context)
           - image_to_image_call(context)
           - inpainting_call(context)
+          - ...
     ├─ Internally selects the exact model(s) / transformer variants:
           - Flux: Krea / Kontext / Fill
           - WAN, VEO variants based on context

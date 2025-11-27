@@ -21,7 +21,7 @@ def validate_request_and_context(request_dict):
 
 
 def typed_task(name: ModelName, queue: str):
-    return celery_app.task(name=name, queue=queue)
+    return celery_app.task(name=f"images.{name}", queue=queue)
 
 
 # Explicit internal model tasks (lazy-import model implementation inside each task)
@@ -37,6 +37,15 @@ def sd_xl(request_dict):
 @typed_task(name="flux-1", queue="gpu")
 def flux_1(request_dict):
     from images.local.flux_1 import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="flux-2", queue="gpu")
+def flux_2(request_dict):
+    from images.local.flux_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -61,9 +70,18 @@ def depth_anything_2(request_dict):
     return process_result(context, result)
 
 
-@typed_task(name="segment-anything-2", queue="gpu")
-def segment_anything_2(request_dict):
-    from images.local.segment_anything_2 import main
+@typed_task(name="sam-2", queue="gpu")
+def sam_2_image(request_dict):
+    from images.local.sam_2 import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="sam-3", queue="gpu")
+def sam_3_image(request_dict):
+    from images.local.sam_3 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

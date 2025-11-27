@@ -40,3 +40,5 @@ def _read_bool(env_name: str, default: bool = False) -> bool:
 # When true, pipelines/models should prefer CPU offload where supported to reduce GPU memory
 IMAGE_CPU_OFFLOAD = _read_bool("IMAGE_CPU_OFFLOAD", default=False)
 VIDEO_CPU_OFFLOAD = _read_bool("VIDEO_CPU_OFFLOAD", default=False)
+
+ONE_MB_IN_BYTES = 1 * 1024 * 1024

@@ -16,7 +16,7 @@ def validate_request_and_context(request_dict):
 
 
 def typed_task(name: ModelName, queue: str):
-    return celery_app.task(name=name, queue=queue)
+    return celery_app.task(name=f"texts.{name}", queue=queue)
 
 
 @typed_task(name="qwen-2", queue="gpu")

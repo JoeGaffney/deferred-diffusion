@@ -6,11 +6,11 @@ from PIL import Image
 from replicate.helpers import FileOutput
 
 
-def replicate_run(model_path: str, payload: dict) -> Any:
+def replicate_run(model_path: str, payload: dict[str, Any]) -> Any:
     try:
         output = replicate.run(model_path, input=payload)
     except Exception as e:
-        raise RuntimeError(f"Error calling Replicate API: {e}")
+        raise RuntimeError(f"Error calling Replicate API {model_path}: {e}")
 
     return output
 

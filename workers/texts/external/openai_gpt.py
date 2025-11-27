@@ -1,7 +1,7 @@
 import copy
 from typing import Any, Dict
 
-from openai import OpenAI
+from openai import Omit, OpenAI
 
 from common.logger import logger
 from texts.context import TextContext
@@ -13,12 +13,6 @@ def main(context: TextContext, model_path="gpt-4o-mini") -> str:
         "role": "user",
         "content": [{"type": "input_text", "text": context.data.prompt}],
     }
-
-    # NOTE: system message is passed via 'instructions' parameter
-    # system_message: Dict[str, Any] = {
-    #     "role": "system",
-    #     "content": [{"type": "input_text", "text": context.data.full_system_prompt}],
-    # }
 
     # apply image and video to last message
     for image in context.data.images:
@@ -36,7 +30,7 @@ def main(context: TextContext, model_path="gpt-4o-mini") -> str:
         response = client.responses.create(
             model=model_path,
             input=[message],  # type: ignore
-            instructions=context.data.full_system_prompt,
+            instructions=context.data.full_system_prompt if context.data.full_system_prompt else None,
         )
     except Exception as e:
         logger.error(f"OpenAI API call failed: {str(e)}")

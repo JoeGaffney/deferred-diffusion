@@ -19,18 +19,17 @@ def get_aspect_ratio(context: VideoContext) -> Literal["1280:720", "720:1280", "
 
 
 def main(context: VideoContext):
-    client = RunwayML()
-    image = context.image
-    if image is None:
+    if context.image is None:
         raise ValueError("Input image is None. Please provide a valid image.")
 
-    video = context.data.video
-    if video is None:
+    if context.data.video is None:
         raise ValueError("Input video is None. Please provide a valid video.")
 
-    # TODO switch to closest resolution as per the aspect ratio
-    image_uri = f"data:image/png;base64,{pill_to_base64(image)}"
-    video_uri = f"data:video/mp4;base64,{video}"
+    client = RunwayML()
+
+    image_uri = f"data:image/png;base64,{pill_to_base64(context.image)}"
+    video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
+    ratio = get_aspect_ratio(context)
 
     try:
         task = client.character_performance.create(
@@ -41,7 +40,7 @@ def main(context: VideoContext):
             },
             body_control=True,
             reference={"type": "video", "uri": video_uri},
-            ratio=get_aspect_ratio(context),
+            ratio=ratio,
             seed=context.data.seed,
             content_moderation=ContentModeration(public_figure_threshold="low"),
         ).wait_for_task_output()

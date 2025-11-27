@@ -19,7 +19,7 @@ def validate_request_and_context(request_dict):
 
 
 def typed_task(name: ModelName, queue: str):
-    return celery_app.task(name=name, queue=queue)
+    return celery_app.task(name=f"videos.{name}", queue=queue)
 
 
 # Explicit internal model tasks (lazy-import model implementation inside each task)
