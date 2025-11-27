@@ -1,4 +1,3 @@
-from common.logger import logger
 from common.replicate_helpers import process_replicate_video_output, replicate_run
 from utils.utils import convert_pil_to_bytes
 from videos.context import VideoContext
@@ -15,7 +14,7 @@ def main(context: VideoContext):
 
     # Add first frame image if available
     if context.image:
-        payload["first_frame_image"] = convert_pil_to_bytes(context.image)
+        payload["first_frame_image"] = convert_pil_to_bytes(context.image)  # type: ignore[assignment]
 
     output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)
