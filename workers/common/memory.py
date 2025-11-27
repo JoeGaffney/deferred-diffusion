@@ -64,3 +64,36 @@ def free_gpu_memory(threshold_percent: float = 25, message: str = "Cleaned GPU m
     torch.cuda.ipc_collect()
 
     logger.warning(f"{message}: {_get_gpu_memory_usage_pretty()}")
+
+
+def get_gpu_memory(device: str | torch.device = "cuda", unit: str = "GiB") -> int:
+    """
+    Get the total memory of the current GPU.
+
+    Parameters
+    ----------
+    device : str or torch.device, optional
+        Device to check (default: "cuda").
+    unit : str, optional
+        Unit for memory ("GiB", "MiB", or "B") (default: "GiB").
+
+    Returns
+    -------
+    int
+        GPU memory in the specified unit.
+
+    Raises
+    ------
+    AssertionError
+        If unit is not one of "GiB", "MiB", or "B".
+    """
+    if isinstance(device, str):
+        device = torch.device(device)
+    assert unit in ("GiB", "MiB", "B")
+    memory = torch.cuda.get_device_properties(device).total_memory
+    if unit == "GiB":
+        return memory // (1024**3)
+    elif unit == "MiB":
+        return memory // (1024**2)
+    else:
+        return memory
