@@ -9,6 +9,7 @@ from common.pipeline_helpers import (
     get_quantized_model,
     optimize_pipeline,
 )
+from common.text_encoders import get_mistral3_text_encoder
 from images.context import ImageContext
 
 
@@ -22,19 +23,11 @@ def get_pipeline(model_id):
         model_class=Flux2Transformer2DModel,
         target_precision=16,
         torch_dtype=torch.bfloat16,
-        offload=offload,
-    )
-    text_encoder = get_quantized_model(
-        model_id="black-forest-labs/FLUX.2-dev",
-        subfolder="text_encoder",
-        model_class=Mistral3ForConditionalGeneration,
-        target_precision=8,
-        torch_dtype=torch.bfloat16,
-        offload=offload,
+        device="cpu",
     )
 
     pipe = Flux2Pipeline.from_pretrained(
-        model_id, text_encoder=text_encoder, transformer=transformer, torch_dtype=torch.bfloat16
+        model_id, text_encoder=get_mistral3_text_encoder(), transformer=transformer, torch_dtype=torch.bfloat16
     )
 
     # allways offload as heavy models

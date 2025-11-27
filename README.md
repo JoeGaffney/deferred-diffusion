@@ -7,8 +7,7 @@ It provides a **modular API and worker architecture** built with **FastAPI** and
 - **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
 - **External inference tasks** via APIs such as Replicate, OpenAI, and RunwayML
 
-An **intelligent model cache** keeps the last-used local model resident in GPU memory for fast reuse.
-**Text encoders** are run on the CPU, and **prompt embeddings** are cached to maximize available VRAM during inference.
+An **intelligent model cache** keeps the last-used local model resident in GPU / CPU memory for fast reuse.
 
 Clients interact with the API through clean typed REST endpoints, with a built-in **Swagger UI** for testing and inspection.
 

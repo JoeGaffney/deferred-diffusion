@@ -7,10 +7,10 @@ from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
 from common.logger import logger
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
-    get_gguf_model,
     get_quantized_model,
+    optimize_pipeline,
 )
-from common.text_encoders import wan_encode
+from common.text_encoders import get_umt5_text_encoder
 from videos.context import VideoContext
 
 # Wan VACE gives better results with a default negative prompt
@@ -28,31 +28,16 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanVACEPipeline:
         torch_dtype=torch_dtype,
     )
 
-    vae = AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32)
-
     pipe = WanVACEPipeline.from_pretrained(
         model_id,
-        vae=vae,
+        vae=AutoencoderKLWan.from_pretrained(model_id, subfolder="vae", torch_dtype=torch.float32),
         transformer=transformer,
-        transformer_2=None,
-        text_encoder=None,
-        tokenizer=None,
+        text_encoder=get_umt5_text_encoder(),
         torch_dtype=torch_dtype,
     )
-
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
-    try:
-        pipe.vae.enable_tiling()  # Enable VAE tiling to improve memory efficiency
-        pipe.vae.enable_slicing()
-    except:
-        pass
-
-    if VIDEO_CPU_OFFLOAD:
-        pipe.enable_model_cpu_offload()
-    else:
-        pipe.to("cuda")
-    return pipe
+    return optimize_pipeline(pipe, offload=VIDEO_CPU_OFFLOAD)
 
 
 def video_to_video(context: VideoContext):
@@ -61,9 +46,6 @@ def video_to_video(context: VideoContext):
 
     if context.image is None:
         raise ValueError("No reference image provided for video generation")
-
-    prompt_embeds = wan_encode(context.data.cleaned_prompt)
-    negative_prompt_embeds = wan_encode(_negative_prompt)
 
     pipe = get_pipeline(model_id="Wan-AI/Wan2.1-VACE-14B-diffusers")
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
@@ -92,12 +74,12 @@ def video_to_video(context: VideoContext):
     )
 
     output = pipe(
+        prompt=context.data.cleaned_prompt,
+        negative_prompt=_negative_prompt,
         video=video_frames,
         mask=mask_frames,  # type: ignore
         reference_images=reference_images,  # type: ignore
         conditioning_scale=1,
-        prompt_embeds=prompt_embeds,
-        negative_prompt_embeds=negative_prompt_embeds,
         height=context.height,
         width=context.width,
         num_frames=num_frames,

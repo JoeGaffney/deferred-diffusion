@@ -189,7 +189,7 @@ def get_quantized_model(
     model_class,
     target_precision: Literal[4, 8, 16] = 8,
     torch_dtype=torch.float16,
-    offload: bool = False,
+    device="",
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -208,8 +208,8 @@ def get_quantized_model(
 
     # if we will be offloading, load to CPU
     args = {}
-    if offload:
-        args["device_map"] = "cpu"
+    if device:
+        args["device_map"] = device
 
     if target_precision == 16:
         logger.debug(f"Quantization disabled for {model_id} subfolder {subfolder}")
