@@ -9,7 +9,7 @@ from diffusers import (
 from PIL import Image
 from transformers import CLIPVisionModelWithProjection
 
-from common.config import IMAGE_CPU_OFFLOAD
+from common.memory import is_memory_exceeded
 from common.pipeline_helpers import decorator_global_pipeline_cache, optimize_pipeline
 from images.adapters import AdapterPipelineConfig
 from images.context import ImageContext
@@ -39,10 +39,10 @@ def get_pipeline(model_id, config: AdapterPipelineConfig) -> StableDiffusionXLPi
                 subfolder=config.ip_adapter_image_encoder_subfolder,
                 torch_dtype=torch.bfloat16,
             )
-            pipe.image_encoder = image_encoder
+            pipe.image_encoder = image_encoder  # type: ignore
             pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
 
-    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(11))
 
 
 @decorator_global_pipeline_cache
@@ -58,7 +58,7 @@ def get_inpainting_pipeline(model_id, variant=None) -> StableDiffusionXLInpaintP
         **args,
     )
 
-    return optimize_pipeline(pipe, offload=False)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(11))
 
 
 def text_to_image_call(context: ImageContext):

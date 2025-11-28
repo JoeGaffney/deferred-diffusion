@@ -3,8 +3,8 @@ import torch
 from diffusers import AutoencoderKLWan, WanVACEPipeline, WanVACETransformer3DModel
 from diffusers.schedulers.scheduling_unipc_multistep import UniPCMultistepScheduler
 
-from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
 from common.logger import logger
+from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -24,7 +24,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanVACEPipeline:
         model_id=model_id,
         subfolder="transformer",
         model_class=WanVACETransformer3DModel,
-        target_precision=VIDEO_TRANSFORMER_PRECISION,
+        target_precision=4,
         torch_dtype=torch_dtype,
     )
 
@@ -37,7 +37,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanVACEPipeline:
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
-    return optimize_pipeline(pipe, offload=VIDEO_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
 
 def video_to_video(context: VideoContext):

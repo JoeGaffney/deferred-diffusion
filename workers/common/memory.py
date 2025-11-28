@@ -1,34 +1,26 @@
 import gc
-import os
-import subprocess
 
 import torch
 
 from common.logger import logger
 
+GB_BINARY = 1024**3
+GB_DECIMAL = 1e9  # we use binary GB everywhere in this codebase, but this is here for reference
 
-def _get_total_gpu_usage():
-    try:
-        result = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,nounits,noheader"], encoding="utf-8"
-        )
-        return float(result.strip()) / 1024  # Convert MB to GB
-    except Exception as e:
-        logger.warning(f"Failed to get total system GPU usage: {e}")
-        return None
+
+def confirm_cuda_available() -> bool:
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA not available")
+    return True
 
 
 def _get_gpu_memory_usage():
-    reserved = torch.cuda.memory_reserved() / 1e9
-    allocated = torch.cuda.memory_allocated() / 1e9
+    reserved = torch.cuda.memory_reserved() / GB_BINARY
+    allocated = torch.cuda.memory_allocated() / GB_BINARY
     available, total = torch.cuda.mem_get_info()
-    system_used = _get_total_gpu_usage()
-    if system_used is None:
-        used = (total - available) / 1e9
-    else:
-        used = system_used
+    used = (total - available) / GB_BINARY
 
-    total = total / 1e9
+    total = total / GB_BINARY
     usage_percent = (used / total) * 100
     allocated_percent = (allocated / total) * 100
 
@@ -39,9 +31,9 @@ def _get_gpu_memory_usage_pretty():
     total, used, reserved, allocated, usage_percent, allocated_percent = _get_gpu_memory_usage()
 
     return (
-        f"GPU Memory Usage: {used:.2f}GB / {total:.2f}GB,  "
-        f"Reserved: {reserved:.2f}GB, "
-        f"Allocated: {allocated:.2f}GB, "
+        f"GPU Memory Usage: {used:.2f}GiB / {total:.2f}GiB,  "
+        f"Reserved: {reserved:.2f}GiB, "
+        f"Allocated: {allocated:.2f}GiB, "
         f"Usage: {usage_percent:.2f}%, "
         f"Allocated Percent: {allocated_percent:.2f}%"
     )
@@ -49,10 +41,9 @@ def _get_gpu_memory_usage_pretty():
 
 def gpu_memory_usage():
     logger.info(f"{_get_gpu_memory_usage_pretty()}")
-    # logger.info(torch.cuda.memory_summary())
 
 
-def free_gpu_memory(threshold_percent: float = 25, message: str = "Cleaned GPU memory"):
+def free_gpu_memory(message: str = "Cleaned GPU memory"):
     gc.collect()
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
@@ -66,34 +57,24 @@ def free_gpu_memory(threshold_percent: float = 25, message: str = "Cleaned GPU m
     logger.warning(f"{message}: {_get_gpu_memory_usage_pretty()}")
 
 
-def get_gpu_memory(device: str | torch.device = "cuda", unit: str = "GiB") -> int:
-    """
-    Get the total memory of the current GPU.
+def get_gpu_memory(device: str | torch.device = "cuda") -> float:
+    """Get the total memory of the current GPU in GiB."""
 
-    Parameters
-    ----------
-    device : str or torch.device, optional
-        Device to check (default: "cuda").
-    unit : str, optional
-        Unit for memory ("GiB", "MiB", or "B") (default: "GiB").
-
-    Returns
-    -------
-    int
-        GPU memory in the specified unit.
-
-    Raises
-    ------
-    AssertionError
-        If unit is not one of "GiB", "MiB", or "B".
-    """
     if isinstance(device, str):
         device = torch.device(device)
-    assert unit in ("GiB", "MiB", "B")
     memory = torch.cuda.get_device_properties(device).total_memory
-    if unit == "GiB":
-        return memory // (1024**3)
-    elif unit == "MiB":
-        return memory // (1024**2)
+    return round(memory / GB_BINARY, 2)
+
+
+def is_memory_exceeded(estimated_memory_gib: float) -> bool:
+    """Check if the estimated memory exceeds the available GPU memory. Useful for deciding whether to offload pipelines. Or if a pipeline can fit in memory."""
+
+    available = get_gpu_memory()
+    result = estimated_memory_gib >= available
+
+    if result:
+        logger.warning(f"Estimated size {estimated_memory_gib}GiB exceeds GPU memory {available}GiB")
     else:
-        return memory
+        logger.info(f"Estimated size {estimated_memory_gib}GiB fits within GPU memory {available}GiB")
+
+    return result

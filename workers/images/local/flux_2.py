@@ -1,9 +1,8 @@
 import torch
 from diffusers import Flux2Pipeline, Flux2Transformer2DModel
 from PIL import Image
-from transformers import Mistral3ForConditionalGeneration
 
-from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
+from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -15,8 +14,6 @@ from images.context import ImageContext
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id):
-    offload = True
-
     transformer = get_quantized_model(
         model_id="diffusers/FLUX.2-dev-bnb-4bit",
         subfolder="transformer",
@@ -30,8 +27,7 @@ def get_pipeline(model_id):
         model_id, text_encoder=get_mistral3_text_encoder(), transformer=transformer, torch_dtype=torch.bfloat16
     )
 
-    # allways offload as heavy models
-    return optimize_pipeline(pipe, offload=offload)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(32))
 
 
 def text_to_image_call(context: ImageContext):

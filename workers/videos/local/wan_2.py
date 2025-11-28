@@ -7,7 +7,7 @@ from diffusers import (
     WanTransformer3DModel,
 )
 
-from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
+from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -19,6 +19,7 @@ from videos.local.wan_vace import video_to_video
 
 # Wan gives better results with a default negative prompt
 _negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
+_offload = is_memory_exceeded(31)
 
 
 @decorator_global_pipeline_cache
@@ -32,7 +33,7 @@ def get_pipeline_t2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> 
             model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
             subfolder="transformer",
             model_class=WanTransformer3DModel,
-            target_precision=VIDEO_TRANSFORMER_PRECISION,
+            target_precision=4,
             torch_dtype=torch_dtype,
         )
 
@@ -40,7 +41,7 @@ def get_pipeline_t2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> 
         model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
         subfolder="transformer_2",
         model_class=WanTransformer3DModel,
-        target_precision=VIDEO_TRANSFORMER_PRECISION,
+        target_precision=4,
         torch_dtype=torch_dtype,
     )
 
@@ -55,7 +56,7 @@ def get_pipeline_t2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> 
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
-    return optimize_pipeline(pipe, offload=VIDEO_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=_offload)
 
 
 @decorator_global_pipeline_cache
@@ -69,7 +70,7 @@ def get_pipeline_i2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> 
             model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers",
             subfolder="transformer",
             model_class=WanTransformer3DModel,
-            target_precision=VIDEO_TRANSFORMER_PRECISION,
+            target_precision=4,
             torch_dtype=torch_dtype,
         )
 
@@ -77,7 +78,7 @@ def get_pipeline_i2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> 
         model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers",
         subfolder="transformer_2",
         model_class=WanTransformer3DModel,
-        target_precision=VIDEO_TRANSFORMER_PRECISION,
+        target_precision=4,
         torch_dtype=torch_dtype,
     )
 
@@ -92,7 +93,7 @@ def get_pipeline_i2v(model_id, high_noise: bool, torch_dtype=torch.bfloat16) -> 
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
-    return optimize_pipeline(pipe, offload=VIDEO_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=_offload)
 
 
 def text_to_video(context: VideoContext):
