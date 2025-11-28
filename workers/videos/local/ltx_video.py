@@ -15,7 +15,6 @@ from common.text_encoders import get_t5_text_encoder
 from videos.context import VideoContext
 
 _negative_prompt = "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes"
-_offload = is_memory_exceeded(23)
 
 
 @decorator_global_pipeline_cache
@@ -36,7 +35,7 @@ def get_pipeline(model_id):
         torch_dtype=torch.bfloat16,
     )
 
-    return optimize_pipeline(pipe, offload=_offload)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
 
 def image_to_video(context: VideoContext):

@@ -15,7 +15,6 @@ from videos.context import VideoContext
 
 # Wan VACE gives better results with a default negative prompt
 _negative_prompt = "Bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards"
-_offload = is_memory_exceeded(23)
 
 
 @decorator_global_pipeline_cache
@@ -38,7 +37,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanVACEPipeline:
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
-    return optimize_pipeline(pipe, offload=_offload)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
 
 def video_to_video(context: VideoContext):

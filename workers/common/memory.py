@@ -5,7 +5,7 @@ import torch
 from common.logger import logger
 
 GB_BINARY = 1024**3
-GB_DECIMAL = 1e9
+GB_DECIMAL = 1e9  # we use binary GB everywhere in this codebase, but this is here for reference
 
 
 def confirm_cuda_available() -> bool:
@@ -58,12 +58,8 @@ def free_gpu_memory(message: str = "Cleaned GPU memory"):
 
 
 def get_gpu_memory(device: str | torch.device = "cuda") -> float:
-    """
-    Get the total memory of the current GPU in GiB.
+    """Get the total memory of the current GPU in GiB."""
 
-    Args:
-        device (str | torch.device): The GPU device to query. Defaults to "cuda".
-    """
     if isinstance(device, str):
         device = torch.device(device)
     memory = torch.cuda.get_device_properties(device).total_memory
@@ -71,6 +67,8 @@ def get_gpu_memory(device: str | torch.device = "cuda") -> float:
 
 
 def is_memory_exceeded(estimated_memory_gib: float) -> bool:
+    """Check if the estimated memory exceeds the available GPU memory. Useful for deciding whether to offload pipelines. Or if a pipeline can fit in memory."""
+
     available = get_gpu_memory()
     result = estimated_memory_gib >= available
 
