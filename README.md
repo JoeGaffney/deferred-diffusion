@@ -106,7 +106,7 @@ make tag-and-push
 
 - **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
 - **GPU**: Nvidia GPU with at least 12GB VRAM. 24GB recommended (Tested with RTX 3080ti, A4000, RTX 3090, RTX 5090)
-- **RAM** Around 48-64Gb should be plenty for all containers.
+- **RAM**: Around 48-64Gb should be plenty for all containers.
 - **Environment Variables**: Ensure all required environment variables are set on the host.
 
 ### Required Environment Variables
