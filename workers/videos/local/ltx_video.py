@@ -5,7 +5,7 @@ from diffusers.pipelines.ltx.pipeline_ltx_condition import (
     LTXVideoTransformer3DModel,
 )
 
-from common.config import VIDEO_CPU_OFFLOAD, VIDEO_TRANSFORMER_PRECISION
+from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -15,6 +15,7 @@ from common.text_encoders import get_t5_text_encoder
 from videos.context import VideoContext
 
 _negative_prompt = "worst quality, inconsistent motion, blurry, jittery, distorted, render, cartoon, 3d, lowres, fused fingers, face asymmetry, eyes asymmetry, deformed eyes"
+_offload = is_memory_exceeded(23)
 
 
 @decorator_global_pipeline_cache
@@ -24,7 +25,7 @@ def get_pipeline(model_id):
         model_id,
         subfolder="transformer",
         model_class=LTXVideoTransformer3DModel,
-        target_precision=VIDEO_TRANSFORMER_PRECISION,
+        target_precision=4,
         torch_dtype=torch.bfloat16,
     )
 
@@ -35,7 +36,7 @@ def get_pipeline(model_id):
         torch_dtype=torch.bfloat16,
     )
 
-    return optimize_pipeline(pipe, offload=VIDEO_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=_offload)
 
 
 def image_to_video(context: VideoContext):

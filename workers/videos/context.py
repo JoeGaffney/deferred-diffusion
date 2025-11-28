@@ -6,7 +6,6 @@ import requests
 import torch
 from diffusers.utils import export_to_video
 
-from common.config import ONE_MB_IN_BYTES
 from common.logger import logger
 from utils.utils import (
     ensure_divisible,
@@ -16,6 +15,8 @@ from utils.utils import (
     mp4_to_base64_decoded,
 )
 from videos.schemas import VideoRequest
+
+ONE_MB_IN_BYTES = 1 * 1024 * 1024
 
 
 class VideoContext:

@@ -11,8 +11,7 @@ from nunchaku import NunchakuQwenImageTransformer2DModel
 from nunchaku.utils import get_precision
 from PIL import Image
 
-from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
-from common.logger import logger
+from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
@@ -69,7 +68,7 @@ def get_pipeline(model_id, inpainting: bool) -> QwenImagePipeline | QwenImageInp
             torch_dtype=torch.bfloat16,
         )
 
-    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
 
 @decorator_global_pipeline_cache
@@ -87,7 +86,7 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
         torch_dtype=torch.bfloat16,
     )
 
-    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
 
 def text_to_image_call(context: ImageContext):
@@ -146,9 +145,6 @@ def image_edit_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
-    # prompt_embeds, prompt_embeds_mask = qwen_encode(
-    #     context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
-    # )
     pipe = get_pipeline("Qwen/Qwen-Image", inpainting=True)
     prompt = context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
 

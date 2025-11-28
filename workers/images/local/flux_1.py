@@ -9,7 +9,7 @@ from nunchaku import NunchakuFluxTransformer2dModel, NunchakuFluxTransformer2DMo
 from nunchaku.utils import get_precision
 from PIL import Image
 
-from common.config import IMAGE_CPU_OFFLOAD, IMAGE_TRANSFORMER_PRECISION
+from common.memory import is_memory_exceeded
 from common.pipeline_helpers import decorator_global_pipeline_cache, optimize_pipeline
 from common.text_encoders import get_t5_text_encoder
 from images.adapters import AdapterPipelineConfig
@@ -39,7 +39,7 @@ def get_pipeline(model_id, config: AdapterPipelineConfig):
             image_encoder_pretrained_model_name_or_path=config.ip_adapter_image_encoder_subfolder,
         )
 
-    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(15))
 
 
 @decorator_global_pipeline_cache
@@ -55,7 +55,7 @@ def get_kontext_pipeline(model_id):
         torch_dtype=torch.bfloat16,
     )
 
-    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(15))
 
 
 @decorator_global_pipeline_cache
@@ -71,7 +71,7 @@ def get_inpainting_pipeline(model_id):
         torch_dtype=torch.bfloat16,
     )
 
-    return optimize_pipeline(pipe, offload=IMAGE_CPU_OFFLOAD)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(15))
 
 
 def text_to_image_call(context: ImageContext):

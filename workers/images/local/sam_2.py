@@ -7,7 +7,7 @@ from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
 
 
-def main(context: ImageContext, mode="mask"):
+def main(context: ImageContext):
     if context.color_image is None:
         raise ValueError("No image provided")
 
