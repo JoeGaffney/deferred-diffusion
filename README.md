@@ -2,16 +2,131 @@
 
 **Deferred Diffusion** is a **self-hosted, scalable AI inference stack** with a fully **typed, testable API**. It supports **local GPU models** and can route tasks to **external AI services** such as Replicate, OpenAI, or RunwayML. The system is **containerized**, automatically downloads all models and dependencies, and is **stateless**, allowing tasks to run across multiple workers without relying on local file paths. This makes deployments **predictable, cross-platform, and easy to scale**.
 
+<img width="2248" height="1245" alt="image" src="https://github.com/user-attachments/assets/27b3c860-6e9c-4e56-bdd9-0204481c7cb9" />
+
 It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, letting local models and external providers run seamlessly in the same system. The API queues tasks through a message broker, and worker services pick them up for processing. Workers can execute:
 
 - **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
-- **External inference tasks** via APIs such as Replicate, OpenAI, and RunwayML
 
-An **intelligent model cache** keeps the last-used local model resident in GPU / CPU memory for fast reuse.
+  - An **intelligent model cache** keeps the last-used local model resident in GPU / CPU memory for fast reuse.
+
+- **External inference tasks** via APIs such as Replicate, OpenAI, and RunwayML
 
 Clients interact with the API through clean typed REST endpoints, with a built-in **Swagger UI** for testing and inspection.
 
 Example **Houdini** and **Nuke** clients are included to demonstrate integration into node-based VFX pipelines.
+
+#### **Flow Example**
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Broker
+    participant Worker
+    participant Compute as GPU/CPU Compute
+
+    Client->>API: POST /images/create
+    API->>Broker: Queue task
+    API->>Client: Return task_id (202 Accepted)
+    Note over Worker: Validate and build context
+    Broker->>Worker: Pick up task
+    Note over Compute: Local or External
+    Worker->>Compute: Run inference
+    Compute->>Worker: Return result
+    Worker->>Broker: Store result
+
+    Note over Client: Client polls for completion
+    Client->>API: GET /tasks/{task_id}
+    API<<->>Broker: Retrieve task result
+    API->>Client: Base64 image
+```
+
+## Quick start
+
+To pull and run the latest release.
+
+```bash
+docker compose down
+docker compose -f docker-compose.release.yml pull
+docker compose -f docker-compose.release.yml up -d --no-build
+```
+
+Or run the make command.
+
+```bash
+make up-latest-release
+```
+
+For production deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Building
+
+**All services run in Docker containers** - this ensures consistent environments and avoids duplicating model downloads across different setups. Nothing needs to run directly on the host machine except Docker and the client applications.
+
+```bash
+make all
+```
+
+### Local setup Windows
+
+For local venv mainly to get intellisense on the packages and some local testing.
+
+```bash
+./start_venv_setup.bat
+```
+
+Or make your own env and install the requirements.
+
+## Testing
+
+Pytest is used for integration tests confirming the models run.
+
+You can call from the make file.
+
+```bash
+make test-worker
+make test-it-tests
+```
+
+See the make file for more info.
+
+## Releasing
+
+We have a GitHub action setup to do the release based on any v*.*.\* tag.
+
+To make a local release you can also run the make commands.
+
+```bash
+make create-release
+make tag-and-push
+```
+
+## Requirements
+
+- **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
+- **GPU**: Nvidia GPU with at least 12GB VRAM. 24GB recommended (Tested with RTX 3080ti, A4000, RTX 3090, RTX 5090)
+- **RAM**: Around 48-64Gb should be plenty for all containers.
+- **Environment Variables**: Ensure all required environment variables are set on the host.
+
+### Required Environment Variables
+
+Server for the containers
+
+```env
+OPENAI_API_KEY=your-openai-key # For OpenAI services
+RUNWAYML_API_SECRET=your-runway-secret # For RunwayML services
+REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
+HF_TOKEN=your-huggingface-token # For Hugging Face model access
+DDIFFUSION_API_KEYS=Welcome1!,Welcome2! # API keys for authentication
+```
+
+For the clients where the tool sets are used
+
+```env
+DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
+DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
+```
 
 ## **Project Structure Overview**
 
@@ -131,179 +246,3 @@ Each new model entry should include:
 3. Updated tests under `tests/images`
 
 This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
-
-#### **Flow Diagram Concept**
-
-```
-Client API Request
-    │
-    ▼
-ImageRequest / VideoRequest schema
-    │
-    ▼
-API ModelName (user-facing choice, e.g., "flux-1")
-    ├─ Sends a Celery task to the workers
-    └─ Selects the worker queue (CPU or GPU) via task_queue property
-    │
-    ▼
-Worker / Task Router
-    ├─ Confirms queue assignment (CPU/GPU)
-    └─ Selects the appropriate pipeline function based on ModelName (lazy import)
-    │
-    ▼
-ImageContext / VideoContext
-    ├─ Initializes inputs: images, mask, seed, width/height
-    ├─ Initializes adapters & controlnets if enabled
-    └─ Provides helper functions:
-          - get_generation_mode()
-          - ensure_divisible()
-          - cleanup()
-    │
-    ▼
-Pipeline Function (pure function)
-    ├─ Calls:
-          - text_to_image_call(context)
-          - image_to_image_call(context)
-          - inpainting_call(context)
-          - ...
-    ├─ Internally selects the exact model(s) / transformer variants:
-          - Flux: Krea / Kontext / Fill
-          - WAN, VEO variants based on context
-    ├─ Applies adapters and controlnets as needed
-    └─ Prepares prompt embeddings for inference
-    │
-    ▼
-Pipeline Execution
-    ├─ Runs inference on GPU or CPU
-    └─ Produces output: PIL Image (or video frames for VideoContext)
-    │
-    ▼
-Context.save_image() / Context.save_video()
-    └─ Writes temporary file path for output
-    │
-    ▼
-Worker / API Response
-    └─ Encodes output as base64 (VideoWorkerResponse / ImageWorkerResponse)
-```
-
-## Building
-
-Run primarily in the docker containers because of the multi service workflows and to avoid multiple copies of model downloads.
-
-```bash
-make all
-```
-
-### Local setup Windows
-
-For local venv mainly to get intellisense on the packages and some local testing.
-
-```bash
-./start_venv_setup.bat
-```
-
-## Testing
-
-Pytest is used for integration tests confirming the models run.
-
-You can call from the make file.
-
-```bash
-make test-worker
-make test-it-tests
-```
-
-See the make file for more info.
-
-## Releasing
-
-Tag and push to github will trigger github actions to the do the release.
-
-- Currently there is no testing in the CI because of the gpu compute nature of things so please run the test suite locally on main before any releases or merges.
-
-To make a local release.
-
-```bash
-make create-release
-make tag-and-push
-```
-
-### Deploying the Release on a Server
-
-1. **Change into the directory** containing the `docker-compose.yml` file.
-
-2. **Ensure Docker Desktop is installed** on the server.
-
-3. **Pull and run the containers**:
-
-   ```bash
-   docker-compose down
-   docker-compose pull
-   docker-compose up -d --no-build
-   ```
-
-### Requirements
-
-- **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
-- **GPU** Nvidia GPU with at least 12gb VRAM. 24 GB recommended.
-- **Environment Variables**: Ensure all required environment variables are set on the host.
-
-#### Required Environment Variables
-
-Server for the containers
-
-```env
-OPENAI_API_KEY=your-openai-key # For OpenAI services
-RUNWAYML_API_SECRET=your-runway-secret # For RunwayML services
-REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
-HF_TOKEN=your-huggingface-token # For Hugging Face model access
-DDIFFUSION_API_KEYS=Welcome1!,Welcome2! # API keys for authentication
-```
-
-For the clients where the tool sets are used
-
-```env
-DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
-DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
-```
-
-### Testing workers
-
-Tests are included inside the containers these can be ran to verify and also to download any missing models.
-
-```bash
-docker-compose exec gpu-workers pytest tests/images/local/test_flux.py -vs
-docker-compose exec gpu-workers pytest tests/images/local -vs
-docker-compose exec gpu-workers pytest tests/texts/local -vs
-docker-compose exec gpu-workers pytest tests/videos/local -vs
-```
-
-The external tests are split out.
-
-```bash
-docker-compose exec gpu-workers pytest tests/images/external -vs
-docker-compose exec gpu-workers pytest tests/texts/external -vs
-docker-compose exec gpu-workers pytest tests/videos/external -vs
-```
-
-## MISC
-
-### Docker helpers
-
-To optimize volumes and virtual disk useful after model deletions
-
-Kill Docker Desktop and related processes
-
-```bash
-Stop-Process -Name "Docker Desktop" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "com.docker.*" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "vmmemWSL" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "wslhost" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "wsl" -Force -ErrorAction SilentlyContinue
-```
-
-Then make sure docker and WSL are closed.
-
-```bash
-Optimize-VHD -Path "Y:\DOCKER\DockerDesktopWSL\disk\docker_data.vhdx" -Mode Full
-```
