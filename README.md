@@ -93,7 +93,7 @@ See the make file for more info.
 
 ## Releasing
 
-We have a github action setup to do the release based on any v*.*.\* tag.
+We have a GitHub action setup to do the release based on any v*.*.\* tag.
 
 To make a local release you can also run the make commands.
 
