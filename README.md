@@ -7,9 +7,10 @@
 It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, letting local models and external providers run seamlessly in the same system. The API queues tasks through a message broker, and worker services pick them up for processing. Workers can execute:
 
 - **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
-- **External inference tasks** via APIs such as Replicate, OpenAI, and RunwayML
 
-An **intelligent model cache** keeps the last-used local model resident in GPU / CPU memory for fast reuse.
+  - An **intelligent model cache** keeps the last-used local model resident in GPU / CPU memory for fast reuse.
+
+- **External inference tasks** via APIs such as Replicate, OpenAI, and RunwayML
 
 Clients interact with the API through clean typed REST endpoints, with a built-in **Swagger UI** for testing and inspection.
 
