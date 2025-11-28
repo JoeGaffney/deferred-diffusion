@@ -60,10 +60,7 @@ services:
       - HF_TOKEN=${HF_TOKEN}
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
-      - MAX_MODEL_CACHE=1 # Maximum number of models to cache in memory
       - HF_ENABLE_PARALLEL_LOADING=yes
-      - VIDEO_CPU_OFFLOAD=0 # Offload video models to CPU when not in use
-      # - HF_HUB_DISABLE_XET=1 # Disable XET when downloading from HF Hub
     depends_on:
       - redis
       - api

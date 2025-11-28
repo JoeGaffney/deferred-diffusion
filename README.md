@@ -39,6 +39,92 @@ sequenceDiagram
     API->>Client: Base64 image
 ```
 
+## Quick start
+
+To pull and run the latest release.
+
+```bash
+docker compose down
+docker compose -f docker-compose.release.yml pull
+docker compose -f docker-compose.release.yml up -d --no-build
+```
+
+Or run the make command.
+
+```bash
+make up-latest-release
+```
+
+For production deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Building
+
+**All services run in Docker containers** - this ensures consistent environments and avoids duplicating model downloads across different setups. Nothing needs to run directly on the host machine except Docker and the client applications.
+
+```bash
+make all
+```
+
+### Local setup Windows
+
+For local venv mainly to get intellisense on the packages and some local testing.
+
+```bash
+./start_venv_setup.bat
+```
+
+Or make your own env and install the requirements.
+
+## Testing
+
+Pytest is used for integration tests confirming the models run.
+
+You can call from the make file.
+
+```bash
+make test-worker
+make test-it-tests
+```
+
+See the make file for more info.
+
+## Releasing
+
+We have a github action setup to do the release based on any v*.*.\* tag.
+
+To make a local release you can also run the make commands.
+
+```bash
+make create-release
+make tag-and-push
+```
+
+## Requirements
+
+- **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
+- **GPU** Nvidia GPU with at least 12GB VRAM. 24GB recommended (Tested with RTX 3080ti, A4000, RTX 3090, RTX 5090)
+- **RAM** Around 48-64Gb should be plenty for all containers.
+- **Environment Variables**: Ensure all required environment variables are set on the host.
+
+### Required Environment Variables
+
+Server for the containers
+
+```env
+OPENAI_API_KEY=your-openai-key # For OpenAI services
+RUNWAYML_API_SECRET=your-runway-secret # For RunwayML services
+REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
+HF_TOKEN=your-huggingface-token # For Hugging Face model access
+DDIFFUSION_API_KEYS=Welcome1!,Welcome2! # API keys for authentication
+```
+
+For the clients where the tool sets are used
+
+```env
+DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
+DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
+```
+
 ## **Project Structure Overview**
 
 This project follows a **feature-based structure**, grouping related components together by domain (`images`, `texts`, `videos`). This approach ensures a clear separation of concerns and improves maintainability, scalability, and collaboration.
@@ -157,125 +243,3 @@ Each new model entry should include:
 3. Updated tests under `tests/images`
 
 This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
-
-## Building
-
-Run primarily in the docker containers because of the multi service workflows and to avoid multiple copies of model downloads.
-
-```bash
-make all
-```
-
-### Local setup Windows
-
-For local venv mainly to get intellisense on the packages and some local testing.
-
-```bash
-./start_venv_setup.bat
-```
-
-## Testing
-
-Pytest is used for integration tests confirming the models run.
-
-You can call from the make file.
-
-```bash
-make test-worker
-make test-it-tests
-```
-
-See the make file for more info.
-
-## Releasing
-
-Tag and push to github will trigger github actions to the do the release.
-
-- Currently there is no testing in the CI because of the gpu compute nature of things so please run the test suite locally on main before any releases or merges.
-
-To make a local release.
-
-```bash
-make create-release
-make tag-and-push
-```
-
-### Deploying the Release on a Server
-
-1. **Change into the directory** containing the `docker-compose.yml` file.
-
-2. **Ensure Docker Desktop is installed** on the server.
-
-3. **Pull and run the containers**:
-
-   ```bash
-   docker-compose down
-   docker-compose pull
-   docker-compose up -d --no-build
-   ```
-
-### Requirements
-
-- **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
-- **GPU** Nvidia GPU with at least 12gb VRAM. 24 GB recommended.
-- **Environment Variables**: Ensure all required environment variables are set on the host.
-
-#### Required Environment Variables
-
-Server for the containers
-
-```env
-OPENAI_API_KEY=your-openai-key # For OpenAI services
-RUNWAYML_API_SECRET=your-runway-secret # For RunwayML services
-REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
-HF_TOKEN=your-huggingface-token # For Hugging Face model access
-DDIFFUSION_API_KEYS=Welcome1!,Welcome2! # API keys for authentication
-```
-
-For the clients where the tool sets are used
-
-```env
-DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
-DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
-```
-
-### Testing workers
-
-Tests are included inside the containers these can be ran to verify and also to download any missing models.
-
-```bash
-docker-compose exec gpu-workers pytest tests/images/local/test_flux.py -vs
-docker-compose exec gpu-workers pytest tests/images/local -vs
-docker-compose exec gpu-workers pytest tests/texts/local -vs
-docker-compose exec gpu-workers pytest tests/videos/local -vs
-```
-
-The external tests are split out.
-
-```bash
-docker-compose exec gpu-workers pytest tests/images/external -vs
-docker-compose exec gpu-workers pytest tests/texts/external -vs
-docker-compose exec gpu-workers pytest tests/videos/external -vs
-```
-
-## MISC
-
-### Docker helpers
-
-To optimize volumes and virtual disk useful after model deletions
-
-Kill Docker Desktop and related processes
-
-```bash
-Stop-Process -Name "Docker Desktop" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "com.docker.*" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "vmmemWSL" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "wslhost" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "wsl" -Force -ErrorAction SilentlyContinue
-```
-
-Then make sure docker and WSL are closed.
-
-```bash
-Optimize-VHD -Path "Y:\DOCKER\DockerDesktopWSL\disk\docker_data.vhdx" -Mode Full
-```

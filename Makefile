@@ -39,6 +39,11 @@ up-it-tests: down copy-schemas
 	docker compose -f docker-compose.it-tests.yml build
 	docker compose -f docker-compose.it-tests.yml up -d
 
+up-latest-release:
+	docker compose down
+	docker compose -f docker-compose.release.yml pull
+	docker compose -f docker-compose.release.yml up -d --no-build
+
 # Generate OpenAPI spec file
 generate-openapi-spec: up
 	curl -o clients/openapi.json http://127.0.0.1:5000/openapi.json || powershell -Command "Invoke-WebRequest -Uri 'http://127.0.0.1:5000/openapi.json' -OutFile 'clients/openapi.json'"
@@ -113,6 +118,7 @@ create-client-release: generate-clients-raw
 # Copy deployment docker-compose.yml to release folder
 	copy docker-compose.release.yml releases\$(PROJECT_NAME)\docker-compose.yml
 	copy README.md releases\$(PROJECT_NAME)\README.md
+	copy DEPLOYMENT.md releases\$(PROJECT_NAME)\DEPLOYMENT.md
 
 # Update docker-compose.yml to use versioned images
 	powershell -Command "(Get-Content releases\$(PROJECT_NAME)\docker-compose.yml) -replace 'deferred-diffusion-api:latest', '$(REPO_USERNAME)/$(REPO):api-$(VERSION)' -replace 'deferred-diffusion-workers:latest', '$(REPO_USERNAME)/$(REPO):worker-$(VERSION)' | Set-Content releases\$(PROJECT_NAME)\docker-compose.yml"
@@ -133,6 +139,7 @@ create-client-release-linux: generate-clients-raw
 # Copy deployment docker-compose.yml to release folder
 	cp docker-compose.release.yml releases/$(PROJECT_NAME)/docker-compose.yml
 	cp README.md releases/$(PROJECT_NAME)/README.md
+	cp DEPLOYMENT.md releases/$(PROJECT_NAME)/DEPLOYMENT.md
 
 # Update docker-compose.yml to use versioned images
 	sed -i 's/deferred-diffusion-api:latest/$(REPO_USERNAME)\/$(REPO):api-$(VERSION)/g' releases/$(PROJECT_NAME)/docker-compose.yml
@@ -145,3 +152,4 @@ create-client-release-linux: generate-clients-raw
 	cd releases && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
 	@echo Release files created in releases/$(PROJECT_NAME)
 	@echo Archive created: releases/$(PROJECT_NAME)-$(VERSION).tar.gz
+
