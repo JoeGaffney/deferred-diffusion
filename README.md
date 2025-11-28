@@ -25,11 +25,17 @@ sequenceDiagram
 
     Client->>API: POST /images/create
     API->>Broker: Queue task
+    API->>Client: Return task_id (202 Accepted)
+    Note over Worker: Validate and build context
     Broker->>Worker: Pick up task
-    Worker<<->>Compute: Run inference
-    Worker->>Broker: Task complete
-    Client->>API: GET /images/{task_id}
-    Broker->>API: Retreive task
+    Note over Compute: Local or External
+    Worker->>Compute: Run inference
+    Compute->>Worker: Return result
+    Worker->>Broker: Store result
+
+    Note over Client: Client polls for completion
+    Client->>API: GET /tasks/{task_id}
+    API<<->>Broker: Retrieve task result
     API->>Client: Base64 image
 ```
 
