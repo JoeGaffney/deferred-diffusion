@@ -10,7 +10,6 @@ ModelName: TypeAlias = Literal[
     "ltx-video",
     "wan-2",
     "runway-gen-4",
-    "runway-act-two",
     "runway-upscale",
     "bytedance-seedance-1",
     "kwaivgi-kling-2",
