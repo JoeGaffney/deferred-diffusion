@@ -11,6 +11,7 @@ ModelName: TypeAlias = Literal[
     "flux-1",
     "flux-2",
     "qwen-image",
+    "z-image",
     "depth-anything-2",
     "sam-2",
     "sam-3",
@@ -70,6 +71,12 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="Qwen image generation and manipulation.",
+    ),
+    "z-image": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-image"},
+        description="Z-Image open-source image generation model.",
     ),
     "depth-anything-2": ImagesModelInfo(
         provider="local",

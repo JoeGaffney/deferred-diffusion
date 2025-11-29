@@ -61,6 +61,15 @@ def qwen_image(request_dict):
     return process_result(context, result)
 
 
+@typed_task(name="z-image", queue="gpu")
+def z_image(request_dict):
+    from images.local.z_image import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
 @typed_task(name="depth-anything-2", queue="gpu")
 def depth_anything_2(request_dict):
     from images.local.depth_anything_2 import main

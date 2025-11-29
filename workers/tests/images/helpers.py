@@ -25,6 +25,7 @@ def main(context: ImageContext) -> Image.Image:
         "flux-1": ("images.local.flux_1", "main"),
         "flux-2": ("images.local.flux_2", "main"),
         "qwen-image": ("images.local.qwen_image", "main"),
+        "z-image": ("images.local.z_image", "main"),
         "depth-anything-2": ("images.local.depth_anything_2", "main"),
         "sam-2": ("images.local.sam_2", "main"),
         "sam-3": ("images.local.sam_3", "main"),
