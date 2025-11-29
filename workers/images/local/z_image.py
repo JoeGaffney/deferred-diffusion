@@ -58,4 +58,5 @@ def text_to_image_call(context: ImageContext):
 
 
 def main(context: ImageContext) -> Image.Image:
+    context.ensure_divisible(16)
     return text_to_image_call(context)
