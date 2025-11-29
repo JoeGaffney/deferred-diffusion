@@ -1,18 +1,26 @@
 # deferred-diffusion
 
-**Deferred Diffusion** is a **self-hosted, scalable AI inference stack** with a fully **typed, testable API**. It supports **local GPU models** and can route tasks to **external AI providers**. The system is **containerized**, automatically downloads all models and dependencies, and is **stateless**, allowing tasks to run across multiple workers without relying on local file paths. This makes deployments **predictable, cross-platform, and easy to scale**.
+**Deferred Diffusion** is a **self-hosted, scalable AI inference stack** with a fully **typed, testable API**. It supports **local GPU workers** and can route tasks to **external AI providers**. The system is **containerized**, automatically downloads all models and dependencies, and is **stateless**, allowing tasks to run across multiple workers without relying on local file paths. This makes deployments **predictable, cross-platform, and easy to scale**.
 
 <img width="2248" height="1245" alt="image" src="https://github.com/user-attachments/assets/27b3c860-6e9c-4e56-bdd9-0204481c7cb9" />
 
-It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, letting local models and external providers run seamlessly in the same system. The API queues tasks through a message broker, and worker services pick them up for processing. Workers can execute:
+It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, letting local models and external providers run seamlessly in the same system. Workers can execute:
 
 - **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
-  - An **intelligent model cache** keeps the last-used local model resident in GPU / CPU memory for fast reuse.
 - **External inference tasks** are currently only run via **Replicate** and **OpenAI** APIs.
 
-Clients interact with the API through clean typed REST endpoints, with a built-in **Swagger UI** for testing and inspection.
+Clients interact with the API through typed REST endpoints with a built-in **Swagger UI** for inspection and testing.
 
 Example **Houdini** and **Nuke** clients are included to demonstrate integration into node-based VFX pipelines.
+
+### Security & Air-Gapped Deployment
+
+- **No dependency on unverified UIs**; all interaction is via the API or official clients.
+- **Air-gap ready**: API server and workers can run in isolated networks, exposing only necessary ports and connections to external AI providers.
+- **Controlled external access**: Only approved providers (Replicate and OpenAI) are called via their APIs. Uploaded data is retained only as long as necessary to complete the inference and is deleted soon after, minimizing exposure.
+- **Traceable and reproducible**: Local models are version-controlled in code; no downloading from random external repositories.
+- **Client / Workstations**: Don't need heavy GPU's, download models or call provider API's directly.
+- **Server / Workers**: Do not require access to your main network drives, maintaining strong isolation and clear boundaries.
 
 #### **Flow Example**
 
