@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
-from common.schemas import TaskStatus
+from common.schemas import Provider, TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -20,7 +20,6 @@ ModelName: TypeAlias = Literal[
 ]
 
 InferredMode: TypeAlias = Literal["text-to-video", "image-to-video", "video-to-video", "first-last-image"]
-Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
 class VideosModelInfo(BaseModel):
@@ -56,12 +55,6 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=True,
         supported_modes={"image-to-video", "video-to-video"},
         description="Runway Gen-4 family. Uses standard Gen-4 for image-to-video and Aleph variant for video-to-video.",
-    ),
-    "runway-act-two": VideosModelInfo(
-        provider="runway",
-        external=True,
-        supported_modes={"video-to-video"},
-        description="Matches animation from a reference video to a character reference image.",
     ),
     "runway-upscale": VideosModelInfo(
         provider="replicate",

@@ -1,16 +1,14 @@
 # deferred-diffusion
 
-**Deferred Diffusion** is a **self-hosted, scalable AI inference stack** with a fully **typed, testable API**. It supports **local GPU models** and can route tasks to **external AI services** such as Replicate, OpenAI, or RunwayML. The system is **containerized**, automatically downloads all models and dependencies, and is **stateless**, allowing tasks to run across multiple workers without relying on local file paths. This makes deployments **predictable, cross-platform, and easy to scale**.
+**Deferred Diffusion** is a **self-hosted, scalable AI inference stack** with a fully **typed, testable API**. It supports **local GPU models** and can route tasks to **external AI providers**. The system is **containerized**, automatically downloads all models and dependencies, and is **stateless**, allowing tasks to run across multiple workers without relying on local file paths. This makes deployments **predictable, cross-platform, and easy to scale**.
 
 <img width="2248" height="1245" alt="image" src="https://github.com/user-attachments/assets/27b3c860-6e9c-4e56-bdd9-0204481c7cb9" />
 
 It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, letting local models and external providers run seamlessly in the same system. The API queues tasks through a message broker, and worker services pick them up for processing. Workers can execute:
 
 - **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
-
   - An **intelligent model cache** keeps the last-used local model resident in GPU / CPU memory for fast reuse.
-
-- **External inference tasks** via APIs such as Replicate, OpenAI, and RunwayML
+- **External inference tasks** are currently only run via **Replicate** and **OpenAI** APIs.
 
 Clients interact with the API through clean typed REST endpoints, with a built-in **Swagger UI** for testing and inspection.
 
@@ -115,7 +113,6 @@ Server for the containers
 
 ```env
 OPENAI_API_KEY=your-openai-key # For OpenAI services
-RUNWAYML_API_SECRET=your-runway-secret # For RunwayML services
 REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
 HF_TOKEN=your-huggingface-token # For Hugging Face model access
 DDIFFUSION_API_KEYS=Welcome1!,Welcome2! # API keys for authentication

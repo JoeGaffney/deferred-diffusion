@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
-from common.schemas import TaskStatus
+from common.schemas import Provider, TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -24,7 +24,6 @@ ModelName: TypeAlias = Literal[
     "bytedance-seedream-4",
 ]
 InferredMode: TypeAlias = Literal["text-to-image", "image-to-image", "inpainting"]
-Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
 class ImagesModelInfo(BaseModel):
@@ -98,7 +97,7 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         description="OpenAI image model.",
     ),
     "runway-gen4-image": ImagesModelInfo(
-        provider="runway",
+        provider="replicate",
         external=True,
         supported_modes={"text-to-image", "image-to-image"},
         references=True,

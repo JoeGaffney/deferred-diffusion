@@ -4,10 +4,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from common.schemas import TaskStatus
+from common.schemas import Provider, TaskStatus
 
 ModelName: TypeAlias = Literal["qwen-2", "gpt-4o", "gpt-4", "gpt-5"]
-Provider: TypeAlias = Literal["local", "openai"]
 
 
 class TextsModelInfo(BaseModel):
@@ -62,7 +61,7 @@ SYSTEM_PROMPT_TEXT = {
         "\n"
         "Use technical terms, style markers, and quality tags only when relevant; do not force them into every prompt."
         "\n"
-        "Output only the optimized prompt. No preamble, labels, or explanations."
+        "Output only the optimized prompt. No preamble, labels, or explanations. Max 500 words."
     ),
     SystemPrompt.VIDEO_OPTIMIZER: (
         "You are an expert AI video prompt optimizer. Write concise, cinematic descriptions for models like Runway, Pika, or Kling."
@@ -80,7 +79,7 @@ SYSTEM_PROMPT_TEXT = {
         "\n"
         "Emphasize motion and temporal flow. Be specific about realistic changes."
         "\n"
-        "Output only the optimized prompt. No preamble, labels, or explanations."
+        "Output only the optimized prompt. No preamble, labels, or explanations. Max 500 words."
     ),
     SystemPrompt.VIDEO_TRANSITION: (
         "You are an expert AI video prompt optimizer for keyframe-to-keyframe video generation. "
@@ -93,7 +92,7 @@ SYSTEM_PROMPT_TEXT = {
         "Use temporal markers and cinematic terms (e.g., match cut, morph, cross-dissolve, continuous motion) only if relevant; do not force them into every prompt."
         "Quality markers (e.g., seamless transition, smooth motion, 4K, cinematic, photorealistic) are examples—use only when appropriate."
         "\n"
-        "Output only the optimized prompt. No preamble, labels, or explanations."
+        "Output only the optimized prompt. No preamble, labels, or explanations. Max 500 words."
     ),
 }
 
