@@ -1,43 +1,93 @@
-#! C:/Program Files/Nuke14.0/nuke-14.0.3.dll -nx
+set cut_paste_input [stack 0]
 version 14.0 v3
+push $cut_paste_input
 Group {
  name DDImage
- inputs 3
+ selected true
+ xpos 165
+ ypos -60
  addUserKnob {20 Settings}
  addUserKnob {1 node_type +HIDDEN}
  node_type dd_image
  addUserKnob {26 ""}
- addUserKnob {4 model l "Model" M {sd-xl flux-1 flux-2 qwen-image z-image depth-anything-2 sam-2 sam-3 real-esrgan-x4 gpt-image-1 runway-gen4-image flux-1-pro flux-2-pro topazlabs-upscale google-gemini-2 google-gemini-3 bytedance-seedream-4 } t "Select the image generation model."}
- addUserKnob {22 generate l "Generate" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)" t "Start image generation with current settings."}
- addUserKnob {1 task_id l "Task ID" -STARTLINE t "ID of the current image generation task."}
- addUserKnob {22 get_task l "Get Task" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)" t "Fetch the latest image for this task."}
+ addUserKnob {4 model l Model t "Select the image generation model." M {sd-xl flux-1 flux-2 qwen-image z-image depth-anything-2 sam-2 sam-3 real-esrgan-x4 gpt-image-1 runway-gen4-image flux-1-pro flux-2-pro topazlabs-upscale google-gemini-2 google-gemini-3 bytedance-seedream-4}}
+ addUserKnob {22 generate l Generate t "Start image generation with current settings." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)"}
+ addUserKnob {1 task_id l "Task ID" t "ID of the current image generation task." -STARTLINE}
+ addUserKnob {22 get_task l "Get Task" t "Fetch the latest image for this task." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)"}
  addUserKnob {26 ""}
- addUserKnob {43 prompt l "Prompt" t "Describe the image you want to generate."}
+
+ addUserKnob {43 prompt l Prompt t "Describe the image you want to generate."}
  prompt "Detailed, 8k, photorealistic"
-addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.image_prompt_optimizer(node)" t "Optimize the prompt."}
- addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
+ addUserKnob {22 optimize l "🤖 Optimize" t "Optimize the prompt." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.image_prompt_optimizer(node)"}
+ addUserKnob {14 width_height l "Width Height" t "Output image resolution (width, height). Only used if there are no inputs." R 0 100}
  width_height {1280 720}
- addUserKnob {7 strength l "Strength" t "Prompt strength for img2img. 0.0 keeps the image, 1.0 follows the prompt; in between blends their influence."}
+ addUserKnob {7 strength l Strength t "Prompt strength for img2img. 0.0 keeps the image, 1.0 follows the prompt; in between blends their influence."}
  strength 0.5
- addUserKnob {7 seed l "Seed" t "Random seed for reproducibility." R 1 1000}
+ addUserKnob {7 seed l Seed t "Random seed for reproducibility." R 1 1000}
  seed 42
- addUserKnob {20 Paths}
+ addUserKnob {26 ""}
+
+ addUserKnob {20 references_a l "Reference A" n 1}
+ addUserKnob {4 reference_a_mode l mode M {style face depth canny pose} Mode}
+ addUserKnob {7 reference_a_strength l Strength}
+ reference_a_strength 0.5
+ addUserKnob {20 endGroup1 n -1}
+
+ addUserKnob {20 references_b l "Reference B" n 1}
+ addUserKnob {4 reference_b_mode l mode M {style face depth canny pose} Mode}
+ addUserKnob {7 reference_b_strength l Strength}
+ reference_b_strength 0.5
+ addUserKnob {20 endGroup2 n -1}
+
+ addUserKnob {20 references_c l "Reference C" n 1}
+ addUserKnob {4 reference_c_mode l mode M {style face depth canny pose} Mode}
+ addUserKnob {7 reference_c_strength l Strength}
+ reference_c_strength 0.5
+ addUserKnob {20 endGroup3 n -1}
+
+ addUserKnob {20 Misc}
+ addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
+ addUserKnob {22 task_button l "Task Monitor" t "Open the task monitoring page in your browser." -STARTLINE T "import dd_help\ndd_help.open_task()"}
  addUserKnob {41 file l output_read T output_read.file}
  addUserKnob {41 first l "Frame Range" T output_read.first}
  addUserKnob {41 last l "" -STARTLINE T output_read.last}
  addUserKnob {41 on_error l "Missing Frames" T output_read.on_error}
  addUserKnob {41 colorspace l "Input Transform" T output_read.colorspace}
- addUserKnob {20 endGroup n -1}
- addUserKnob {20 HelpTab l "Help"}
- addUserKnob {22 help_button l "Documentation" -STARTLINE T "import dd_help\ndd_help.open_docs()" t "Open the documentation page in your browser."}
- addUserKnob {22 task_button l "Task Monitor" -STARTLINE T "import dd_help\ndd_help.open_task()" t "Open the task monitoring page in your browser."}
- addUserKnob {20 endGroup n -1}
+
 }
  Input {
   inputs 0
   name image
   xpos 70
   ypos -129
+ }
+ Input {
+  inputs 0
+  name mask
+  xpos 290
+  ypos -129
+  number 1
+ }
+ Input {
+  inputs 0
+  name a
+  xpos 510
+  ypos -129
+  number 2
+ }
+ Input {
+  inputs 0
+  name b
+  xpos 510
+  ypos -129
+  number 3
+ }
+ Input {
+  inputs 0
+  name c
+  xpos 510
+  ypos -129
+  number 4
  }
  Read {
   inputs 0
@@ -57,19 +107,5 @@ addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_image\nnode =
   name Output1
   xpos 643
   ypos -94
- }
- Input {
-  inputs 0
-  name mask
-  xpos 290
-  ypos -129
-  number 1
- }
- Input {
-  inputs 0
-  name aux
-  xpos 510
-  ypos -129
-  number 2
  }
 end_group
