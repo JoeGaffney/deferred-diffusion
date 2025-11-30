@@ -244,7 +244,6 @@ def get_references(node) -> list[References]:
 
     for current in ["reference_a", "reference_b", "reference_c"]:
         image = input_to_base64(node, f"{current}")
-        mask = input_to_base64(node, f"{current}_mask")
 
         if image is None:
             continue
@@ -252,7 +251,6 @@ def get_references(node) -> list[References]:
         tmp = References(
             mode=ReferencesMode(params.get(f"{current}_mode", "style")),
             image=image,
-            mask=mask,
             strength=params.get(f"{current}_strength", 0.5),
         )
         result.append(tmp)

@@ -180,14 +180,6 @@ class References(BaseModel):
             "contentMediaType": "image/*",
         },
     )
-    mask: Optional[str] = Field(
-        default=None,
-        description="Optional Base64 image string",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
-    )
 
 
 class ImageRequest(BaseModel):

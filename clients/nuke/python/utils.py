@@ -337,14 +337,10 @@ def get_references(node) -> list[References]:
         if image is None:
             continue
 
-        mask_node = current.input(1)
-        mask = node_to_base64(mask_node, current_frame)
-
         tmp = References(
             mode=ReferencesMode(get_node_value(current, "mode", "style", mode="value")),
             strength=get_node_value(current, "strength", UNSET, return_type=float, mode="value"),
             image=image,
-            mask=mask,
         )
 
         result.append(tmp)
