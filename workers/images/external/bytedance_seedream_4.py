@@ -25,6 +25,7 @@ def main(context: ImageContext) -> Image.Image:
         "aspect_ratio": get_size(context),
         "sequential_image_generation": "disabled",
         "max_images": 1,
+        "enhance_prompt": False,
     }
 
     reference_images = []

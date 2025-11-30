@@ -19,6 +19,7 @@ ModelName: TypeAlias = Literal[
     "gpt-image-1",
     "runway-gen4-image",
     "flux-1-pro",
+    "flux-2-pro",
     "topazlabs-upscale",
     "google-gemini-2",
     "google-gemini-3",
@@ -49,14 +50,14 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         external=False,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        description="Stable Diffusion XL variant with broad adapter/control support.",
+        description="Stable Diffusion XL variant with broad adapter/controlnet support.",
     ),
     "flux-1": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        description="FLUX dev model (Krea tuned). Uses Kontext for img2img, Fill for inpainting.",
+        description="FLUX dev model (Krea tuned). Uses Kontext for image-to-image, Fill for inpainting.",
     ),
     "flux-2": ImagesModelInfo(
         provider="local",
@@ -115,6 +116,13 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         external=True,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         description="FLUX 1.1 Pro variants via external provider.",
+    ),
+    "flux-2-pro": ImagesModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        description="FLUX 2.0 Pro variants via external provider.",
+        references=True,
     ),
     "topazlabs-upscale": ImagesModelInfo(
         provider="replicate",

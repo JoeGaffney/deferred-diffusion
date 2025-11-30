@@ -33,6 +33,7 @@ def main(context: ImageContext) -> Image.Image:
         "gpt-image-1": ("images.external.gpt_image_1", "main"),
         "runway-gen4-image": ("images.external.runway_gen4_image", "main"),
         "flux-1-pro": ("images.external.flux_1_pro", "main"),
+        "flux-2-pro": ("images.external.flux_2_pro", "main"),
         "topazlabs-upscale": ("images.external.topazlabs_upscale", "main"),
         "google-gemini-2": ("images.external.google_gemini_2", "main"),
         "google-gemini-3": ("images.external.google_gemini_3", "main"),

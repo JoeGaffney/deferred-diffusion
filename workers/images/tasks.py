@@ -134,6 +134,15 @@ def flux_1_pro(request_dict):
     return process_result(context, result)
 
 
+@typed_task(name="flux-2-pro", queue="cpu")
+def flux_2_pro(request_dict):
+    from images.external.flux_2_pro import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
 @typed_task(name="topazlabs-upscale", queue="cpu")
 def topazlabs_upscale(request_dict):
     from images.external.topazlabs_upscale import main
