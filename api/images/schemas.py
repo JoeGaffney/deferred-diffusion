@@ -171,7 +171,7 @@ def generate_model_docs():
 
 
 class References(BaseModel):
-    mode: Literal["style", "style-plus", "face", "depth", "canny", "pose"]
+    mode: Literal["style", "face", "depth", "canny", "pose"]
     strength: float = 0.5
     image: str = Field(
         description="Base64 image string",

@@ -19,7 +19,6 @@ from tests.images.helpers import (
 models: List[ModelName] = ["flux-2"]
 
 
-@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_text_to_image(model):
     text_to_image(model)

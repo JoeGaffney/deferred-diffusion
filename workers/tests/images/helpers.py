@@ -167,7 +167,7 @@ def references_canny(model: ModelName):
         ImageContext(
             ImageRequest(
                 model=model,
-                prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
+                prompt="A close up of an eye, Detailed, 8k, DSLR photo, photorealistic",
                 strength=0.5,
                 width=1152,
                 height=768,
@@ -193,7 +193,7 @@ def references_depth(model: ModelName):
         ImageContext(
             ImageRequest(
                 model=model,
-                prompt="Two people hiking in a mountainous landscape, vibrant colors, high detail, 8k resolution",
+                prompt="Two people hiking in a mountainous landscape, photorealistic high detail, 8k resolution, use the depth image for placement.",
                 strength=0.5,
                 width=width,
                 height=height,
@@ -219,7 +219,7 @@ def references_style(model: ModelName):
         ImageContext(
             ImageRequest(
                 model=model,
-                prompt="a cat, masterpiece, best quality, high quality",
+                prompt="a cat walking, photorealistic, best quality, high quality",
                 strength=0.75,
                 width=width,
                 height=height,

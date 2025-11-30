@@ -88,7 +88,6 @@ def text_to_image_call(context: ImageContext):
 
     if context.adapters.is_enabled():
         args["ip_adapter_image"] = context.adapters.get_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.adapters.get_masks()}
         pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
     processed_image = pipe.__call__(**args).images[0]
@@ -126,7 +125,6 @@ def image_to_image_call(context: ImageContext):
 
     if context.adapters.is_enabled():
         args["ip_adapter_image"] = context.adapters.get_images()
-        args["cross_attention_kwargs"] = {"ip_adapter_masks": context.adapters.get_masks()}
         pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
     processed_image = pipe.__call__(**args).images[0]

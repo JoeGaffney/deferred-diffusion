@@ -1,6 +1,5 @@
 from typing import Dict, Literal, Tuple
 
-from diffusers.image_processor import IPAdapterMaskProcessor
 from PIL import Image
 from pydantic import BaseModel, Field
 
@@ -8,8 +7,6 @@ from common.exceptions import IPAdapterConfigError
 from common.logger import logger
 from images.schemas import ModelName, References
 from utils.utils import load_image_if_exists
-
-processor = IPAdapterMaskProcessor()
 
 
 class AdapterPipelineConfig(BaseModel):
@@ -65,13 +62,6 @@ IP_ADAPTER_MODEL_CONFIG: Dict[ModelName, Dict[str, IpAdapterModelConfig]] = {
             image_encoder=True,
             image_encoder_subfolder="models/image_encoder",
         ),
-        "style-plus": IpAdapterModelConfig(
-            model="h94/IP-Adapter",
-            subfolder="sdxl_models",
-            weight_name="ip-adapter-plus_sdxl_vit-h.bin",
-            image_encoder=True,
-            image_encoder_subfolder="models/image_encoder",
-        ),
         "face": IpAdapterModelConfig(
             model="h94/IP-Adapter",
             subfolder="sdxl_models",
@@ -122,18 +112,8 @@ class IpAdapter:
         if not self.image:
             raise IPAdapterConfigError(f"Could not load IP-Adapter image from {data.image}")
 
-        # we allways need a full mask if some use a mask
-        self.mask_image = Image.new("L", (width, height), 255)  # Create 512x512 white image in L mode
-        tmp_mask_image = load_image_if_exists(data.mask)
-        if tmp_mask_image:
-            self.mask_image = tmp_mask_image.resize([width, height])
-            self.mask_image = self.mask_image.convert("L")
-
     def get_scale_layers(self):
         return self.scale
-
-    def get_mask(self):
-        return processor.preprocess(self.mask_image)
 
 
 class Adapters:
@@ -158,9 +138,6 @@ class Adapters:
 
     def get_scales_and_layers(self):
         return [adapter.get_scale_layers() for adapter in self.adapters]
-
-    def get_masks(self):
-        return [adapter.get_mask() for adapter in self.adapters]
 
     def get_images(self):
         return [adapter.image for adapter in self.adapters]
