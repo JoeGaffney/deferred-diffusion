@@ -18,7 +18,11 @@ Group {
 
  addUserKnob {43 prompt l Prompt t "Describe the image you want to generate."}
  prompt "Detailed, 8k, photorealistic"
+ addUserKnob {4 text_model l "Text Model" t "Select the text generation model for optimize." M {qwen-2 gpt-4o gpt-4 gpt-5}}
+ text_model gpt-5
  addUserKnob {22 optimize l "🤖 Optimize" t "Optimize the prompt." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.image_prompt_optimizer(node)"}
+ addUserKnob {26 ""}
+
  addUserKnob {14 width_height l "Width Height" t "Output image resolution (width, height). Only used if there are no inputs." R 0 100}
  width_height {1280 720}
  addUserKnob {7 strength l Strength t "Prompt strength for img2img. 0.0 keeps the image, 1.0 follows the prompt; in between blends their influence."}
@@ -32,13 +36,11 @@ Group {
  addUserKnob {7 reference_a_strength l Strength}
  reference_a_strength 0.5
  addUserKnob {20 endGroup1 n -1}
-
  addUserKnob {20 references_b l "Reference B" n 1}
  addUserKnob {4 reference_b_mode l mode M {style face depth canny pose} Mode}
  addUserKnob {7 reference_b_strength l Strength}
  reference_b_strength 0.5
  addUserKnob {20 endGroup2 n -1}
-
  addUserKnob {20 references_c l "Reference C" n 1}
  addUserKnob {4 reference_c_mode l mode M {style face depth canny pose} Mode}
  addUserKnob {7 reference_c_strength l Strength}

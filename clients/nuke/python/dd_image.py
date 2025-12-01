@@ -143,7 +143,7 @@ def get_image(node):
 
 def image_prompt_optimizer(node):
     current_frame = nuke.frame()
-    model = get_node_value(node, "model", "sd-xl", mode="value")
+    text_model = get_node_value(node, "text_model", "gpt-5", mode="value")
     prompt = get_node_value(node, "prompt", "", mode="get")
     image_node = node.input(0)
     image = node_to_base64(image_node, current_frame)
@@ -152,4 +152,4 @@ def image_prompt_optimizer(node):
     if image:
         images.append(image)
 
-    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images)
+    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images, model=text_model)

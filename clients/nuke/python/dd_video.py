@@ -149,7 +149,7 @@ def get_video(node):
 
 def video_prompt_optimizer(node):
     current_frame = nuke.frame()
-    model = get_node_value(node, "model", "wan-2", mode="value")
+    text_model = get_node_value(node, "text_model", "gpt-5", mode="value")
     prompt = get_node_value(node, "prompt", "", mode="get")
     image_node = node.input(0)
     last_image_node = node.input(1)
@@ -165,4 +165,4 @@ def video_prompt_optimizer(node):
         system_prompt = SystemPrompt.VIDEO_TRANSITION
         images.append(last_image)
 
-    prompt_optimizer(node, prompt, system_prompt, images)
+    prompt_optimizer(node, prompt, system_prompt, images, model=text_model)

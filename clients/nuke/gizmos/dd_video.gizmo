@@ -12,9 +12,13 @@ Group {
  addUserKnob {1 task_id l "Task ID" t "ID of the current video generation task." -STARTLINE}
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest video for this task." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.get_video(node)"}
  addUserKnob {26 ""}
- addUserKnob {43 prompt l Prompt t "Describe the video you want to generate."}
+
+ addUserKnob {43 prompt l "Prompt" t "Describe the video you want to generate."}
  prompt "Detailed, cinematic, high quality"
-addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.video_prompt_optimizer(node)" t "Optimize the prompt."}
+ addUserKnob {4 text_model l "Text Model" t "Select the text generation model for optimize." M {qwen-2 gpt-4o gpt-4 gpt-5}}
+ text_model gpt-5
+ addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.video_prompt_optimizer(node)" t "Optimize the prompt."}
+ addUserKnob {26 ""}
 
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
  width_height {1280 720}
@@ -23,6 +27,7 @@ addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_video\nnode =
  addUserKnob {7 seed l Seed t "Random seed for reproducibility." R 1 1000}
  seed 42
  addUserKnob {26 ""}
+
  addUserKnob {20 Misc}
  addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
  addUserKnob {22 task_button l "Task Monitor" t "Open the task monitoring page in your browser." -STARTLINE T "import dd_help\ndd_help.open_task()"}

@@ -39,15 +39,17 @@ SYSTEM_PROMPT_TEXT = {
         "Describe: subject, setting, style, lighting, composition. "
         "Be specific and concise. Default to photorealism unless requested otherwise. "
         "Use any reference images provided to inform the prompt. But you don't need to describe the images again. "
+        "If only one reference image is provided, use it as the basis for the prompt. Likely the user wants a variation or edit operation of that image."
         "Keep it brief and concrete. No filler words or quality descriptors unless essential. "
     ),
     SystemPrompt.VIDEO_OPTIMIZER: (
         "Optimize & enhance the user's prompt for video generation. "
         "Describe: action, camera movement, environment, subject details. "
         "Be specific about motion and changes. Default to photorealism unless requested otherwise. "
+        "If a reference image is provided use is as the starting point and frame for the video. "
         "Use any reference images provided to inform the prompt. But you don't need to describe the images again. "
         "Keep it brief and concrete. No filler words or quality descriptors unless essential. "
-        "Don't put time markers just describe the video as a whole. "
+        "Don't put time markers just describe the video as a whole it is only one shot. "
     ),
     SystemPrompt.VIDEO_TRANSITION: (
         "Optimize & enhance the user's prompt for video start frame end frame video generation. "

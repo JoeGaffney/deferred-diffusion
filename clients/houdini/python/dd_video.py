@@ -97,15 +97,7 @@ def process_video(node):
         output_video_path = get_output_path(node, movie=True)
         image = input_to_base64(node, "src")
         last_image = input_to_base64(node, "last_image")
-
-        # NOTE park video for now
-        # video = params.get("video", UNSET)
-        # video_base64 = UNSET
-        # if video and video != UNSET and video != "":
-        #     # Check if the video file exists
-        #     if not os.path.exists(video):
-        #         raise ValueError(f"Video file does not exist: {video}")
-        #     video_base64 = input_to_base64(video)
+        video = input_to_base64_video(node, "video", num_frames=params.get("num_frames", 24))
 
         body = VideoRequest(
             model=VideoRequestModel(params.get("model", UNSET)),
@@ -116,6 +108,7 @@ def process_video(node):
             num_frames=params.get("num_frames", UNSET),
             width=params.get("width", UNSET),
             height=params.get("height", UNSET),
+            video=video,
         )
 
         _api_call(node, body, output_video_path)
@@ -133,7 +126,7 @@ def get_video(node):
 
 def video_prompt_optimizer(node):
     params = get_node_parameters(node)
-    model = params.get("model", "sd-xl")
+    text_model = params.get("text_model", "gpt-5")
     prompt = params.get("prompt", "")
     image = input_to_base64(node, "src")
     last_image = input_to_base64(node, "last_image")
@@ -147,4 +140,4 @@ def video_prompt_optimizer(node):
         system_prompt = SystemPrompt.VIDEO_TRANSITION
         images.append(last_image)
 
-    prompt_optimizer(node, prompt, system_prompt, images)
+    prompt_optimizer(node, prompt, system_prompt, images, model=text_model)

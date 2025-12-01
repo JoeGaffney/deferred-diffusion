@@ -43,7 +43,6 @@ def _api_get_call(node, id, output_path: str, expanded_path: str, iterations=100
                 break
 
             if parsed.status in COMPLETED_STATUS:
-                print("Found completed status, breaking loop", parsed.status)
                 break
 
             def progress_update(parsed=parsed, count=count):
@@ -101,7 +100,7 @@ def process_image(node):
         mask = input_to_base64(node, "mask")
 
         body = ImageRequest(
-            model=ImageRequestModel(params.get("model", "sdxl")),
+            model=ImageRequestModel(params.get("model", "sd-xl")),
             image=image,
             mask=mask,
             height=params.get("height", UNSET),
@@ -129,7 +128,7 @@ def get_image(node):
 
 def image_prompt_optimizer(node):
     params = get_node_parameters(node)
-    model = params.get("model", "sd-xl")
+    text_model = params.get("text_model", "gpt-5")
     prompt = params.get("prompt", "")
     image = input_to_base64(node, "src")
 
@@ -137,4 +136,4 @@ def image_prompt_optimizer(node):
     if image:
         images.append(image)
 
-    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images)
+    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images, model=text_model)

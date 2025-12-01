@@ -208,10 +208,56 @@ def input_to_base64(node, input_name):
     # Convert the saved file to base64
     result = image_to_base64(temp_path)
 
-    # NOTE: keep the file for debugging
     # Clean up
     rop.destroy()
-    # os.remove(temp_path)
+    return result
+
+
+def input_to_base64_video(node, input_name, num_frames=24):
+    """Converts the video from a specified input of the node to a Base64-encoded string."""
+    cop_node = None
+    for i in node.inputConnections():
+        if i.outputLabel() == input_name:
+            cop_node = i.inputNode()
+            break
+
+    if cop_node is None:
+        return None
+
+    def find_top_copnet():
+        node = hou.pwd()
+        while node and node.type().name() != "copnet":
+            node = node.parent()
+        return node
+
+    # Cook the COP node
+    try:
+        cop_node.cook(force=True)
+    except Exception as e:
+        print(f"Failed to cook COP node: {cop_node.name()} {e}")
+        return None
+
+    # Get current frame
+    current_frame = int(hou.frame())
+    end_frame = current_frame + num_frames - 1
+
+    # Create a temporary ROP to write the video
+    tmp_name = f"tmp_{node.name()}_{input_name}_{cop_node.name()}"
+    temp_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), prefix=tmp_name, suffix=".mp4", delete=False).name
+    rop = find_top_copnet().createNode("rop_comp", tmp_name)
+
+    rop.parm("coppath").set(cop_node.path())
+    rop.parm("copoutput").set(temp_path)
+    rop.parm("trange").set(1)  # Frame range
+    rop.parm("f1").set(current_frame)
+    rop.parm("f2").set(end_frame)
+    rop.parm("execute").pressButton()
+
+    # Convert the saved file to base64
+    result = image_to_base64(temp_path)
+
+    # Clean up
+    rop.destroy()
     return result
 
 
