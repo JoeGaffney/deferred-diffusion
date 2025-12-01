@@ -119,59 +119,6 @@ def get_output_path(node, movie=False) -> str:
     return output_image_path
 
 
-def get_all_parent_nodes(node, stop_at_types: List, visited=None) -> list:
-    """Recursively get all upstream/parent nodes of the given node"""
-    if visited is None:
-        visited = set()
-
-    if node is None or node in visited:
-        return []
-
-    visited.add(node)
-    parent_nodes = []
-
-    # Check all inputs
-    for i in range(node.inputs()):
-        input_node = node.input(i)
-        if input_node is not None:
-            # Check if this node should stop recursion using node_type knob
-            should_stop = False
-            if input_node.Class() == "Group":
-                node_type_knob = input_node.knob("node_type")
-                if node_type_knob and node_type_knob.value() in stop_at_types:
-                    should_stop = True
-
-            if should_stop:
-                continue
-
-            parent_nodes.append(input_node)
-
-            # Recursively get the parents of this input
-            parent_nodes.extend(get_all_parent_nodes(input_node, stop_at_types, visited))
-
-    return parent_nodes
-
-
-# pylint: disable=dangerous-default-value
-def find_nodes_of_type(node, target_class_type: str, stop_at_types=[NODE_IMAGE]) -> list:
-    """Find all nodes of a specific type in the current node and its parents."""
-    if node is None:
-        return []
-
-    matching_nodes = []
-    all_nodes = [node] + get_all_parent_nodes(node, stop_at_types, visited=None)
-
-    # Filter only the nodes of the desired type
-    for current in all_nodes:
-        if current.Class() == "Group":
-            # Check for custom node_type knob
-            node_type_knob = current.knob("node_type")
-            if node_type_knob and node_type_knob.value() == target_class_type:
-                matching_nodes.append(current)
-
-    return matching_nodes
-
-
 def set_node_value(node, knob_name: str, value):
     """Set the value of a knob on a node."""
     knob = node.knob(knob_name)
@@ -322,27 +269,63 @@ def node_to_base64(input_node, current_frame):
     return result
 
 
-def get_references(node) -> list[References]:
+def node_to_base64_video(input_node, current_frame, num_frames=24):
+    """Convert a Nuke node's output directly to base64 H.264 video"""
+    if not input_node:
+        return None
+
+    tmp_dir = get_tmp_dir()
+
+    # Create a temporary Write node for video
+    temp_write = nuke.nodes.Write(name="temp_write_to_base64_video")
+    temp_write.setInput(0, input_node)
+    temp_write["file_type"].setValue("mov")
+    temp_write["mov64_codec"].setValue("h264")
+
+    temp_path = tempfile.NamedTemporaryFile(dir=tmp_dir, suffix=".mp4", delete=False).name
+    temp_path = temp_path.replace("\\", "/")
+    temp_write["file"].setValue(temp_path)
+    nuke.tprint(f"Temporary video path: {temp_path} - {temp_write.name()}")
+
+    try:
+        # Calculate frame range
+        start_frame = current_frame
+        end_frame = current_frame + num_frames - 1
+
+        nuke.execute(temp_write.name(), start_frame, end_frame)
+        nuke.tprint(f"Temporary video saved to: {temp_path}")
+
+        result = image_to_base64(temp_path)
+    except Exception as e:
+        nuke.tprint(f"Error converting node {input_node.name()} to base64 video: {str(e)}")
+        result = None
+
+    # Clean up
+    nuke.delete(temp_write)
+    return result
+
+
+def get_references(node, start_index=2) -> list[References]:
     if node is None:
         return []
 
     current_frame = nuke.frame()
-    valid_inputs = find_nodes_of_type(node, "dd_reference")
-
     result = []
-    for current in valid_inputs:
 
-        image_node = current.input(0)
+    # starts at 2 because 0 is main image, 1 is mask
+    index = start_index
+    for current in ["reference_a", "reference_b", "reference_c"]:
+        image_node = node.input(index)
+        index += 1
         image = node_to_base64(image_node, current_frame)
         if image is None:
             continue
 
         tmp = References(
-            mode=ReferencesMode(get_node_value(current, "mode", "style", mode="value")),
-            strength=get_node_value(current, "strength", UNSET, return_type=float, mode="value"),
+            mode=ReferencesMode(get_node_value(node, f"{current}_mode", "style", mode="value")),
+            strength=get_node_value(node, f"{current}_strength", UNSET, return_type=float, mode="value"),
             image=image,
         )
-
         result.append(tmp)
 
     return result

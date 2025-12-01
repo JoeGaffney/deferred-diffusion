@@ -23,6 +23,7 @@ from utils import (
     get_output_path,
     image_to_base64,
     node_to_base64,
+    node_to_base64_video,
     nuke_error_handling,
     polling_message,
     set_node_info,
@@ -109,27 +110,21 @@ def process_video(node):
         if not output_video_path:
             raise ValueError("Output video path is required.")
 
+        num_frames = get_node_value(node, "num_frames", 24, return_type=int, mode="value")
+        width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
+
         image_node = node.input(0)
         last_image_node = node.input(1)
+        video_node = node.input(2)
         image = node_to_base64(image_node, current_frame)
         last_image = node_to_base64(last_image_node, current_frame)
-
-        # video input we extract from a file path parameter at the moment
-        video = get_node_value(node, "video", UNSET, mode="get")
-        video_base64 = UNSET
-        if video and video != UNSET and video != "":
-            # Check if the video file exists
-            if not os.path.exists(video):
-                raise ValueError(f"Video file does not exist: {video}")
-            video_base64 = image_to_base64(video)
-
-        width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
+        video = node_to_base64_video(video_node, current_frame, num_frames=num_frames)
 
         body = VideoRequest(
             model=VideoRequestModel(get_node_value(node, "model", UNSET, mode="value")),
             image=image,
             last_image=last_image,
-            video=video_base64,
+            video=video,
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
             num_frames=get_node_value(node, "num_frames", UNSET, return_type=int, mode="value"),
             seed=get_node_value(node, "seed", UNSET, return_type=int, mode="value"),
