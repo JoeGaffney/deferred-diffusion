@@ -3,7 +3,7 @@ import time
 import hou
 from httpx import RemoteProtocolError
 
-from config import MAX_ADDITIONAL_IMAGES, client
+from config import client
 from generated.api_client.api.texts import texts_create, texts_get
 from generated.api_client.models import (
     SystemPrompt,
@@ -26,7 +26,7 @@ from utils import (
 
 
 @threaded
-def _api_get_call(node, id, iterations=1, sleep_time=5, set_value="response"):
+def _api_get_call(node, id, iterations=100, sleep_time=5, set_value="response"):
     set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
@@ -87,7 +87,7 @@ def process_text(node):
     with houdini_error_handling(node):
         params = get_node_parameters(node)
         images = []
-        for current_image in range(MAX_ADDITIONAL_IMAGES):
+        for current_image in ["a", "b"]:
             image = input_to_base64(node, f"image_{current_image}")
             if image:
                 images.append(image)

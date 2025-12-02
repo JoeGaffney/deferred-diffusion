@@ -7,7 +7,7 @@ Group {
  node_type dd_text
  addUserKnob {26 ""}
  addUserKnob {4 model l Model t "Select the text generation model." M {qwen-2 gpt-4o gpt-4 gpt-5}}
- model gpt-4
+ model gpt-5
  addUserKnob {22 generate l "Generate" -STARTLINE T "import dd_text\nnode = nuke.thisNode()\ndd_text.process_text(node)" t "Start text generation with current settings."}
  addUserKnob {1 task_id l "Task ID" -STARTLINE t "ID of the current text generation task."}
  task_id e855044f-787e-4d80-bcfb-9d7f9e76a943
@@ -16,7 +16,7 @@ Group {
  addUserKnob {43 prompt l Prompt t "Describe what you want the model to generate." -STARTLINE}
  prompt "Make me a prompt suitable for stable diffusion image generation - be creative please."
  addUserKnob {43 response l Response t "Generated response from the model."}
- addUserKnob {20 HelpTab l Help}
+ addUserKnob {20 Misc l}
  addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
  addUserKnob {22 task_button l "Task Monitor" t "Open the task monitoring page in your browser." -STARTLINE T "import dd_help\ndd_help.open_task()"}
 }

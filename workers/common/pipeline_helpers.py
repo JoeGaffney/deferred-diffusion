@@ -188,7 +188,7 @@ def get_quantized_model(
     subfolder,
     model_class,
     target_precision: Literal[4, 8, 16] = 8,
-    torch_dtype=torch.float16,
+    torch_dtype=torch.bfloat16,
     device="",
 ):
     """

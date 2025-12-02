@@ -7,24 +7,30 @@ Group {
  addUserKnob {1 node_type +HIDDEN}
  node_type dd_video
  addUserKnob {26 ""}
- addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2 runway-gen-4 runway-act-two runway-upscale bytedance-seedance-1 kwaivgi-kling-2 google-veo-3 openai-sora-2 minimax-hailuo-2}}
+ addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2 runway-gen-4 runway-upscale bytedance-seedance-1 kwaivgi-kling-2 google-veo-3 openai-sora-2 minimax-hailuo-2}}
  addUserKnob {22 generate l Generate t "Start video generation with current settings." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.process_video(node)"}
  addUserKnob {1 task_id l "Task ID" t "ID of the current video generation task." -STARTLINE}
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest video for this task." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.get_video(node)"}
  addUserKnob {26 ""}
- addUserKnob {43 prompt l Prompt t "Describe the video you want to generate."}
+
+ addUserKnob {43 prompt l "Prompt" t "Describe the video you want to generate."}
  prompt "Detailed, cinematic, high quality"
-addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.video_prompt_optimizer(node)" t "Optimize the prompt."}
+ addUserKnob {4 text_model l "Text Model" t "Select the text generation model for optimize." M {qwen-2 gpt-4o gpt-4 gpt-5}}
+ text_model gpt-5
+ addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.video_prompt_optimizer(node)" t "Optimize the prompt."}
+ addUserKnob {26 ""}
 
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
- width_height {1280 720}
- addUserKnob {2 video l "Video (Input)" t "Must be mp4 under 16mb"}
+ width_height {854 480}
  addUserKnob {7 num_frames l Frames t "Number of frames to generate." R 1 200}
  num_frames 48
  addUserKnob {7 seed l Seed t "Random seed for reproducibility." R 1 1000}
  seed 42
  addUserKnob {26 ""}
- addUserKnob {20 Paths}
+
+ addUserKnob {20 Misc}
+ addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
+ addUserKnob {22 task_button l "Task Monitor" t "Open the task monitoring page in your browser." -STARTLINE T "import dd_help\ndd_help.open_task()"}
  addUserKnob {41 file l output_read T output_read.file}
  addUserKnob {41 first l "Frame Range" T output_read.first}
  addUserKnob {41 last l "" -STARTLINE T output_read.last}
@@ -32,9 +38,6 @@ addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_video\nnode =
  addUserKnob {41 on_error l "Missing Frames" T output_read.on_error}
  addUserKnob {41 colorspace l "Input Transform" T output_read.colorspace}
  addUserKnob {20 endGroup n -1}
- addUserKnob {20 HelpTab l Help}
- addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
- addUserKnob {22 task_button l "Task Monitor" t "Open the task monitoring page in your browser." -STARTLINE T "import dd_help\ndd_help.open_task()"}
 }
  Input {
   inputs 0
@@ -48,6 +51,13 @@ addUserKnob {22 optimize l "🤖 Optimize" -STARTLINE T "import dd_video\nnode =
   xpos 290
   ypos -129
   number 1
+ }
+  Input {
+  inputs 0
+  name video
+  xpos 290
+  ypos -129
+  number 2
  }
  Read {
   inputs 0

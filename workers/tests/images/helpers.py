@@ -25,6 +25,7 @@ def main(context: ImageContext) -> Image.Image:
         "flux-1": ("images.local.flux_1", "main"),
         "flux-2": ("images.local.flux_2", "main"),
         "qwen-image": ("images.local.qwen_image", "main"),
+        "z-image": ("images.local.z_image", "main"),
         "depth-anything-2": ("images.local.depth_anything_2", "main"),
         "sam-2": ("images.local.sam_2", "main"),
         "sam-3": ("images.local.sam_3", "main"),
@@ -32,6 +33,7 @@ def main(context: ImageContext) -> Image.Image:
         "gpt-image-1": ("images.external.gpt_image_1", "main"),
         "runway-gen4-image": ("images.external.runway_gen4_image", "main"),
         "flux-1-pro": ("images.external.flux_1_pro", "main"),
+        "flux-2-pro": ("images.external.flux_2_pro", "main"),
         "topazlabs-upscale": ("images.external.topazlabs_upscale", "main"),
         "google-gemini-2": ("images.external.google_gemini_2", "main"),
         "google-gemini-3": ("images.external.google_gemini_3", "main"),
@@ -165,7 +167,7 @@ def references_canny(model: ModelName):
         ImageContext(
             ImageRequest(
                 model=model,
-                prompt="Detailed, 8k, DSLR photo, photorealistic, eye",
+                prompt="A close up of an eye, Detailed, 8k, DSLR photo, photorealistic",
                 strength=0.5,
                 width=1152,
                 height=768,
@@ -191,7 +193,7 @@ def references_depth(model: ModelName):
         ImageContext(
             ImageRequest(
                 model=model,
-                prompt="Two people hiking in a mountainous landscape, vibrant colors, high detail, 8k resolution",
+                prompt="Two people hiking in a mountainous landscape, photorealistic high detail, 8k resolution, use the depth image for placement.",
                 strength=0.5,
                 width=width,
                 height=height,
@@ -217,7 +219,7 @@ def references_style(model: ModelName):
         ImageContext(
             ImageRequest(
                 model=model,
-                prompt="a cat, masterpiece, best quality, high quality",
+                prompt="a cat walking, photorealistic, best quality, high quality",
                 strength=0.75,
                 width=width,
                 height=height,

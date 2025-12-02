@@ -3,14 +3,13 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
-from common.schemas import TaskStatus
+from common.schemas import Provider, TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
     "ltx-video",
     "wan-2",
     "runway-gen-4",
-    "runway-act-two",
     "runway-upscale",
     "bytedance-seedance-1",
     "kwaivgi-kling-2",
@@ -19,14 +18,14 @@ ModelName: TypeAlias = Literal[
     "minimax-hailuo-2",
 ]
 
-InferredMode: TypeAlias = Literal["text-to-video", "image-to-video", "video-to-video", "first-last-image"]
-Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
+InferredMode: TypeAlias = Literal["text-to-video", "image-to-video", "video-to-video"]
 
 
 class VideosModelInfo(BaseModel):
     provider: Provider = Field(description="Source/provider identifier")
     external: bool = Field(description="True if the model is invoked via an external API")
     supported_modes: set[InferredMode] = Field(default_factory=set)
+    last_image: bool = False  # separate capability flag
     description: Optional[str] = None
 
     @property
@@ -42,13 +41,15 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
     "ltx-video": VideosModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text-to-video", "image-to-video", "first-last-image", "video-to-video"},
+        supported_modes={"text-to-video", "image-to-video", "video-to-video"},
+        last_image=True,
         description="Fast but more limited video generation model. Good for quick iterations and less complex scenes.",
     ),
     "wan-2": VideosModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text-to-video", "image-to-video", "first-last-image", "video-to-video"},
+        supported_modes={"text-to-video", "image-to-video", "video-to-video"},
+        last_image=True,
         description="Wan 2.2, quality open-source video generation model. Will fall back to Wan VACE 2.1 for video-to-video.",
     ),
     "runway-gen-4": VideosModelInfo(
@@ -56,12 +57,6 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=True,
         supported_modes={"image-to-video", "video-to-video"},
         description="Runway Gen-4 family. Uses standard Gen-4 for image-to-video and Aleph variant for video-to-video.",
-    ),
-    "runway-act-two": VideosModelInfo(
-        provider="runway",
-        external=True,
-        supported_modes={"video-to-video"},
-        description="Matches animation from a reference video to a character reference image.",
     ),
     "runway-upscale": VideosModelInfo(
         provider="replicate",
@@ -72,19 +67,22 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
     "bytedance-seedance-1": VideosModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        supported_modes={"text-to-video", "image-to-video"},
+        last_image=True,
         description="Seedance-1 flagship model. Great all rounder.",
     ),
     "kwaivgi-kling-2": VideosModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        supported_modes={"text-to-video", "image-to-video"},
+        last_image=True,
         description="Kling 2.5 flagship model. Great at first-last frame coherence.",
     ),
     "google-veo-3": VideosModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-video", "image-to-video", "first-last-image"},
+        supported_modes={"text-to-video", "image-to-video"},
+        last_image=True,
         description="VEO-3.1 flagship model. Expensive.",
     ),
     "openai-sora-2": VideosModelInfo(
@@ -106,14 +104,15 @@ def generate_model_docs():
     header = (
         "# Video Models\n"
         "External models proxy to provider APIs; local models run on your GPU.\n\n"
-        "| Model | Provider | External | Queue | Modes | Description |\n"
-        "|-------|----------|:--------:|:-----:|-------|-------------|\n"
+        "| Model | Provider | External | Queue | Modes | Last Image | Description |\n"
+        "|-------|----------|:--------:|:-----:|-------|:----------:|-------------|\n"
     )
     rows = []
     for name, meta in MODEL_META.items():
         modes = ", ".join(sorted(meta.supported_modes))
+        last_img = "Yes" if meta.last_image else "No"
         rows.append(
-            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | {modes} | {meta.description or ''} |"
+            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | {modes} | {last_img} | {meta.description or ''} |"
         )
     return header + "\n".join(rows) + "\n"
 
@@ -163,8 +162,6 @@ class VideoRequest(BaseModel):
     def inferred_mode(self) -> InferredMode:
         if self.video:
             return "video-to-video"
-        if self.image and self.last_image:
-            return "first-last-image"
         if self.image:
             return "image-to-video"
         return "text-to-video"
@@ -196,6 +193,8 @@ class VideoRequest(BaseModel):
             raise ValueError(f"Model '{self.model}' does not support mode '{mode}'.")
         if self.last_image and not self.image:
             raise ValueError("last_image requires image.")
+        if self.last_image and not self.meta.last_image:
+            raise ValueError(f"Model '{self.model}' does not support last_image capability.")
         return self
 
 

@@ -62,7 +62,6 @@ class ImageContext:
 
         return result
 
-    # NOTE could be moved to utils
     def save_image(self, image):
         # Create a temporary file with .png extension
         with tempfile.NamedTemporaryFile(dir=get_tmp_dir(self.model), suffix=".png", delete=False) as tmp_file:

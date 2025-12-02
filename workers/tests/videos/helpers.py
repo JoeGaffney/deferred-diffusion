@@ -19,7 +19,6 @@ def main(context: VideoContext):
         "ltx-video": ("videos.local.ltx_video", "main"),
         "wan-2": ("videos.local.wan_2", "main"),
         "runway-gen-4": ("videos.external.runway_gen_4", "main"),
-        "runway-act-two": ("videos.external.runway_act_two", "main"),
         "runway-upscale": ("videos.external.runway_upscale", "main"),
         "bytedance-seedance-1": ("videos.external.bytedance_seedance_1", "main"),
         "kwaivgi-kling-2": ("videos.external.kwaivgi_kling_2", "main"),

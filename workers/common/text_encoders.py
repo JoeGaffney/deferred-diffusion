@@ -44,10 +44,12 @@ def get_umt5_text_encoder() -> UMT5EncoderModel:
 
 def get_mistral3_text_encoder() -> Mistral3ForConditionalGeneration:
     return get_quantized_model(
-        model_id="black-forest-labs/FLUX.2-dev",
+        # NOTE just used the one allready in 4bit for now
+        # model_id="black-forest-labs/FLUX.2-dev",
+        model_id="diffusers/FLUX.2-dev-bnb-4bit",
         subfolder="text_encoder",
         model_class=Mistral3ForConditionalGeneration,
-        target_precision=8,
+        target_precision=16,
         torch_dtype=torch.bfloat16,
         device="cpu",
     )

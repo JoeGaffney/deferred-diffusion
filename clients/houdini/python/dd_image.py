@@ -17,7 +17,7 @@ from generated.api_client.models import (
 from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
-    base64_to_image,
+    base64_to_file,
     get_node_parameters,
     get_output_path,
     get_references,
@@ -43,7 +43,6 @@ def _api_get_call(node, id, output_path: str, expanded_path: str, iterations=100
                 break
 
             if parsed.status in COMPLETED_STATUS:
-                print("Found completed status, breaking loop", parsed.status)
                 break
 
             def progress_update(parsed=parsed, count=count):
@@ -70,7 +69,7 @@ def _api_get_call(node, id, output_path: str, expanded_path: str, iterations=100
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
             # Save the image to the specified path before reloading the outputs
-            base64_to_image(parsed.result.base64_data, expanded_path, save_copy=True)
+            base64_to_file(parsed.result.base64_data, expanded_path, save_copy=True)
 
             node.parm("output_image_path").set(output_path)
             reload_outputs(node, "output_read")
@@ -97,11 +96,11 @@ def process_image(node):
     with houdini_error_handling(node):
         params = get_node_parameters(node)
         output_image_path = get_output_path(node, movie=False)
-        image = input_to_base64(node, "src")
+        image = input_to_base64(node, "image")
         mask = input_to_base64(node, "mask")
 
         body = ImageRequest(
-            model=ImageRequestModel(params.get("model", "sdxl")),
+            model=ImageRequestModel(params.get("model", "sd-xl")),
             image=image,
             mask=mask,
             height=params.get("height", UNSET),
@@ -129,12 +128,17 @@ def get_image(node):
 
 def image_prompt_optimizer(node):
     params = get_node_parameters(node)
-    model = params.get("model", "sd-xl")
+    text_model = params.get("text_model", "gpt-5")
     prompt = params.get("prompt", "")
-    image = input_to_base64(node, "src")
+    image = input_to_base64(node, "image")
 
     images = []
     if image:
         images.append(image)
 
-    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images)
+    references = get_references(node)
+    for ref in references:
+        if ref.image:
+            images.append(ref.image)
+
+    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images, model=text_model)

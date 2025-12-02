@@ -51,15 +51,6 @@ def runway_gen_4(request_dict):
     return process_result(context, result)
 
 
-@typed_task(name="runway-act-two", queue="cpu")
-def runway_act_two(request_dict):
-    from videos.external.runway_act_two import main
-
-    context = validate_request_and_context(request_dict)
-    result = main(context)
-    return process_result(context, result)
-
-
 @typed_task(name="runway-upscale", queue="cpu")
 def runway_upscale(request_dict):
     from videos.external.runway_upscale import main

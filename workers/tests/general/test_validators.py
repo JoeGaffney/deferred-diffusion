@@ -30,11 +30,6 @@ def test_videos_validation():
         VideoRequest(model="ltx-video", prompt="p", last_image="base64lastimg")
     assert "last_image requires image" in str(e.value)
 
-    # Test video requires image
-    with pytest.raises(ValidationError) as e:
-        VideoRequest(model="ltx-video", prompt="p", video="base64video")
-    assert "video requires image" in str(e.value)
-
     # Test model that doesn't support text_to_video mode
     with pytest.raises(ValidationError) as e:
         VideoRequest(model="runway-upscale", prompt="p")
@@ -42,15 +37,10 @@ def test_videos_validation():
 
     # Test model that doesn't support image_to_video mode
     with pytest.raises(ValidationError) as e:
-        VideoRequest(model="minimax-hailuo-2", prompt="p", image="base64img")
+        VideoRequest(model="runway-upscale", prompt="p", image="base64img")
     assert "does not support mode 'image_to_video'" in str(e.value)
 
     # Test model that doesn't support video_to_video mode
     with pytest.raises(ValidationError) as e:
         VideoRequest(model="bytedance-seedance-1", prompt="p", image="base64img", video="base64video")
     assert "does not support mode 'video_to_video'" in str(e.value)
-
-    # Test model that doesn't support first_last_frame mode
-    with pytest.raises(ValidationError) as e:
-        VideoRequest(model="runway-gen-4", prompt="p", image="base64img", last_image="base64lastimg")
-    assert "does not support mode 'first_last_frame'" in str(e.value)

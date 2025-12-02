@@ -56,7 +56,7 @@ def text_to_image_call(context: ImageContext):
         prompt=prompt,
         image=None if len(reference_images) == 0 else reference_images[:3],  # max 3 reference images
         num_inference_steps=20,
-        guidance_scale=2.5,
+        guidance_scale=4.0,
         height=context.height,
         width=context.width,
         generator=context.generator,

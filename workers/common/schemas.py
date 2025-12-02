@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal, TypeAlias
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -27,3 +28,6 @@ class DeleteResponse(BaseModel):
     id: UUID = Field(description="ID of the task")
     status: TaskStatus = Field(description="Status of the task after deletion attempt")
     message: str = Field(description="Additional information about the deletion result")
+
+
+Provider: TypeAlias = Literal["local", "openai", "replicate"]

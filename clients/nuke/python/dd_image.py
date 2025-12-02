@@ -111,7 +111,6 @@ def process_image(node):
 
         image_node = node.input(0)
         mask_node = node.input(1)
-        aux_node = node.input(2)
         image = node_to_base64(image_node, current_frame)
         mask = node_to_base64(mask_node, current_frame)
         width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
@@ -125,7 +124,7 @@ def process_image(node):
             strength=get_node_value(node, "strength", UNSET, return_type=float, mode="value"),
             width=int(width_height[0]),
             height=int(width_height[1]),
-            references=get_references(aux_node),
+            references=get_references(node),
         )
         _api_call(node, body, output_image_path, current_frame)
 
@@ -144,7 +143,7 @@ def get_image(node):
 
 def image_prompt_optimizer(node):
     current_frame = nuke.frame()
-    model = get_node_value(node, "model", "sd-xl", mode="value")
+    text_model = get_node_value(node, "text_model", "gpt-5", mode="value")
     prompt = get_node_value(node, "prompt", "", mode="get")
     image_node = node.input(0)
     image = node_to_base64(image_node, current_frame)
@@ -153,4 +152,4 @@ def image_prompt_optimizer(node):
     if image:
         images.append(image)
 
-    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images)
+    prompt_optimizer(node, prompt, SystemPrompt.IMAGE_OPTIMIZER, images, model=text_model)

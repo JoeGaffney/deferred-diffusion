@@ -61,6 +61,15 @@ def qwen_image(request_dict):
     return process_result(context, result)
 
 
+@typed_task(name="z-image", queue="gpu")
+def z_image(request_dict):
+    from images.local.z_image import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
 @typed_task(name="depth-anything-2", queue="gpu")
 def depth_anything_2(request_dict):
     from images.local.depth_anything_2 import main
@@ -119,6 +128,15 @@ def runway_gen4_image(request_dict):
 @typed_task(name="flux-1-pro", queue="cpu")
 def flux_1_pro(request_dict):
     from images.external.flux_1_pro import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
+@typed_task(name="flux-2-pro", queue="cpu")
+def flux_2_pro(request_dict):
+    from images.external.flux_2_pro import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

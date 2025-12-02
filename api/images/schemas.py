@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
-from common.schemas import TaskStatus
+from common.schemas import Provider, TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -11,6 +11,7 @@ ModelName: TypeAlias = Literal[
     "flux-1",
     "flux-2",
     "qwen-image",
+    "z-image",
     "depth-anything-2",
     "sam-2",
     "sam-3",
@@ -18,13 +19,13 @@ ModelName: TypeAlias = Literal[
     "gpt-image-1",
     "runway-gen4-image",
     "flux-1-pro",
+    "flux-2-pro",
     "topazlabs-upscale",
     "google-gemini-2",
     "google-gemini-3",
     "bytedance-seedream-4",
 ]
 InferredMode: TypeAlias = Literal["text-to-image", "image-to-image", "inpainting"]
-Provider: TypeAlias = Literal["local", "openai", "replicate", "runway"]
 
 
 class ImagesModelInfo(BaseModel):
@@ -49,14 +50,14 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         external=False,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        description="Stable Diffusion XL variant with broad adapter/control support.",
+        description="Stable Diffusion XL variant with broad adapter/controlnet support.",
     ),
     "flux-1": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        description="FLUX dev model (Krea tuned). Uses Kontext for img2img, Fill for inpainting.",
+        description="FLUX dev model (Krea tuned). Uses Kontext for image-to-image, Fill for inpainting.",
     ),
     "flux-2": ImagesModelInfo(
         provider="local",
@@ -71,6 +72,12 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
         description="Qwen image generation and manipulation.",
+    ),
+    "z-image": ImagesModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"text-to-image"},
+        description="Z-Image open-source image generation model.",
     ),
     "depth-anything-2": ImagesModelInfo(
         provider="local",
@@ -98,7 +105,7 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         description="OpenAI image model.",
     ),
     "runway-gen4-image": ImagesModelInfo(
-        provider="runway",
+        provider="replicate",
         external=True,
         supported_modes={"text-to-image", "image-to-image"},
         references=True,
@@ -109,6 +116,13 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         external=True,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         description="FLUX 1.1 Pro variants via external provider.",
+    ),
+    "flux-2-pro": ImagesModelInfo(
+        provider="replicate",
+        external=True,
+        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        description="FLUX 2.0 Pro variants via external provider.",
+        references=True,
     ),
     "topazlabs-upscale": ImagesModelInfo(
         provider="replicate",
@@ -157,18 +171,10 @@ def generate_model_docs():
 
 
 class References(BaseModel):
-    mode: Literal["style", "style-plus", "face", "depth", "canny", "pose"]
+    mode: Literal["style", "face", "depth", "canny", "pose"]
     strength: float = 0.5
     image: str = Field(
         description="Base64 image string",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
-    )
-    mask: Optional[str] = Field(
-        default=None,
-        description="Optional Base64 image string",
         json_schema_extra={
             "contentEncoding": "base64",
             "contentMediaType": "image/*",
