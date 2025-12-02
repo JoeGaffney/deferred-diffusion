@@ -43,15 +43,14 @@ class VideoContext:
             return "portrait"
         return "square"
 
+    def is_580p_or_higher(self) -> bool:
+        return max(self.width, self.height) >= 1024
+
     def is_720p_or_higher(self) -> bool:
-        if self.width >= 1280 or self.height >= 1280:
-            return True
-        return False
+        return max(self.width, self.height) >= 1280
 
     def is_1080p_or_higher(self) -> bool:
-        if self.width >= 1920 or self.height >= 1920:
-            return True
-        return False
+        return max(self.width, self.height) >= 1920
 
     def get_flow_shift(self) -> float:
         return 5.0 if self.is_720p_or_higher() else 3.0

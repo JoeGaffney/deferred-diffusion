@@ -1,6 +1,7 @@
 import base64
 import os
 import shutil
+import subprocess
 import tempfile
 import threading
 import traceback
@@ -71,7 +72,8 @@ def houdini_error_handling(node):
 
 
 def get_tmp_dir() -> str:
-    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion")
+    # subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion")
+    subdir = hou.expandString("$HIP/deferred-diffusion/tmp")
     os.makedirs(subdir, exist_ok=True)
     return subdir
 
@@ -100,19 +102,19 @@ def save_tmp_image(node, node_name):
         hou.ui.displayMessage(f"Failed to save '{tmp_image_node.name()}': {str(e)}")
 
 
-def image_to_base64(image_path: str, debug=False) -> Optional[str]:
-    """Convert an image file to a base64 string (binary data encoded in base64)."""
-    if not image_path:
+def file_to_base64(file_path: str, debug=False) -> Optional[str]:
+    """Convert a file to a base64 string (binary data encoded in base64)."""
+    if not file_path:
         return None
 
-    if not os.path.exists(image_path):
+    if not os.path.exists(file_path):
         return None
 
-    if os.stat(image_path).st_size < 1000:  # 1000 bytes is still tiny for a real image
+    if os.stat(file_path).st_size < 1000:  # 1000 bytes is still tiny for a real image
         return None
 
     try:
-        with open(image_path, "rb") as image_file:
+        with open(file_path, "rb") as image_file:
             image_bytes = image_file.read()
 
             # Convert the bytes to Base64 encoding (standard base64 encoding)
@@ -125,11 +127,11 @@ def image_to_base64(image_path: str, debug=False) -> Optional[str]:
 
             return base64_str
     except Exception as e:
-        raise ValueError(f"Error encoding image {image_path}: {str(e)}") from e
+        raise ValueError(f"Error encoding file {file_path}: {str(e)}") from e
 
 
-def base64_to_image(base64_str: str, output_path: str, save_copy: bool = False):
-    """Convert a base64 string to an image and save it to the specified path."""
+def base64_to_file(base64_str: str, output_path: str, save_copy: bool = False):
+    """Convert a base64 string to a file  and save it to the specified path."""
 
     def save_copy_with_timestamp(path):
         if os.path.exists(path) and save_copy:
@@ -206,7 +208,7 @@ def input_to_base64(node, input_name):
     rop.parm("execute").pressButton()
 
     # Convert the saved file to base64
-    result = image_to_base64(temp_path)
+    result = file_to_base64(temp_path)
 
     # Clean up
     rop.destroy()
@@ -214,7 +216,9 @@ def input_to_base64(node, input_name):
 
 
 def input_to_base64_video(node, input_name, num_frames=24):
-    """Converts the video from a specified input of the node to a Base64-encoded string."""
+    """Converts the video from a specified input of the node to a Base64-encoded string.
+    This is not great as it writes out all frames to disk first, then encodes them to video using ffmpeg.
+    """
     cop_node = None
     for i in node.inputConnections():
         if i.outputLabel() == input_name:
@@ -241,20 +245,60 @@ def input_to_base64_video(node, input_name, num_frames=24):
     current_frame = int(hou.frame())
     end_frame = current_frame + num_frames - 1
 
-    # Create a temporary ROP to write the video
+    # Create a temporary directory for frames
     tmp_name = f"tmp_{node.name()}_{input_name}_{cop_node.name()}"
-    temp_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), prefix=tmp_name, suffix=".mp4", delete=False).name
-    rop = find_top_copnet().createNode("rop_comp", tmp_name)
+    frames_dir = os.path.join(get_tmp_dir(), tmp_name)
+    os.makedirs(frames_dir, exist_ok=True)
 
+    frame_pattern = os.path.join(frames_dir, "frame.%04d.png")
+    frame_pattern_houdini = os.path.join(frames_dir, "frame.$F4.png")
+
+    # Create ROP to write image sequence
+    rop = find_top_copnet().createNode("rop_image", tmp_name)
     rop.parm("coppath").set(cop_node.path())
-    rop.parm("copoutput").set(temp_path)
+    rop.parm("copoutput").set(frame_pattern_houdini)
     rop.parm("trange").set(1)  # Frame range
+    rop.parm("f1").deleteAllKeyframes()
+    rop.parm("f2").deleteAllKeyframes()
     rop.parm("f1").set(current_frame)
     rop.parm("f2").set(end_frame)
     rop.parm("execute").pressButton()
 
+    # Convert frames to MP4 using Houdini's FFmpeg
+    temp_video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), prefix=tmp_name, suffix=".mp4", delete=False).name
+
+    # Get Houdini's ffmpeg path
+    hfs = hou.getenv("HFS")
+    hffmpeg_path = os.path.join(hfs, "bin", "hffmpeg")
+
+    # NOTE seems to make output quite small
+    ffmpeg_cmd = [
+        hffmpeg_path,
+        "-y",
+        "-framerate",
+        "24",
+        "-i",
+        frame_pattern,
+        "-c:v",
+        "h264_nvenc",
+        "-preset",
+        "slow",
+        "-pix_fmt",
+        "yuv420p",
+        temp_video_path,
+    ]
+
+    try:
+        result = subprocess.run(ffmpeg_cmd, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"FFmpeg failed with return code {e.returncode}, stdout: {e.stdout}, stderr: {e.stderr}")
+        raise ValueError(f"FFmpeg encoding failed: {e.stderr}")
+
+    if not os.path.exists(temp_video_path):
+        raise ValueError("FFmpeg encoding failed: output video file not found.")
+
     # Convert the saved file to base64
-    result = image_to_base64(temp_path)
+    result = file_to_base64(temp_video_path)
 
     # Clean up
     rop.destroy()

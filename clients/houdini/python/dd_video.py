@@ -17,11 +17,12 @@ from generated.api_client.models import (
 from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
-    base64_to_image,
+    base64_to_file,
     get_node_parameters,
     get_output_path,
     houdini_error_handling,
     input_to_base64,
+    input_to_base64_video,
     polling_message,
     reload_outputs,
     set_node_info,
@@ -68,7 +69,7 @@ def _api_get_call(node, id, output_path: str, expanded_path: str, iterations=100
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
             # Save the video to the specified path before reloading the outputs
-            base64_to_image(parsed.result.base64_data, expanded_path, save_copy=True)
+            base64_to_file(parsed.result.base64_data, expanded_path, save_copy=True)
 
             node.parm("output_video_path").set(output_path)
             reload_outputs(node, "output_read_video")
@@ -87,7 +88,7 @@ def _api_call(node, body: VideoRequest, output_path: str):
         raise ValueError("Unexpected response type from API call.")
 
     node.parm("task_id").set(str(parsed.id))
-    _api_get_call(node, str(parsed.id), output_path, hou.expandString(output_path), iterations=20, sleep_time=5)
+    _api_get_call(node, str(parsed.id), output_path, hou.expandString(output_path))
 
 
 def process_video(node):
@@ -95,7 +96,7 @@ def process_video(node):
         set_node_info(node, None, "")
         params = get_node_parameters(node)
         output_video_path = get_output_path(node, movie=True)
-        image = input_to_base64(node, "src")
+        image = input_to_base64(node, "image")
         last_image = input_to_base64(node, "last_image")
         video = input_to_base64_video(node, "video", num_frames=params.get("num_frames", 24))
 
@@ -128,7 +129,7 @@ def video_prompt_optimizer(node):
     params = get_node_parameters(node)
     text_model = params.get("text_model", "gpt-5")
     prompt = params.get("prompt", "")
-    image = input_to_base64(node, "src")
+    image = input_to_base64(node, "image")
     last_image = input_to_base64(node, "last_image")
     system_prompt = SystemPrompt.VIDEO_OPTIMIZER
 

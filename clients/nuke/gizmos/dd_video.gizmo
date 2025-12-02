@@ -21,7 +21,7 @@ Group {
  addUserKnob {26 ""}
 
  addUserKnob {14 width_height l "Width Height" +STARTLINE R 0 100 t "Output image resolution (width, height). Only used if there are no inputs."}
- width_height {1280 720}
+ width_height {854 480}
  addUserKnob {7 num_frames l Frames t "Number of frames to generate." R 1 200}
  num_frames 48
  addUserKnob {7 seed l Seed t "Random seed for reproducibility." R 1 1000}
