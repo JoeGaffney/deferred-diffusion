@@ -4,6 +4,8 @@
 
 <img width="2248" height="1245" alt="image" src="https://github.com/user-attachments/assets/27b3c860-6e9c-4e56-bdd9-0204481c7cb9" />
 
+<img width="2557" height="1202" alt="image" src="https://github.com/user-attachments/assets/0e6abfbe-334a-422d-a99a-337c695abea5" />
+
 It provides a **modular API and worker architecture** built with **FastAPI** and **Celery**, letting local models and external providers run seamlessly in the same system. Workers can execute:
 
 - **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
