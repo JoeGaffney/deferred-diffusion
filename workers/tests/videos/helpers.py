@@ -18,6 +18,7 @@ def main(context: VideoContext):
     MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
         "ltx-video": ("videos.local.ltx_video", "main"),
         "wan-2": ("videos.local.wan_2", "main"),
+        "sam-3": ("videos.local.sam_3", "main"),
         "runway-gen-4": ("videos.external.runway_gen_4", "main"),
         "runway-upscale": ("videos.external.runway_upscale", "main"),
         "bytedance-seedance-1": ("videos.external.bytedance_seedance_1", "main"),
@@ -200,6 +201,25 @@ def first_frame_last_frame(model: ModelName):
                 prompt="a dramatic dolly zoom",
                 num_frames=24,
             ),
+        )
+    )
+
+    if os.path.exists(result):
+        shutil.copy(result, output_name)
+
+    # Check if output file exists
+    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+
+    # Check if the output file is a valid video file
+    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+
+
+def video_segmentation(model: ModelName):
+    output_name = setup_output_file(model, "video_segmentation", extension="mp4")
+
+    result = main(
+        VideoContext(
+            VideoRequest(model=model, video=image_to_base64("../assets/act_reference_v001.mp4"), prompt="man"),
         )
     )
 

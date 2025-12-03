@@ -41,6 +41,15 @@ def wan_2(request_dict):
     return process_result(context, result)
 
 
+@typed_task(name="sam-3", queue="gpu")
+def sam_3(request_dict):
+    from videos.local.sam_3 import main
+
+    context = validate_request_and_context(request_dict)
+    result = main(context)
+    return process_result(context, result)
+
+
 # Explicit external model tasks
 @typed_task(name="runway-gen-4", queue="cpu")
 def runway_gen_4(request_dict):

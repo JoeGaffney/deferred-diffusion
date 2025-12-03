@@ -9,6 +9,7 @@ from common.schemas import Provider, TaskStatus
 ModelName: TypeAlias = Literal[
     "ltx-video",
     "wan-2",
+    "sam-3",
     "runway-gen-4",
     "runway-upscale",
     "bytedance-seedance-1",
@@ -51,6 +52,13 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         supported_modes={"text-to-video", "image-to-video", "video-to-video"},
         last_image=True,
         description="Wan 2.2, quality open-source video generation model. Will fall back to Wan VACE 2.1 for video-to-video.",
+    ),
+    "sam-3": VideosModelInfo(
+        provider="local",
+        external=False,
+        supported_modes={"video-to-video"},
+        last_image=True,
+        description="SAM-3, segmentation model.",
     ),
     "runway-gen-4": VideosModelInfo(
         provider="replicate",
