@@ -231,3 +231,24 @@ def video_segmentation(model: ModelName):
 
     # Check if the output file is a valid video file
     assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+
+
+def video_segmentation_alt(model: ModelName):
+    output_name = setup_output_file(model, "video_segmentation_alt", extension="mp4")
+
+    result = main(
+        VideoContext(
+            VideoRequest(
+                model=model, video=image_to_base64("../assets/act_reference_v001.mp4"), prompt="man, hands, face"
+            ),
+        )
+    )
+
+    if os.path.exists(result):
+        shutil.copy(result, output_name)
+
+    # Check if output file exists
+    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+
+    # Check if the output file is a valid video file
+    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."

@@ -3,56 +3,38 @@ import random
 import torch
 from huggingface_hub import hf_hub_download
 from PIL import Image, ImageChops
-from sam3.model.sam3_image_processor import Sam3Processor
-from sam3.model_builder import build_sam3_image_model, build_sam3_video_predictor
+from sam3.model_builder import Sam3VideoPredictorMultiGPU, build_sam3_video_predictor
 
 from common.logger import log_pretty, logger
+from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from videos.context import VideoContext
 
 
-def overlay_masks(image, masks):
-    image = image.convert("RGBA")
-
-    # masks: torch.Tensor of shape (N, 1, H, W) or (N, H, W), bool
-    if masks.ndim == 4:
-        masks = masks[:, 0, :, :]  # (N, H, W)
-
-    # to uint8 numpy [0, 255]
-    masks = (masks.to(torch.uint8) * 255).cpu().numpy()  # (N, H, W)
-    n_masks = masks.shape[0]
-
-    rng = random.Random(42)  # fixed seed for reproducible colors
-    colors = [(rng.randint(0, 255), rng.randint(0, 255), rng.randint(0, 255)) for _ in range(n_masks)]
-
-    for mask, color in zip(masks, colors):
-        mask_img = Image.fromarray(mask, mode="L")
-        overlay = Image.new("RGBA", image.size, color + (0,))
-        alpha = mask_img.point(lambda v: int(v * 0.5))  # 0.5 opacity
-        overlay.putalpha(alpha)
-        image = Image.alpha_composite(image, overlay)
-
-    return image
-
-
-# seems missing in the sam3 package, so we add it here
 def get_bpe_vocab_path() -> str:
+    """seems missing in the sam3 package, so we add it here"""
     return hf_hub_download(
         repo_id="LanguageBind/LanguageBind", filename="open_clip/bpe_simple_vocab_16e6.txt.gz", repo_type="space"
     )
 
 
+def shutdown(video_predictor: Sam3VideoPredictorMultiGPU, session_id):
+    """Still seems that some memory exists after shut down, posssibly we need the transformers version"""
+    video_predictor.handle_request(dict(type="close_session", session_id=session_id))
+    video_predictor.shutdown()
+    del video_predictor.model
+    del video_predictor
+    free_gpu_memory(message="Post SAM-3 Video Processing")
+
+
 def main(context: VideoContext):
+    """We can possibly move the implemenation to use transformers pipelines directly later."""
     if context.video_frames is None:
         raise ValueError("No video frames provided")
 
+    # As its not in the pipeline cache, clear any existing encacse we need the space
     clear_global_pipeline_cache()
-    bpe_path = get_bpe_vocab_path()
-    logger.info(f"Using BPE vocab path: {bpe_path}")
-
-    # Load the model
-    video_predictor = build_sam3_video_predictor(bpe_path=bpe_path)
-    text_prompt = context.data.cleaned_prompt
+    video_predictor = build_sam3_video_predictor(bpe_path=get_bpe_vocab_path())
 
     # Start a session
     response = video_predictor.handle_request(
@@ -69,7 +51,7 @@ def main(context: VideoContext):
             type="add_prompt",
             session_id=session_id,
             frame_index=0,
-            text=text_prompt,
+            text=context.data.cleaned_prompt,
         )
     )
     output = response["outputs"]
@@ -95,22 +77,24 @@ def main(context: VideoContext):
     all_frame_masks_list = [all_frame_masks.get(i) for i in range(len(context.video_frames))]
 
     if not any(m is not None and len(m) > 0 for m in all_frame_masks_list):
-        logger.warning(f'No masks detected for "{text_prompt}"')
-        video_predictor.handle_request(dict(type="close_session", session_id=session_id))
+        logger.warning(f'No masks detected for "{context.data.cleaned_prompt}"')
+        shutdown(video_predictor, session_id)
         return context.save_video(context.video_frames)
 
     # Process each frame with colored masks
     processed_frames = []
     base_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+    original_frame_size = context.video_frames[0].size
 
-    for frame_idx, (original_frame, masks) in enumerate(zip(context.video_frames, all_frame_masks_list)):
-        if masks is None or len(masks) == 0:
-            processed_frames.append(original_frame)
-            continue
-
+    for frame_idx, masks in enumerate(all_frame_masks_list):
         # Get actual dimensions from the mask
-        mask_height, mask_width = masks[0].shape
+        mask_width, mask_height = original_frame_size
         combined_mask = Image.new("RGB", (mask_width, mask_height), (0, 0, 0))
+
+        if masks is None or len(masks) == 0:
+            # Create blank frame when no mask detected
+            processed_frames.append(combined_mask)
+            continue
 
         for mask_idx, mask in enumerate(masks):
             color = base_colors[mask_idx] if mask_idx < len(base_colors) else (0, 0, 255)
@@ -129,9 +113,6 @@ def main(context: VideoContext):
 
         processed_frames.append(combined_mask)
 
-    # Close session - still need to free memory
-    video_predictor.handle_request(dict(type="close_session", session_id=session_id))
-
+    shutdown(video_predictor, session_id)
     processed_path = context.save_video(processed_frames, fps=24)
-    logger.info(f"Saved video to: {processed_path}")
     return processed_path
