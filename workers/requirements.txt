@@ -27,4 +27,6 @@ sam2
 sam3
 sentencepiece
 torchao
-transformers
+# transformers # For SAM 3 compatibility, we use a specific commit below
+git+https://github.com/huggingface/transformers.git@ff13eb668aa03f151ded71636d723f2e490ad967
+kernels
