@@ -55,7 +55,7 @@ def main(context: ImageContext):
 
     # Post-process results
     results = processor.post_process_instance_segmentation(
-        outputs, threshold=0.5, mask_threshold=0.5, target_sizes=inputs.get("original_sizes").tolist()
+        outputs, threshold=0.5, mask_threshold=0.5, target_sizes=inputs.get("original_sizes").tolist()  # type: ignore
     )[0]
 
     masks = results["masks"]
