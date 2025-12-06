@@ -23,7 +23,7 @@ def test_segmentation(model):
             ImageRequest(
                 model=model,
                 image=image_to_base64("../assets/style_v001.jpeg"),
-                prompt="house and trees",
+                prompt="house, trees",
                 strength=0.5,
             ),
         )
