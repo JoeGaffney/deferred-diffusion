@@ -52,7 +52,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100
                 break
 
             def progress_update(parsed=parsed, count=count):
-                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
+                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time), logs=parsed.logs)
 
             nuke.executeInMainThread(progress_update)
         except RemoteProtocolError:

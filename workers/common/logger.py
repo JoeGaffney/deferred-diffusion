@@ -15,17 +15,42 @@ def log_pretty(message, obj):
     logger.info(message + "\n%s", pprint.pformat(obj, indent=1, width=120, sort_dicts=False))
 
 
-# NOTE ref how to update task progress in Celery
-def update_progress(progress, status=None, **extra_meta):
+def task_log(message: str):
+    logger.info(message)
     task = current_task
     if not task or not hasattr(task, "update_state"):
-        logger.error("No current task context available. Skipping update.")
         return
 
-    meta = {"progress": progress}
-    if status:
-        meta["status"] = status
-    meta.update(extra_meta)
+    # Use a per-task in-memory meta dict
+    meta_existing = getattr(task, "_meta", {})
+    if not isinstance(meta_existing, dict):
+        meta_existing = {}
 
-    logger.info(f"Updating task progress: {progress}%, status: {status}")
-    task.update_state(state="PROGRESS", meta=meta)
+    logs = meta_existing.get("logs", [])
+    if not isinstance(logs, list):
+        logs = []
+
+    logs.append(message)
+
+    # Update meta and persist in-memory
+    meta = {**meta_existing, "logs": logs}
+    task._meta = meta  # type: ignore
+
+    try:
+        task.update_state(state="STARTED", meta=meta)  # type: ignore
+    except Exception as e:
+        logger.error(f"Failed to update task state: {e}")
+
+
+def get_task_logs() -> list[str]:
+    """Get accumulated logs for the current task."""
+    task = current_task
+    if not task:
+        return []
+
+    meta = getattr(task, "_meta", {})
+    if isinstance(meta, dict):
+        logs = meta.get("logs", [])
+        if isinstance(logs, list):
+            return logs
+    return []

@@ -46,16 +46,24 @@ def threaded(fn):
     return wrapper
 
 
-def set_node_info(node, status: Optional[TaskStatus], message: str = ""):
+def set_node_info(node, status: Optional[TaskStatus], message: str = "", logs=None):
     # Update the node label to show current status
     if status is None:
         status_text = "[]"
     else:
         status_text = f"[{status}]"
 
-    node["label"].setValue(status_text)
+    label_test = status_text
     if message:
-        node["label"].setValue(f"{status_text}\n{message}")
+        label_test = f"{status_text}\n{message}"
+
+    if logs:
+        # Join logs into a single string separated by newlines
+        if len(logs) > 0:
+            logs_text = "\n".join(logs)
+            label_test += f"\nLogs:{logs_text}"
+
+    node["label"].setValue(label_test)
 
     if status == TaskStatus.SUCCESS:
         node["tile_color"].setValue(0x00CC00FF)  # Green

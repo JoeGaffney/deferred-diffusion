@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Optional, TypeAlias
+from typing import Any, Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
@@ -266,6 +266,7 @@ class ImageRequest(BaseModel):
 
 
 class ImageWorkerResponse(BaseModel):
+    logs: Optional[List[str]] = None  # logs captured during processing
     base64_data: Base64Bytes
 
 
@@ -274,6 +275,7 @@ class ImageResponse(BaseModel):
     status: TaskStatus
     result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
+    logs: Optional[List[str]] = None  # updates during processing
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -283,6 +285,7 @@ class ImageResponse(BaseModel):
                     "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
                 },
                 "error_message": None,
+                "logs": ["Validated Context", "Loading model...", "Generating image...", "Image generation complete."],
             }
         }
     )

@@ -3,7 +3,7 @@ import os
 import time
 from collections import OrderedDict
 from functools import wraps
-from typing import Literal, Optional, Union
+from typing import Literal, Union
 
 import torch
 from accelerate.hooks import CpuOffload
@@ -12,7 +12,7 @@ from diffusers import GGUFQuantizationConfig
 from huggingface_hub import hf_hub_download
 from transformers import BitsAndBytesConfig, TorchAoConfig
 
-from common.logger import logger
+from common.logger import logger, task_log
 from common.memory import free_gpu_memory, gpu_memory_usage
 from utils.utils import time_info_decorator
 
@@ -52,6 +52,7 @@ class ModelLRUCache:
         if len(self.cache) >= self.max_models:
             self._evict_lru()
 
+        task_log(f"Loading pipeline {key}")
         start = time.time()
         pipeline = loader_fn()
         self.cache[key] = pipeline
@@ -151,6 +152,7 @@ def optimize_pipeline(pipe, offload=True, vae_tiling=True):
     if hasattr(pipe, "disable_safety_checker"):
         pipe.safety_checker = dummy_safety_checker
 
+    task_log("Pipeline loaded")
     return pipe
 
 
