@@ -56,9 +56,6 @@ class VideoContext:
     def is_1080p_or_higher(self) -> bool:
         return max(self.width, self.height) >= 1920
 
-    def get_flow_shift(self) -> float:
-        return 5.0 if self.is_720p_or_higher() else 3.0
-
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value
         self.width = ensure_divisible(self.width, value)

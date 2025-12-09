@@ -21,7 +21,6 @@ def get_pipeline(model_id):
         model_class=Flux2Transformer2DModel,
         target_precision=16,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )
 
     pipe = Flux2Pipeline.from_pretrained(

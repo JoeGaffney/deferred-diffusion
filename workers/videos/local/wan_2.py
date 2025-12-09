@@ -54,7 +54,7 @@ def get_pipeline_t2v(model_id, high_noise: bool, offload=True) -> WanPipeline:
         torch_dtype=torch.bfloat16,
         **args,
     )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
 
     return optimize_pipeline(pipe, offload=offload)
 
@@ -91,14 +91,14 @@ def get_pipeline_i2v(model_id, high_noise: bool, offload=True) -> WanImageToVide
         torch_dtype=torch.bfloat16,
         **args,
     )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
 
     return optimize_pipeline(pipe, offload=offload)
 
 
 def get_should_offload(context: VideoContext) -> bool:
     # memory management based on resolution
-    offload = is_memory_exceeded(31)
+    offload = is_memory_exceeded(35)
     if context.is_580p_or_higher():
         offload = is_memory_exceeded(34)
     return offload
@@ -108,7 +108,8 @@ def text_to_video(context: VideoContext):
     pipe = get_pipeline_t2v(
         model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers", high_noise=True, offload=get_should_offload(context)
     )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
+    if context.is_720p_or_higher():
+        pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     output = pipe(
         prompt=context.data.cleaned_prompt,
@@ -133,7 +134,8 @@ def image_to_video(context: VideoContext):
     pipe = get_pipeline_i2v(
         model_id="Wan-AI/Wan2.2-I2V-A14B-Diffusers", high_noise=True, offload=get_should_offload(context)
     )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
+    if context.is_720p_or_higher():
+        pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     output = pipe(
         prompt=context.data.cleaned_prompt,

@@ -22,7 +22,6 @@ def get_pipeline(model_id):
         model_class=ZImageTransformer2DModel,
         target_precision=8,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )
 
     text_encoder = get_quantized_model(
@@ -31,7 +30,6 @@ def get_pipeline(model_id):
         model_class=AutoModelForCausalLM,
         target_precision=8,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )
 
     pipe = ZImagePipeline.from_pretrained(

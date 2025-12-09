@@ -3,6 +3,10 @@ import pprint
 
 from celery import current_task
 
+# Suppress overly verbose logs from external libraries
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -15,8 +19,10 @@ def log_pretty(message, obj):
     logger.info(message + "\n%s", pprint.pformat(obj, indent=1, width=120, sort_dicts=False))
 
 
-def task_log(message: str):
-    logger.info(message)
+def task_log(message: str, log_to_logger: bool = True):
+    if log_to_logger:
+        logger.info(message)
+
     task = current_task
     if not task or not hasattr(task, "update_state"):
         return
