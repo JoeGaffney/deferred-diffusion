@@ -4,7 +4,7 @@ import torch
 from PIL import Image, ImageChops
 from transformers.models.sam3 import Sam3Model, Sam3Processor
 
-from common.logger import log_pretty, logger
+from common.logger import log_pretty, task_log
 from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
@@ -57,18 +57,15 @@ def main(context: ImageContext):
     results = processor.post_process_instance_segmentation(
         outputs, threshold=0.5, mask_threshold=0.5, target_sizes=inputs.get("original_sizes").tolist()  # type: ignore
     )[0]
+    log_pretty(f"processed_dict", results)
 
     masks = results["masks"]
     scores = results.get("scores", [])
     boxes = results.get("boxes", [])
 
-    log_pretty(f"sam-3-image processed_dict", {"num_masks": len(masks), "scores": scores})
-
     if not len(masks):
-        logger.warning(f'No masks detected for "{text_prompt}", returning blank image.')
         del model, processor
-        free_gpu_memory(message="Post SAM-3 Image Processing")
-        return Image.new("RGB", (context.width, context.height), (0, 0, 0))
+        raise ValueError("No masks detected")
 
     # Convert masks to list of PIL images
     image_masks = []
@@ -87,6 +84,8 @@ def main(context: ImageContext):
         mask_uint8 = (mask_np * 255).astype("uint8")
         processed_image = Image.fromarray(mask_uint8, mode="L")
         image_masks.append(processed_image)
+
+    task_log(f"Number of masks detected: {len(image_masks)}")
 
     # Overlay masks on the original image for visualization
     masks_tensor = torch.stack([m if isinstance(m, torch.Tensor) else torch.from_numpy(m) for m in masks])
@@ -126,5 +125,4 @@ def main(context: ImageContext):
         )
 
     del model, processor
-    free_gpu_memory(message="Post SAM-3 Image Processing")
     return combined_clown_mask

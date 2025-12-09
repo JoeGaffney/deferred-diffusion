@@ -21,7 +21,6 @@ from utils import (
     base64_to_file,
     get_node_value,
     get_output_path,
-    image_to_base64,
     node_to_base64,
     node_to_base64_video,
     nuke_error_handling,
@@ -95,7 +94,7 @@ def _api_call(node, body: VideoRequest, output_video_path: str, current_frame: i
         raise RuntimeError(f"API call failed: {str(e)}") from e
 
     if not isinstance(parsed, VideoCreateResponse):
-        raise ValueError("Unexpected response type from API call.")
+        raise ValueError(str(parsed))
 
     set_node_value(node, "task_id", str(parsed.id))
     _api_get_call(node, str(parsed.id), output_video_path, current_frame)

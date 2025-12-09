@@ -1,4 +1,4 @@
-from typing import Dict, Literal, Optional, TypeAlias
+from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
@@ -207,6 +207,7 @@ class VideoRequest(BaseModel):
 
 
 class VideoWorkerResponse(BaseModel):
+    logs: List[str] = []
     base64_data: Base64Bytes
 
 
@@ -215,6 +216,7 @@ class VideoResponse(BaseModel):
     status: TaskStatus
     result: Optional[VideoWorkerResponse] = None
     error_message: Optional[str] = None
+    logs: List[str] = []
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -224,6 +226,7 @@ class VideoResponse(BaseModel):
                     "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
                 },
                 "error_message": None,
+                "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }
         }
     )

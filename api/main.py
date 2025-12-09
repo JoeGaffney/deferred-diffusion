@@ -4,7 +4,7 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse
 
 from common.logger import logger
 from images import router as images
@@ -28,14 +28,31 @@ app = FastAPI(title="API")
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
-    return PlainTextResponse(str(exc), status_code=400)
+async def validation_handler(request: Request, exc: RequestValidationError):
+    cleaned = []
+    for err in exc.errors():
+        d = dict(err)
+        cleaned.append(
+            {
+                "loc": d.get("loc", []),
+                "msg": d.get("msg", ""),
+                "type": d.get("type", ""),
+            }
+        )
+
+    logger.warning(f"Validation error on {request.url.path}: {cleaned}")
+    return JSONResponse(status_code=422, content={"detail": cleaned})
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
-        status_code=500, content={"message": "Internal server error", "detail": str(exc), "path": request.url.path}
+        status_code=500,
+        content={
+            "message": "Internal server error",
+            "detail": truncate_strings(str(exc), 1000),
+            "path": request.url.path,
+        },
     )
 
 

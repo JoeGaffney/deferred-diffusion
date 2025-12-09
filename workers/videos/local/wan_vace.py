@@ -9,6 +9,7 @@ from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
     optimize_pipeline,
+    task_log_callback,
 )
 from common.text_encoders import get_umt5_text_encoder
 from videos.context import VideoContext
@@ -86,6 +87,7 @@ def video_to_video(context: VideoContext):
         num_inference_steps=12,
         guidance_scale=5.0,
         generator=context.get_generator(),
+        callback_on_step_end=task_log_callback(12),  # type: ignore
     )
 
     # Extract frames from pipeline output

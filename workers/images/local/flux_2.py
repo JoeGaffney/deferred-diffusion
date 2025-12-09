@@ -7,6 +7,7 @@ from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
     optimize_pipeline,
+    task_log_callback,
 )
 from common.text_encoders import get_mistral3_text_encoder
 from images.context import ImageContext
@@ -60,6 +61,7 @@ def text_to_image_call(context: ImageContext):
         height=context.height,
         width=context.width,
         generator=context.generator,
+        callback_on_step_end=task_log_callback(20),  # type: ignore
     ).images[0]
 
     return processed_image

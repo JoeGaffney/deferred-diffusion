@@ -6,7 +6,7 @@ import threading
 import traceback
 from contextlib import contextmanager
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 import nuke
 
@@ -46,7 +46,7 @@ def threaded(fn):
     return wrapper
 
 
-def set_node_info(node, status: Optional[TaskStatus], message: str = "", logs=None):
+def set_node_info(node, status: Optional[TaskStatus], message: str = "", logs=[]):
     # Update the node label to show current status
     if status is None:
         status_text = "[]"
@@ -57,16 +57,20 @@ def set_node_info(node, status: Optional[TaskStatus], message: str = "", logs=No
     if message:
         label_test = f"{status_text}\n{message}"
 
-    if logs:
-        # Join logs into a single string separated by newlines
-        if len(logs) > 0:
+    # Join logs into a single string separated by newlines
+    if len(logs) > 0:
+        if node.knob("logs"):  # Assuming you have a logs knob
             logs_text = "\n".join(logs)
-            label_test += f"\nLogs:{logs_text}"
+            node["logs"].setValue(logs_text)
+
+        # show only the last log entry in the label
+        label_test += f"\n{logs[-1]}"
 
     node["label"].setValue(label_test)
 
     if status == TaskStatus.SUCCESS:
         node["tile_color"].setValue(0x00CC00FF)  # Green
+        node["label"].setValue("")  # Clear label on success
     elif status == TaskStatus.PENDING:
         node["tile_color"].setValue(0xCCCC00FF)  # Yellow
     elif status in [TaskStatus.STARTED]:
@@ -77,8 +81,10 @@ def set_node_info(node, status: Optional[TaskStatus], message: str = "", logs=No
         node["tile_color"].setValue(0x888888FF)  # Grey
 
 
-def polling_message(count, iterations, sleep_time):
+def polling_message(count, iterations, sleep_time, simple=True):
     current_time = count * sleep_time
+    if simple:
+        return f"{current_time}s"
     return f"🔄 {count}/{iterations} • {current_time}s"
 
 

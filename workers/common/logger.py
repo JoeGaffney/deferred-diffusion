@@ -21,20 +21,21 @@ def task_log(message: str):
     if not task or not hasattr(task, "update_state"):
         return
 
-    # Use a per-task in-memory meta dict
+    # Check if this is a new task by comparing task IDs
+    current_id = getattr(task.request, "id", None)
+    stored_id = getattr(task, "_logged_task_id", None)
+
+    if stored_id != current_id:
+        # New task - reset logs
+        task._meta = {"logs": []}
+        task._logged_task_id = current_id
+
     meta_existing = getattr(task, "_meta", {})
-    if not isinstance(meta_existing, dict):
-        meta_existing = {}
-
     logs = meta_existing.get("logs", [])
-    if not isinstance(logs, list):
-        logs = []
-
     logs.append(message)
 
-    # Update meta and persist in-memory
     meta = {**meta_existing, "logs": logs}
-    task._meta = meta  # type: ignore
+    task._meta = meta
 
     try:
         task.update_state(state="STARTED", meta=meta)  # type: ignore

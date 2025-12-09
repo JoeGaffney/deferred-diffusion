@@ -57,9 +57,9 @@ class ModelLRUCache:
         pipeline = loader_fn()
         self.cache[key] = pipeline
         end = time.time()
-        logger.warning(
-            f"Cache miss for {key} - took: {end - start:.2f}s - Cache size: {len(self.cache)}/{self.max_models}"
-        )
+        duration = end - start
+        logger.debug(f"Cache miss for {key} - took: {duration:.2f}s - Cache size: {len(self.cache)}/{self.max_models}")
+        task_log(f"Pipeline loaded in {duration:.2f}s")
 
         return pipeline
 
@@ -70,7 +70,7 @@ class ModelLRUCache:
         # Get the first item (least recently used)
         oldest_key, oldest_pipeline = next(iter(self.cache.items()))
 
-        logger.info(f"Evicting LRU model: {oldest_key}")
+        logger.debug(f"Evicting LRU model: {oldest_key}")
         self._cleanup(oldest_pipeline)
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
 
@@ -152,7 +152,6 @@ def optimize_pipeline(pipe, offload=True, vae_tiling=True):
     if hasattr(pipe, "disable_safety_checker"):
         pipe.safety_checker = dummy_safety_checker
 
-    task_log("Pipeline loaded")
     return pipe
 
 
@@ -243,7 +242,7 @@ def get_quantized_model(
             quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors, **args
         )
     except Exception as e:
-        logger.error(f"Failed to load quantized model from {quant_dir}: {e}")
+        logger.warning(f"Failed to load quantized model from {quant_dir}: {e}")
         logger.info(f"Loading and quantizing {model_id} subfolder {subfolder}")
         model = model_class.from_pretrained(
             model_id,
@@ -256,3 +255,14 @@ def get_quantized_model(
         logger.info(f"Saved quantized model to {quant_dir}")
 
     return model
+
+
+def task_log_callback(num_inference_steps: int):
+    """Factory function that creates a callback with num_inference_steps captured."""
+
+    def callback(pipe_instance, step: int, timestep: int, callback_kwargs: dict):
+        progress_pct = ((step + 1) / num_inference_steps) * 100
+        task_log(f"Inference step {step + 1}/{num_inference_steps} ({progress_pct:.0f}%)")
+        return callback_kwargs
+
+    return callback

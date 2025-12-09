@@ -56,7 +56,8 @@ def get(id: UUID):
     )
 
     if result.info:
-        response.logs = result.info.get("logs", None)
+        if isinstance(result.info, dict):
+            response.logs = result.info.get("logs", [])
 
     # Add appropriate fields based on status
     if result.successful():

@@ -266,7 +266,7 @@ class ImageRequest(BaseModel):
 
 
 class ImageWorkerResponse(BaseModel):
-    logs: Optional[List[str]] = None  # logs captured during processing
+    logs: List[str] = []
     base64_data: Base64Bytes
 
 
@@ -275,7 +275,7 @@ class ImageResponse(BaseModel):
     status: TaskStatus
     result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
-    logs: Optional[List[str]] = None  # updates during processing
+    logs: List[str] = []
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -285,7 +285,7 @@ class ImageResponse(BaseModel):
                     "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
                 },
                 "error_message": None,
-                "logs": ["Validated Context", "Loading model...", "Generating image...", "Image generation complete."],
+                "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }
         }
     )

@@ -14,8 +14,8 @@ from PIL import Image
 from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
-    get_quantized_model,
     optimize_pipeline,
+    task_log_callback,
 )
 from common.text_encoders import get_qwen2_5_text_encoder
 from images.context import ImageContext
@@ -103,7 +103,10 @@ def text_to_image_call(context: ImageContext):
         "true_cfg_scale": 1.0,
     }
 
-    processed_image = pipe.__call__(**args).images[0]
+    processed_image = pipe.__call__(
+        **args,
+        callback_on_step_end=task_log_callback(8),  # type: ignore
+    ).images[0]
     context.cleanup()
 
     return processed_image
@@ -138,7 +141,10 @@ def image_edit_call(context: ImageContext):
         "true_cfg_scale": 1.0,
     }
 
-    processed_image = pipe.__call__(**args).images[0]
+    processed_image = pipe.__call__(
+        **args,
+        callback_on_step_end=task_log_callback(8),  # type: ignore
+    ).images[0]
     context.cleanup()
 
     return processed_image
@@ -161,7 +167,10 @@ def inpainting_call(context: ImageContext):
         "true_cfg_scale": 1.0,
     }
 
-    processed_image = pipe.__call__(**args).images[0]
+    processed_image = pipe.__call__(
+        **args,
+        callback_on_step_end=task_log_callback(8),  # type: ignore
+    ).images[0]
     context.cleanup()
 
     return processed_image

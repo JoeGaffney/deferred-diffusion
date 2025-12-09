@@ -1,3 +1,4 @@
+from common.logger import get_task_logs
 from utils.utils import mp4_to_base64
 from videos.context import VideoContext
 from videos.schemas import ModelName, VideoRequest, VideoWorkerResponse
@@ -7,7 +8,7 @@ from worker import celery_app
 def process_result(context, result):
     """Process the result of video generation."""
     if result:
-        return VideoWorkerResponse(base64_data=mp4_to_base64(result)).model_dump()
+        return VideoWorkerResponse(base64_data=mp4_to_base64(result), logs=get_task_logs()).model_dump()
     raise ValueError("Video generation failed")
 
 
