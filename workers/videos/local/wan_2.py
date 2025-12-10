@@ -23,7 +23,7 @@ _negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_t2v(model_id, offload=True) -> WanPipeline:
+def get_pipeline_t2v(model_id) -> WanPipeline:
     args = {"boundary_ratio": 0.5}  # even split
     transformer = get_quantized_model(
         model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
@@ -52,11 +52,11 @@ def get_pipeline_t2v(model_id, offload=True) -> WanPipeline:
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
 
-    return optimize_pipeline(pipe, offload=offload)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(35))
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_i2v(model_id, offload=True) -> WanImageToVideoPipeline:
+def get_pipeline_i2v(model_id) -> WanImageToVideoPipeline:
     # even split gives strange results - try without for now
     args = {"boundary_ratio": 0.5}
     args = {}
@@ -87,25 +87,16 @@ def get_pipeline_i2v(model_id, offload=True) -> WanImageToVideoPipeline:
     )
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
 
-    return optimize_pipeline(pipe, offload=offload)
-
-
-def get_should_offload(context: VideoContext) -> bool:
-    # memory management based on resolution - seems to be using more memory recently
-    offload = is_memory_exceeded(31)
-    if context.is_580p_or_higher():
-        offload = is_memory_exceeded(35)
-    return offload
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(35))
 
 
 def text_to_video(context: VideoContext):
-    pipe = get_pipeline_t2v(model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers", offload=get_should_offload(context))
+    pipe = get_pipeline_t2v(model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers")
     if context.is_720p_or_higher():
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     output = pipe(
         prompt=context.data.cleaned_prompt,
-        negative_prompt=_negative_prompt,
         width=context.width,
         height=context.height,
         num_inference_steps=8,
@@ -123,13 +114,12 @@ def image_to_video(context: VideoContext):
     if context.image is None:
         raise ValueError("No input image provided for image-to-video generation")
 
-    pipe = get_pipeline_i2v(model_id="Wan-AI/Wan2.2-I2V-A14B-Diffusers", offload=get_should_offload(context))
+    pipe = get_pipeline_i2v(model_id="Wan-AI/Wan2.2-I2V-A14B-Diffusers")
     if context.is_720p_or_higher():
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     output = pipe(
         prompt=context.data.cleaned_prompt,
-        negative_prompt=_negative_prompt,
         width=context.width,
         height=context.height,
         image=context.image,
