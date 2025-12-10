@@ -23,19 +23,15 @@ _negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_t2v(model_id, high_noise: bool, offload=True) -> WanPipeline:
-    # high noise uses both transformers
-    transformer = None
-    args = {"boundary_ratio": 1.0}
-    if high_noise:
-        args = {"boundary_ratio": 0.5}
-        transformer = get_quantized_model(
-            model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
-            subfolder="transformer",
-            model_class=WanTransformer3DModel,
-            target_precision=4,
-            torch_dtype=torch.bfloat16,
-        )
+def get_pipeline_t2v(model_id, offload=True) -> WanPipeline:
+    args = {"boundary_ratio": 0.5}  # even split
+    transformer = get_quantized_model(
+        model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
+        subfolder="transformer",
+        model_class=WanTransformer3DModel,
+        target_precision=4,
+        torch_dtype=torch.bfloat16,
+    )
 
     transformer_2 = get_quantized_model(
         model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
@@ -60,19 +56,17 @@ def get_pipeline_t2v(model_id, high_noise: bool, offload=True) -> WanPipeline:
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_i2v(model_id, high_noise: bool, offload=True) -> WanImageToVideoPipeline:
-    # high noise uses both transformers - low noise only seems busted and gives crazy results atm
-    transformer = None
-    args = {"boundary_ratio": 1.0}
-    if high_noise:
-        args = {}
-        transformer = get_quantized_model(
-            model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers",
-            subfolder="transformer",
-            model_class=WanTransformer3DModel,
-            target_precision=4,
-            torch_dtype=torch.bfloat16,
-        )
+def get_pipeline_i2v(model_id, offload=True) -> WanImageToVideoPipeline:
+    # even split gives strange results - try without for now
+    args = {"boundary_ratio": 0.5}
+    args = {}
+    transformer = get_quantized_model(
+        model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers",
+        subfolder="transformer",
+        model_class=WanTransformer3DModel,
+        target_precision=4,
+        torch_dtype=torch.bfloat16,
+    )
 
     transformer_2 = get_quantized_model(
         model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers",
@@ -97,17 +91,15 @@ def get_pipeline_i2v(model_id, high_noise: bool, offload=True) -> WanImageToVide
 
 
 def get_should_offload(context: VideoContext) -> bool:
-    # memory management based on resolution
-    offload = is_memory_exceeded(35)
+    # memory management based on resolution - seems to be using more memory recently
+    offload = is_memory_exceeded(31)
     if context.is_580p_or_higher():
-        offload = is_memory_exceeded(34)
+        offload = is_memory_exceeded(35)
     return offload
 
 
 def text_to_video(context: VideoContext):
-    pipe = get_pipeline_t2v(
-        model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers", high_noise=True, offload=get_should_offload(context)
-    )
+    pipe = get_pipeline_t2v(model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers", offload=get_should_offload(context))
     if context.is_720p_or_higher():
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
@@ -131,9 +123,7 @@ def image_to_video(context: VideoContext):
     if context.image is None:
         raise ValueError("No input image provided for image-to-video generation")
 
-    pipe = get_pipeline_i2v(
-        model_id="Wan-AI/Wan2.2-I2V-A14B-Diffusers", high_noise=True, offload=get_should_offload(context)
-    )
+    pipe = get_pipeline_i2v(model_id="Wan-AI/Wan2.2-I2V-A14B-Diffusers", offload=get_should_offload(context))
     if context.is_720p_or_higher():
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
