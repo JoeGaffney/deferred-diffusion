@@ -3,12 +3,18 @@ from utils.utils import convert_pil_to_bytes
 from videos.context import VideoContext
 
 
+def get_resolution(context: VideoContext) -> str:
+    if context.get_mega_pixels() >= 2.0:  # close to 1080p or higher
+        return "1080p"
+    return "768p"
+
+
 def main(context: VideoContext):
     model = "minimax/hailuo-2.3"
     payload = {
         "prompt": context.data.cleaned_prompt,
         "duration": 6 if context.duration_in_seconds() <= 5 else 10,
-        "resolution": "1080p" if context.is_1080p_or_higher() else "768p",
+        "resolution": get_resolution(context),
         "prompt_optimizer": False,
     }
 

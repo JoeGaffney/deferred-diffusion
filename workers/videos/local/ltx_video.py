@@ -87,6 +87,7 @@ def text_to_video(context: VideoContext):
         num_frames=context.data.num_frames,
         generator=context.get_generator(),
         guidance_scale=1.0,
+        callback_on_step_end=task_log_callback(10),  # type: ignore
     ).frames[0]
 
     processed_path = context.save_video(video)
@@ -94,6 +95,7 @@ def text_to_video(context: VideoContext):
 
 
 def main(context: VideoContext):
+    context.rescale_to_max_megapixels(1.0)  # limit to 1 megapixel to avoid OOM
     context.ensure_divisible(32)
     if context.data.image:
         return image_to_video(context)

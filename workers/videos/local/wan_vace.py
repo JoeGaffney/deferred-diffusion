@@ -49,7 +49,7 @@ def video_to_video(context: VideoContext):
         raise ValueError("No reference image provided for video generation")
 
     pipe = get_pipeline(model_id="Wan-AI/Wan2.1-VACE-14B-diffusers")
-    if context.is_720p_or_higher():
+    if context.get_mega_pixels() >= 0.9:  # close to 720p or higher
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     # Adjust num_frames to meet WanVACE requirements and limit to available frames

@@ -47,14 +47,26 @@ class VideoContext:
             return "portrait"
         return "square"
 
-    def is_580p_or_higher(self) -> bool:
-        return max(self.width, self.height) >= 1024
+    def get_mega_pixels(self) -> float:
+        """Calculate the megapixels based on width and height.
+        480p (854x480): ~0.41 MP
+        580p (1024x576): ~0.59 MP
+        720p (1280x720): ~0.92 MP
+        1080p (1920x1080): ~2.07 MP
+        1440p (2560x1440): ~3.69 MP
+        4K (3840x2160): ~8.29 MP
+        """
+        return (self.width * self.height) / 1_000_000
 
-    def is_720p_or_higher(self) -> bool:
-        return max(self.width, self.height) >= 1280
+    def rescale_to_max_megapixels(self, max_mp: float):
+        """Rescale width and height to ensure the total megapixels do not exceed max_mp."""
+        current_mp = self.get_mega_pixels()
+        if current_mp <= max_mp:
+            return  # Already under the limit
 
-    def is_1080p_or_higher(self) -> bool:
-        return max(self.width, self.height) >= 1920
+        scale_factor = (max_mp / current_mp) ** 0.5  # sqrt because area scales with both width and height
+        self.width = int(self.width * scale_factor)
+        self.height = int(self.height * scale_factor)
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value

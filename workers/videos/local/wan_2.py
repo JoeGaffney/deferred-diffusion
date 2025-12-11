@@ -92,7 +92,7 @@ def get_pipeline_i2v(model_id) -> WanImageToVideoPipeline:
 
 def text_to_video(context: VideoContext):
     pipe = get_pipeline_t2v(model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers")
-    if context.is_720p_or_higher():
+    if context.get_mega_pixels() >= 0.9:  # close to 720p or higher
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     output = pipe(
@@ -115,7 +115,7 @@ def image_to_video(context: VideoContext):
         raise ValueError("No input image provided for image-to-video generation")
 
     pipe = get_pipeline_i2v(model_id="Wan-AI/Wan2.2-I2V-A14B-Diffusers")
-    if context.is_720p_or_higher():
+    if context.get_mega_pixels() >= 0.9:  # close to 720p or higher
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     output = pipe(
@@ -136,6 +136,7 @@ def image_to_video(context: VideoContext):
 
 
 def main(context: VideoContext):
+    context.rescale_to_max_megapixels(1.0)  # limit to 1 megapixel to avoid OOM
     context.ensure_divisible(16)
     if context.data.video and context.data.image:
         return video_to_video(context)
