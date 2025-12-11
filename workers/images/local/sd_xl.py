@@ -77,15 +77,7 @@ def text_to_image_call(context: ImageContext):
         **pipe_args,
     )
 
-    args = {
-        "width": context.width,
-        "height": context.height,
-        "prompt": context.data.cleaned_prompt,
-        "negative_prompt": _negative_prompt_default,
-        "num_inference_steps": 35,
-        "generator": context.generator,
-        "guidance_scale": 3.5,
-    }
+    args = {}
     if context.control_nets.is_enabled():
         args["image"] = context.control_nets.get_images()
         args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
@@ -94,7 +86,17 @@ def text_to_image_call(context: ImageContext):
         args["ip_adapter_image"] = context.adapters.get_images()
         pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
-    processed_image = pipe.__call__(**args, callback_on_step_end=task_log_callback(35)).images[0]
+    processed_image = pipe.__call__(
+        width=context.width,
+        height=context.height,
+        prompt=context.data.cleaned_prompt,
+        negative_prompt=_negative_prompt_default,
+        num_inference_steps=35,
+        generator=context.generator,
+        guidance_scale=3.5,
+        callback_on_step_end=task_log_callback(35),
+        **args,
+    ).images[0]
     context.cleanup()
 
     return processed_image
@@ -112,17 +114,7 @@ def image_to_image_call(context: ImageContext):
         **pipe_args,
     )
 
-    args = {
-        "width": context.width,
-        "height": context.height,
-        "prompt": context.data.cleaned_prompt,
-        "negative_prompt": _negative_prompt_default,
-        "image": context.color_image,
-        "num_inference_steps": 35,
-        "generator": context.generator,
-        "strength": context.data.strength,
-        "guidance_scale": 3.5,
-    }
+    args = {}
     if context.control_nets.is_enabled():
         args["control_image"] = context.control_nets.get_images()
         args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
@@ -131,7 +123,19 @@ def image_to_image_call(context: ImageContext):
         args["ip_adapter_image"] = context.adapters.get_images()
         pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
-    processed_image = pipe.__call__(**args, callback_on_step_end=task_log_callback(35)).images[0]
+    processed_image = pipe.__call__(
+        width=context.width,
+        height=context.height,
+        prompt=context.data.cleaned_prompt,
+        negative_prompt=_negative_prompt_default,
+        image=context.color_image,
+        num_inference_steps=35,
+        generator=context.generator,
+        strength=context.data.strength,
+        guidance_scale=3.5,
+        callback_on_step_end=task_log_callback(35),
+        **args,
+    ).images[0]
     context.cleanup()
 
     return processed_image
@@ -140,21 +144,17 @@ def image_to_image_call(context: ImageContext):
 def inpainting_call(context: ImageContext):
     pipe = get_inpainting_pipeline("OzzyGT/RealVisXL_V4.0_inpainting", variant="fp16")
 
-    args = {
-        "width": context.width,
-        "height": context.height,
-        "prompt": context.data.cleaned_prompt,
-        "negative_prompt": _negative_prompt_default,
-        "image": context.color_image,
-        "mask_image": context.mask_image,
-        "num_inference_steps": 35,
-        "generator": context.generator,
-        "strength": 0.95,
-        "guidance_scale": 4.0,
-    }
-
     processed_image = pipe.__call__(
-        **args,
+        width=context.width,
+        height=context.height,
+        prompt=context.data.cleaned_prompt,
+        negative_prompt=_negative_prompt_default,
+        image=context.color_image,  # type: ignore
+        mask_image=context.mask_image,  # type: ignore
+        num_inference_steps=35,
+        generator=context.generator,
+        strength=0.95,
+        guidance_scale=4.0,
         callback_on_step_end=task_log_callback(35),  # type: ignore
     ).images[0]
     context.cleanup()

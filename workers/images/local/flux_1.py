@@ -90,14 +90,7 @@ def text_to_image_call(context: ImageContext):
         **pipe_args,
     )
 
-    args = {
-        "prompt": context.data.cleaned_prompt,
-        "width": context.width,
-        "height": context.height,
-        "num_inference_steps": 30,
-        "generator": context.generator,
-        "guidance_scale": 2.5,
-    }
+    args = {}
     if context.control_nets.is_enabled():
         args["control_image"] = context.control_nets.get_images()
         args["controlnet_conditioning_scale"] = context.control_nets.get_conditioning_scales()
@@ -107,9 +100,16 @@ def text_to_image_call(context: ImageContext):
         pipe.set_ip_adapter_scale(context.adapters.get_scales())
 
     processed_image = pipe.__call__(
+        prompt=context.data.cleaned_prompt,
+        width=context.width,
+        height=context.height,
+        num_inference_steps=30,
+        generator=context.generator,
+        guidance_scale=2.5,
         **args,
         callback_on_step_end=task_log_callback(30),  # type: ignore
     ).images[0]
+
     context.cleanup()
     return processed_image
 
@@ -117,41 +117,34 @@ def text_to_image_call(context: ImageContext):
 def image_to_image_call(context: ImageContext):
     pipe = get_kontext_pipeline("black-forest-labs/FLUX.1-Kontext-dev")
 
-    args = {
-        "prompt": context.data.cleaned_prompt,
-        "width": context.width,
-        "height": context.height,
-        "image": context.color_image,
-        "num_inference_steps": 30,
-        "generator": context.generator,
-        "guidance_scale": 2.0,
-    }
     processed_image = pipe.__call__(
-        **args,
+        prompt=context.data.cleaned_prompt,
+        width=context.width,
+        height=context.height,
+        image=context.color_image,
+        num_inference_steps=30,
+        generator=context.generator,
+        guidance_scale=2.0,
         callback_on_step_end=task_log_callback(30),  # type: ignore
     ).images[0]
-    context.cleanup()
 
+    context.cleanup()
     return processed_image
 
 
 def inpainting_call(context: ImageContext):
     pipe = get_inpainting_pipeline("black-forest-labs/FLUX.1-Fill-dev")
 
-    args = {
-        "prompt": context.data.cleaned_prompt,
-        "width": context.width,
-        "height": context.height,
-        "image": context.color_image,
-        "mask_image": context.mask_image,
-        "num_inference_steps": 30,
-        "generator": context.generator,
-        "guidance_scale": 30,
-        "strength": context.data.strength,
-    }
-
     processed_image = pipe.__call__(
-        **args,
+        prompt=context.data.cleaned_prompt,
+        width=context.width,
+        height=context.height,
+        image=context.color_image,  # type: ignore
+        mask_image=context.mask_image,  # type: ignore
+        num_inference_steps=30,
+        generator=context.generator,
+        guidance_scale=30,
+        strength=context.data.strength,
         callback_on_step_end=task_log_callback(30),  # type: ignore
     ).images[0]
     context.cleanup()

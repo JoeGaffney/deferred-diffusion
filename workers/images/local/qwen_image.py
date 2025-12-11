@@ -93,18 +93,14 @@ def text_to_image_call(context: ImageContext):
     pipe = get_pipeline("Qwen/Qwen-Image", inpainting=False)
     prompt = context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
 
-    args = {
-        "width": context.width,
-        "height": context.height,
-        "prompt": prompt,
-        "negative_prompt": " ",
-        "num_inference_steps": 8,
-        "generator": context.generator,
-        "true_cfg_scale": 1.0,
-    }
-
     processed_image = pipe.__call__(
-        **args,
+        width=context.width,
+        height=context.height,
+        prompt=prompt,
+        negative_prompt=" ",
+        num_inference_steps=8,
+        generator=context.generator,
+        true_cfg_scale=1.0,
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
     context.cleanup()
@@ -130,19 +126,15 @@ def image_edit_call(context: ImageContext):
     # prompt_embeds, prompt_embeds_mask = qwen_edit_encode(context.data.cleaned_prompt, reference_images)
     pipe = get_edit_pipeline("Qwen/Qwen-Image-Edit-2509")
 
-    args = {
-        "width": context.width,
-        "height": context.height,
-        "prompt": context.data.cleaned_prompt,
-        "negative_prompt": " ",
-        "image": reference_images,
-        "generator": context.generator,
-        "num_inference_steps": 8,
-        "true_cfg_scale": 1.0,
-    }
-
     processed_image = pipe.__call__(
-        **args,
+        width=context.width,
+        height=context.height,
+        prompt=context.data.cleaned_prompt,
+        negative_prompt=" ",
+        image=reference_images,
+        generator=context.generator,
+        num_inference_steps=8,
+        true_cfg_scale=1.0,
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
     context.cleanup()
@@ -151,24 +143,26 @@ def image_edit_call(context: ImageContext):
 
 
 def inpainting_call(context: ImageContext):
+    if not context.color_image or not context.mask_image:
+        raise ValueError("Inpainting call requires both color_image and mask_image.")
+
     pipe = get_pipeline("Qwen/Qwen-Image", inpainting=True)
+
+    if not isinstance(pipe, QwenImageInpaintPipeline):
+        raise TypeError("Pipeline is not a QwenImageInpaintPipeline.")
+
     prompt = context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
 
-    args = {
-        "width": context.width,
-        "height": context.height,
-        "prompt": prompt,
-        "negative_prompt": " ",
-        "image": context.color_image,
-        "mask_image": context.mask_image,
-        "generator": context.generator,
-        "strength": context.data.strength,
-        "num_inference_steps": 8,
-        "true_cfg_scale": 1.0,
-    }
-
     processed_image = pipe.__call__(
-        **args,
+        width=context.width,
+        height=context.height,
+        prompt=prompt,
+        negative_prompt=" ",
+        image=context.color_image,
+        mask_image=context.mask_image,
+        generator=context.generator,
+        num_inference_steps=8,
+        true_cfg_scale=1.0,
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
     context.cleanup()

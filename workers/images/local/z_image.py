@@ -1,9 +1,8 @@
 import torch
-from diffusers import DiffusionPipeline, ZImagePipeline, ZImageTransformer2DModel
+from diffusers import ZImagePipeline, ZImageTransformer2DModel
 from PIL import Image
 from transformers import AutoModelForCausalLM
 
-from common.logger import task_log
 from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
     decorator_global_pipeline_cache,

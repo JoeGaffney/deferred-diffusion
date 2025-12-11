@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Literal, Optional, TypeAlias
+from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
@@ -135,14 +135,14 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         external=True,
         supported_modes={"text-to-image", "image-to-image"},
         references=True,
-        description="Gemini multimodal image model.",
+        description="Gemini 2.5 multimodal image model (aka 'Nano Banana').",
     ),
     "google-gemini-3": ImagesModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text-to-image", "image-to-image"},
         references=True,
-        description="Gemini 3 Pro image model.",
+        description="Gemini 3 Pro multimodal image model (aka 'Nano Banana Pro').",
     ),
     "bytedance-seedream-4": ImagesModelInfo(
         provider="replicate",
