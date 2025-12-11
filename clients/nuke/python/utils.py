@@ -53,9 +53,9 @@ def set_node_info(node, status: Optional[TaskStatus], message: str = "", logs=[]
     else:
         status_text = f"[{status}]"
 
-    label_test = status_text
+    label_text = status_text
     if message:
-        label_test = f"{status_text}\n{message}"
+        label_text = f"{status_text}\n{message}"
 
     # Join logs into a single string separated by newlines
     if len(logs) > 0:
@@ -64,9 +64,9 @@ def set_node_info(node, status: Optional[TaskStatus], message: str = "", logs=[]
             node["logs"].setValue(logs_text)
 
         # show only the last log entry in the label
-        label_test += f"\n{logs[-1]}"
+        label_text += f"\n{logs[-1]}"
 
-    node["label"].setValue(label_test)
+    node["label"].setValue(label_text)
 
     if status == TaskStatus.SUCCESS:
         node["tile_color"].setValue(0x00CC00FF)  # Green

@@ -42,6 +42,13 @@ def save_image_and_assert_file_exists(result, output_name):
     assert os.path.exists(output_path), f"Output file {output_path} was not created."
 
 
+def assert_logs_exist(logs):
+    print(f"Logs from generation: {logs}")
+    assert logs is not None
+    assert isinstance(logs, list)
+    assert len(logs) > 0
+
+
 def _convert_image_to_base64(image_path: str) -> Optional[str]:
     """Internal function that handles the actual base64 conversion."""
     if not image_path:
