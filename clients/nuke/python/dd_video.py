@@ -21,7 +21,6 @@ from utils import (
     base64_to_file,
     get_node_value,
     get_output_path,
-    image_to_base64,
     node_to_base64,
     node_to_base64_video,
     nuke_error_handling,
@@ -53,7 +52,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100
                 break
 
             def progress_update(parsed=parsed, count=count):
-                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
+                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time), logs=parsed.logs)
 
             nuke.executeInMainThread(progress_update)
         except RemoteProtocolError:
@@ -83,7 +82,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100
 
             # Set the time offset to the current frame
             set_node_value(node, "time_offset", current_frame)
-            set_node_info(node, TaskStatus.SUCCESS, "")
+            set_node_info(node, TaskStatus.SUCCESS, "", logs=parsed.logs)
 
     nuke.executeInMainThread(update_ui)
 
@@ -95,7 +94,7 @@ def _api_call(node, body: VideoRequest, output_video_path: str, current_frame: i
         raise RuntimeError(f"API call failed: {str(e)}") from e
 
     if not isinstance(parsed, VideoCreateResponse):
-        raise ValueError("Unexpected response type from API call.")
+        raise ValueError(str(parsed))
 
     set_node_value(node, "task_id", str(parsed.id))
     _api_get_call(node, str(parsed.id), output_video_path, current_frame)

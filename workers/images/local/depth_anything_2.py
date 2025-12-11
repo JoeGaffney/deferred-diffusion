@@ -1,5 +1,3 @@
-from functools import lru_cache
-
 import torch
 from PIL import Image
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
@@ -13,7 +11,6 @@ def update_device(model, device):
     model.to(device)
 
 
-@lru_cache(maxsize=1)
 def get_pipeline(model_id):
     pipe = AutoModelForDepthEstimation.from_pretrained(model_id)
     logger.warning(f"Loaded pipeline {model_id}")
@@ -55,4 +52,7 @@ def main(context: ImageContext):
     processed_image = Image.fromarray(depth_map_8bit)
 
     update_device(pipe, "cpu")
+    del pipe
+    del inputs
+    del outputs
     return processed_image

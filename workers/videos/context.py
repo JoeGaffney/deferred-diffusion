@@ -6,7 +6,7 @@ import requests
 import torch
 from diffusers.utils import export_to_video
 
-from common.logger import logger
+from common.logger import logger, task_log
 from utils.utils import (
     ensure_divisible,
     get_tmp_dir,
@@ -32,6 +32,10 @@ class VideoContext:
         self.video_frames = load_video_frames_if_exists(data.video, model=self.model)
         self.last_image = load_image_if_exists(data.last_image)
 
+        task_log(
+            f"Context created {self.model}, {self.width}x{self.height}",
+        )
+
     def get_generator(self, device="cuda"):
         return torch.Generator(device=device).manual_seed(self.data.seed)
 
@@ -51,9 +55,6 @@ class VideoContext:
 
     def is_1080p_or_higher(self) -> bool:
         return max(self.width, self.height) >= 1920
-
-    def get_flow_shift(self) -> float:
-        return 5.0 if self.is_720p_or_higher() else 3.0
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value

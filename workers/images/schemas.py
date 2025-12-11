@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Optional, TypeAlias
+from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
@@ -135,14 +135,14 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         external=True,
         supported_modes={"text-to-image", "image-to-image"},
         references=True,
-        description="Gemini multimodal image model.",
+        description="Gemini 2.5 multimodal image model (aka 'Nano Banana').",
     ),
     "google-gemini-3": ImagesModelInfo(
         provider="replicate",
         external=True,
         supported_modes={"text-to-image", "image-to-image"},
         references=True,
-        description="Gemini 3 Pro image model.",
+        description="Gemini 3 Pro multimodal image model (aka 'Nano Banana Pro').",
     ),
     "bytedance-seedream-4": ImagesModelInfo(
         provider="replicate",
@@ -266,6 +266,7 @@ class ImageRequest(BaseModel):
 
 
 class ImageWorkerResponse(BaseModel):
+    logs: List[str] = []
     base64_data: Base64Bytes
 
 
@@ -274,6 +275,7 @@ class ImageResponse(BaseModel):
     status: TaskStatus
     result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
+    logs: List[str] = []
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -283,6 +285,7 @@ class ImageResponse(BaseModel):
                     "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
                 },
                 "error_message": None,
+                "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }
         }
     )

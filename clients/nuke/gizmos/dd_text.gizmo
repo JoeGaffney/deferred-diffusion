@@ -13,12 +13,14 @@ Group {
  task_id e855044f-787e-4d80-bcfb-9d7f9e76a943
  addUserKnob {22 get_task l "Get Task" -STARTLINE T "import dd_text\nnode = nuke.thisNode()\ndd_text.get_text(node)" t "Fetch the latest text for this task."}
  addUserKnob {26 ""}
- addUserKnob {43 prompt l Prompt t "Describe what you want the model to generate." -STARTLINE}
+ addUserKnob {43 prompt l Prompt t "Describe what you want the model to generate." -STARTLINE +MULTILINE}
  prompt "Make me a prompt suitable for stable diffusion image generation - be creative please."
  addUserKnob {43 response l Response t "Generated response from the model."}
  addUserKnob {20 Misc l}
  addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
  addUserKnob {22 task_button l "Task Monitor" t "Open the task monitoring page in your browser." -STARTLINE T "import dd_help\ndd_help.open_task()"}
+ addUserKnob {43 logs l Logs t "" +MULTILINE}
+ addUserKnob {26 ""}
 }
  Input {
   inputs 0

@@ -14,7 +14,7 @@ from generated.api_client.models import (
     ImageRequestModel,
     ImageResponse,
 )
-from utils import image_a, save_image_and_assert_file_exists
+from utils import assert_logs_exist, image_a, save_image_and_assert_file_exists
 
 models = [ImageRequestModel("sd-xl")]
 
@@ -47,7 +47,7 @@ def test_create_image(api_client, model):
     image_id = create_image(api_client, body)
 
     for _ in range(20):  # Retry up to 20 times
-        time.sleep(5)
+        time.sleep(10)
         response = images_get.sync_detailed(id=image_id, client=api_client)
         if isinstance(response.parsed, ImageResponse) and response.parsed.status in ["SUCCESS", "COMPLETED"]:
             break
@@ -58,6 +58,7 @@ def test_create_image(api_client, model):
     assert response.parsed.id == image_id
     assert response.parsed.status == "SUCCESS"
     save_image_and_assert_file_exists(response.parsed.result.base64_data, f"test_images_{model}.png")  # type: ignore
+    assert_logs_exist(response.parsed.logs)
 
 
 @pytest.mark.local

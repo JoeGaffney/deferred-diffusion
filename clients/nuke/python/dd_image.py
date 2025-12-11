@@ -52,7 +52,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100
                 break
 
             def progress_update(parsed=parsed, count=count):
-                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time))
+                set_node_info(node, parsed.status, polling_message(count, iterations, sleep_time), logs=parsed.logs)
 
             nuke.executeInMainThread(progress_update)
         except RemoteProtocolError:
@@ -82,7 +82,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100
             set_node_value(output_read, "file", output_path)
             update_read_range(output_read)
 
-            set_node_info(node, TaskStatus.SUCCESS, "")
+            set_node_info(node, TaskStatus.SUCCESS, "", logs=parsed.logs)
 
     nuke.executeInMainThread(update_ui)
 
@@ -94,7 +94,7 @@ def _api_call(node, body: ImageRequest, output_image_path: str, current_frame: i
         raise RuntimeError(f"API call failed: {str(e)}") from e
 
     if not isinstance(parsed, ImageCreateResponse):
-        raise ValueError("Unexpected response type from API call.")
+        raise ValueError(str(parsed))
 
     set_node_value(node, "task_id", str(parsed.id))
     _api_get_call(node, str(parsed.id), output_image_path, current_frame)

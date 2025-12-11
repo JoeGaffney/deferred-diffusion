@@ -12,6 +12,7 @@ from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
     optimize_pipeline,
+    task_log_callback,
 )
 from common.text_encoders import get_umt5_text_encoder
 from videos.context import VideoContext
@@ -22,19 +23,15 @@ _negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_t2v(model_id, high_noise: bool, offload=True) -> WanPipeline:
-    # high noise uses both transformers
-    transformer = None
-    args = {"boundary_ratio": 1.0}
-    if high_noise:
-        args = {"boundary_ratio": 0.5}
-        transformer = get_quantized_model(
-            model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
-            subfolder="transformer",
-            model_class=WanTransformer3DModel,
-            target_precision=4,
-            torch_dtype=torch.bfloat16,
-        )
+def get_pipeline_t2v(model_id) -> WanPipeline:
+    args = {"boundary_ratio": 0.5}  # even split
+    transformer = get_quantized_model(
+        model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
+        subfolder="transformer",
+        model_class=WanTransformer3DModel,
+        target_precision=4,
+        torch_dtype=torch.bfloat16,
+    )
 
     transformer_2 = get_quantized_model(
         model_id="magespace/Wan2.2-T2V-A14B-Lightning-Diffusers",
@@ -53,25 +50,23 @@ def get_pipeline_t2v(model_id, high_noise: bool, offload=True) -> WanPipeline:
         torch_dtype=torch.bfloat16,
         **args,
     )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
 
-    return optimize_pipeline(pipe, offload=offload)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(35))
 
 
 @decorator_global_pipeline_cache
-def get_pipeline_i2v(model_id, high_noise: bool, offload=True) -> WanImageToVideoPipeline:
-    # high noise uses both transformers - low noise only seems busted and gives crazy results atm
-    transformer = None
-    args = {"boundary_ratio": 1.0}
-    if high_noise:
-        args = {}
-        transformer = get_quantized_model(
-            model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers",
-            subfolder="transformer",
-            model_class=WanTransformer3DModel,
-            target_precision=4,
-            torch_dtype=torch.bfloat16,
-        )
+def get_pipeline_i2v(model_id) -> WanImageToVideoPipeline:
+    # even split gives strange results - try without for now
+    args = {"boundary_ratio": 0.5}
+    args = {}
+    transformer = get_quantized_model(
+        model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers",
+        subfolder="transformer",
+        model_class=WanTransformer3DModel,
+        target_precision=4,
+        torch_dtype=torch.bfloat16,
+    )
 
     transformer_2 = get_quantized_model(
         model_id="magespace/Wan2.2-I2V-A14B-Lightning-Diffusers",
@@ -90,34 +85,25 @@ def get_pipeline_i2v(model_id, high_noise: bool, offload=True) -> WanImageToVide
         torch_dtype=torch.bfloat16,
         **args,
     )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
 
-    return optimize_pipeline(pipe, offload=offload)
-
-
-def get_should_offload(context: VideoContext) -> bool:
-    # memory management based on resolution
-    offload = is_memory_exceeded(31)
-    if context.is_580p_or_higher():
-        offload = is_memory_exceeded(34)
-    return offload
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(35))
 
 
 def text_to_video(context: VideoContext):
-    pipe = get_pipeline_t2v(
-        model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers", high_noise=True, offload=get_should_offload(context)
-    )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
+    pipe = get_pipeline_t2v(model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers")
+    if context.is_720p_or_higher():
+        pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     output = pipe(
         prompt=context.data.cleaned_prompt,
-        negative_prompt=_negative_prompt,
         width=context.width,
         height=context.height,
         num_inference_steps=8,
         num_frames=context.data.num_frames,
         guidance_scale=1.0,
         generator=context.get_generator(),
+        callback_on_step_end=task_log_callback(8),  # type: ignore
     ).frames[0]
 
     processed_path = context.save_video(output, fps=16)
@@ -128,14 +114,12 @@ def image_to_video(context: VideoContext):
     if context.image is None:
         raise ValueError("No input image provided for image-to-video generation")
 
-    pipe = get_pipeline_i2v(
-        model_id="Wan-AI/Wan2.2-I2V-A14B-Diffusers", high_noise=True, offload=get_should_offload(context)
-    )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
+    pipe = get_pipeline_i2v(model_id="Wan-AI/Wan2.2-I2V-A14B-Diffusers")
+    if context.is_720p_or_higher():
+        pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     output = pipe(
         prompt=context.data.cleaned_prompt,
-        negative_prompt=_negative_prompt,
         width=context.width,
         height=context.height,
         image=context.image,
@@ -144,6 +128,7 @@ def image_to_video(context: VideoContext):
         num_frames=context.data.num_frames,
         guidance_scale=1.0,
         generator=context.get_generator(),
+        callback_on_step_end=task_log_callback(8),  # type: ignore
     ).frames[0]
 
     processed_path = context.save_video(output, fps=16)

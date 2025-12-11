@@ -10,6 +10,7 @@ from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
     optimize_pipeline,
+    task_log_callback,
 )
 from common.text_encoders import get_t5_text_encoder
 from videos.context import VideoContext
@@ -67,6 +68,7 @@ def image_to_video(context: VideoContext):
         num_frames=num_frames,
         generator=context.get_generator(),
         guidance_scale=1.0,
+        callback_on_step_end=task_log_callback(10),  # type: ignore
     ).frames[0]
 
     processed_path = context.save_video(video)

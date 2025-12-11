@@ -1,14 +1,13 @@
 import copy
 import tempfile
-from typing import Literal, Tuple
+from typing import Literal
 
 import torch
-from pydantic import BaseModel
 
-from common.logger import logger
+from common.logger import logger, task_log
 from images.adapters import Adapters
 from images.control_nets import ControlNets
-from images.schemas import ImageRequest, ModelName
+from images.schemas import ImageRequest
 from utils.utils import ensure_divisible, get_tmp_dir, load_image_if_exists
 
 
@@ -32,6 +31,10 @@ class ImageContext:
         # Initialize control nets and adapters
         self.control_nets = ControlNets(data.references, self.model, self.width, self.height)
         self.adapters = Adapters(data.references, self.model, self.width, self.height)
+
+        task_log(
+            f"Context created {self.model}, {self.width}x{self.height}",
+        )
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value

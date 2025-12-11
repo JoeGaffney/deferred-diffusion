@@ -76,7 +76,7 @@ mypy-cpu-workers:
 # make test-worker TEST_PATH=images/external/test_flux_1_pro.py
 # make test-worker TEST_PATH=texts
 # make test-worker TEST_PATH=videos
-# make test-worker TEST_PATH=videos/local/test_wan.py
+# make test-worker TEST_PATH=videos/local/test_wan_2.py
 # make test-worker TEST_PATH=videos/external/test_runway_gen4.py
 test-worker: up
 	docker compose exec gpu-workers pytest tests/$(TEST_PATH) -vs

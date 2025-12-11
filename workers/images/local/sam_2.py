@@ -2,7 +2,7 @@ import numpy as np
 from lang_sam import LangSAM
 from PIL import Image, ImageChops
 
-from common.logger import log_pretty, logger
+from common.logger import log_pretty, task_log
 from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
 
@@ -19,7 +19,6 @@ def main(context: ImageContext):
     results = model.predict([image_pil], [text_prompt], box_threshold=0.3, text_threshold=0.25)
     model.sam.model.to("cpu")
     model.gdino.model.to("cpu")
-
     results = results[0]
     log_pretty(f"processed_dict", results)
 
@@ -32,15 +31,15 @@ def main(context: ImageContext):
         processed_image = Image.fromarray(mask_image).convert("L")
         image_masks.append(processed_image)
 
-    combined_clown_mask = Image.new("RGB", (context.width, context.height), (0, 0, 0))
+    task_log(f"Number of masks detected: {len(image_masks)}")
 
+    combined_clown_mask = Image.new("RGB", (context.width, context.height), (0, 0, 0))
     base_colors = [
         (255, 0, 0),  # Red
         (0, 255, 0),  # Green
         (0, 0, 255),  # Blue
     ]
     fallback_color = (0, 0, 255)  # Blue for any remaining masks
-    logger.info(f"Number of masks detected: {len(image_masks)}")
 
     # Apply colors to masks and combine them
     for i, mask in enumerate(image_masks):

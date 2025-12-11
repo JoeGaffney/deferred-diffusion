@@ -1,5 +1,6 @@
 from PIL import Image
 
+from common.logger import get_task_logs
 from images.context import ImageContext
 from images.schemas import ImageRequest, ImageWorkerResponse, ModelName
 from utils.utils import pil_to_base64
@@ -9,7 +10,7 @@ from worker import celery_app
 def process_result(context, result):
     if isinstance(result, Image.Image):
         context.save_image(result)
-        return ImageWorkerResponse(base64_data=pil_to_base64(result)).model_dump()
+        return ImageWorkerResponse(base64_data=pil_to_base64(result), logs=get_task_logs()).model_dump()
     raise ValueError("Image generation failed")
 
 

@@ -1,5 +1,5 @@
 import torch
-from diffusers import Flux2Pipeline, ZImagePipeline, ZImageTransformer2DModel
+from diffusers import ZImagePipeline, ZImageTransformer2DModel
 from PIL import Image
 from transformers import AutoModelForCausalLM
 
@@ -8,6 +8,7 @@ from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
     optimize_pipeline,
+    task_log_callback,
 )
 from images.context import ImageContext
 
@@ -20,7 +21,6 @@ def get_pipeline(model_id):
         model_class=ZImageTransformer2DModel,
         target_precision=8,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )
 
     text_encoder = get_quantized_model(
@@ -29,7 +29,6 @@ def get_pipeline(model_id):
         model_class=AutoModelForCausalLM,
         target_precision=8,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )
 
     pipe = ZImagePipeline.from_pretrained(
@@ -52,6 +51,7 @@ def text_to_image_call(context: ImageContext):
         height=context.height,
         width=context.width,
         generator=context.generator,
+        callback_on_step_end=task_log_callback(9),  # type: ignore
     ).images[0]
 
     return processed_image

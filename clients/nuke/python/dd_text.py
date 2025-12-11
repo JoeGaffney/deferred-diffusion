@@ -81,7 +81,7 @@ def _api_call(node, body: TextRequest):
         raise RuntimeError(f"API call failed: {str(e)}") from e
 
     if not isinstance(parsed, TextCreateResponse):
-        raise ValueError("Unexpected response type from API call.")
+        raise ValueError(str(parsed))
 
     set_node_value(node, "task_id", str(parsed.id))
     _api_get_call(node, str(parsed.id), iterations=100)

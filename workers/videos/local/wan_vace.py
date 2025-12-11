@@ -9,6 +9,7 @@ from common.pipeline_helpers import (
     decorator_global_pipeline_cache,
     get_quantized_model,
     optimize_pipeline,
+    task_log_callback,
 )
 from common.text_encoders import get_umt5_text_encoder
 from videos.context import VideoContext
@@ -35,7 +36,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanVACEPipeline:
         text_encoder=get_umt5_text_encoder(),
         torch_dtype=torch_dtype,
     )
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
+    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
 
     return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
@@ -48,7 +49,8 @@ def video_to_video(context: VideoContext):
         raise ValueError("No reference image provided for video generation")
 
     pipe = get_pipeline(model_id="Wan-AI/Wan2.1-VACE-14B-diffusers")
-    pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=context.get_flow_shift())
+    if context.is_720p_or_higher():
+        pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     # Adjust num_frames to meet WanVACE requirements and limit to available frames
     num_frames = min(context.data.num_frames, len(context.video_frames))
@@ -86,6 +88,7 @@ def video_to_video(context: VideoContext):
         num_inference_steps=12,
         guidance_scale=5.0,
         generator=context.get_generator(),
+        callback_on_step_end=task_log_callback(12),  # type: ignore
     )
 
     # Extract frames from pipeline output

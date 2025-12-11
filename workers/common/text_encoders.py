@@ -16,7 +16,6 @@ def get_t5_text_encoder() -> T5EncoderModel:
         model_class=T5EncoderModel,
         target_precision=8,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )
 
 
@@ -27,7 +26,6 @@ def get_qwen2_5_text_encoder() -> Qwen2_5_VLForConditionalGeneration:
         model_class=Qwen2_5_VLForConditionalGeneration,
         target_precision=4,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )
 
 
@@ -38,7 +36,6 @@ def get_umt5_text_encoder() -> UMT5EncoderModel:
         model_class=UMT5EncoderModel,
         target_precision=8,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )
 
 
@@ -51,5 +48,4 @@ def get_mistral3_text_encoder() -> Mistral3ForConditionalGeneration:
         model_class=Mistral3ForConditionalGeneration,
         target_precision=16,
         torch_dtype=torch.bfloat16,
-        device="cpu",
     )

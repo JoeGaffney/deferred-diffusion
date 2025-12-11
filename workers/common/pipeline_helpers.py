@@ -3,7 +3,7 @@ import os
 import time
 from collections import OrderedDict
 from functools import wraps
-from typing import Literal, Optional, Union
+from typing import Literal, Union
 
 import torch
 from accelerate.hooks import CpuOffload
@@ -12,7 +12,7 @@ from diffusers import GGUFQuantizationConfig
 from huggingface_hub import hf_hub_download
 from transformers import BitsAndBytesConfig, TorchAoConfig
 
-from common.logger import logger
+from common.logger import logger, task_log
 from common.memory import free_gpu_memory, gpu_memory_usage
 from utils.utils import time_info_decorator
 
@@ -52,13 +52,14 @@ class ModelLRUCache:
         if len(self.cache) >= self.max_models:
             self._evict_lru()
 
+        task_log(f"Loading pipeline {key}")
         start = time.time()
         pipeline = loader_fn()
         self.cache[key] = pipeline
         end = time.time()
-        logger.warning(
-            f"Cache miss for {key} - took: {end - start:.2f}s - Cache size: {len(self.cache)}/{self.max_models}"
-        )
+        duration = end - start
+        logger.debug(f"Cache miss for {key} - took: {duration:.2f}s - Cache size: {len(self.cache)}/{self.max_models}")
+        task_log(f"Pipeline loaded in {duration:.2f}s")
 
         return pipeline
 
@@ -69,7 +70,7 @@ class ModelLRUCache:
         # Get the first item (least recently used)
         oldest_key, oldest_pipeline = next(iter(self.cache.items()))
 
-        logger.info(f"Evicting LRU model: {oldest_key}")
+        logger.debug(f"Evicting LRU model: {oldest_key}")
         self._cleanup(oldest_pipeline)
         self.cache.popitem(last=False)  # Remove from the beginning (LRU)
 
@@ -189,7 +190,6 @@ def get_quantized_model(
     model_class,
     target_precision: Literal[4, 8, 16] = 8,
     torch_dtype=torch.bfloat16,
-    device="",
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -206,14 +206,9 @@ def get_quantized_model(
         model instance
     """
 
-    # if we will be offloading, load to CPU
-    args = {}
-    if device:
-        args["device_map"] = device
-
     if target_precision == 16:
         logger.debug(f"Quantization disabled for {model_id} subfolder {subfolder}")
-        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype, **args)
+        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype)
 
     load_in_4bit = target_precision == 4
     quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit=load_in_4bit)
@@ -238,10 +233,10 @@ def get_quantized_model(
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
         model = model_class.from_pretrained(
-            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors, **args
+            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors
         )
     except Exception as e:
-        logger.error(f"Failed to load quantized model from {quant_dir}: {e}")
+        logger.warning(f"Failed to load quantized model from {quant_dir}: {e}")
         logger.info(f"Loading and quantizing {model_id} subfolder {subfolder}")
         model = model_class.from_pretrained(
             model_id,
@@ -254,3 +249,14 @@ def get_quantized_model(
         logger.info(f"Saved quantized model to {quant_dir}")
 
     return model
+
+
+def task_log_callback(num_inference_steps: int):
+    """Factory function that creates a callback with num_inference_steps captured."""
+
+    def callback(pipe_instance, step: int, timestep: int, callback_kwargs: dict):
+        progress_pct = ((step + 1) / num_inference_steps) * 100
+        task_log(f"Inference step {step + 1}/{num_inference_steps} ({progress_pct:.0f}%)", log_to_logger=False)
+        return callback_kwargs
+
+    return callback
