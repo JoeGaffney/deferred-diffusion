@@ -123,7 +123,6 @@ def image_edit_call(context: ImageContext):
         if current is not None:
             reference_images.append(current)
 
-    # prompt_embeds, prompt_embeds_mask = qwen_edit_encode(context.data.cleaned_prompt, reference_images)
     pipe = get_edit_pipeline("Qwen/Qwen-Image-Edit-2509")
 
     processed_image = pipe.__call__(
@@ -137,7 +136,6 @@ def image_edit_call(context: ImageContext):
         true_cfg_scale=1.0,
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
-    context.cleanup()
 
     return processed_image
 
@@ -148,9 +146,6 @@ def inpainting_call(context: ImageContext):
 
     pipe = get_pipeline("Qwen/Qwen-Image", inpainting=True)
 
-    if not isinstance(pipe, QwenImageInpaintPipeline):
-        raise TypeError("Pipeline is not a QwenImageInpaintPipeline.")
-
     prompt = context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
 
     processed_image = pipe.__call__(
@@ -158,14 +153,13 @@ def inpainting_call(context: ImageContext):
         height=context.height,
         prompt=prompt,
         negative_prompt=" ",
-        image=context.color_image,
-        mask_image=context.mask_image,
+        image=context.color_image,  # type: ignore
+        mask_image=context.mask_image,  # type: ignore
         generator=context.generator,
         num_inference_steps=8,
         true_cfg_scale=1.0,
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
-    context.cleanup()
 
     return processed_image
 
