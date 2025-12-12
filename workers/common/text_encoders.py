@@ -1,3 +1,5 @@
+from typing import Literal
+
 import torch
 from transformers import (
     Mistral3ForConditionalGeneration,
@@ -19,12 +21,14 @@ def get_t5_text_encoder() -> T5EncoderModel:
     )
 
 
-def get_qwen2_5_text_encoder() -> Qwen2_5_VLForConditionalGeneration:
+def get_qwen2_5_text_encoder(
+    target_precision: Literal[4, 8, 16] = 8,
+) -> Qwen2_5_VLForConditionalGeneration:
     return get_quantized_model(
         model_id="Qwen/Qwen2.5-VL-7B-Instruct",
         subfolder="",
         model_class=Qwen2_5_VLForConditionalGeneration,
-        target_precision=4,
+        target_precision=target_precision,
         torch_dtype=torch.bfloat16,
     )
 

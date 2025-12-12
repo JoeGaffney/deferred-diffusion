@@ -73,38 +73,37 @@ def ensure_divisible(value: int, divisor=16) -> int:
     return (value // divisor) * divisor
 
 
-def resize_image(image, division=16, scale=1.0, max_width=4096, max_height=4096) -> Image.Image:
-    orig_width, orig_height = image.size
-    aspect_ratio = orig_width / orig_height
+def ensure_divisible_aspect_size(width: int, height: int, divisor: int) -> tuple[int, int]:
+    if divisor <= 1:
+        return width, height
 
-    # Scale original size
-    target_width = orig_width * scale
-    target_height = orig_height * scale
+    # Scale down proportionally so both dimensions are divisible by divisor
+    new_w = width - (width % divisor)
+    new_h = height - (height % divisor)
 
-    # simple rounding to nearest divisible
-    width = int(ensure_divisible(min(target_width, max_width), division))
-    height = int(ensure_divisible(min(target_height, max_height), division))
+    scale_w = new_w / width
+    scale_h = new_h / height
+    scale = min(scale_w, scale_h)
 
-    # # Fit inside max bounds while preserving aspect ratio
-    # scale_factor = min(max_width / target_width, max_height / target_height, 1.0)
-    # target_width *= scale_factor
-    # target_height *= scale_factor
+    target_w = int(width * scale)
+    target_h = int(height * scale)
 
-    # # Round BOTH dimensions down to divisible sizes
-    # width = int(math.floor(target_width / division) * division)
-    # height = int(math.floor(target_height / division) * division)
+    # Final ensure divisible
+    target_w -= target_w % divisor
+    target_h -= target_h % divisor
 
-    # Final check: skip resize if not needed
-    if (width, height) == image.size:
-        logger.info(f"No resize needed. Image size is already {width}x{height} (div/{division})")
-        return image
+    logger.info(f"Resized to ensure divisible by {divisor}: {width}x{height} -> {target_w}x{target_h}")
+    return target_w, target_h
 
-    logger.info(f"Resizing from {image.size} to ({width}, {height}) (div/{division})")
-    return image.resize((width, height), Image.Resampling.LANCZOS)
+
+def image_resize(img: Image.Image, target_size: tuple[int, int], resampler=Image.Resampling.LANCZOS) -> Image.Image:
+    if img.size == target_size:
+        return img
+    logger.info(f"Resizing image from {img.size} to {target_size}")
+    return img.resize(target_size, resampler)
 
 
 def load_image_from_base64(base64_bytes: str) -> Image.Image:
-
     try:
         # Convert bytes to a PIL image
         tmp_bytes = base64.b64decode(base64_bytes)

@@ -4,9 +4,9 @@ from accelerate import Accelerator
 from PIL import Image
 from transformers.models.sam3_video import Sam3VideoModel, Sam3VideoProcessor
 
-from common.logger import log_pretty, logger
 from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
+from utils.utils import image_resize
 from videos.context import VideoContext
 
 
@@ -65,7 +65,7 @@ def main(context: VideoContext):
             combined[mask.cpu().numpy()] = color
 
         # Resize to original frame if needed
-        combined_img = Image.fromarray(combined).resize(original_frame_size, Image.Resampling.NEAREST)
+        combined_img = image_resize(Image.fromarray(combined), original_frame_size, Image.Resampling.NEAREST)
         processed_frames.append(combined_img)
 
     # Clean up

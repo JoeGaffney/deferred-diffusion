@@ -13,7 +13,7 @@ from generated.api_client.models import (
     VideoRequestModel,
     VideoResponse,
 )
-from utils import image_c, save_image_and_assert_file_exists
+from utils import assert_logs_exist, image_c, save_image_and_assert_file_exists
 
 models = [VideoRequestModel("runway-gen-4")]
 
@@ -63,3 +63,4 @@ def test_create_video(api_client, model):
     assert response.parsed.id == video_id
     assert response.parsed.status == "SUCCESS"
     save_image_and_assert_file_exists(response.parsed.result.base64_data, f"test_videos_{model}.mp4")  # type: ignore
+    assert_logs_exist(response.parsed.logs)

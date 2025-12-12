@@ -6,7 +6,7 @@ from openai.types import VideoSeconds, VideoSize
 from PIL import Image
 
 from common.logger import logger
-from utils.utils import convert_pil_to_bytes
+from utils.utils import convert_pil_to_bytes, image_resize
 from videos.context import VideoContext
 
 
@@ -22,10 +22,10 @@ def get_aspect_ratio(context: VideoContext) -> VideoSize:
 def resize_image_to_aspect_ratio(image, context: VideoContext) -> Image.Image:
     dimension_type = context.get_dimension_type()
     if dimension_type == "portrait":
-        return image.resize((720, 1280))
+        return image_resize(image, (720, 1280))
 
     # default to landscape
-    return image.resize((1280, 720))
+    return image_resize(image, (1280, 720))
 
 
 def main(context: VideoContext):

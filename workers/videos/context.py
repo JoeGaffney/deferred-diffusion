@@ -8,8 +8,9 @@ from diffusers.utils import export_to_video
 
 from common.logger import logger, task_log
 from utils.utils import (
-    ensure_divisible,
+    ensure_divisible_aspect_size,
     get_tmp_dir,
+    image_resize,
     load_image_if_exists,
     load_video_frames_if_exists,
     mp4_to_base64_decoded,
@@ -67,15 +68,19 @@ class VideoContext:
         scale_factor = (max_mp / current_mp) ** 0.5  # sqrt because area scales with both width and height
         self.width = int(self.width * scale_factor)
         self.height = int(self.height * scale_factor)
+        if self.image:
+            self.image = image_resize(self.image, (self.width, self.height))
+        if self.last_image:
+            self.last_image = image_resize(self.last_image, (self.width, self.height))
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value
-        self.width = ensure_divisible(self.width, value)
-        self.height = ensure_divisible(self.height, value)
+        self.width, self.height = ensure_divisible_aspect_size(self.width, self.height, value)
+
         if self.image:
-            self.image = self.image.resize([self.width, self.height])
+            self.image = image_resize(self.image, (self.width, self.height))
         if self.last_image:
-            self.last_image = self.last_image.resize([self.width, self.height])
+            self.last_image = image_resize(self.last_image, (self.width, self.height))
 
     def ensure_frames_divisible(self, current_frames, divisor: int = 4) -> int:
         return ((current_frames - 1) // divisor) * divisor + 1
