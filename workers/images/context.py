@@ -8,7 +8,13 @@ from common.logger import logger, task_log
 from images.adapters import Adapters
 from images.control_nets import ControlNets
 from images.schemas import ImageRequest
-from utils.utils import ensure_divisible, get_tmp_dir, load_image_if_exists
+from utils.utils import (
+    ensure_divisible,
+    get_tmp_dir,
+    image_crop,
+    image_resize,
+    load_image_if_exists,
+)
 
 
 class ImageContext:
@@ -26,7 +32,7 @@ class ImageContext:
         self.mask_image = load_image_if_exists(data.mask)
         if self.mask_image:
             self.mask_image = self.mask_image.convert("L")
-            self.mask_image = self.mask_image.resize([self.width, self.height])
+            self.mask_image = image_resize(self.mask_image, (self.width, self.height))
 
         # Initialize control nets and adapters
         self.control_nets = ControlNets(data.references, self.model, self.width, self.height)
@@ -40,10 +46,14 @@ class ImageContext:
         # Adjust width and height to be divisible by the specified value
         self.width = ensure_divisible(self.width, value)
         self.height = ensure_divisible(self.height, value)
+
         if self.mask_image:
-            self.mask_image = self.mask_image.resize([self.width, self.height])
+            self.mask_image = image_crop(self.mask_image, (self.width, self.height))
         if self.color_image:
-            self.color_image = self.color_image.resize([self.width, self.height])
+            self.color_image = image_crop(self.color_image, (self.width, self.height))
+
+        # also adjust control net images
+        self.control_nets.crop_all_images((self.width, self.height))
 
     def get_dimension_type(self) -> Literal["square", "landscape", "portrait"]:
         """Determine the image dimension type based on width and height ratio."""

@@ -10,6 +10,8 @@ from common.logger import logger, task_log
 from utils.utils import (
     ensure_divisible,
     get_tmp_dir,
+    image_crop,
+    image_resize,
     load_image_if_exists,
     load_video_frames_if_exists,
     mp4_to_base64_decoded,
@@ -39,6 +41,48 @@ class VideoContext:
     def get_generator(self, device="cuda"):
         return torch.Generator(device=device).manual_seed(self.data.seed)
 
+    def get_mega_pixels(self) -> float:
+        """Calculate the megapixels based on width and height.
+        480p (854x480): ~0.41 MP
+        580p (1024x576): ~0.59 MP
+        720p (1280x720): ~0.92 MP
+        1080p (1920x1080): ~2.07 MP
+        1440p (2560x1440): ~3.69 MP
+        4K (3840x2160): ~8.29 MP
+        """
+        return (self.width * self.height) / 1_000_000
+
+    def rescale_to_max_megapixels(self, max_mp: float):
+        """Rescale width and height to ensure the total megapixels do not exceed max_mp."""
+        current_mp = self.get_mega_pixels()
+        if current_mp <= max_mp:
+            return  # Already under the limit
+
+        scale_factor = (max_mp / current_mp) ** 0.5  # sqrt because area scales with both width and height
+        self.width = int(self.width * scale_factor)
+        self.height = int(self.height * scale_factor)
+
+        if self.image:
+            self.image = image_resize(self.image, (self.width, self.height))
+        if self.last_image:
+            self.last_image = image_resize(self.last_image, (self.width, self.height))
+        if self.video_frames:
+            for frame_idx in range(len(self.video_frames)):
+                self.video_frames[frame_idx] = image_resize(self.video_frames[frame_idx], (self.width, self.height))
+
+    def ensure_divisible(self, value: int):
+        """Adjust width and height to be divisible by the specified value."""
+        self.width = ensure_divisible(self.width, value)
+        self.height = ensure_divisible(self.height, value)
+
+        if self.image:
+            self.image = image_crop(self.image, (self.width, self.height))
+        if self.last_image:
+            self.last_image = image_crop(self.last_image, (self.width, self.height))
+        if self.video_frames:
+            for frame_idx in range(len(self.video_frames)):
+                self.video_frames[frame_idx] = image_crop(self.video_frames[frame_idx], (self.width, self.height))
+
     def get_dimension_type(self) -> Literal["square", "landscape", "portrait"]:
         """Determine the image dimension type based on width and height ratio."""
         if self.width > self.height:
@@ -46,24 +90,6 @@ class VideoContext:
         elif self.width < self.height:
             return "portrait"
         return "square"
-
-    def is_580p_or_higher(self) -> bool:
-        return max(self.width, self.height) >= 1024
-
-    def is_720p_or_higher(self) -> bool:
-        return max(self.width, self.height) >= 1280
-
-    def is_1080p_or_higher(self) -> bool:
-        return max(self.width, self.height) >= 1920
-
-    def ensure_divisible(self, value: int):
-        # Adjust width and height to be divisible by the specified value
-        self.width = ensure_divisible(self.width, value)
-        self.height = ensure_divisible(self.height, value)
-        if self.image:
-            self.image = self.image.resize([self.width, self.height])
-        if self.last_image:
-            self.last_image = self.last_image.resize([self.width, self.height])
 
     def ensure_frames_divisible(self, current_frames, divisor: int = 4) -> int:
         return ((current_frames - 1) // divisor) * divisor + 1

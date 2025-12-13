@@ -7,10 +7,9 @@ from diffusers import ControlNetModel, FluxControlNetModel
 from common.exceptions import ControlNetConfigError
 from common.logger import logger
 from images.schemas import ModelName, References
-from utils.utils import load_image_if_exists
+from utils.utils import image_crop, image_resize, load_image_if_exists
 
 
-# NOTE maybe we don't cache?
 @lru_cache(maxsize=1)
 def load_controlnet(controlnet_model, model: ModelName):
     if model == "flux-1":
@@ -51,11 +50,13 @@ class ControlNet:
         self.model = get_controlnet_model(model, data.mode)
         self.conditioning_scale = max(0.01, data.strength)
         self.image = load_image_if_exists(data.image)
+        self.width = width
+        self.height = height
 
         if not self.image:
             raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")
 
-        self.image = self.image.resize([width, height])
+        self.image = image_resize(self.image, (width, height))
         self.loaded_controlnet = load_controlnet(self.model, model)
 
     # we load then offload to match the same behavior as cpu offloading
@@ -104,3 +105,8 @@ class ControlNets:
     def cleanup(self):
         for control_net in self.control_nets:
             control_net.cleanup()
+
+    def crop_all_images(self, target_size: tuple[int, int]):
+        for control_net in self.control_nets:
+            if control_net.image:
+                control_net.image = image_crop(control_net.image, target_size)

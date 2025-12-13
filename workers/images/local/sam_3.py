@@ -2,7 +2,15 @@ import random
 
 import torch
 from PIL import Image, ImageChops
-from transformers.models.sam3 import Sam3Model, Sam3Processor
+
+try:
+    from transformers.models.sam3 import (  # type: ignore[import-not-found]
+        Sam3Model,
+        Sam3Processor,
+    )
+except ImportError:
+    Sam3Model = None  # type: ignore
+    Sam3Processor = None  # type: ignore
 
 from common.logger import log_pretty, task_log
 from common.memory import free_gpu_memory
@@ -35,6 +43,9 @@ def overlay_masks(image, masks):
 
 
 def main(context: ImageContext):
+    if Sam3Model is None or Sam3Processor is None:
+        raise ImportError("SAM-3 model requires a specific version of transformers with sam3 support. ")
+
     if context.color_image is None:
         raise ValueError("No image provided")
 

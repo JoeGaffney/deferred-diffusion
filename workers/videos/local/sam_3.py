@@ -2,16 +2,27 @@ import numpy as np
 import torch
 from accelerate import Accelerator
 from PIL import Image
-from transformers.models.sam3_video import Sam3VideoModel, Sam3VideoProcessor
 
-from common.logger import log_pretty, logger
+try:
+    from transformers.models.sam3_video import (  # type: ignore[import-not-found]
+        Sam3VideoModel,
+        Sam3VideoProcessor,
+    )
+except ImportError:
+    Sam3VideoModel = None  # type: ignore
+    Sam3VideoProcessor = None  # type: ignore
+
 from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
+from utils.utils import image_resize
 from videos.context import VideoContext
 
 
 def main(context: VideoContext):
     """Using transformers implementation of SAM-3 for video segmentation. There is still some quaility isssues in the implementation currently."""
+    if Sam3VideoModel is None or Sam3VideoProcessor is None:
+        raise ImportError("SAM-3 video model requires a specific version of transformers with sam3_video support. ")
+
     if context.video_frames is None:
         raise ValueError("No video frames provided")
 
@@ -65,7 +76,7 @@ def main(context: VideoContext):
             combined[mask.cpu().numpy()] = color
 
         # Resize to original frame if needed
-        combined_img = Image.fromarray(combined).resize(original_frame_size, Image.Resampling.NEAREST)
+        combined_img = image_resize(Image.fromarray(combined), original_frame_size, Image.Resampling.NEAREST)
         processed_frames.append(combined_img)
 
     # Clean up

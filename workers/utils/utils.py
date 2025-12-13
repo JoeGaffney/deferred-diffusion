@@ -5,7 +5,7 @@ import tempfile
 import time
 from typing import Literal, Optional, Tuple
 
-from diffusers.utils import export_to_video, load_video
+from diffusers.utils import load_video
 from PIL import Image
 
 from common.logger import logger
@@ -73,38 +73,31 @@ def ensure_divisible(value: int, divisor=16) -> int:
     return (value // divisor) * divisor
 
 
-def resize_image(image, division=16, scale=1.0, max_width=4096, max_height=4096) -> Image.Image:
-    orig_width, orig_height = image.size
-    aspect_ratio = orig_width / orig_height
+def image_resize(img: Image.Image, target_size: tuple[int, int], resampler=Image.Resampling.LANCZOS) -> Image.Image:
+    if img.size == target_size:
+        return img
 
-    # Scale original size
-    target_width = orig_width * scale
-    target_height = orig_height * scale
+    logger.info(f"Resizing image from {img.size} to {target_size}")
+    return img.resize(target_size, resampler)
 
-    # simple rounding to nearest divisible
-    width = int(ensure_divisible(min(target_width, max_width), division))
-    height = int(ensure_divisible(min(target_height, max_height), division))
 
-    # # Fit inside max bounds while preserving aspect ratio
-    # scale_factor = min(max_width / target_width, max_height / target_height, 1.0)
-    # target_width *= scale_factor
-    # target_height *= scale_factor
+def image_crop(img: Image.Image, target_size: tuple[int, int]) -> Image.Image:
+    if img.size == target_size:
+        return img
 
-    # # Round BOTH dimensions down to divisible sizes
-    # width = int(math.floor(target_width / division) * division)
-    # height = int(math.floor(target_height / division) * division)
+    width, height = img.size
+    target_width, target_height = target_size
 
-    # Final check: skip resize if not needed
-    if (width, height) == image.size:
-        logger.info(f"No resize needed. Image size is already {width}x{height} (div/{division})")
-        return image
+    left = (width - target_width) / 2
+    top = (height - target_height) / 2
+    right = (width + target_width) / 2
+    bottom = (height + target_height) / 2
 
-    logger.info(f"Resizing from {image.size} to ({width}, {height}) (div/{division})")
-    return image.resize((width, height), Image.Resampling.LANCZOS)
+    logger.info(f"Cropping image from {img.size} to {target_size}")
+    return img.crop((left, top, right, bottom))
 
 
 def load_image_from_base64(base64_bytes: str) -> Image.Image:
-
     try:
         # Convert bytes to a PIL image
         tmp_bytes = base64.b64decode(base64_bytes)

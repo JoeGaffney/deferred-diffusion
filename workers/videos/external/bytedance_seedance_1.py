@@ -13,6 +13,12 @@ def get_aspect_ratio(context: VideoContext) -> str:
     return "1:1"
 
 
+def get_resolution(context: VideoContext) -> str:
+    if context.get_mega_pixels() >= 2.0:  # close to 1080p or higher
+        return "1080p"
+    return "720p"
+
+
 def main(context: VideoContext):
     model = "bytedance/seedance-1-pro"
     payload = {
@@ -20,7 +26,7 @@ def main(context: VideoContext):
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
         "duration": 5 if context.duration_in_seconds() <= 5 else 10,
-        "resolution": "1080p" if context.is_1080p_or_higher() else "720p",
+        "resolution": get_resolution(context),
     }
 
     if context.image:

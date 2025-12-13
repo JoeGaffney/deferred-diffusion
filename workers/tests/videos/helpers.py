@@ -18,6 +18,7 @@ def main(context: VideoContext):
     MODEL_NAME_TO_CALLABLE: Dict[ModelName, Tuple[str, str]] = {
         "ltx-video": ("videos.local.ltx_video", "main"),
         "wan-2": ("videos.local.wan_2", "main"),
+        "hunyuan-video-1": ("videos.local.hunyuan_video_1", "main"),
         "sam-3": ("videos.local.sam_3", "main"),
         "runway-gen-4": ("videos.external.runway_gen_4", "main"),
         "runway-upscale": ("videos.external.runway_upscale", "main"),
@@ -40,6 +41,7 @@ def main(context: VideoContext):
 def text_to_video(
     model: ModelName,
     prompt="Two anthropomorphic cats in comfy boxing gear and bright gloves fight intensely on a spotlighted stage.",
+    num_frames=24,
 ):
     output_name = setup_output_file(model, "text_to_video", extension="mp4")
 
@@ -48,7 +50,7 @@ def text_to_video(
             VideoRequest(
                 model=model,
                 prompt=prompt,
-                num_frames=24,
+                num_frames=num_frames,
                 width=int(1280 / 1.5),
                 height=int(720 / 1.5),
             ),
@@ -127,7 +129,7 @@ def image_to_video_portrait(model):
                 model=model,
                 image=image_to_base64("../assets/wan_i2v_input.JPG"),
                 prompt=prompt,
-                num_frames=24,
+                num_frames=48,
             ),
         )
     )

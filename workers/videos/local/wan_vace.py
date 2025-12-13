@@ -12,6 +12,7 @@ from common.pipeline_helpers import (
     task_log_callback,
 )
 from common.text_encoders import get_umt5_text_encoder
+from utils.utils import image_resize
 from videos.context import VideoContext
 
 # Wan VACE gives better results with a default negative prompt
@@ -49,7 +50,7 @@ def video_to_video(context: VideoContext):
         raise ValueError("No reference image provided for video generation")
 
     pipe = get_pipeline(model_id="Wan-AI/Wan2.1-VACE-14B-diffusers")
-    if context.is_720p_or_higher():
+    if context.get_mega_pixels() >= 0.9:  # close to 720p or higher
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
 
     # Adjust num_frames to meet WanVACE requirements and limit to available frames
@@ -60,7 +61,7 @@ def video_to_video(context: VideoContext):
     video_frames = []
     for i in range(num_frames):
         frame_idx = min(i, len(context.video_frames) - 1)
-        frame = context.video_frames[frame_idx].resize((context.width, context.height))
+        frame = context.video_frames[frame_idx]
         video_frames.append(frame)
 
     mask_black = PIL.Image.new("L", (context.width, context.height), 0)
