@@ -9,8 +9,9 @@ from images.adapters import Adapters
 from images.control_nets import ControlNets
 from images.schemas import ImageRequest
 from utils.utils import (
-    ensure_divisible_aspect_size,
+    ensure_divisible,
     get_tmp_dir,
+    image_crop,
     image_resize,
     load_image_if_exists,
 )
@@ -43,12 +44,16 @@ class ImageContext:
 
     def ensure_divisible(self, value: int):
         # Adjust width and height to be divisible by the specified value
-        self.width, self.height = ensure_divisible_aspect_size(self.width, self.height, value)
+        self.width = ensure_divisible(self.width, value)
+        self.height = ensure_divisible(self.height, value)
 
         if self.mask_image:
-            self.mask_image = image_resize(self.mask_image, (self.width, self.height))
+            self.mask_image = image_crop(self.mask_image, (self.width, self.height))
         if self.color_image:
-            self.color_image = image_resize(self.color_image, (self.width, self.height))
+            self.color_image = image_crop(self.color_image, (self.width, self.height))
+
+        # also adjust control net images
+        self.control_nets.crop_all_images((self.width, self.height))
 
     def get_dimension_type(self) -> Literal["square", "landscape", "portrait"]:
         """Determine the image dimension type based on width and height ratio."""

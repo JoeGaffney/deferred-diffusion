@@ -5,7 +5,7 @@ import tempfile
 import time
 from typing import Literal, Optional, Tuple
 
-from diffusers.utils import export_to_video, load_video
+from diffusers.utils import load_video
 from PIL import Image
 
 from common.logger import logger
@@ -73,34 +73,28 @@ def ensure_divisible(value: int, divisor=16) -> int:
     return (value // divisor) * divisor
 
 
-def ensure_divisible_aspect_size(width: int, height: int, divisor: int) -> tuple[int, int]:
-    if divisor <= 1:
-        return width, height
-
-    # Scale down proportionally so both dimensions are divisible by divisor
-    new_w = width - (width % divisor)
-    new_h = height - (height % divisor)
-
-    scale_w = new_w / width
-    scale_h = new_h / height
-    scale = min(scale_w, scale_h)
-
-    target_w = int(width * scale)
-    target_h = int(height * scale)
-
-    # Final ensure divisible
-    target_w -= target_w % divisor
-    target_h -= target_h % divisor
-
-    logger.info(f"Resized to ensure divisible by {divisor}: {width}x{height} -> {target_w}x{target_h}")
-    return target_w, target_h
-
-
 def image_resize(img: Image.Image, target_size: tuple[int, int], resampler=Image.Resampling.LANCZOS) -> Image.Image:
     if img.size == target_size:
         return img
+
     logger.info(f"Resizing image from {img.size} to {target_size}")
     return img.resize(target_size, resampler)
+
+
+def image_crop(img: Image.Image, target_size: tuple[int, int]) -> Image.Image:
+    if img.size == target_size:
+        return img
+
+    width, height = img.size
+    target_width, target_height = target_size
+
+    left = (width - target_width) / 2
+    top = (height - target_height) / 2
+    right = (width + target_width) / 2
+    bottom = (height + target_height) / 2
+
+    logger.info(f"Cropping image from {img.size} to {target_size}")
+    return img.crop((left, top, right, bottom))
 
 
 def load_image_from_base64(base64_bytes: str) -> Image.Image:

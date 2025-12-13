@@ -61,7 +61,7 @@ def video_to_video(context: VideoContext):
     video_frames = []
     for i in range(num_frames):
         frame_idx = min(i, len(context.video_frames) - 1)
-        frame = image_resize(context.video_frames[frame_idx], (context.width, context.height))
+        frame = context.video_frames[frame_idx]
         video_frames.append(frame)
 
     mask_black = PIL.Image.new("L", (context.width, context.height), 0)

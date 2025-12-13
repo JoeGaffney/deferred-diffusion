@@ -7,7 +7,7 @@ from diffusers import ControlNetModel, FluxControlNetModel
 from common.exceptions import ControlNetConfigError
 from common.logger import logger
 from images.schemas import ModelName, References
-from utils.utils import image_resize, load_image_if_exists
+from utils.utils import image_crop, image_resize, load_image_if_exists
 
 
 @lru_cache(maxsize=1)
@@ -56,17 +56,12 @@ class ControlNet:
         if not self.image:
             raise ControlNetConfigError(f"Could not load ControlNet image from {data.image}")
 
+        self.image = image_resize(self.image, (width, height))
         self.loaded_controlnet = load_controlnet(self.model, model)
 
     # we load then offload to match the same behavior as cpu offloading
     def get_loaded_controlnet(self):
         return self.loaded_controlnet.to("cuda")
-
-    def get_image(self):
-        if not self.image:
-            raise ValueError("ControlNet image not loaded")
-
-        return image_resize(self.image, (self.width, self.height))
 
     def cleanup(self):
         self.loaded_controlnet.to("cpu")
@@ -100,7 +95,7 @@ class ControlNets:
     def get_images(self):
         if not self.is_enabled():
             return []
-        return [control_net.get_image() for control_net in self.control_nets]
+        return [control_net.image for control_net in self.control_nets]
 
     def get_conditioning_scales(self):
         if not self.is_enabled():
@@ -110,3 +105,8 @@ class ControlNets:
     def cleanup(self):
         for control_net in self.control_nets:
             control_net.cleanup()
+
+    def crop_all_images(self, target_size: tuple[int, int]):
+        for control_net in self.control_nets:
+            if control_net.image:
+                control_net.image = image_crop(control_net.image, target_size)
