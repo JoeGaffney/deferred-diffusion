@@ -22,7 +22,7 @@ def get_t5_text_encoder() -> T5EncoderModel:
 
 
 def get_qwen2_5_text_encoder(
-    target_precision: Literal[4, 8, 16] = 8,
+    target_precision: Literal[4, 8, 16] = 4,
 ) -> Qwen2_5_VLForConditionalGeneration:
     return get_quantized_model(
         model_id="Qwen/Qwen2.5-VL-7B-Instruct",

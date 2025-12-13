@@ -30,7 +30,7 @@ def get_pipeline_t2v(model_id) -> HunyuanVideo15Pipeline:
     pipe = HunyuanVideo15Pipeline.from_pretrained(
         model_id,
         transformer=transformer,
-        text_encoder=get_qwen2_5_text_encoder(8),
+        text_encoder=get_qwen2_5_text_encoder(),
         torch_dtype=torch.bfloat16,
     )
 
@@ -50,7 +50,7 @@ def get_pipeline_i2v(model_id) -> HunyuanVideo15ImageToVideoPipeline:
     pipe = HunyuanVideo15ImageToVideoPipeline.from_pretrained(
         model_id,
         transformer=transformer,
-        text_encoder=get_qwen2_5_text_encoder(8),
+        text_encoder=get_qwen2_5_text_encoder(),
         torch_dtype=torch.bfloat16,
     )
 
