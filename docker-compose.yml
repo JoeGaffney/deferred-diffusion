@@ -60,6 +60,7 @@ services:
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
       - HF_ENABLE_PARALLEL_LOADING=yes
+      - COMFY_API_URL=http://comfy:8188
     depends_on:
       - redis
       - api
@@ -103,11 +104,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.comfy
-
     volumes:
       - comfy_models:/app/ComfyUI/models:ro # For user access to models
-      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes:ro # For custom nodes
-      - Y:/COMFY/user:/app/ComfyUI/user:ro # For user settings/configs
+      # not make read-only later - possibly split into two containers
+      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes # For custom nodes
+      - Y:/COMFY/user:/app/ComfyUI/user # For user settings/configs
       - Y:/COMFY/output:/app/ComfyUI/output # For output files
     ports:
       - "8188:8188" # expose ComfyUI web UI port

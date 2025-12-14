@@ -30,7 +30,6 @@ def workflow(request_dict):
     free_gpu_memory()
 
     context = validate_request_and_context(request_dict)
-
     result = comfy_main(context)
 
     # free up GPU memory again after processing

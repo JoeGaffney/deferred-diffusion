@@ -13,6 +13,8 @@ ClassTypes: TypeAlias = Literal[
     "LoadVideo",
 ]
 
+WorkflowJSON: TypeAlias = Dict[str, Dict[str, Any]]
+
 
 class Patch(BaseModel):
     title: str  # matches node["_meta"]["title"]
@@ -33,7 +35,7 @@ class Patch(BaseModel):
 
 
 class WorkflowRequest(BaseModel):
-    workflow_json: Dict[str, Any]
+    workflow_json: WorkflowJSON
     patches: List[Patch]
 
     @model_validator(mode="after")

@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import tempfile
 from typing import Optional
@@ -66,3 +67,11 @@ def image_to_base64(image_path: str) -> str:
 def optional_image_to_base64(image_path: str) -> Optional[str]:
     """Convert an image file to base64. Returns None if conversion fails."""
     return _convert_image_to_base64(image_path)
+
+
+def load_json_file(file_path: str) -> dict:
+    """Load a JSON file and return its contents as a dictionary."""
+
+    with open(file_path, "r", encoding="utf-8") as json_file:
+        data = json.load(json_file)
+    return data
