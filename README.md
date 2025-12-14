@@ -50,6 +50,33 @@ sequenceDiagram
     API->>Client: Base64 image
 ```
 
+#### WIP workflow flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Worker
+    participant ComfyUI
+    participant Compute as GPU/CPU
+
+    Client->>API: POST /workflows (workflow JSON + patches)
+    API->>Worker: Queue task
+    API->>Client: Return task_id (202 Accepted)
+
+    Note over Worker: Worker starts task
+    Worker->>Worker: Convert base64 images/videos to temp files
+    Worker->>ComfyUI: Submit workflow JSON + file paths
+    ComfyUI->>Compute: Execute node graph
+    Compute-->>ComfyUI: Return results
+    ComfyUI-->>Worker: Workflow outputs (images/videos)
+
+    Worker->>Worker: Convert results to base64
+    Worker->>API: Store completed task
+    Client->>API: GET /workflows/{task_id}
+    API-->>Client: Return final workflow outputs (base64)
+```
+
 ## Quick start
 
 To pull and run the latest release.
@@ -163,6 +190,8 @@ We try to use plural to adhere to REST best practices.
 │ ├── ...
 │── /videos
 │ ├── ...
+│── /workflows # felxible user driven comff ui workflows
+│ ├── ...
 │── /common # ✅ Shared components
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
 │── /tests # ✅ Tests mirror the /api structure
@@ -183,6 +212,8 @@ We try to use plural to adhere to REST best practices.
 │ ├── ...
 │── /videos
 │ ├── ...
+│── /workflows # validates and calls side car headless comfyui
+│ ├── ...
 │── /common # ✅ Shared components
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
 │── /tests # ✅ Tests mirror the /workers structure
@@ -193,6 +224,7 @@ We try to use plural to adhere to REST best practices.
 ## Clients
 
 ```
+
 /clients
 │── /it_tests
 │ ├── generated/ # generated client
@@ -202,6 +234,7 @@ We try to use plural to adhere to REST best practices.
 │── /nuke
 │ ├── python/generated/ # generated client
 │── openapi.json # API spec
+
 ```
 
 Example clients for Houdini and Nuke are provided in the `/clients` directory.
@@ -253,3 +286,7 @@ Each new model entry should include:
 3. Updated tests under `tests/images`
 
 This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
+
+```
+
+```

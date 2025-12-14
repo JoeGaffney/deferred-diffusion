@@ -1,0 +1,27 @@
+{
+  "2": {
+    "inputs": {
+      "filename_prefix": "ComfyUIDummy",
+      "images": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "4": {
+    "inputs": {
+      "width": 32,
+      "height": 32,
+      "batch_size": 1,
+      "color": 0
+    },
+    "class_type": "EmptyImage",
+    "_meta": {
+      "title": "EmptyImage"
+    }
+  }
+}

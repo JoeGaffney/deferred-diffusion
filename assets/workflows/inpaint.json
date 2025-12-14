@@ -1,0 +1,181 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 173644725223296,
+      "steps": ["39", 0],
+      "cfg": ["37", 0],
+      "sampler_name": "uni_pc_bh2",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": ["29", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["26", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": ["35", 0],
+      "clip": ["29", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": ["36", 0],
+      "clip": ["29", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["29", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": ["8", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "26": {
+    "inputs": {
+      "grow_mask_by": 6,
+      "pixels": ["41", 0],
+      "vae": ["29", 2],
+      "mask": ["44", 0]
+    },
+    "class_type": "VAEEncodeForInpaint",
+    "_meta": {
+      "title": "VAE Encode (for Inpainting)"
+    }
+  },
+  "29": {
+    "inputs": {
+      "ckpt_name": "512-inpainting-ema.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "32": {
+    "inputs": {
+      "value": 512
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_height"
+    }
+  },
+  "33": {
+    "inputs": {
+      "image": "example.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "api_mask"
+    }
+  },
+  "34": {
+    "inputs": {
+      "value": 512
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_width"
+    }
+  },
+  "35": {
+    "inputs": {
+      "value": "Detailed, 8k, photorealistic"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "api_prompt"
+    }
+  },
+  "36": {
+    "inputs": {
+      "value": "worst quality, inconsistent motion, blurry, jittery, distorted"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "api_negative_prompt"
+    }
+  },
+  "37": {
+    "inputs": {
+      "value": 5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "api_guidance_scale"
+    }
+  },
+  "38": {
+    "inputs": {
+      "value": 45
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_seed"
+    }
+  },
+  "39": {
+    "inputs": {
+      "value": 25
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "api_num_inference_steps"
+    }
+  },
+  "40": {
+    "inputs": {
+      "value": 0.5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "api_strength"
+    }
+  },
+  "41": {
+    "inputs": {
+      "image": "example.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "api_image"
+    }
+  },
+  "44": {
+    "inputs": {
+      "channel": "red",
+      "image": ["33", 0]
+    },
+    "class_type": "ImageToMask",
+    "_meta": {
+      "title": "Convert Image to Mask"
+    }
+  }
+}
