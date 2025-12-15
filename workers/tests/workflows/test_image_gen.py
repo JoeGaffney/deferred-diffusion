@@ -54,3 +54,27 @@ def test_image_to_image():
     )
 
     save_image_and_assert_file_exists(result, output_name)
+
+
+def test_flux_kontext_dev_basic():
+    output_name = setup_output_file("workflows", "flux_kontext_dev_basic")
+    workflow_path = "../assets/workflows/flux_kontext_dev_basic.json"
+
+    patches = [
+        Patch(
+            title="positive_prompt",
+            class_type="PrimitiveStringMultiline",
+            value="Change the car color to red, turn the headlights on",
+        ),
+        Patch(title="Load Image", class_type="LoadImage", value=image_to_base64("../assets/color_v003.png")),
+    ]
+    result = main(
+        WorkflowContext(
+            WorkflowRequest(
+                workflow=load_json_file(workflow_path),
+                patches=patches,
+            ),
+        )
+    )
+
+    save_image_and_assert_file_exists(result, output_name)
