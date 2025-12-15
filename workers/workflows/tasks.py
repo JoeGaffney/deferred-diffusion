@@ -25,14 +25,10 @@ def validate_request_and_context(request_dict):
     return context
 
 
-@celery_app.task(name="workflow")
+@celery_app.task(name="workflow", queue="comfy")
 def workflow(request_dict):
-    clear_global_pipeline_cache()
-    free_gpu_memory()
 
     context = validate_request_and_context(request_dict)
     result = comfy_main(context)
 
-    # free up GPU memory again after processing
-    free_gpu_memory()
     return process_result(context, result)

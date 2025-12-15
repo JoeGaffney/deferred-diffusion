@@ -39,7 +39,7 @@ services:
 
   # Celery worker services
   gpu-workers:
-    command: celery -A worker worker --loglevel=info --pool=threads --concurrency=1 -Q gpu
+    command: celery -A worker worker --loglevel=info --pool=threads --concurrency=1 -Q gpu,comfy
     build:
       context: .
       dockerfile: Dockerfile.workers

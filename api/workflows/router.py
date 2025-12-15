@@ -27,7 +27,7 @@ router = APIRouter(
 )
 def create(request: WorkflowRequest, response: Response):
     try:
-        result = celery_app.send_task("workflow_task", queue="gpu", args=[request.model_dump()])
+        result = celery_app.send_task("workflow_task", queue="comfy", args=[request.model_dump()])
         response.headers["Location"] = f"/workflows/{result.id}"
         return WorkflowCreateResponse(id=result.id, status=result.status)
     except Exception as e:
