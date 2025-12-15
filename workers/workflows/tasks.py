@@ -5,6 +5,7 @@ from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from utils.utils import pil_to_base64
 from worker import celery_app
+from workflows.comfy.comfy import api_free
 from workflows.comfy.comfy import main as comfy_main
 from workflows.context import WorkflowContext
 from workflows.schemas import WorkflowRequest, WorkflowWorkerResponse

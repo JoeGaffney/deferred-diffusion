@@ -38,7 +38,7 @@ def is_comfy_running(timeout=5, attempts=10) -> bool:
         except Exception:
             logger.warning(f"ComfyUI {COMFY_API_URL} not responding, attempt {attempt + 1} of {attempts}")
             if attempt < attempts - 1:
-                time.sleep(10)
+                time.sleep(timeout)
             continue
     return False
 
@@ -93,10 +93,10 @@ def api_image_upload(base64_str, subfolder, filename) -> str:
 
     result = json.loads(response.read().decode("utf-8"))
     result_subfolder = result.get("subfolder")
-    result_filename = result.get("filename")
+    result_filename = result.get("name")
 
     if not result_subfolder or not result_filename:
-        raise RuntimeError("ComfyUI upload response missing subfolder or filename")
+        raise RuntimeError("ComfyUI upload response missing subfolder or filename", result)
 
     return f"{result_subfolder}/{result_filename}"  # return the filename path
 
@@ -122,10 +122,9 @@ def api_free(unload_models=True, free_memory=False):
     try:
         response = api_prompt(dummy_workflow)
         prompt_id = response.get("prompt_id")
-        if prompt_id:
-            poll_until_resolved(prompt_id, timeout=10, poll_interval=1)
-        else:
-            logger.warning("Dummy cleanup prompt failed to queue.")
+        if not prompt_id:
+            logger.warning("ComfyUI cleanup job failed: no prompt_id returned")
+            return
     except Exception as e:
         logger.warning(f"ComfyUI cleanup job failed: {e}")
 
@@ -143,9 +142,10 @@ def poll_until_resolved(prompt_id, timeout=300, poll_interval=1):
     start_time = time.time()
     while time.time() - start_time < timeout:
         history = api_history(prompt_id)
+        log_pretty(f"History {prompt_id}", history)
+
         if prompt_id in history and "status" in history[prompt_id]:
             status = history[prompt_id]["status"]
-            log_pretty(f"Checking status for prompt {prompt_id}", status)
             if status.get("status_str") in ["error", "failed", "cancelled", "failure"]:
                 raise RuntimeError(f"ComfyUI workflow {prompt_id} encountered an problem: {status}")
 
@@ -159,7 +159,7 @@ def poll_until_resolved(prompt_id, timeout=300, poll_interval=1):
 
 def patch_workflow(workflow_request: WorkflowRequest) -> dict:
     uuid_str = str(uuid.uuid4())
-    remapped = copy.deepcopy(workflow_request.workflow_json)
+    remapped = copy.deepcopy(workflow_request.workflow)
 
     for patch in workflow_request.patches:
         target_node = None
@@ -200,6 +200,9 @@ def main(context: WorkflowContext) -> Image.Image:
     if not is_comfy_running():
         raise RuntimeError("ComfyUI is not running")
 
+    # free aggessively for now
+    api_free(unload_models=True, free_memory=False)
+
     workflow = patch_workflow(context.data)
     log_pretty("Remapped ComfyUI workflow", workflow)
 
@@ -226,6 +229,9 @@ def main(context: WorkflowContext) -> Image.Image:
                         break
         if result:
             break
+
+    # free aggessively for now
+    api_free(unload_models=True, free_memory=False)
 
     if isinstance(result, Image.Image):
         return result

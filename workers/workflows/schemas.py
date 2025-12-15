@@ -13,7 +13,7 @@ ClassTypes: TypeAlias = Literal[
     "LoadVideo",
 ]
 
-WorkflowJSON: TypeAlias = Dict[str, Dict[str, Any]]
+Workflow: TypeAlias = Dict[str, Dict[str, Any]]
 
 
 class Patch(BaseModel):
@@ -35,13 +35,13 @@ class Patch(BaseModel):
 
 
 class WorkflowRequest(BaseModel):
-    workflow_json: WorkflowJSON
+    workflow: Workflow
     patches: List[Patch]
 
     @model_validator(mode="after")
     def _validate_patches(self):
         title_to_ids: dict[str, list[str]] = {}
-        for node_id, node in self.workflow_json.items():
+        for node_id, node in self.workflow.items():
             if isinstance(node, dict):
                 title = node.get("_meta", {}).get("title")
                 if isinstance(title, str):
@@ -50,11 +50,11 @@ class WorkflowRequest(BaseModel):
         for patch in self.patches:
             ids = title_to_ids.get(patch.title, [])
             if not ids:
-                raise ValueError(f"Patch title '{patch.title}' not found in workflow_json")
+                raise ValueError(f"Patch title '{patch.title}' not found in workflow")
             if len(ids) > 1:
                 raise ValueError(f"Patch title '{patch.title}' is not unique (matched {ids})")
 
-            node = self.workflow_json[ids[0]]
+            node = self.workflow[ids[0]]
             if node.get("class_type") != patch.class_type:
                 raise ValueError(
                     f"Patch title '{patch.title}' expected class_type={patch.class_type} "
@@ -62,6 +62,35 @@ class WorkflowRequest(BaseModel):
                 )
 
         return self
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "workflow": {
+                    "1": {
+                        "inputs": {"value": "A mountain range"},
+                        "class_type": "PrimitiveStringMultiline",
+                        "_meta": {"title": "positive_prompt"},
+                    },
+                    "2": {"inputs": {"value": 1024}, "class_type": "PrimitiveInt", "_meta": {"title": "width"}},
+                    "3": {
+                        "inputs": {"ckpt_name": "v1-5-pruned-emaonly-fp16.safetensors"},
+                        "class_type": "CheckpointLoaderSimple",
+                        "_meta": {"title": "Load Checkpoint"},
+                    },
+                    "4": "...",
+                },
+                "patches": [
+                    {
+                        "title": "positive_prompt",
+                        "class_type": "PrimitiveStringMultiline",
+                        "value": "A snowy mountain range at sunset",
+                    },
+                    {"title": "width", "class_type": "PrimitiveInt", "value": 2048},
+                ],
+            }
+        }
+    )
 
 
 class WorkflowWorkerResponse(BaseModel):

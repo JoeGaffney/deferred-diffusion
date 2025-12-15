@@ -1,31 +1,16 @@
 {
   "3": {
     "inputs": {
-      "seed": [
-        "21",
-        0
-      ],
-      "steps": 20,
+      "seed": ["21", 0],
+      "steps": 100,
       "cfg": 8,
       "sampler_name": "euler",
       "scheduler": "normal",
       "denoise": 1,
-      "model": [
-        "4",
-        0
-      ],
-      "positive": [
-        "6",
-        0
-      ],
-      "negative": [
-        "7",
-        0
-      ],
-      "latent_image": [
-        "5",
-        0
-      ]
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
     },
     "class_type": "KSampler",
     "_meta": {
@@ -43,14 +28,8 @@
   },
   "5": {
     "inputs": {
-      "width": [
-        "19",
-        0
-      ],
-      "height": [
-        "20",
-        0
-      ],
+      "width": ["19", 0],
+      "height": ["20", 0],
       "batch_size": 1
     },
     "class_type": "EmptyLatentImage",
@@ -60,14 +39,8 @@
   },
   "6": {
     "inputs": {
-      "text": [
-        "18",
-        0
-      ],
-      "clip": [
-        "4",
-        1
-      ]
+      "text": ["18", 0],
+      "clip": ["4", 1]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -77,10 +50,7 @@
   "7": {
     "inputs": {
       "text": "text, watermark",
-      "clip": [
-        "4",
-        1
-      ]
+      "clip": ["4", 1]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -89,14 +59,8 @@
   },
   "8": {
     "inputs": {
-      "samples": [
-        "3",
-        0
-      ],
-      "vae": [
-        "4",
-        2
-      ]
+      "samples": ["3", 0],
+      "vae": ["4", 2]
     },
     "class_type": "VAEDecode",
     "_meta": {
@@ -106,10 +70,7 @@
   "9": {
     "inputs": {
       "filename_prefix": "SD1.5",
-      "images": [
-        "8",
-        0
-      ]
+      "images": ["8", 0]
     },
     "class_type": "SaveImage",
     "_meta": {

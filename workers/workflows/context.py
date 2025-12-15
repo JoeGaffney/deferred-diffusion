@@ -14,7 +14,7 @@ class WorkflowContext:
         self.data = data
 
         task_log(
-            f"WorkflowContext created for workflow with {len(self.data.workflow_json)} nodes and {len(self.data.patches)} patches",
+            f"WorkflowContext created for workflow with {len(self.data.workflow)} nodes and {len(self.data.patches)} patches",
         )
 
     def save_image(self, image):
