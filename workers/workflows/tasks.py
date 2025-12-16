@@ -1,12 +1,8 @@
 from PIL import Image
 
 from common.logger import get_task_logs
-from common.memory import free_gpu_memory
-from common.pipeline_helpers import clear_global_pipeline_cache
 from utils.utils import pil_to_base64
 from worker import celery_app
-from workflows.comfy.comfy import api_free
-from workflows.comfy.comfy import main as comfy_main
 from workflows.context import WorkflowContext
 from workflows.schemas import WorkflowRequest, WorkflowWorkerResponse
 
@@ -25,10 +21,11 @@ def validate_request_and_context(request_dict):
     return context
 
 
-@celery_app.task(name="workflow", queue="comfy")
-def workflow(request_dict):
+@celery_app.task(name="comfy-workflow", queue="comfy")
+def comfy_workflow(request_dict):
+    from workflows.comfy.comfy_workflow import main
 
     context = validate_request_and_context(request_dict)
-    result = comfy_main(context)
+    result = main(context)
 
     return process_result(context, result)

@@ -145,8 +145,8 @@ def api_free(unload_models: bool = True, free_memory: bool = False) -> None:
     }
 
     try:
-        response = api_prompt(dummy_workflow)
-        prompt_id = response.get("prompt_id")
+        prompt_response = api_prompt(dummy_workflow)
+        prompt_id = prompt_response.get("prompt_id")
         if not prompt_id:
             logger.warning("ComfyUI cleanup job failed: no prompt_id returned")
             return

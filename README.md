@@ -10,6 +10,7 @@ It provides a **modular API and worker architecture** built with **FastAPI** and
 
 - **Local ML pipelines** using the Python ecosystem (e.g., diffusers, PyTorch)
 - **External inference tasks** are currently only run via **Replicate** and **OpenAI** APIs.
+- **Optional advanced workflows** using a **ComfyUI sidecar** for user-driven pipelines (experimental, WIP)
 
 Clients interact with the API through typed REST endpoints with a built-in **Swagger UI** for inspection and testing.
 
@@ -24,7 +25,40 @@ Example **Houdini** and **Nuke** clients are included to demonstrate integration
 - **Client / Workstations**: Don't need heavy GPU's, download models or call provider API's directly.
 - **Server / Workers**: Do not require access to your main network drives, maintaining strong isolation and clear boundaries.
 
-#### **Flow Example**
+⚠️ **ComfyUI sidecar workflows:** These run in a separate, fully isolated Docker container. They communicate with the main system only through stateless API calls and pull only the files needed for the workflow. ComfyUI’s dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **not included in the main release**. Further work is needed to establish best-practice recommendations. The core API → Broker → Worker system remains fully secure and stateless
+
+#### **Image Flow Example**
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Broker
+    participant Worker as Worker GPU/CPU Compute
+
+    Client->>API: POST /images/create
+    API->>Broker: Queue task
+    API->>Client: Return task_id (202 Accepted)
+    Broker->>Worker: Pick up task
+    Note over Worker: Validate and build context
+    Note over Worker: Run inference / Call external
+    Worker->>Broker: Store result
+
+    Note over Client: Client polls for completion
+    Client->>API: GET /images/{task_id}
+    API<<->>Broker: Retrieve task result
+    API->>Client: Base64 image
+```
+
+## Workflows (experimental, WIP)
+
+This feature enables the use of a **ComfyUI sidecar** to execute advanced, user-driven pipelines with support for **patching workflows**, modifying inputs, and updating files as needed.
+
+We still aim to enforce **stateless operations** and **typing validation** as much as possible from the client’s perspective. The sidecar can be deployed on a **separate network** with limited filesystem access, maintaining strong isolation.
+
+This diagram shows how a Worker interacts with the ComfyUI sidecar. It extends the standard domain/task flow by integrating Comfy workflows while keeping the core **API → Broker → Worker** logic consistent.
+
+#### Workflow Flow
 
 ```mermaid
 sequenceDiagram
@@ -32,49 +66,28 @@ sequenceDiagram
     participant API
     participant Broker
     participant Worker
-    participant Compute as GPU/CPU Compute
+    participant Sidecar as Comfy (Sidecar)
 
-    Client->>API: POST /images/create
+    Client->>API: POST /workflows/create
     API->>Broker: Queue task
     API->>Client: Return task_id (202 Accepted)
-    Note over Worker: Validate and build context
     Broker->>Worker: Pick up task
-    Note over Compute: Local or External
-    Worker->>Compute: Run inference
-    Compute->>Worker: Return result
+    Note over Worker: Validate and build context
+    Note over Worker: Patch Workflow
+    Worker->>Sidecar: POST /upload/image
+    Note over Sidecar: Base64 files now local
+    Worker->>Sidecar: POST /prompt
+    Sidecar->>Worker: Return prompt_id (200 Accepted)
+    Note over Sidecar: Run inference
+    Note over Worker: Worker polls for completion
+    Worker->>Sidecar: GET /history/{prompt_id}
+    Sidecar->>Worker: Base64 data
     Worker->>Broker: Store result
 
     Note over Client: Client polls for completion
-    Client->>API: GET /tasks/{task_id}
+    Client->>API: GET /workflows/{task_id}
     API<<->>Broker: Retrieve task result
     API->>Client: Base64 image
-```
-
-#### WIP workflow flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant Worker
-    participant ComfyUI
-    participant Compute as GPU/CPU
-
-    Client->>API: POST /workflows (workflow JSON + patches)
-    API->>Worker: Queue task
-    API->>Client: Return task_id (202 Accepted)
-
-    Note over Worker: Worker starts task
-    Worker->>Worker: Convert base64 images/videos to temp files
-    Worker->>ComfyUI: Submit workflow JSON + file paths
-    ComfyUI->>Compute: Execute node graph
-    Compute-->>ComfyUI: Return results
-    ComfyUI-->>Worker: Workflow outputs (images/videos)
-
-    Worker->>Worker: Convert results to base64
-    Worker->>API: Store completed task
-    Client->>API: GET /workflows/{task_id}
-    API-->>Client: Return final workflow outputs (base64)
 ```
 
 ## Quick start
@@ -190,7 +203,7 @@ We try to use plural to adhere to REST best practices.
 │ ├── ...
 │── /videos
 │ ├── ...
-│── /workflows # felxible user driven comff ui workflows
+│── /workflows # flexible user driven comfyui workflows (experimental, WIP)
 │ ├── ...
 │── /common # ✅ Shared components
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
@@ -212,7 +225,7 @@ We try to use plural to adhere to REST best practices.
 │ ├── ...
 │── /videos
 │ ├── ...
-│── /workflows # validates and calls side car headless comfyui
+│── /workflows # validates and calls side car headless comfyui (experimental, WIP)
 │ ├── ...
 │── /common # ✅ Shared components
 │── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)

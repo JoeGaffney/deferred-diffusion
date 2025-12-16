@@ -1,8 +1,4 @@
-import copy
 import tempfile
-from typing import Literal
-
-import torch
 
 from common.logger import logger, task_log
 from utils.utils import get_tmp_dir
@@ -19,7 +15,7 @@ class WorkflowContext:
 
     def save_image(self, image):
         # Create a temporary file with .png extension
-        with tempfile.NamedTemporaryFile(dir=get_tmp_dir("workflow_output"), suffix=".png", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(dir=get_tmp_dir("comfy-workflow"), suffix=".png", delete=False) as tmp_file:
             # tmp_file will be closed automatically when exiting the with block
             image.save(tmp_file, format="PNG")
             path = tmp_file.name

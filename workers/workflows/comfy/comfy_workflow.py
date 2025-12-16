@@ -30,7 +30,7 @@ def poll_until_resolved(prompt_id: str, timeout: int = 300, poll_interval: int =
         if prompt_id in history and "status" in history[prompt_id]:
             status = history[prompt_id]["status"]
             if status.get("status_str") in ["error", "failed", "cancelled", "failure"]:
-                raise RuntimeError(f"ComfyUI workflow {prompt_id} encountered an problem: {status}")
+                raise RuntimeError(f"ComfyUI workflow {prompt_id} encountered a problem: {status}")
 
         if prompt_id in history and "outputs" in history[prompt_id]:
             outputs = history[prompt_id]["outputs"]
@@ -83,7 +83,7 @@ def main(context: WorkflowContext) -> Image.Image:
     if not is_comfy_running():
         raise RuntimeError("ComfyUI is not running")
 
-    # free aggessively for now
+    # free aggressively for now
     clear_global_pipeline_cache()
     free_gpu_memory()
     api_free(unload_models=True, free_memory=False)
@@ -115,7 +115,7 @@ def main(context: WorkflowContext) -> Image.Image:
         if result:
             break
 
-    # free aggessively for now
+    # free aggressively for now
     api_free(unload_models=True, free_memory=False)
 
     if isinstance(result, Image.Image):
