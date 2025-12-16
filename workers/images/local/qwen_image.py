@@ -103,7 +103,6 @@ def text_to_image_call(context: ImageContext):
         true_cfg_scale=1.0,
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
-    context.cleanup()
 
     return processed_image
 
