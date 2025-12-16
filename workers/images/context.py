@@ -5,8 +5,6 @@ from typing import Literal
 import torch
 
 from common.logger import logger, task_log
-from images.adapters import Adapters
-from images.control_nets import ControlNets
 from images.schemas import ImageRequest
 from utils.utils import (
     ensure_divisible,
@@ -34,10 +32,6 @@ class ImageContext:
             self.mask_image = self.mask_image.convert("L")
             self.mask_image = image_resize(self.mask_image, (self.width, self.height))
 
-        # Initialize control nets and adapters
-        self.control_nets = ControlNets(data.references, self.model, self.width, self.height)
-        self.adapters = Adapters(data.references, self.model, self.width, self.height)
-
         task_log(
             f"Context created {self.model}, {self.width}x{self.height}",
         )
@@ -52,9 +46,6 @@ class ImageContext:
         if self.color_image:
             self.color_image = image_crop(self.color_image, (self.width, self.height))
 
-        # also adjust control net images
-        self.control_nets.crop_all_images((self.width, self.height))
-
     def get_dimension_type(self) -> Literal["square", "landscape", "portrait"]:
         """Determine the image dimension type based on width and height ratio."""
         if self.width > self.height:
@@ -62,9 +53,6 @@ class ImageContext:
         elif self.width < self.height:
             return "portrait"
         return "square"
-
-    def cleanup(self):
-        self.control_nets.cleanup()
 
     def get_reference_images(self) -> list:
         result = []

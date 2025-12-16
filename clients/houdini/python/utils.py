@@ -11,7 +11,7 @@ from typing import Optional
 
 import hou
 
-from generated.api_client.models import References, ReferencesMode, TaskStatus
+from generated.api_client.models import References, TaskStatus
 
 COMPLETED_STATUS = [
     TaskStatus.SUCCESS,
@@ -329,7 +329,6 @@ def get_node_parameters(node):
 
 
 def get_references(node) -> list[References]:
-    params = get_node_parameters(node)
     result = []
 
     for current in ["reference_a", "reference_b", "reference_c"]:
@@ -338,11 +337,7 @@ def get_references(node) -> list[References]:
         if image is None:
             continue
 
-        tmp = References(
-            mode=ReferencesMode(params.get(f"{current}_mode", "style")),
-            image=image,
-            strength=params.get(f"{current}_strength", 0.5),
-        )
+        tmp = References(image=image)
         result.append(tmp)
 
     return result

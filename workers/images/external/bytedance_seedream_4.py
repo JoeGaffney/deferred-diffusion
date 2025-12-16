@@ -40,7 +40,7 @@ def main(context: ImageContext) -> Image.Image:
     if reference_images != []:
         payload["image_input"] = reference_images
 
-    output = replicate_run("bytedance/seedream-4", payload)
+    output = replicate_run("bytedance/seedream-4.5", payload)
 
     # as this can return a list, we just take the first item
     if isinstance(output, list):

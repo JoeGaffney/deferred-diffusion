@@ -49,14 +49,14 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         provider="local",
         external=False,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
-        references=True,
-        description="Stable Diffusion XL variant with broad adapter/controlnet support.",
+        references=False,
+        description="Stable Diffusion XL variant.",
     ),
     "flux-1": ImagesModelInfo(
         provider="local",
         external=False,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
-        references=True,
+        references=False,
         description="FLUX dev model (Krea tuned). Uses Kontext for image-to-image, Fill for inpainting.",
     ),
     "flux-2": ImagesModelInfo(
@@ -149,7 +149,7 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         external=True,
         supported_modes={"text-to-image", "image-to-image"},
         references=True,
-        description="Seedream image-to-image context model.",
+        description="Seedream 4.5: Upgraded Bytedance image model with stronger spatial understanding and world knowledge.",
     ),
 }
 
@@ -171,8 +171,6 @@ def generate_model_docs():
 
 
 class References(BaseModel):
-    mode: Literal["style", "face", "depth", "canny", "pose"]
-    strength: float = 0.5
     image: str = Field(
         description="Base64 image string",
         json_schema_extra={
@@ -222,7 +220,7 @@ class ImageRequest(BaseModel):
     )
     references: list[References] = Field(
         default_factory=list,
-        description="Optional control/adapters (style/depth/canny/pose/etc.) applied across models when supported.",
+        description="Optional reference images that modern models can use to guide image generation.",
     )
 
     @property
