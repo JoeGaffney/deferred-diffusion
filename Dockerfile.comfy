@@ -1,0 +1,20 @@
+FROM pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime
+
+# Create the directory first
+RUN mkdir -p /app/ComfyUI
+WORKDIR /app/ComfyUI
+
+# Install git and other utilities if needed
+RUN apt-get update && apt-get install -y git
+
+# Clone ComfyUI into the current directory (.)
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git .
+
+# Install ComfyUI dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose port if ComfyUI serves a web UI or API
+EXPOSE 8188
+
+# Run ComfyUI with browser support
+CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188"]

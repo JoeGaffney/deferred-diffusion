@@ -39,7 +39,7 @@ services:
 
   # Celery worker services
   gpu-workers:
-    command: celery -A worker worker --loglevel=info --pool=threads --concurrency=1 -Q gpu
+    command: celery -A worker worker --loglevel=info --pool=threads --concurrency=1 -Q gpu,comfy
     build:
       context: .
       dockerfile: Dockerfile.workers
@@ -60,6 +60,7 @@ services:
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
       - HF_ENABLE_PARALLEL_LOADING=yes
+      - COMFY_API_URL=http://comfy:8188
     depends_on:
       - redis
       - api
@@ -99,6 +100,26 @@ services:
     deploy:
       replicas: 1 # Number of container
 
+  comfy:
+    build:
+      context: .
+      dockerfile: Dockerfile.comfy
+    volumes:
+      - comfy_models:/app/ComfyUI/models:ro # For user access to models
+      # not make read-only later - possibly split into two containers
+      - Y:/COMFY/custom_nodes:/app/ComfyUI/custom_nodes # For custom nodes
+      - Y:/COMFY/user:/app/ComfyUI/user # For user settings/configs
+      - Y:/COMFY/output:/app/ComfyUI/output # For output files
+    ports:
+      - "8188:8188" # expose ComfyUI web UI port
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
   # Task monitoring service
   flower:
     image: mher/flower:latest
@@ -127,13 +148,11 @@ services:
       - mcp
 
   # Model loader service to sync models from a shared directory
-  model-loader:
+  comfy-model-loader:
     image: alpine:latest
     volumes:
-      - Y:/HF_HOME:/source:ro
-      - hf_cache:/destination
-    environment:
-      - HF_HOME=/WORKSPACE
+      - Y:/COMFY/models:/source:ro
+      - comfy_models:/destination
     command: >
       sh -c "
         echo 'Setting up...' &&
@@ -147,3 +166,5 @@ services:
 volumes:
   hf_cache:
     name: deferred-diffusion_hf_cache
+  comfy_models:
+    name: deferred-diffusion_comfy_models

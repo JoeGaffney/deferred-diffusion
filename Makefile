@@ -22,11 +22,13 @@ ifeq ($(OS),Windows_NT)
 	copy api\texts\schemas.py workers\texts\schemas.py
 	copy api\videos\schemas.py workers\videos\schemas.py
 	copy api\common\schemas.py workers\common\schemas.py
+	copy api\workflows\schemas.py workers\workflows\schemas.py
 else
 	cp api/images/schemas.py workers/images/schemas.py
 	cp api/texts/schemas.py workers/texts/schemas.py
 	cp api/videos/schemas.py workers/videos/schemas.py
 	cp api/common/schemas.py workers/common/schemas.py
+	cp api/workflows/schemas.py workers/workflows/schemas.py
 endif
 
 build: down copy-schemas
