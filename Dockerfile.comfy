@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y git
 RUN git clone --depth 1 --branch v0.5.0 https://github.com/comfyanonymous/ComfyUI.git . && \
     pip install --no-cache-dir -r requirements.txt
 
-
 # Expose port if ComfyUI serves a web UI or API
 EXPOSE 8188
 

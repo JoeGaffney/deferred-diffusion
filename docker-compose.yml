@@ -44,6 +44,9 @@ services:
       context: .
       dockerfile: Dockerfile.workers
     image: deferred-diffusion-workers
+    networks:
+      - default
+      - comfy_isolated # Can reach comfy service
     tty: true
     stdin_open: true
     volumes:
@@ -79,6 +82,9 @@ services:
       context: .
       dockerfile: Dockerfile.workers
     image: deferred-diffusion-workers
+    networks:
+      - default
+      - comfy_isolated # Can reach comfy service
     tty: true
     stdin_open: true
     volumes:
@@ -100,7 +106,16 @@ services:
     deploy:
       replicas: 1 # Number of container
 
+  # ComfyUI service (sidecar for GPU workers)
   comfy:
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
     build:
       context: .
       dockerfile: Dockerfile.comfy
@@ -109,7 +124,9 @@ services:
       - comfy_custom_nodes:/app/ComfyUI/custom_nodes:rw # For user access to custom nodes - make :wo in production if needed
       - comfy_user:/app/ComfyUI/user:rw # For user access to user data - make :wo in production if needed
     ports:
-      - "8188:8188" # expose ComfyUI web UI port
+      - "127.0.0.1:8188:8188" # Localhost only
+    networks:
+      - comfy_isolated # Separate network
     deploy:
       resources:
         reservations:
@@ -163,6 +180,10 @@ services:
         rsync -av /source_models/ /dest_models/ &&
         echo 'ComfyUI sync complete!'
       "
+
+networks:
+  default:
+  comfy_isolated:
 
 # Volume definitions go at the root level, not nested inside the service
 volumes:
