@@ -102,7 +102,7 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         external=True,
         supported_modes={"text-to-image", "image-to-image", "inpainting"},
         references=True,
-        description="OpenAI image model.",
+        description="GPT Image 1.5 is OpenAI’s latest image generation model, built for production-quality visuals and controllable creative workflows.",
     ),
     "runway-gen4-image": ImagesModelInfo(
         provider="replicate",
