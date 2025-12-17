@@ -10,7 +10,7 @@ from typing import Literal, Optional
 
 import nuke
 
-from generated.api_client.models import References, ReferencesMode, TaskStatus
+from generated.api_client.models import References, TaskStatus
 from generated.api_client.types import UNSET
 
 NODE_CONTROLNET = "dd_controlnet"
@@ -335,11 +335,7 @@ def get_references(node, start_index=2) -> list[References]:
         if image is None:
             continue
 
-        tmp = References(
-            mode=ReferencesMode(get_node_value(node, f"{current}_mode", "style", mode="value")),
-            strength=get_node_value(node, f"{current}_strength", UNSET, return_type=float, mode="value"),
-            image=image,
-        )
+        tmp = References(image=image)
         result.append(tmp)
 
     return result

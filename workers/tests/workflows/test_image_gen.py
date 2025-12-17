@@ -4,7 +4,7 @@ from tests.utils import (
     save_image_and_assert_file_exists,
     setup_output_file,
 )
-from workflows.comfy.comfy import main
+from workflows.comfy.comfy_workflow import main
 from workflows.context import WorkflowContext
 from workflows.schemas import Patch, WorkflowRequest
 

@@ -29,23 +29,6 @@ Group {
  strength 0.5
  addUserKnob {7 seed l Seed t "Random seed for reproducibility." R 1 1000}
  seed 42
- addUserKnob {26 ""}
-
- addUserKnob {20 references_a l "Reference A" n 1}
- addUserKnob {4 reference_a_mode l mode M {style face depth canny pose}}
- addUserKnob {7 reference_a_strength l Strength}
- reference_a_strength 0.5
- addUserKnob {20 endGroup1 n -1}
- addUserKnob {20 references_b l "Reference B" n 1}
- addUserKnob {4 reference_b_mode l mode M {style face depth canny pose}}
- addUserKnob {7 reference_b_strength l Strength}
- reference_b_strength 0.5
- addUserKnob {20 endGroup2 n -1}
- addUserKnob {20 references_c l "Reference C" n 1}
- addUserKnob {4 reference_c_mode l mode M {style face depth canny pose}}
- addUserKnob {7 reference_c_strength l Strength}
- reference_c_strength 0.5
- addUserKnob {20 endGroup3 n -1}
 
  addUserKnob {20 Misc}
  addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
