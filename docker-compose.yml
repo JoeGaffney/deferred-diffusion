@@ -120,9 +120,9 @@ services:
       context: .
       dockerfile: Dockerfile.comfy
     volumes:
-      - comfy_models:/app/ComfyUI/models:rw # For user access to models - make :wo in production if needed
-      - comfy_custom_nodes:/app/ComfyUI/custom_nodes:rw # For user access to custom nodes - make :wo in production if needed
-      - comfy_user:/app/ComfyUI/user:rw # For user access to user data - make :wo in production if needed
+      - comfy_models:/app/ComfyUI/models:rw # For user access to models - make :ro in production if needed
+      - comfy_custom_nodes:/app/ComfyUI/custom_nodes:rw # For user access to custom nodes - make :ro in production if needed
+      - comfy_user:/app/ComfyUI/user:rw # For user access to user data - make :ro in production if needed
     ports:
       - "127.0.0.1:8188:8188" # Localhost only
     networks:
