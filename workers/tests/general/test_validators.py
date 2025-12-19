@@ -12,16 +12,16 @@ def test_images_validation():
 
     with pytest.raises(ValidationError) as e:
         ImageRequest(model="google-gemini-2", prompt="p", image="base64img", mask="base64mask")
-    assert "does not support mode 'inpainting'" in str(e.value)
+    assert "does not support inpainting" in str(e.value)
 
-    refs = [References(mode="style", strength=0.5, image="base64img")]
+    refs = [References(image="base64img")]
     with pytest.raises(ValidationError) as e:
         ImageRequest(model="depth-anything-2", prompt="p", image="base64img", references=refs)
     assert "does not support references" in str(e.value)
 
     with pytest.raises(ValidationError) as e:
         ImageRequest(model="depth-anything-2", prompt="p")
-    assert "does not support mode 'text_to_image'" in str(e.value)
+    assert "does not support text_to_image" in str(e.value)
 
 
 def test_videos_validation():
@@ -33,14 +33,14 @@ def test_videos_validation():
     # Test model that doesn't support text_to_video mode
     with pytest.raises(ValidationError) as e:
         VideoRequest(model="runway-upscale", prompt="p")
-    assert "does not support mode 'text_to_video'" in str(e.value)
+    assert "does not support text_to_video" in str(e.value)
 
     # Test model that doesn't support image_to_video mode
     with pytest.raises(ValidationError) as e:
         VideoRequest(model="runway-upscale", prompt="p", image="base64img")
-    assert "does not support mode 'image_to_video'" in str(e.value)
+    assert "does not support image_to_video" in str(e.value)
 
     # Test model that doesn't support video_to_video mode
     with pytest.raises(ValidationError) as e:
         VideoRequest(model="bytedance-seedance-1", prompt="p", image="base64img", video="base64video")
-    assert "does not support mode 'video_to_video'" in str(e.value)
+    assert "does not support video_to_video" in str(e.value)
