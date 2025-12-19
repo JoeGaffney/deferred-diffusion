@@ -1,5 +1,6 @@
 import copy
 import uuid
+from typing import List
 
 from common.logger import log_pretty, task_log
 from common.memory import free_gpu_memory
@@ -47,20 +48,17 @@ def patch_workflow(workflow_request: WorkflowRequest, comfy: ComfyClient) -> dic
     return remapped
 
 
-def free_all(comfy: ComfyClient) -> None:
-    """Free all ComfyUI resources. Aggressive cleanup."""
-    clear_global_pipeline_cache()
-    free_gpu_memory()
-    comfy.free_memory(unload_models=True, free_memory=True)
-
-
 def main(context: WorkflowContext) -> List[WorkflowOutput]:
     """Execute a ComfyUI workflow with optional patches and return the generated image."""
+    # clear any cached pipelines or GPU memory before starting a new workflow
+    clear_global_pipeline_cache()
+    free_gpu_memory()
+
     with ComfyClient() as comfy:
         if not comfy.is_running():
             raise RuntimeError("ComfyUI is not running")
 
-        free_all(comfy)
+        comfy.free_memory(unload_models=True, free_memory=True)
         workflow = patch_workflow(context.data, comfy)
         log_pretty("Remapped ComfyUI workflow", workflow)
 
@@ -69,13 +67,8 @@ def main(context: WorkflowContext) -> List[WorkflowOutput]:
         if not prompt_id:
             raise ValueError("Failed to queue ComfyUI workflow")
 
-        completed = comfy.track_progress(prompt_id)
-        if not completed:
-            raise RuntimeError(f"ComfyUI workflow {prompt_id} did not complete successfully")
-
+        comfy.track_progress(prompt_id)
         outputs = comfy.get_completed_history(prompt_id)
-
-        free_all(comfy)
 
         result: List[WorkflowOutput] = []
         for node_id, node_output in outputs.items():
@@ -84,7 +77,7 @@ def main(context: WorkflowContext) -> List[WorkflowOutput]:
                     if "filename" in output_data[0] and "type" in output_data[0]:
                         if output_data[0]["type"] == "output":
                             task_log(f"{output_name} - {output_data[0]}")
-                            filename = output_data[0]["filename"]
+                            filename = output_data[0].get("filename", "")
                             subfolder = output_data[0].get("subfolder", "")
 
                             if filename.endswith(".png"):

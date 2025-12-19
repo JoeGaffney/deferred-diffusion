@@ -160,7 +160,7 @@ class ComfyClient:
         self.ws.connect(f"{self.ws_url}/ws?clientId={client_id}")
         return client_id
 
-    def track_progress(self, prompt_id: str) -> bool:
+    def track_progress(self, prompt_id: str) -> None:
         """Track workflow progress via WebSocket until completion."""
         self.connect_websocket()
 
@@ -176,41 +176,49 @@ class ComfyClient:
 
             msg_type = message.get("type")
             data = message.get("data", {})
-            logger.info(f"{msg_type}: {data}")
+            logger.debug(f"{msg_type}: {data}")
 
-            if msg_type == "progress":
-                value = data.get("value", 0)
-                max_value = data.get("max", 100)
-                if value % 10 == 0 or value == max_value:
-                    task_log(f"Progress: {value}/{max_value}")
+            match msg_type:
+                case "executing":
+                    node = data.get("node", "unknown")
+                    task_log(f"Executing node: {node}")
 
-            elif msg_type == "status":
-                status = data.get("status", {})
-                exec_info = status.get("exec_info", {})
-                queue_remaining = exec_info.get("queue_remaining")
-                if queue_remaining == 0:
-                    task_log("Generation completed")
-                    return True
+                case "progress":
+                    value = data.get("value", 0)
+                    max_value = data.get("max", 100)
+                    if value % 10 == 0 or value == max_value:
+                        task_log(f"Progress: {value}/{max_value}")
 
-            elif msg_type == "executing":
-                node = data.get("node")
-                task_log(f"Executing node: {node}")
+                case "status":
+                    # NOTE checking remaining queue to detect completion seemed to be reliable
+                    status = data.get("status", {})
+                    exec_info = status.get("exec_info", {})
+                    queue_remaining = exec_info.get("queue_remaining")
+                    if queue_remaining == 0:
+                        task_log("Generation completed")
+                        return
 
-            elif msg_type == "execution_cached":
-                logger.debug(f"Cached execution: {data}")
+                case "executed":
+                    # NOTE this does not allways get sent at end of workflow, so also check status messages
+                    if data.get("prompt_id") == prompt_id:
+                        task_log("Generation completed")
+                        return
 
-            elif msg_type == "executed":
-                if data.get("prompt_id") == prompt_id:
-                    task_log("Generation completed")
-                    return True
+                case "execution_error":
+                    if data.get("prompt_id") == prompt_id:
+                        exception_message = data.get("exception_message", "Unknown error")
+                        raise RuntimeError(f"ComfyUI workflow {prompt_id} failed: {exception_message}")
 
-            elif msg_type == "execution_error":
-                if data.get("prompt_id") == prompt_id:
-                    exception_message = data.get("exception_message", "Unknown error")
-                    raise RuntimeError(f"ComfyUI workflow {prompt_id} failed: {exception_message}")
+                case _:
+                    logger.info(f"Unhandled message type: {msg_type}")
 
     def close(self) -> None:
-        """Close all connections."""
+        """Close all connections and free memory."""
+        try:
+            self.free_memory(unload_models=True, free_memory=True)
+        except Exception as e:
+            logger.warning(f"Failed to free memory on close: {e}")
+
         if self.ws:
             self.ws.close()
             self.ws = None
