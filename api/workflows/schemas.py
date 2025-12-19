@@ -93,9 +93,15 @@ class WorkflowRequest(BaseModel):
     )
 
 
+class WorkflowOutput(BaseModel):
+    data_type: Literal["image", "video"]
+    filename: str
+    base64_data: Base64Bytes
+
+
 class WorkflowWorkerResponse(BaseModel):
     logs: List[str] = []
-    base64_data: Base64Bytes
+    outputs: List[WorkflowOutput]
 
 
 class WorkflowResponse(BaseModel):
@@ -110,7 +116,13 @@ class WorkflowResponse(BaseModel):
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
                 "result": {
-                    "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
+                    "outputs": [
+                        {
+                            "data_type": "image",
+                            "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
+                            "filename": "comfy_node_filename.png",
+                        }
+                    ],
                 },
                 "error_message": None,
                 "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],

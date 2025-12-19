@@ -1,9 +1,10 @@
 import copy
 import uuid
+from typing import List
 
 from PIL import Image
 
-from common.logger import log_pretty
+from common.logger import log_pretty, task_log
 from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from workflows.comfy.comfy_client import (
@@ -15,7 +16,7 @@ from workflows.comfy.comfy_client import (
     is_comfy_running,
 )
 from workflows.context import WorkflowContext
-from workflows.schemas import WorkflowRequest
+from workflows.schemas import WorkflowOutput, WorkflowRequest
 
 
 def poll_until_resolved(prompt_id: str, timeout: int = 300, poll_interval: int = 1) -> dict:
@@ -78,47 +79,63 @@ def patch_workflow(workflow_request: WorkflowRequest) -> dict:
     return remapped
 
 
-def main(context: WorkflowContext) -> Image.Image:
-    # ensure_comfy_alive()
+def free_all() -> None:
+    """Free all ComfyUI resources. Aggressive cleanup."""
+    clear_global_pipeline_cache()
+    free_gpu_memory()
+    api_free(unload_models=True, free_memory=True)
+
+
+def main(context: WorkflowContext) -> List[WorkflowOutput]:
+    """Execute a ComfyUI workflow with optional patches and return the generated image."""
     if not is_comfy_running():
         raise RuntimeError("ComfyUI is not running")
 
-    # free aggressively for now
-    clear_global_pipeline_cache()
-    free_gpu_memory()
-    api_free(unload_models=True, free_memory=False)
-
+    free_all()
     workflow = patch_workflow(context.data)
     log_pretty("Remapped ComfyUI workflow", workflow)
 
     # Queue the workflow to ComfyUI
+    task_log("Queuing ComfyUI workflow...")
     queue_response = api_prompt(workflow)
     prompt_id = queue_response.get("prompt_id")
     if not prompt_id:
         raise ValueError("Failed to queue ComfyUI workflow")
 
     # Wait for the workflow to complete
+    task_log(f"Waiting for ComfyUI workflow {prompt_id} to complete...")
     outputs = poll_until_resolved(prompt_id)
+    free_all()
 
     # Find the first image in the outputs
-    result = None
+    result: List[WorkflowOutput] = []
     for node_id, node_output in outputs.items():
         for output_name, output_data in node_output.items():
             if output_data and isinstance(output_data, list) and len(output_data) > 0:
                 if "filename" in output_data[0] and "type" in output_data[0]:
                     if output_data[0]["type"] == "output":
-                        # Get the generated image
+                        task_log(f"{output_name} - {output_data[0]}")
                         filename = output_data[0]["filename"]
                         subfolder = output_data[0].get("subfolder", "")
-                        result = api_view(filename, subfolder)
-                        break
-        if result:
-            break
 
-    # free aggressively for now
-    api_free(unload_models=True, free_memory=False)
+                        if filename.endswith(".png"):
+                            result.append(
+                                WorkflowOutput(
+                                    data_type="image",
+                                    base64_data=api_view(filename, subfolder),
+                                    filename=filename,
+                                )
+                            )
+                        elif filename.endswith(".mp4"):
+                            result.append(
+                                WorkflowOutput(
+                                    data_type="video",
+                                    base64_data=api_view(filename, subfolder),
+                                    filename=filename,
+                                )
+                            )
 
-    if isinstance(result, Image.Image):
-        return result
+    if not result:
+        raise ValueError("ComfyUI workflow did not produce any valid image or video outputs")
 
-    raise ValueError("Image generation failed")
+    return result

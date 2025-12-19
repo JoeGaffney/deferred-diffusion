@@ -1,11 +1,9 @@
 import base64
 import os
 import time
-from io import BytesIO
 from typing import Any, Optional
 
 import httpx
-from PIL import Image
 
 from common.logger import logger
 
@@ -154,9 +152,9 @@ def api_free(unload_models: bool = True, free_memory: bool = False) -> None:
         logger.warning(f"ComfyUI cleanup job failed: {e}")
 
 
-def api_view(filename: str, subfolder: str = "", folder_type: str = "output") -> Image.Image:
+def api_view(filename: str, subfolder: str = "", folder_type: str = "output") -> bytes:
     """
-    Get an image from ComfyUI's output directory.
+    Gets arbitary output data from comfy usually a image or video.
 
     Args:
         filename: Name of the image file
@@ -164,7 +162,7 @@ def api_view(filename: str, subfolder: str = "", folder_type: str = "output") ->
         folder_type: Type of folder (usually "output")
 
     Returns:
-        PIL Image object
+        contents of the file as bytes
     """
     client = get_client()
     params = {
@@ -176,5 +174,8 @@ def api_view(filename: str, subfolder: str = "", folder_type: str = "output") ->
     response = client.get("/view", params=params)
     response.raise_for_status()
 
-    img_data = response.content
-    return Image.open(BytesIO(img_data))
+    try:
+        encoded = base64.b64encode(response.content)
+    except Exception as e:
+        raise RuntimeError(f"Failed to encode ComfyUI view response: {e}") from e
+    return encoded
