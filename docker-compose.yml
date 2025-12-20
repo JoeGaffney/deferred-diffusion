@@ -44,9 +44,6 @@ services:
       context: .
       dockerfile: Dockerfile.workers
     image: deferred-diffusion-workers
-    networks:
-      - default
-      - comfy_isolated # Can reach comfy service
     tty: true
     stdin_open: true
     volumes:
@@ -63,7 +60,10 @@ services:
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
       - HF_ENABLE_PARALLEL_LOADING=yes
-      - COMFY_API_URL=http://comfy:8188
+      # Point to host machine or external IP.
+      # Use http://host.docker.internal:8188 for local Windows/Mac
+      # Use http://192.168.x.x:8188 for a remote machine
+      - COMFY_API_URL=${COMFY_API_URL:-http://host.docker.internal:8188}
     depends_on:
       - redis
       - api
@@ -82,9 +82,6 @@ services:
       context: .
       dockerfile: Dockerfile.workers
     image: deferred-diffusion-workers
-    networks:
-      - default
-      - comfy_isolated # Can reach comfy service
     tty: true
     stdin_open: true
     volumes:
@@ -105,35 +102,6 @@ services:
       - api
     deploy:
       replicas: 1 # Number of container
-
-  # ComfyUI service (sidecar for GPU workers)
-  comfy:
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - SETUID
-      - SETGID
-    build:
-      context: .
-      dockerfile: Dockerfile.comfy
-    volumes:
-      - comfy_models:/app/ComfyUI/models:rw # For user access to models - make :ro in production if needed
-      - comfy_custom_nodes:/app/ComfyUI/custom_nodes:rw # For user access to custom nodes - make :ro in production if needed
-      - comfy_user:/app/ComfyUI/user:rw # For user access to user data - make :ro in production if needed
-    ports:
-      - "127.0.0.1:8188:8188" # Localhost only
-    networks:
-      - comfy_isolated # Separate network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
 
   # Task monitoring service
   flower:
@@ -162,36 +130,7 @@ services:
     depends_on:
       - mcp
 
-  # ComfyUI sync service - change paths as needed
-  comfy-sync:
-    image: alpine:latest
-    volumes:
-      - ${COMFY_MODELS_PATH:-Y:/COMFY/models}:/source_models:ro
-      - ${COMFY_NODES_PATH:-Y:/COMFY/custom_nodes}:/source_nodes:ro
-      - comfy_models:/dest_models
-      - comfy_custom_nodes:/dest_nodes
-    command: >
-      sh -c "
-        echo 'Setting up...' &&
-        apk add --no-cache rsync &&
-        echo 'Syncing custom nodes...' &&
-        rsync -av /source_nodes/ /dest_nodes/ &&
-        echo 'Syncing models...' &&
-        rsync -av /source_models/ /dest_models/ &&
-        echo 'ComfyUI sync complete!'
-      "
-
-networks:
-  default:
-  comfy_isolated:
-
 # Volume definitions go at the root level, not nested inside the service
 volumes:
   hf_cache:
     name: deferred-diffusion_hf_cache
-  comfy_models:
-    name: deferred-diffusion_comfy_models
-  comfy_custom_nodes:
-    name: deferred-diffusion_comfy_custom_nodes
-  comfy_user:
-    name: deferred-diffusion_comfy_user

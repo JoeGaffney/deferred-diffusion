@@ -1,4 +1,4 @@
-.PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests create-release mypy-check
+.PHONY:  all down copy-schemas build up generate-clients test-worker test-it-tests create-release mypy-check
 
 VERSION ?= dev
 PROJECT_NAME ?= deferred-diffusion
@@ -10,12 +10,10 @@ TEST_PATH ?= images/models
 # Default target
 all: generate-clients
 
-# Docker management
 down:
 	docker compose down
 
-# atm we align by copying schemas from the api to the workers
-# this is a temporary solution until we have a better way to manage schemas
+# NOTE atm we align by copying schemas from the api to the workers
 copy-schemas:
 ifeq ($(OS),Windows_NT)
 	copy api\images\schemas.py workers\images\schemas.py
@@ -41,8 +39,13 @@ up-it-tests: down copy-schemas
 	docker compose -f docker-compose.it-tests.yml build
 	docker compose -f docker-compose.it-tests.yml up -d
 
+up-comfy:
+	docker compose -f docker-compose.comfy.yml down
+	docker compose -f docker-compose.comfy.yml build
+	docker compose -f docker-compose.comfy.yml up -d
+
 up-latest-release:
-	docker compose down
+	docker compose -f docker-compose.release.yml down
 	docker compose -f docker-compose.release.yml pull
 	docker compose -f docker-compose.release.yml up -d --no-build
 
@@ -57,8 +60,6 @@ generate-clients-raw:
 	openapi-python-client generate --path clients/openapi.json --output-path clients/nuke/python/generated --overwrite
 	openapi-python-client generate --path clients/openapi.json --output-path clients/it_tests/generated --overwrite
 
-
-# API Client generation
 generate-clients: generate-openapi-spec generate-clients-raw
 	@echo "API clients generated successfully."
 
