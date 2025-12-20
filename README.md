@@ -25,7 +25,7 @@ Example **Houdini** and **Nuke** clients are included to demonstrate integration
 - **Client / Workstations**: Don't need heavy GPU's, download models or call provider API's directly.
 - **Server / Workers**: Do not require access to your main network drives, maintaining strong isolation and clear boundaries.
 
-⚠️ **ComfyUI sidecar workflows:** These run in a separate, fully isolated Docker container. They communicate with the main system only through stateless API calls and pull only the files needed for the workflow. ComfyUI’s dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **not included in the main release**. Further work is needed to establish best-practice recommendations. The core API → Broker → Worker system remains fully secure and stateless
+⚠️ **ComfyUI sidecar workflows:** These run in a separate, fully isolated Docker container. They communicate with the main system only through stateless API calls and pull only the files needed for the workflow. ComfyUI's dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **require manual configuration**. Users must curate and sync their own custom nodes collection and models.
 
 #### **Image Flow Example**
 

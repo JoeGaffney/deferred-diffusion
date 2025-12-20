@@ -5,7 +5,6 @@ import tempfile
 from typing import Optional
 
 from PIL import Image
-from pydantic import Base64Bytes
 
 from utils.utils import ensure_path_exists
 
@@ -28,12 +27,19 @@ def setup_output_file(model_id, mode, suffix="", extension="png"):
     return output_name
 
 
+def assert_file_exists(output_name: str, size: int = 100) -> None:
+    """Assert that a file exists at the given path."""
+    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+    assert os.path.getsize(output_name) > size, f"Output file {output_name} is empty."
+
+
 def save_image_and_assert_file_exists(result, output_name):
     """Save image result and verify it exists."""
     if isinstance(result, Image.Image):
         ensure_path_exists(output_name)
         result.save(output_name)
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
+
+    assert_file_exists(output_name)
 
 
 def _convert_image_to_base64(image_path: str) -> Optional[str]:

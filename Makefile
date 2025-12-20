@@ -1,6 +1,6 @@
 .PHONY:  all down copy-schemas build  up generate-clients test-worker test-it-tests create-release mypy-check
 
-VERSION ?= latest
+VERSION ?= dev
 PROJECT_NAME ?= deferred-diffusion
 REPO ?= deferred-diffusion
 REPO_USERNAME ?= joegaffney
@@ -107,9 +107,11 @@ tag-and-push: build
 # Tag images with version (this creates new tags without removing latest tags)
 	docker tag deferred-diffusion-api:latest $(REPO_USERNAME)/$(REPO):api-$(VERSION)
 	docker tag deferred-diffusion-workers:latest $(REPO_USERNAME)/$(REPO):worker-$(VERSION)
+	docker tag deferred-diffusion-comfy:latest $(REPO_USERNAME)/$(REPO):comfy-$(VERSION)
 # Push images
 	docker push $(REPO_USERNAME)/$(REPO):api-$(VERSION)
 	docker push $(REPO_USERNAME)/$(REPO):worker-$(VERSION)
+	docker push $(REPO_USERNAME)/$(REPO):comfy-$(VERSION)
 
 create-client-release: generate-clients-raw
 # Create release directory with combined project-version name

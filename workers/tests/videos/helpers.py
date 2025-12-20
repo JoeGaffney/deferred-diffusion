@@ -3,7 +3,7 @@ import os
 import shutil
 from typing import Dict, Tuple
 
-from tests.utils import image_to_base64, setup_output_file
+from tests.utils import assert_file_exists, image_to_base64, setup_output_file
 from videos.context import VideoContext
 from videos.schemas import ModelName, VideoRequest
 
@@ -88,11 +88,7 @@ def text_to_video_portrait(
     if os.path.exists(result):
         shutil.copy(result, output_name)
 
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    assert_file_exists(output_name)
 
 
 def image_to_video(model: ModelName):
@@ -112,11 +108,7 @@ def image_to_video(model: ModelName):
     if os.path.exists(result):
         shutil.copy(result, output_name)
 
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    assert_file_exists(output_name)
 
 
 def image_to_video_portrait(model):
@@ -137,11 +129,7 @@ def image_to_video_portrait(model):
     if os.path.exists(result):
         shutil.copy(result, output_name)
 
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    assert_file_exists(output_name)
 
 
 def video_to_video(model: ModelName):
@@ -162,11 +150,7 @@ def video_to_video(model: ModelName):
     if os.path.exists(result):
         shutil.copy(result, output_name)
 
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    assert_file_exists(output_name)
 
 
 def video_upscale(model: ModelName):
@@ -184,11 +168,7 @@ def video_upscale(model: ModelName):
     if os.path.exists(result):
         shutil.copy(result, output_name)
 
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    assert_file_exists(output_name)
 
 
 def first_frame_last_frame(model: ModelName):
@@ -209,11 +189,7 @@ def first_frame_last_frame(model: ModelName):
     if os.path.exists(result):
         shutil.copy(result, output_name)
 
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    assert_file_exists(output_name)
 
 
 def video_segmentation(model: ModelName):
@@ -228,11 +204,7 @@ def video_segmentation(model: ModelName):
     if os.path.exists(result):
         shutil.copy(result, output_name)
 
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    assert_file_exists(output_name)
 
 
 def video_segmentation_alt(model: ModelName):
@@ -249,8 +221,4 @@ def video_segmentation_alt(model: ModelName):
     if os.path.exists(result):
         shutil.copy(result, output_name)
 
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    assert_file_exists(output_name)

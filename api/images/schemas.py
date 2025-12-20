@@ -25,22 +25,20 @@ ModelName: TypeAlias = Literal[
     "google-gemini-3",
     "bytedance-seedream-4",
 ]
-InferredMode: TypeAlias = Literal["text-to-image", "image-to-image", "inpainting"]
 
 
 class ImagesModelInfo(BaseModel):
-    provider: Provider = Field(description="Source/provider identifier")
     external: bool = Field(description="True if the model is invoked via an external API")
-    supported_modes: set[InferredMode] = Field(default_factory=set)
-    references: bool = False  # separate capability flag
+    provider: Provider = Field(description="Source/provider identifier")
+    text_to_image: bool = False
+    image_to_image: bool = False
+    inpainting: bool = False
+    references: bool = False
     description: Optional[str] = None
 
     @property
     def queue(self) -> str:
         return "cpu" if self.external else "gpu"
-
-    def supports_inferred_mode(self, mode: InferredMode) -> bool:
-        return mode in self.supported_modes
 
 
 # Unified metadata
@@ -48,106 +46,124 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
     "sd-xl": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        text_to_image=True,
+        image_to_image=True,
+        inpainting=True,
         references=False,
         description="Stable Diffusion XL variant.",
     ),
     "flux-1": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        text_to_image=True,
+        image_to_image=True,
+        inpainting=True,
         references=False,
         description="FLUX dev model (Krea tuned). Uses Kontext for image-to-image, Fill for inpainting.",
     ),
     "flux-2": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        text_to_image=True,
+        image_to_image=True,
+        inpainting=True,
         references=True,
         description="FLUX 2.0 dev model with edit capabilities.",
     ),
     "qwen-image": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        text_to_image=True,
+        image_to_image=True,
+        inpainting=True,
         references=True,
         description="Qwen image generation and manipulation.",
     ),
     "z-image": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"text-to-image"},
+        text_to_image=True,
         description="Z-Image open-source image generation model.",
     ),
     "depth-anything-2": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"image-to-image"},
+        image_to_image=True,
         description="Depth estimation pipeline.",
     ),
     "sam-2": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"image-to-image"},
+        image_to_image=True,
         description="Meta's SAM 2 Segmentation pipeline.",
     ),
     "sam-3": ImagesModelInfo(
         provider="local",
         external=False,
-        supported_modes={"image-to-image"},
-        description="Meta's SAM 3 Segmentation pipeline.",
+        image_to_image=True,
+        description="Meta's SAM 3 Segmentation pipeline. (Broken atm)",
     ),
     "gpt-image-1": ImagesModelInfo(
         provider="openai",
         external=True,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        text_to_image=True,
+        image_to_image=True,
+        inpainting=True,
         references=True,
-        description="OpenAI image model.",
+        description="GPT Image 1.5 is OpenAI's latest image generation model, built for production-quality visuals and controllable creative workflows.",
     ),
     "runway-gen4-image": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-image", "image-to-image"},
+        text_to_image=True,
+        image_to_image=True,
         references=True,
         description="Runway Gen-4 image model.",
     ),
     "flux-1-pro": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        text_to_image=True,
+        image_to_image=True,
+        inpainting=True,
         description="FLUX 1.1 Pro variants via external provider.",
     ),
     "flux-2-pro": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-image", "image-to-image", "inpainting"},
+        text_to_image=True,
+        image_to_image=True,
+        inpainting=True,
         description="FLUX 2.0 Pro variants via external provider.",
         references=True,
     ),
     "topazlabs-upscale": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"image-to-image"},
+        image_to_image=True,
         description="Topaz upscale model.",
     ),
     "google-gemini-2": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-image", "image-to-image"},
+        text_to_image=True,
+        image_to_image=True,
         references=True,
         description="Gemini 2.5 multimodal image model (aka 'Nano Banana').",
     ),
     "google-gemini-3": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-image", "image-to-image"},
+        text_to_image=True,
+        image_to_image=True,
         references=True,
         description="Gemini 3 Pro multimodal image model (aka 'Nano Banana Pro').",
     ),
     "bytedance-seedream-4": ImagesModelInfo(
         provider="replicate",
         external=True,
-        supported_modes={"text-to-image", "image-to-image"},
+        text_to_image=True,
+        image_to_image=True,
         references=True,
         description="Seedream 4.5: Upgraded Bytedance image model with stronger spatial understanding and world knowledge.",
     ),
@@ -155,18 +171,34 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
 
 
 def generate_model_docs():
-    header = (
-        "# Image Models\n"
-        "External models proxy to provider APIs; local models run on your GPU.\n\n"
-        "| Model | Provider | External | Queue | Modes | References | Description |\n"
-        "|-------|----------|:--------:|:-----:|-------|:----------:|-------------|\n"
-    )
+    header = "# Image Models\n" "External models proxy to provider APIs; local models run on your GPU.\n\n"
+
+    # Get all fields from ImagesModelInfo to build table header
+    model_fields = ImagesModelInfo.model_fields
+    columns = ["Model"] + [field_name.replace("_", " ").title() for field_name in model_fields.keys()]
+
+    # Build header row
+    header += "| " + " | ".join(columns) + " |\n"
+    header += "|" + "|".join([":-------:" if i > 0 else "-------" for i in range(len(columns))]) + "|\n"
+
     rows = []
     for name, meta in MODEL_META.items():
-        modes = ", ".join(sorted(meta.supported_modes))
-        rows.append(
-            f"| {name} | {meta.provider} | {'Yes' if meta.external else 'No'} | {meta.queue} | {modes} | {'✓' if meta.references else '✗'} | {meta.description or ''} |"
-        )
+        row_values = [name]
+        for field_name, field_info in model_fields.items():
+            value = getattr(meta, field_name)
+
+            # Format based on type
+            if isinstance(value, bool):
+                formatted = "✓" if value else "✗"
+            elif value is None:
+                formatted = ""
+            else:
+                formatted = str(value)
+
+            row_values.append(formatted)
+
+        rows.append("| " + " | ".join(row_values) + " |")
+
     return header + "\n".join(rows) + "\n"
 
 
@@ -224,14 +256,6 @@ class ImageRequest(BaseModel):
     )
 
     @property
-    def inferred_mode(self) -> InferredMode:
-        if self.mask and self.image:
-            return "inpainting"
-        if self.image:
-            return "image-to-image"
-        return "text-to-image"
-
-    @property
     def meta(self) -> ImagesModelInfo:
         return MODEL_META[self.model]
 
@@ -253,9 +277,19 @@ class ImageRequest(BaseModel):
 
     @model_validator(mode="after")
     def _validate_capabilities(self):
-        mode = self.inferred_mode
-        if not self.meta.supports_inferred_mode(mode):
-            raise ValueError(f"Model '{self.model}' does not support mode '{mode}'.")
+        if self.mask and self.image:
+            # Inpainting mode
+            if not self.meta.inpainting:
+                raise ValueError(f"Model '{self.model}' does not support inpainting.")
+        elif self.image:
+            # Image-to-image mode
+            if not self.meta.image_to_image:
+                raise ValueError(f"Model '{self.model}' does not support image_to_image.")
+        else:
+            # Text-to-image mode
+            if not self.meta.text_to_image:
+                raise ValueError(f"Model '{self.model}' does not support text_to_image.")
+
         if self.mask and not self.image:
             raise ValueError("mask requires image.")
         if self.references and not self.meta.references:

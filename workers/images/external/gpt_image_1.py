@@ -43,7 +43,7 @@ def process_openai_image_output(output: ImagesResponse) -> Image.Image:
 
 def text_to_image_call(context: ImageContext):
     client = OpenAI()
-    model = "gpt-image-1-mini"
+    model = "gpt-image-1.5"
 
     result = client.images.generate(
         model=model,
@@ -57,7 +57,7 @@ def text_to_image_call(context: ImageContext):
 
 def image_to_image_call(context: ImageContext):
     client = OpenAI()
-    model = "gpt-image-1-mini"
+    model = "gpt-image-1.5"
 
     # gather all possible reference images
     reference_images = []
@@ -84,7 +84,7 @@ def image_to_image_call(context: ImageContext):
 
 def inpainting_call(context: ImageContext):
     client = OpenAI()
-    model = "gpt-image-1-mini"
+    model = "gpt-image-1.5"
 
     if context.color_image is None:
         raise ValueError("No color image provided")
