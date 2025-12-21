@@ -18,6 +18,7 @@ from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
     base64_to_file,
+    get_model_name,
     get_node_value,
     get_output_path,
     get_references,
@@ -38,7 +39,7 @@ def create_dd_image_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100, sleep_time=5):
+def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300, sleep_time=5):
     set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
@@ -116,7 +117,7 @@ def process_image(node):
         width_height = get_node_value(node, "width_height", [1280, 720], return_type=list, mode="value")
 
         body = ImageRequest(
-            model=ImageRequestModel(get_node_value(node, "model", "sd-xl", mode="value")),
+            model=ImageRequestModel(get_model_name(node, "model", "sd-xl")),
             image=image,
             mask=mask,
             prompt=get_node_value(node, "prompt", UNSET, mode="get"),
@@ -143,7 +144,7 @@ def get_image(node):
 
 def image_prompt_optimizer(node):
     current_frame = nuke.frame()
-    text_model = get_node_value(node, "text_model", "gpt-5", mode="value")
+    text_model = get_model_name(node, "text_model", "gpt-5")
     prompt = get_node_value(node, "prompt", "", mode="get")
     image_node = node.input(0)
     image = node_to_base64(image_node, current_frame)

@@ -16,6 +16,7 @@ from generated.api_client.models import (
 from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
+    get_model_name,
     get_node_value,
     node_to_base64,
     nuke_error_handling,
@@ -91,7 +92,7 @@ def process_text(node):
     set_node_info(node, None, "")
 
     with nuke_error_handling(node):
-        model = TextRequestModel(get_node_value(node, "model", UNSET, mode="value"))
+        model = TextRequestModel(get_model_name(node, "model", ""))
         prompt = get_node_value(node, "prompt", "", mode="get")
 
         # Get image inputs a and b as base64

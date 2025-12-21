@@ -1,4 +1,3 @@
-import os
 import time
 
 import nuke
@@ -19,6 +18,7 @@ from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
     base64_to_file,
+    get_model_name,
     get_node_value,
     get_output_path,
     node_to_base64,
@@ -38,7 +38,7 @@ def create_dd_video_node():
 
 
 @threaded
-def _api_get_call(node, id, output_path: str, current_frame: int, iterations=100, sleep_time=10):
+def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300, sleep_time=10):
     set_node_info(node, TaskStatus.PENDING, "")
 
     for count in range(1, iterations + 1):
@@ -120,7 +120,7 @@ def process_video(node):
         video = node_to_base64_video(video_node, current_frame, num_frames=num_frames)
 
         body = VideoRequest(
-            model=VideoRequestModel(get_node_value(node, "model", UNSET, mode="value")),
+            model=VideoRequestModel(get_model_name(node, "model", "")),
             image=image,
             last_image=last_image,
             video=video,
@@ -148,7 +148,7 @@ def get_video(node):
 
 def video_prompt_optimizer(node):
     current_frame = nuke.frame()
-    text_model = get_node_value(node, "text_model", "gpt-5", mode="value")
+    text_model = get_model_name(node, "text_model", "gpt-5")
     prompt = get_node_value(node, "prompt", "", mode="get")
     image_node = node.input(0)
     last_image_node = node.input(1)
