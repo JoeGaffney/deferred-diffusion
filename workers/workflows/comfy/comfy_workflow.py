@@ -2,7 +2,7 @@ import copy
 import uuid
 from typing import List
 
-from common.logger import log_pretty, task_log
+from common.logger import log_pretty, logger, task_log
 from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from workflows.comfy.comfy_client import ComfyClient
@@ -41,7 +41,7 @@ def patch_workflow(workflow_request: WorkflowRequest, comfy: ComfyClient) -> dic
                 subfolder="api_inputs",
                 filename=f"{uuid_str}_{patch.title}.mp4",
             )
-            inputs["video"] = uploaded_name
+            inputs["file"] = uploaded_name
         else:
             inputs["value"] = patch.value
 
@@ -74,11 +74,13 @@ def main(context: WorkflowContext) -> List[WorkflowOutput]:
         for node_id, node_output in outputs.items():
             for output_name, output_data in node_output.items():
                 if output_data and isinstance(output_data, list) and len(output_data) > 0:
-                    if "filename" in output_data[0] and "type" in output_data[0]:
-                        if output_data[0]["type"] == "output":
-                            task_log(f"{output_name} - {output_data[0]}")
-                            filename = output_data[0].get("filename", "")
-                            subfolder = output_data[0].get("subfolder", "")
+                    # FIX: Ensure the first element is a dictionary before checking for keys
+                    first_output = output_data[0]
+                    if isinstance(first_output, dict) and "filename" in first_output and "type" in first_output:
+                        if first_output["type"] == "output":
+                            task_log(f"{output_name} - {first_output}")
+                            filename = first_output.get("filename", "")
+                            subfolder = first_output.get("subfolder", "")
 
                             if filename.endswith(".png"):
                                 result.append(
@@ -96,6 +98,8 @@ def main(context: WorkflowContext) -> List[WorkflowOutput]:
                                         filename=filename,
                                     )
                                 )
+                    else:
+                        logger.warning(f"Skipping non-file output from node {node_id}: {first_output}")
 
         if not result:
             raise ValueError("ComfyUI workflow did not produce any valid image or video outputs")
