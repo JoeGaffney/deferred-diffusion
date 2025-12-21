@@ -6,8 +6,8 @@ Group {
  addUserKnob {1 node_type +HIDDEN}
  node_type dd_text
  addUserKnob {26 ""}
- addUserKnob {4 model l Model t "Select the text generation model." M {qwen-2 gpt-4o gpt-4 gpt-5}}
- model gpt-5
+ addUserKnob {4 model l Model t "Select the text generation model." M {qwen-2 external/gpt-4o external/gpt-4 external/gpt-5}}
+ model external/gpt-5
  addUserKnob {22 generate l "Generate" -STARTLINE T "import dd_text\nnode = nuke.thisNode()\ndd_text.process_text(node)" t "Start text generation with current settings."}
  addUserKnob {1 task_id l "Task ID" -STARTLINE t "ID of the current text generation task."}
  task_id e855044f-787e-4d80-bcfb-9d7f9e76a943

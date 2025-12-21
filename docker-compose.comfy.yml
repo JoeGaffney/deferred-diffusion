@@ -1,0 +1,55 @@
+services:
+  # ComfyUI service (sidecar for GPU workers)
+  comfy:
+    container_name: comfy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    build:
+      context: .
+      dockerfile: Dockerfile.comfy
+    volumes:
+      - comfy_models:/app/ComfyUI/models:rw # For user access to models - make :ro in production if needed
+      - comfy_custom_nodes:/app/ComfyUI/custom_nodes:rw # For user access to custom nodes - make :ro in production if needed
+      - comfy_user:/app/ComfyUI/user:rw # For user access to user data - make :ro in production if needed
+    ports:
+      - "127.0.0.1:8188:8188" # Localhost only
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ComfyUI sync service - change paths as needed
+  comfy-sync:
+    image: alpine:latest
+    volumes:
+      - ${COMFY_MODELS_PATH:-Y:/COMFY/models}:/source_models:ro
+      - ${COMFY_NODES_PATH:-Y:/COMFY/custom_nodes}:/source_nodes:ro
+      - comfy_models:/dest_models
+      - comfy_custom_nodes:/dest_nodes
+    command: >
+      sh -c "
+        echo 'Setting up...' &&
+        apk add --no-cache rsync &&
+        echo 'Syncing custom nodes...' &&
+        rsync -av /source_nodes/ /dest_nodes/ &&
+        echo 'Syncing models...' &&
+        rsync -av /source_models/ /dest_models/ &&
+        echo 'ComfyUI sync complete!'
+      "
+
+volumes:
+  comfy_models:
+    name: deferred-diffusion_comfy_models
+  comfy_custom_nodes:
+    name: deferred-diffusion_comfy_custom_nodes
+  comfy_user:
+    name: deferred-diffusion_comfy_user

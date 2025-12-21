@@ -10,7 +10,7 @@ Group {
  addUserKnob {1 node_type +HIDDEN}
  node_type dd_image
  addUserKnob {26 ""}
- addUserKnob {4 model l Model t "Select the image generation model." M {sd-xl flux-1 flux-2 qwen-image z-image depth-anything-2 sam-2 sam-3 real-esrgan-x4 gpt-image-1 runway-gen4-image flux-1-pro flux-2-pro topazlabs-upscale google-gemini-2 google-gemini-3 bytedance-seedream-4}}
+ addUserKnob {4 model l Model t "Select the image generation model." M {sd-xl flux-1 flux-2 qwen-image z-image depth-anything-2 sam-2 sam-3 real-esrgan-x4 external/gpt-image-1 external/runway-gen4-image external/flux-1-pro external/flux-2-pro external/topazlabs-upscale external/google-gemini-2 external/google-gemini-3 external/bytedance-seedream-4}}
  addUserKnob {22 generate l Generate t "Start image generation with current settings." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)"}
  addUserKnob {1 task_id l "Task ID" t "ID of the current image generation task." -STARTLINE}
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest image for this task." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)"}
@@ -18,8 +18,8 @@ Group {
 
  addUserKnob {43 prompt l Prompt t "Describe the image you want to generate."}
  prompt "Detailed, 8k, photorealistic"
- addUserKnob {4 text_model l "Text Model" t "Select the text generation model for optimize." M {qwen-2 gpt-4o gpt-4 gpt-5}}
- text_model gpt-5
+ addUserKnob {4 text_model l "Text Model" t "Select the text generation model for optimize." M {qwen-2 external/gpt-4o external/gpt-4 external/gpt-5}}
+ text_model external/gpt-5
  addUserKnob {22 optimize l "🤖 Optimize" t "Optimize the prompt." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.image_prompt_optimizer(node)"}
  addUserKnob {26 ""}
 

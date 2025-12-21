@@ -24,8 +24,7 @@ Example **Houdini** and **Nuke** clients are included to demonstrate integration
 - **Traceable and reproducible**: Local models are version-controlled in code; no downloading from random external repositories.
 - **Client / Workstations**: Don't need heavy GPU's, download models or call provider API's directly.
 - **Server / Workers**: Do not require access to your main network drives, maintaining strong isolation and clear boundaries.
-
-⚠️ **ComfyUI sidecar workflows:** These run in a separate, fully isolated Docker container. They communicate with the main system only through stateless API calls and pull only the files needed for the workflow. ComfyUI's dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **require manual configuration**. Users must curate and sync their own custom nodes collection and models.
+- **ComfyUI Sidecar (Optional)**: Optional sidecar on the worker host, disabled by default. Allows dynamic code execution via custom nodes and therefore requires explicit enablement, localhost only access, reduced privileges, and manual one way syncing. (Can be further hardened in production if required.)
 
 #### **Image Flow Example**
 
@@ -52,11 +51,13 @@ sequenceDiagram
 
 ## Workflows (experimental, WIP)
 
+⚠️ **ComfyUI sidecar workflows:** These run in a separate, fully isolated Docker container. They communicate with the main system only through stateless API calls / websockets and pull only the files needed for the workflow. ComfyUI's dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **require manual configuration**. Users must curate and sync their own custom nodes and models.
+
 This feature enables the use of a **ComfyUI sidecar** to execute advanced, user-driven pipelines with support for **patching workflows**, modifying inputs, and updating files as needed.
 
 We still aim to enforce **stateless operations** and **typing validation** as much as possible from the client’s perspective. The sidecar can be deployed on a **separate network** with limited filesystem access, maintaining strong isolation.
 
-This diagram shows how a Worker interacts with the ComfyUI sidecar. It extends the standard domain/task flow by integrating Comfy workflows while keeping the core **API → Broker → Worker** logic consistent.
+This diagram shows how a Worker interacts with the ComfyUI sidecar. It extends the standard domain/task flow by integrating Comfy workflows while keeping the core **API → Broker → Worker** logic consistent. All interactions with the ComfyUI sidecar are request scoped and stateless from the core system’s perspective.
 
 #### Workflow Flow
 
@@ -112,19 +113,33 @@ For production deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 **All services run in Docker containers** - this ensures consistent environments and avoids duplicating model downloads across different setups. Nothing needs to run directly on the host machine except Docker and the client applications.
 
+To build and run the core API and Workers:
+
 ```bash
 make all
 ```
 
-### Local setup Windows
+To build and run the optional ComfyUI sidecar (required for workflow tasks):
 
-For local venv mainly to get intellisense on the packages and some local testing.
+```bash
+make up-comfy
+```
+
+### Local env
+
+Only a minimal local venv is required to get intellisense on the packages, it-test calls and client generation.
 
 ```bash
 ./start_venv_setup.bat
 ```
 
-Or make your own env and install the requirements.
+Or make your own env and install the requirements. We don't add pytorch directly to the requirements as the container base image handles this. This is good as you don't need the cuda version locally.
+
+```bash
+pip install torch torchvision torchaudio
+pip install -r api/requirements.txt
+pip install -r workers/requirements.txt
+```
 
 ## Testing
 
@@ -237,7 +252,6 @@ We try to use plural to adhere to REST best practices.
 ## Clients
 
 ```
-
 /clients
 │── /it_tests
 │ ├── generated/ # generated client
@@ -247,7 +261,6 @@ We try to use plural to adhere to REST best practices.
 │── /nuke
 │ ├── python/generated/ # generated client
 │── openapi.json # API spec
-
 ```
 
 Example clients for Houdini and Nuke are provided in the `/clients` directory.
@@ -299,7 +312,3 @@ Each new model entry should include:
 3. Updated tests under `tests/images`
 
 This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
-
-```
-
-```

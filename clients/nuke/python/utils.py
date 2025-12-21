@@ -182,6 +182,14 @@ def get_node_value(
         return default
 
 
+def get_model_name(node, knob_name: str = "model", default: str = "") -> str:
+    """Get the model name from a knob, stripping any UI prefixes like 'external/'."""
+    model = get_node_value(node, knob_name, default=default, mode=MODE_VALUE)
+    if model and "/" in model:
+        return str(model).rsplit("/", 1)[-1]
+    return str(model)
+
+
 def image_to_base64(image_path: str, debug=False) -> Optional[str]:
     """Convert an image file to a base64 string (binary data encoded in base64)."""
     if not image_path:

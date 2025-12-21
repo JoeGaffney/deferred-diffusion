@@ -210,7 +210,7 @@ class ComfyClient:
                         raise RuntimeError(f"ComfyUI workflow {prompt_id} failed: {exception_message}")
 
                 case _:
-                    logger.info(f"Unhandled message type: {msg_type}")
+                    logger.debug(f"Unhandled message type: {msg_type} - {str(data)[:250]}...")
 
     def close(self) -> None:
         """Close all connections and free memory."""
