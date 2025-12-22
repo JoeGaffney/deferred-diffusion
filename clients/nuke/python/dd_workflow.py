@@ -21,8 +21,8 @@ from generated.api_client.models import (
 from utils import (
     COMPLETED_STATUS,
     base64_to_file,
+    get_node_root_path,
     get_node_value,
-    get_output_path,
     node_to_base64,
     node_to_base64_video,
     nuke_error_handling,
@@ -39,23 +39,13 @@ def create_dd_workflow_node():
     return node
 
 
-def refresh_knobs(node):
-    workflow_path = node["workflow_file"].value()
-    if not workflow_path or not os.path.exists(workflow_path):
-        return
-
-    try:
-        with open(workflow_path, "r", encoding="utf-8") as f:
-            workflow_data = json.load(f)
-            # Store JSON in hidden knob to avoid re-reading file
-            node["workflow_json"].setValue(json.dumps(workflow_data))
-    except Exception as e:
-        nuke.message(f"Failed to load workflow: {str(e)}")
-        return
-
+def _clear_dynamic_knobs(node):
     # Find the Parameters group
     start_knob = node.knob("Parameters")
     end_knob = node.knob("endGroup")
+
+    if not start_knob or not end_knob:
+        return
 
     # Collect knobs to remove
     knobs_to_remove = []
@@ -73,6 +63,35 @@ def refresh_knobs(node):
     # Remove old knobs
     for k in knobs_to_remove:
         node.removeKnob(k)
+
+    # Clear internal inputs
+    with node:
+        for i in nuke.allNodes("Input"):
+            nuke.delete(i)
+
+
+def refresh_knobs(node):
+    workflow_path = node["workflow_file"].value()
+
+    # If path is empty, just clear the dynamic knobs and return
+    if not workflow_path or not os.path.exists(workflow_path):
+        _clear_dynamic_knobs(node)
+        node["workflow_json"].setValue("")
+        node["patch_info"].setValue("")
+        return
+
+    try:
+        with open(workflow_path, "r", encoding="utf-8") as f:
+            workflow_data = json.load(f)
+    except Exception as e:
+        nuke.message(f"Failed to load workflow: {str(e)}")
+        return
+
+    # Clear existing dynamic UI
+    _clear_dynamic_knobs(node)
+
+    # Store JSON in hidden knob
+    node["workflow_json"].setValue(json.dumps(workflow_data))
 
     # Regenerate Input nodes inside the group
     input_titles = []
@@ -98,11 +117,6 @@ def refresh_knobs(node):
     node["patch_info"].setValue(json.dumps(patch_info))
 
     with node:
-        # Find all existing Input nodes
-        existing_inputs = nuke.allNodes("Input")
-        for i in existing_inputs:
-            nuke.delete(i)
-
         # Create new ones
         for i, title in enumerate(input_titles):
             # Sanitize title for node name
@@ -113,6 +127,7 @@ def refresh_knobs(node):
 
     # Add new knobs based on workflow
     # We look for nodes that have a title in _meta
+    end_knob = node.knob("endGroup")
     for node_id, node_info in workflow_data.items():
         meta = node_info.get("_meta", {})
         title = meta.get("title")
@@ -124,20 +139,27 @@ def refresh_knobs(node):
         knob_name = f"p_{title.replace(' ', '_')}"
         label = title
 
-        # Check if knob already exists (shouldn't if we removed them, but just in case)
+        # Check if knob already exists
         if node.knob(knob_name):
             continue
 
         new_knob = None
-        if class_type == "PrimitiveInt":
+        # Support both specific types and generic PrimitiveNode
+        if class_type == "PrimitiveInt" or (
+            class_type == "PrimitiveNode" and isinstance(node_info.get("inputs", {}).get("value"), int)
+        ):
             new_knob = nuke.Int_Knob(knob_name, label)
             val = node_info.get("inputs", {}).get("value", 0)
             new_knob.setValue(int(val))
-        elif class_type == "PrimitiveFloat":
+        elif class_type == "PrimitiveFloat" or (
+            class_type == "PrimitiveNode" and isinstance(node_info.get("inputs", {}).get("value"), float)
+        ):
             new_knob = nuke.Double_Knob(knob_name, label)
             val = node_info.get("inputs", {}).get("value", 0.0)
             new_knob.setValue(float(val))
-        elif class_type == "PrimitiveStringMultiline":
+        elif class_type == "PrimitiveStringMultiline" or (
+            class_type == "PrimitiveNode" and isinstance(node_info.get("inputs", {}).get("value"), str)
+        ):
             new_knob = nuke.String_Knob(knob_name, label)
             val = node_info.get("inputs", {}).get("value", "")
             new_knob.setValue(str(val))
@@ -150,6 +172,7 @@ def refresh_knobs(node):
             if title in input_titles:
                 new_knob.setValue(str(input_titles.index(title)))
             new_knob.setEnabled(False)
+
         if new_knob:
             node.addKnob(new_knob)
             # Move it before the endGroup
@@ -207,6 +230,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
             # Position for new Read nodes
             start_x = node.xpos()
             start_y = node.ypos() + 100
+            root_path = get_node_root_path(node)
 
             for i, output in enumerate(parsed.result.outputs):
                 data = output.base64_data
@@ -215,14 +239,11 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
                     ext = "mp4"
 
                 # Generate unique path for each output
-                base_path = os.path.splitext(output_path)[0]
-                final_output_path = f"{base_path}_{i}.{ext}"
-
+                final_output_path = f"{output_path}/{id}_{i}.{ext}"
                 base64_to_file(data, final_output_path)
 
                 # Create a new Read node outside the group
-                safe_id = id.replace("-", "_")
-                read_name = f"{node.name()}_{safe_id}_{i}"
+                read_name = f"{node.name()}_{i}"
                 read_node = nuke.nodes.Read(name=read_name, file=final_output_path)
                 read_node.setXYpos(start_x + (i * 100), start_y)
 
@@ -247,7 +268,7 @@ def process_workflow(node):
         workflow_json = json.loads(workflow_json_str)
         patch_info = json.loads(patch_info_str)
 
-        output_path = get_output_path(node, movie=False)  # Default to image path
+        output_path = get_node_root_path(node)
 
         patches = []
 
@@ -304,5 +325,5 @@ def get_workflow(node):
         if not task_id or task_id == "":
             raise ValueError("Task ID is required to get the workflow result.")
 
-        output_path = get_output_path(node, movie=False)
+        output_path = get_node_root_path(node)
         _api_get_call(node, task_id, output_path, current_frame, iterations=1, sleep_time=0)

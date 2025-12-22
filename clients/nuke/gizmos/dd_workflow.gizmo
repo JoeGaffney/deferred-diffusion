@@ -11,10 +11,9 @@ Group {
  node_type dd_workflow
  addUserKnob {43 workflow_json +HIDDEN}
  addUserKnob {43 patch_info +HIDDEN}
- addUserKnob {43 knob_changed +HIDDEN}
- knob_changed "import dd_workflow\ndd_workflow.knob_changed()"
+ addUserKnob {43 knobChanged +HIDDEN}
+ knobChanged "import dd_workflow\ndd_workflow.knob_changed()"
  addUserKnob {2 workflow_file l "Workflow File" t "Select the ComfyUI workflow JSON file."}
- addUserKnob {22 refresh l "Refresh Parameters" t "Refresh the dynamic parameters from the workflow file." T "import dd_workflow\nnode = nuke.thisNode()\ndd_workflow.refresh_knobs(node)"}
  addUserKnob {22 generate l Generate t "Start workflow execution with current settings." +STARTLINE T "import dd_workflow\nnode = nuke.thisNode()\ndd_workflow.process_workflow(node)"}
  addUserKnob {1 task_id l "Task ID" t "ID of the current workflow task." -STARTLINE}
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest result for this task." -STARTLINE T "import dd_workflow\nnode = nuke.thisNode()\ndd_workflow.get_workflow(node)"}
