@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import time
@@ -100,7 +101,6 @@ def refresh_knobs(node):
     # If path is empty, just clear the dynamic knobs and return
     if not workflow_path or not os.path.exists(workflow_path):
         _clear_dynamic_knobs(node)
-        node["workflow_json"].setValue("")
         node["patch_info"].setValue("")
         return
 
@@ -114,8 +114,8 @@ def refresh_knobs(node):
     # Clear existing dynamic UI
     _clear_dynamic_knobs(node)
 
-    # Store JSON in hidden knob
-    node["workflow_json"].setValue(json.dumps(workflow_data))
+    # Don't store the full workflow JSON in the node - it can be large and cause encoding issues
+    # We'll reload it from the file when needed
 
     # Regenerate Input nodes inside the group
     input_titles = []
@@ -137,8 +137,10 @@ def refresh_knobs(node):
         knob_name = f"p_{title.replace(' ', '_')}"
         patch_info[knob_name] = {"title": title, "class_type": class_type, "node_id": node_id}
 
-    # Store patch mapping in hidden knob
-    node["patch_info"].setValue(json.dumps(patch_info))
+    # Store patch mapping in hidden knob using base64 to avoid encoding issues
+    patch_info_json = json.dumps(patch_info, ensure_ascii=False)
+    patch_info_b64 = base64.b64encode(patch_info_json.encode("utf-8")).decode("ascii")
+    node["patch_info"].setValue(patch_info_b64)
 
     with node:
         # Create new ones
@@ -247,8 +249,9 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
                 raise ValueError("No outputs found in workflow result.")
 
             # Position for new Read nodes
+            spacing = 50
             start_x = node.xpos()
-            start_y = node.ypos() + 100
+            start_y = node.ypos() + spacing
             root_path = get_node_root_path(node)
 
             for i, output in enumerate(parsed.result.outputs):
@@ -264,7 +267,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
                 # Create a new Read node outside the group
                 read_name = f"{node.name()}_{i}"
                 read_node = nuke.nodes.Read(name=read_name, file=final_output_path)
-                read_node.setXYpos(start_x + (i * 100), start_y)
+                read_node.setXYpos(start_x + (i * spacing), start_y)
 
                 update_read_range(read_node)
 
@@ -278,14 +281,28 @@ def process_workflow(node):
     current_frame = nuke.frame()
 
     with nuke_error_handling(node):
-        workflow_json_str = node["workflow_json"].value()
+        workflow_path = node["workflow_file"].value()
         patch_info_str = node["patch_info"].value()
 
-        if not workflow_json_str or not patch_info_str:
+        if not workflow_path or not os.path.exists(workflow_path):
+            raise ValueError("Workflow file path is missing or invalid")
+
+        if not patch_info_str:
             raise ValueError("Workflow data is missing")
 
-        workflow_json = json.loads(workflow_json_str)
-        patch_info = json.loads(patch_info_str)
+        # Load workflow JSON from file instead of storing it in the node
+        try:
+            with open(workflow_path, "r", encoding="utf-8") as f:
+                workflow_json = json.load(f)
+        except Exception as e:
+            raise ValueError(f"Failed to load workflow file: {str(e)}") from e
+
+        # Decode patch_info from base64 to handle special characters
+        try:
+            patch_info_json = base64.b64decode(patch_info_str.encode("ascii")).decode("utf-8")
+            patch_info = json.loads(patch_info_json)
+        except Exception as e:
+            raise ValueError(f"Failed to decode patch info: {str(e)}") from e
 
         output_path = get_node_root_path(node)
 
