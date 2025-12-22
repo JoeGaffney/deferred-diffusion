@@ -39,32 +39,56 @@ def create_dd_workflow_node():
     return node
 
 
-def _clear_dynamic_knobs(node):
-    # Find the Parameters group
-    start_knob = node.knob("Parameters")
-    end_knob = node.knob("endGroup")
+def _insert_knobs_after(node, knob_name_ref, knob_list):
+    """Insert a list of knobs after a given reference knob.
 
-    if not start_knob or not end_knob:
+    Args:
+        node: The node where the knobs will be added.
+        knob_name_ref: The name of the reference knob. New knobs will be inserted after it.
+        knob_list: List of knobs to add.
+    """
+    if not knob_list:
         return
 
-    # Collect knobs to remove
-    knobs_to_remove = []
-    found_start = False
-    for i in range(node.numKnobs()):
-        k = node.knob(i)
-        if k == start_knob:
-            found_start = True
-            continue
-        if k == end_knob:
-            break
-        if found_start:
-            knobs_to_remove.append(k)
+    knob_backup_list = []
+    make_backup = False
+    active_tab = None
 
-    # Remove old knobs
-    for k in knobs_to_remove:
+    # Save the knobs that are after the reference knob
+    for k in node.allKnobs():
+        if not make_backup and k.Class() == "Tab_Knob":
+            active_tab = k
+        if make_backup:
+            knob_backup_list.append(k)
+        elif k.name() == knob_name_ref:
+            make_backup = True
+
+    # Remove the knobs
+    for k in knob_backup_list:
         node.removeKnob(k)
 
-    # Clear internal inputs
+    # Add the new knobs
+    for new_knob in knob_list:
+        node.addKnob(new_knob)
+
+    # Restore the backup of the removed knobs
+    for k in knob_backup_list:
+        node.addKnob(k)
+
+    # Restore the active tab to prevent UI from jumping to wrong location
+    if active_tab:
+        active_tab.setFlag(0)
+
+
+def _clear_dynamic_knobs(node):
+    # Remove all knobs starting with p_
+    # We iterate backwards to avoid index shifting issues during removal
+    for i in range(node.numKnobs() - 1, -1, -1):
+        k = node.knob(i)
+        if k.name().startswith("p_"):
+            node.removeKnob(k)
+
+    # Clear internal Input nodes
     with node:
         for i in nuke.allNodes("Input"):
             nuke.delete(i)
@@ -111,7 +135,7 @@ def refresh_knobs(node):
         # Map knob name to original title and class_type
         # Nuke replaces spaces with underscores in knob names
         knob_name = f"p_{title.replace(' ', '_')}"
-        patch_info[knob_name] = {"title": title, "class_type": class_type}
+        patch_info[knob_name] = {"title": title, "class_type": class_type, "node_id": node_id}
 
     # Store patch mapping in hidden knob
     node["patch_info"].setValue(json.dumps(patch_info))
@@ -125,18 +149,12 @@ def refresh_knobs(node):
             # Position them
             new_input.setXYpos(70 + (i * 150), -200)
 
-    # Add new knobs based on workflow
-    # We look for nodes that have a title in _meta
-    end_knob = node.knob("endGroup")
-    for node_id, node_info in workflow_data.items():
-        meta = node_info.get("_meta", {})
-        title = meta.get("title")
-        class_type = node_info.get("class_type")
-
-        if not title or not class_type:
-            continue
-
-        knob_name = f"p_{title.replace(' ', '_')}"
+    # Collect new knobs to add inside the Parameters group
+    new_knobs_to_add = []
+    for knob_name, info in patch_info.items():
+        title = info["title"]
+        class_type = info["class_type"]
+        node_info = workflow_data[info["node_id"]]
         label = title
 
         # Check if knob already exists
@@ -174,10 +192,11 @@ def refresh_knobs(node):
             new_knob.setEnabled(False)
 
         if new_knob:
-            node.addKnob(new_knob)
-            # Move it before the endGroup
-            node.removeKnob(end_knob)
-            node.addKnob(end_knob)
+            new_knobs_to_add.append(new_knob)
+
+    # Insert new knobs after the Parameters knob (inside the Parameters group, before endGroup)
+    if new_knobs_to_add:
+        _insert_knobs_after(node, "Parameters", new_knobs_to_add)
 
 
 def knob_changed():
@@ -239,7 +258,7 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
                     ext = "mp4"
 
                 # Generate unique path for each output
-                final_output_path = f"{output_path}/{id}_{i}.{ext}"
+                final_output_path = f"{root_path}/{id}_{i}.{ext}"
                 base64_to_file(data, final_output_path)
 
                 # Create a new Read node outside the group
@@ -263,7 +282,7 @@ def process_workflow(node):
         patch_info_str = node["patch_info"].value()
 
         if not workflow_json_str or not patch_info_str:
-            raise ValueError("Workflow data is missing. Please refresh parameters.")
+            raise ValueError("Workflow data is missing")
 
         workflow_json = json.loads(workflow_json_str)
         patch_info = json.loads(patch_info_str)
