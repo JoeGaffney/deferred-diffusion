@@ -1,0 +1,33 @@
+set cut_paste_input [stack 0]
+version 14.0 v3
+push $cut_paste_input
+Group {
+ name DDWorkflow
+ selected true
+ xpos 165
+ ypos -60
+ addUserKnob {20 Settings}
+ addUserKnob {1 node_type +HIDDEN}
+ node_type dd_workflow
+ addUserKnob {43 workflow_json +HIDDEN}
+ addUserKnob {43 patch_info +HIDDEN}
+ addUserKnob {43 knob_changed +HIDDEN}
+ knob_changed "import dd_workflow\ndd_workflow.knob_changed()"
+ addUserKnob {2 workflow_file l "Workflow File" t "Select the ComfyUI workflow JSON file."}
+ addUserKnob {22 refresh l "Refresh Parameters" t "Refresh the dynamic parameters from the workflow file." T "import dd_workflow\nnode = nuke.thisNode()\ndd_workflow.refresh_knobs(node)"}
+ addUserKnob {22 generate l Generate t "Start workflow execution with current settings." +STARTLINE T "import dd_workflow\nnode = nuke.thisNode()\ndd_workflow.process_workflow(node)"}
+ addUserKnob {1 task_id l "Task ID" t "ID of the current workflow task." -STARTLINE}
+ addUserKnob {22 get_task l "Get Task" t "Fetch the latest result for this task." -STARTLINE T "import dd_workflow\nnode = nuke.thisNode()\ndd_workflow.get_workflow(node)"}
+ addUserKnob {3 number_of_frames l "Number of Frames" t "Number of frames to send for video inputs."}
+ number_of_frames 24
+ addUserKnob {26 ""}
+
+ addUserKnob {20 Parameters l Parameters n 1}
+ addUserKnob {20 endGroup n -1}
+
+ addUserKnob {20 Misc}
+ addUserKnob {22 help_button l Documentation t "Open the documentation page in your browser." -STARTLINE T "import dd_help\ndd_help.open_docs()"}
+ addUserKnob {22 task_button l "Task Monitor" t "Open the task monitoring page in your browser." -STARTLINE T "import dd_help\ndd_help.open_task()"}
+ addUserKnob {43 logs l Logs t ""}
+}
+end_group

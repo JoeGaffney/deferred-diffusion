@@ -20,7 +20,7 @@ def validate_request_and_context(request_dict):
     return context
 
 
-@celery_app.task(name="comfy-workflow", queue="comfy")
+@celery_app.task(name="workflows.comfy-workflow", queue="comfy")
 def comfy_workflow(request_dict):
     from workflows.comfy.comfy_workflow import main
 

@@ -46,3 +46,4 @@ celery_app.conf.task_max_retries = 1  # Default max retries
 import images.tasks
 import texts.tasks
 import videos.tasks
+import workflows.tasks
