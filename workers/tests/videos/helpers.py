@@ -22,11 +22,11 @@ def main(context: VideoContext):
         "sam-3": ("videos.local.sam_3", "main"),
         "runway-gen-4": ("videos.external.runway_gen_4", "main"),
         "runway-upscale": ("videos.external.runway_upscale", "main"),
-        "bytedance-seedance-1": ("videos.external.bytedance_seedance_1", "main"),
-        "kwaivgi-kling-2": ("videos.external.kwaivgi_kling_2", "main"),
-        "google-veo-3": ("videos.external.google_veo_3", "main"),
-        "openai-sora-2": ("videos.external.openai_sora_2", "main"),
-        "minimax-hailuo-2": ("videos.external.minimax_hailuo_2", "main"),
+        "seedance-1": ("videos.external.seedance_1", "main"),
+        "kling-2": ("videos.external.kling_2", "main"),
+        "veo-3": ("videos.external.veo_3", "main"),
+        "sora-2": ("videos.external.sora_2", "main"),
+        "hailuo-2": ("videos.external.hailuo_2", "main"),
     }
 
     if model not in MODEL_NAME_TO_CALLABLE:

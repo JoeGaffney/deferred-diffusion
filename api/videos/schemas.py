@@ -13,11 +13,11 @@ ModelName: TypeAlias = Literal[
     "sam-3",
     "runway-gen-4",
     "runway-upscale",
-    "bytedance-seedance-1",
-    "kwaivgi-kling-2",
-    "google-veo-3",
-    "openai-sora-2",
-    "minimax-hailuo-2",
+    "seedance-1",
+    "kling-2",
+    "veo-3",
+    "sora-2",
+    "hailuo-2",
 ]
 
 
@@ -81,15 +81,15 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         video_to_video=True,
         description="Runway's video upscaling model.",
     ),
-    "bytedance-seedance-1": VideosModelInfo(
+    "seedance-1": VideosModelInfo(
         provider="replicate",
         external=True,
         text_to_video=True,
         image_to_video=True,
         last_image=True,
-        description="Seedance-1 flagship model. Great all rounder.",
+        description="Bytedance Seedance-1 flagship model. Great all rounder.",
     ),
-    "kwaivgi-kling-2": VideosModelInfo(
+    "kling-2": VideosModelInfo(
         provider="replicate",
         external=True,
         text_to_video=True,
@@ -97,27 +97,27 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         last_image=True,
         description="Kling 2.5 flagship model. Great at first-last frame coherence.",
     ),
-    "google-veo-3": VideosModelInfo(
+    "veo-3": VideosModelInfo(
         provider="replicate",
         external=True,
         text_to_video=True,
         image_to_video=True,
         last_image=True,
-        description="VEO-3.1 flagship model. Expensive.",
+        description="Googles VEO-3.1 flagship model. Expensive.",
     ),
-    "openai-sora-2": VideosModelInfo(
+    "sora-2": VideosModelInfo(
         provider="replicate",
         external=True,
         text_to_video=True,
         image_to_video=True,
-        description="Sora 2 openai flagship model. Expensive and not great at image-to-video.",
+        description="OpenAI's Sora 2 openai flagship model. Expensive and not great at image-to-video.",
     ),
-    "minimax-hailuo-2": VideosModelInfo(
+    "hailuo-2": VideosModelInfo(
         provider="replicate",
         external=True,
         text_to_video=True,
         image_to_video=True,
-        description="Hailuo-2.3 great physics understanding.",
+        description="Minimax's Hailuo-2.3 great physics understanding.",
     ),
 }
 

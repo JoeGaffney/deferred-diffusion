@@ -17,13 +17,13 @@ ModelName: TypeAlias = Literal[
     "sam-3",
     "real-esrgan-x4",
     "gpt-image-1",
-    "runway-gen4-image",
+    "runway-gen-4",
     "flux-1-pro",
     "flux-2-pro",
     "topazlabs-upscale",
-    "google-gemini-2",
-    "google-gemini-3",
-    "bytedance-seedream-4",
+    "gemini-2",
+    "gemini-3",
+    "seedream-4",
 ]
 
 
@@ -112,7 +112,7 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         references=True,
         description="GPT Image 1.5 is OpenAI's latest image generation model, built for production-quality visuals and controllable creative workflows.",
     ),
-    "runway-gen4-image": ImagesModelInfo(
+    "runway-gen-4": ImagesModelInfo(
         provider="replicate",
         external=True,
         text_to_image=True,
@@ -143,29 +143,29 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         image_to_image=True,
         description="Topaz upscale model.",
     ),
-    "google-gemini-2": ImagesModelInfo(
+    "gemini-2": ImagesModelInfo(
         provider="replicate",
         external=True,
         text_to_image=True,
         image_to_image=True,
         references=True,
-        description="Gemini 2.5 multimodal image model (aka 'Nano Banana').",
+        description="Googles Gemini 2.5 multimodal image model (aka 'Nano Banana').",
     ),
-    "google-gemini-3": ImagesModelInfo(
+    "gemini-3": ImagesModelInfo(
         provider="replicate",
         external=True,
         text_to_image=True,
         image_to_image=True,
         references=True,
-        description="Gemini 3 Pro multimodal image model (aka 'Nano Banana Pro').",
+        description="Googles Gemini 3 Pro multimodal image model (aka 'Nano Banana Pro').",
     ),
-    "bytedance-seedream-4": ImagesModelInfo(
+    "seedream-4": ImagesModelInfo(
         provider="replicate",
         external=True,
         text_to_image=True,
         image_to_image=True,
         references=True,
-        description="Seedream 4.5: Upgraded Bytedance image model with stronger spatial understanding and world knowledge.",
+        description="Bytedances Seedream 4.5: Upgraded Bytedance image model with stronger spatial understanding and world knowledge.",
     ),
 }
 

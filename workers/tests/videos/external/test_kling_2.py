@@ -5,7 +5,7 @@ import pytest
 from tests.videos.helpers import image_to_video
 from videos.schemas import ModelName
 
-models: List[ModelName] = ["kwaivgi-kling-2"]
+models: List[ModelName] = ["kling-2"]
 
 
 @pytest.mark.parametrize("model", models)

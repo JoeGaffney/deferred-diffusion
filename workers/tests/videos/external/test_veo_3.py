@@ -5,7 +5,7 @@ import pytest
 from tests.videos.helpers import text_to_video
 from videos.schemas import ModelName
 
-models: List[ModelName] = ["google-veo-3"]
+models: List[ModelName] = ["veo-3"]
 
 
 @pytest.mark.parametrize("model", models)

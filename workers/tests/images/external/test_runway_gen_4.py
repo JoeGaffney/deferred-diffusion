@@ -11,7 +11,7 @@ from tests.images.helpers import (
     text_to_image,
 )
 
-models: List[ModelName] = ["runway-gen4-image"]
+models: List[ModelName] = ["runway-gen-4"]
 
 
 @pytest.mark.parametrize("model", models)

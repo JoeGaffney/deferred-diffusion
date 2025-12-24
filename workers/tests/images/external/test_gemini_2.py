@@ -11,7 +11,7 @@ from tests.images.helpers import (
     text_to_image,
 )
 
-models: List[ModelName] = ["google-gemini-2"]
+models: List[ModelName] = ["gemini-2"]
 
 
 @pytest.mark.parametrize("model", models)

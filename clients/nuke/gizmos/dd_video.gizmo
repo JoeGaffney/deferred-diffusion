@@ -7,7 +7,7 @@ Group {
  addUserKnob {1 node_type +HIDDEN}
  node_type dd_video
  addUserKnob {26 ""}
- addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2 hunyuan-video-1 sam-3 external/runway-gen-4 external/runway-upscale external/bytedance-seedance-1 external/kwaivgi-kling-2 external/google-veo-3 external/openai-sora-2 external/minimax-hailuo-2}}
+ addUserKnob {4 model l Model t "Select the video generation model." M {ltx-video wan-2 hunyuan-video-1 sam-3 external/runway-gen-4 external/runway-upscale external/seedance-1 external/kling-2 external/veo-3 external/sora-2 external/hailuo-2}}
  addUserKnob {22 generate l Generate t "Start video generation with current settings." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.process_video(node)"}
  addUserKnob {1 task_id l "Task ID" t "ID of the current video generation task." -STARTLINE}
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest video for this task." -STARTLINE T "import dd_video\nnode = nuke.thisNode()\ndd_video.get_video(node)"}
