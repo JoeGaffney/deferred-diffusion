@@ -13,6 +13,7 @@ from tests.videos.helpers import (
 models: List[ModelName] = ["hunyuan-video-1"]
 
 
+@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_text_to_video(model):
     text_to_video(model, num_frames=121)
