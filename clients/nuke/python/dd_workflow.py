@@ -16,7 +16,6 @@ from generated.api_client.models import (
     WorkflowOutputDataType,
     WorkflowRequest,
     WorkflowRequestWorkflow,
-    WorkflowRequestWorkflowAdditionalProperty,
     WorkflowResponse,
 )
 from utils import (
@@ -129,7 +128,18 @@ def refresh_knobs(node):
         if not title or not class_type:
             continue
 
-        if class_type in ["LoadImage", "LoadVideo"]:
+        # Only process nodes with supported PatchClassType values
+        supported_types = [
+            PatchClassType.LOADIMAGE,
+            PatchClassType.LOADVIDEO,
+            PatchClassType.PRIMITIVEINT,
+            PatchClassType.PRIMITIVEFLOAT,
+            PatchClassType.PRIMITIVESTRINGMULTILINE,
+        ]
+        if class_type not in supported_types:
+            continue
+
+        if class_type in [PatchClassType.LOADIMAGE, PatchClassType.LOADVIDEO]:
             input_titles.append(title)
 
         # Map knob name to original title and class_type
@@ -165,25 +175,19 @@ def refresh_knobs(node):
 
         new_knob = None
         # Support both specific types and generic PrimitiveNode
-        if class_type == "PrimitiveInt" or (
-            class_type == "PrimitiveNode" and isinstance(node_info.get("inputs", {}).get("value"), int)
-        ):
+        if class_type == PatchClassType.PRIMITIVEINT:
             new_knob = nuke.Int_Knob(knob_name, label)
             val = node_info.get("inputs", {}).get("value", 0)
             new_knob.setValue(int(val))
-        elif class_type == "PrimitiveFloat" or (
-            class_type == "PrimitiveNode" and isinstance(node_info.get("inputs", {}).get("value"), float)
-        ):
+        elif class_type == PatchClassType.PRIMITIVEFLOAT:
             new_knob = nuke.Double_Knob(knob_name, label)
             val = node_info.get("inputs", {}).get("value", 0.0)
             new_knob.setValue(float(val))
-        elif class_type == "PrimitiveStringMultiline" or (
-            class_type == "PrimitiveNode" and isinstance(node_info.get("inputs", {}).get("value"), str)
-        ):
+        elif class_type == PatchClassType.PRIMITIVESTRINGMULTILINE or class_type == "PrimitiveString":
             new_knob = nuke.String_Knob(knob_name, label)
             val = node_info.get("inputs", {}).get("value", "")
             new_knob.setValue(str(val))
-        elif class_type in ["LoadImage", "LoadVideo"]:
+        elif class_type in [PatchClassType.LOADIMAGE, PatchClassType.LOADVIDEO]:
             # For loaders, we'll add a string knob to show which input index it's mapped to
             new_knob = nuke.String_Knob(knob_name, f"{label} (Input Index)")
             new_knob.setTooltip("Automatically mapped to Nuke input.")
@@ -319,13 +323,13 @@ def process_workflow(node):
             value = k.value()
 
             # Special handling for LoadImage/LoadVideo
-            if class_type in ["LoadImage", "LoadVideo"]:
+            if class_type in [PatchClassType.LOADIMAGE, PatchClassType.LOADVIDEO]:
                 try:
                     # Value is the input index
                     input_idx = int(value)
                     input_node = node.input(input_idx)
                     if input_node:
-                        if class_type == "LoadImage":
+                        if class_type == PatchClassType.LOADIMAGE:
                             value = node_to_base64(input_node, current_frame)
                         else:
                             # Use the explicit number_of_frames knob
@@ -336,6 +340,8 @@ def process_workflow(node):
                 except Exception as e:
                     nuke.tprint(f"Error patching {title}: {str(e)}")
                     continue
+            elif class_type == PatchClassType.PRIMITIVEINT:
+                value = int(value)
 
             patches.append(Patch(title=title, class_type=PatchClassType(class_type), value=value))
 
