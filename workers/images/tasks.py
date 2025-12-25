@@ -117,9 +117,9 @@ def gpt_image_1(request_dict):
     return process_result(context, result)
 
 
-@typed_task(name="runway-gen4-image", queue="cpu")
+@typed_task(name="runway-gen-4", queue="cpu")
 def runway_gen4_image(request_dict):
-    from images.external.runway_gen4_image import main
+    from images.external.runway_gen_4 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
@@ -153,27 +153,27 @@ def topazlabs_upscale(request_dict):
     return process_result(context, result)
 
 
-@typed_task(name="google-gemini-2", queue="cpu")
+@typed_task(name="gemini-2", queue="cpu")
 def gemini_2(request_dict):
-    from images.external.google_gemini_2 import main
+    from images.external.gemini_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
     return process_result(context, result)
 
 
-@typed_task(name="google-gemini-3", queue="cpu")
+@typed_task(name="gemini-3", queue="cpu")
 def gemini_3(request_dict):
-    from images.external.google_gemini_3 import main
+    from images.external.gemini_3 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
     return process_result(context, result)
 
 
-@typed_task(name="bytedance-seedream-4", queue="cpu")
+@typed_task(name="seedream-4", queue="cpu")
 def seedream_4(request_dict):
-    from images.external.bytedance_seedream_4 import main
+    from images.external.seedream_4 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

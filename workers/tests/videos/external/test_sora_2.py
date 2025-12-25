@@ -11,7 +11,7 @@ from tests.videos.helpers import (
 )
 from videos.schemas import ModelName
 
-models: List[ModelName] = ["openai-sora-2"]
+models: List[ModelName] = ["sora-2"]
 
 
 @pytest.mark.parametrize("model", models)

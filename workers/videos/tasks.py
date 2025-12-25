@@ -79,45 +79,45 @@ def runway_upscale(request_dict):
     return process_result(context, result)
 
 
-@typed_task(name="bytedance-seedance-1", queue="cpu")
-def bytedance_seedance_1(request_dict):
-    from videos.external.bytedance_seedance_1 import main
+@typed_task(name="seedance-1", queue="cpu")
+def seedance_1(request_dict):
+    from videos.external.seedance_1 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
     return process_result(context, result)
 
 
-@typed_task(name="kwaivgi-kling-2", queue="cpu")
-def kwaivgi_kling_2(request_dict):
-    from videos.external.kwaivgi_kling_2 import main
+@typed_task(name="kling-2", queue="cpu")
+def kling_2(request_dict):
+    from videos.external.kling_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
     return process_result(context, result)
 
 
-@typed_task(name="google-veo-3", queue="cpu")
-def google_veo_3(request_dict):
-    from videos.external.google_veo_3 import main
+@typed_task(name="veo-3", queue="cpu")
+def veo_3(request_dict):
+    from videos.external.veo_3 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
     return process_result(context, result)
 
 
-@typed_task(name="openai-sora-2", queue="cpu")
-def openai_sora_2(request_dict):
-    from videos.external.openai_sora_2 import main
+@typed_task(name="sora-2", queue="cpu")
+def sora_2(request_dict):
+    from videos.external.sora_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)
     return process_result(context, result)
 
 
-@typed_task(name="minimax-hailuo-2", queue="cpu")
-def minimax_hailuo_2(request_dict):
-    from videos.external.minimax_hailuo_2 import main
+@typed_task(name="hailuo-2", queue="cpu")
+def hailuo_2(request_dict):
+    from videos.external.hailuo_2 import main
 
     context = validate_request_and_context(request_dict)
     result = main(context)

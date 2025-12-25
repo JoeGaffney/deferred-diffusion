@@ -8,12 +8,20 @@ from tests.images.helpers import (
     image_to_image_alt,
     inpainting,
     inpainting_alt,
+    text_to_image,
     text_to_image_alt,
 )
 
 models: List[ModelName] = ["sd-xl"]
 
 
+@pytest.mark.basic
+@pytest.mark.parametrize("model", models)
+def test_text_to_image(model):
+    text_to_image(model)
+
+
+@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_text_to_image_alt(model):
     text_to_image_alt(model)

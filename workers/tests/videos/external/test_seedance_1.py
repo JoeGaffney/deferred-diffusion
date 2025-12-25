@@ -5,7 +5,7 @@ import pytest
 from tests.videos.helpers import image_to_video, text_to_video
 from videos.schemas import ModelName
 
-models: List[ModelName] = ["minimax-hailuo-2"]
+models: List[ModelName] = ["seedance-1"]
 
 
 @pytest.mark.parametrize("model", models)

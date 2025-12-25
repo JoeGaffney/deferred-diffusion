@@ -21,7 +21,6 @@ def validate_result(result: str, expected_keyword=None):
         assert expected_keyword.lower() in result.lower(), f"Expected '{expected_keyword}' in response"
 
 
-@pytest.mark.basic
 def test_image_description():
     data = TextRequest(
         model="gpt-4",

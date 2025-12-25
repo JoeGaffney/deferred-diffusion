@@ -38,6 +38,10 @@ class WorkflowRequest(BaseModel):
     workflow: Workflow
     patches: List[Patch]
 
+    @property
+    def task_name(self) -> str:
+        return "workflows.comfy-workflow"
+
     @model_validator(mode="after")
     def _validate_patches(self):
         title_to_ids: dict[str, list[str]] = {}

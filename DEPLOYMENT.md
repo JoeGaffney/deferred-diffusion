@@ -58,6 +58,12 @@ Tests are included inside the containers and can be run to verify functionality 
 
 ### Local Model Tests
 
+Will run the basic tests on most models to pull models and verify basic text-to-image / text-to-video.
+
+```bash
+docker compose exec gpu-workers pytest -m "basic" -vs
+```
+
 ```bash
 docker compose exec gpu-workers pytest tests/images/local/test_flux.py -vs
 docker compose exec gpu-workers pytest tests/images/local -vs

@@ -11,7 +11,7 @@ def test_images_validation():
     assert "mask requires image" in str(e.value)
 
     with pytest.raises(ValidationError) as e:
-        ImageRequest(model="google-gemini-2", prompt="p", image="base64img", mask="base64mask")
+        ImageRequest(model="gemini-2", prompt="p", image="base64img", mask="base64mask")
     assert "does not support inpainting" in str(e.value)
 
     refs = [References(image="base64img")]

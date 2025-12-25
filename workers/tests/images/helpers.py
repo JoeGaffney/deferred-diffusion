@@ -31,13 +31,13 @@ def main(context: ImageContext) -> Image.Image:
         "sam-3": ("images.local.sam_3", "main"),
         "real-esrgan-x4": ("images.local.real_esrgan_x4", "main"),
         "gpt-image-1": ("images.external.gpt_image_1", "main"),
-        "runway-gen4-image": ("images.external.runway_gen4_image", "main"),
+        "runway-gen-4": ("images.external.runway_gen_4", "main"),
         "flux-1-pro": ("images.external.flux_1_pro", "main"),
         "flux-2-pro": ("images.external.flux_2_pro", "main"),
         "topazlabs-upscale": ("images.external.topazlabs_upscale", "main"),
-        "google-gemini-2": ("images.external.google_gemini_2", "main"),
-        "google-gemini-3": ("images.external.google_gemini_3", "main"),
-        "bytedance-seedream-4": ("images.external.bytedance_seedream_4", "main"),
+        "gemini-2": ("images.external.gemini_2", "main"),
+        "gemini-3": ("images.external.gemini_3", "main"),
+        "seedream-4": ("images.external.seedream_4", "main"),
     }
 
     if model not in MODEL_NAME_TO_CALLABLE:

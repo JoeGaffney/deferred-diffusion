@@ -19,11 +19,13 @@ from tests.images.helpers import (
 models: List[ModelName] = ["qwen-image"]
 
 
+@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_text_to_image(model):
     text_to_image(model)
 
 
+@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_text_to_image_alt(model):
     text_to_image_alt(model)

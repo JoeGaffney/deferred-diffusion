@@ -9,6 +9,7 @@ from tests.videos.helpers import (
 )
 
 
+@pytest.mark.basic
 @pytest.mark.parametrize("model", ["wan-2"])
 def test_text_to_video(model):
     text_to_video(model)
