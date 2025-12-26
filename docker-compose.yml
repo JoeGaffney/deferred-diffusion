@@ -114,7 +114,7 @@ services:
       - FLOWER_PERSISTENT=True
       - FLOWER_DB=/data/flower.db
       - FLOWER_STATE_SAVE_INTERVAL=5000
-      - FLOWER_UNAUTHENTICATED_API=true # <--- Add this line
+      - FLOWER_UNAUTHENTICATED_API=true
     ports:
       - "5555:5555"
     volumes:

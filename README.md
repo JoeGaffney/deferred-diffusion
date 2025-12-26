@@ -180,7 +180,6 @@ Server for the containers
 OPENAI_API_KEY=your-openai-key # For OpenAI services
 REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
 HF_TOKEN=your-huggingface-token # For Hugging Face model access
-DDIFFUSION_API_KEYS=Welcome1!,Welcome2! # API keys for authentication
 ```
 
 For the clients where the tool sets are used
