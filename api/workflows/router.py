@@ -1,9 +1,10 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from common.auth import verify_token
+from common.limiter import CREATE_LIMIT, limiter
 from common.schemas import DeleteResponse, TaskStatus
 from utils.utils import cancel_task
 from worker import celery_app
@@ -25,9 +26,10 @@ router = APIRouter(
     description="ComfyUI workflow execution endpoint. Requires workflow JSON Api workflow and patches to swap out user data.",
     operation_id="workflows_create",
 )
-def create(request: WorkflowRequest, response: Response):
+@limiter.limit(CREATE_LIMIT)
+def create(request: Request, workflow_request: WorkflowRequest, response: Response):
     try:
-        result = celery_app.send_task(request.task_name, queue="comfy", args=[request.model_dump()])
+        result = celery_app.send_task(workflow_request.task_name, queue="comfy", args=[workflow_request.model_dump()])
         response.headers["Location"] = f"/workflows/{result.id}"
         return WorkflowCreateResponse(id=result.id, status=result.status)
     except Exception as e:

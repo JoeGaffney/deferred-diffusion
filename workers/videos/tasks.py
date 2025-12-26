@@ -13,8 +13,8 @@ def process_result(context, result):
 
 
 # Helper to validate request and build context to avoid duplication across tasks
-def validate_request_and_context(request_dict):
-    request = VideoRequest.model_validate(request_dict)
+def validate_request_and_context(args, **kwargs):
+    request = VideoRequest.model_validate(args)
     context = VideoContext(request)
     return context
 
@@ -25,100 +25,100 @@ def typed_task(name: ModelName, queue: str):
 
 # Explicit internal model tasks (lazy-import model implementation inside each task)
 @typed_task(name="ltx-video", queue="gpu")
-def ltx_video(request_dict):
+def ltx_video(args, **kwargs):
     from videos.local.ltx_video import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="wan-2", queue="gpu")
-def wan_2(request_dict):
+def wan_2(args, **kwargs):
     from videos.local.wan_2 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="hunyuan-video-1", queue="gpu")
-def hunyuan_video_1(request_dict):
+def hunyuan_video_1(args, **kwargs):
     from videos.local.hunyuan_video_1 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="sam-3", queue="gpu")
-def sam_3(request_dict):
+def sam_3(args, **kwargs):
     from videos.local.sam_3 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 # Explicit external model tasks
 @typed_task(name="runway-gen-4", queue="cpu")
-def runway_gen_4(request_dict):
+def runway_gen_4(args, **kwargs):
     from videos.external.runway_gen_4 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="runway-upscale", queue="cpu")
-def runway_upscale(request_dict):
+def runway_upscale(args, **kwargs):
     from videos.external.runway_upscale import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="seedance-1", queue="cpu")
-def seedance_1(request_dict):
+def seedance_1(args, **kwargs):
     from videos.external.seedance_1 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="kling-2", queue="cpu")
-def kling_2(request_dict):
+def kling_2(args, **kwargs):
     from videos.external.kling_2 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="veo-3", queue="cpu")
-def veo_3(request_dict):
+def veo_3(args, **kwargs):
     from videos.external.veo_3 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="sora-2", queue="cpu")
-def sora_2(request_dict):
+def sora_2(args, **kwargs):
     from videos.external.sora_2 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)
 
 
 @typed_task(name="hailuo-2", queue="cpu")
-def hailuo_2(request_dict):
+def hailuo_2(args, **kwargs):
     from videos.external.hailuo_2 import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
     return process_result(context, result)

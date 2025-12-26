@@ -14,17 +14,17 @@ def process_result(context: WorkflowContext, result: List[WorkflowOutput]):
 
 
 # Helper to validate request and build context to avoid duplication across tasks
-def validate_request_and_context(request_dict):
-    request = WorkflowRequest.model_validate(request_dict)
+def validate_request_and_context(args, **kwargs):
+    request = WorkflowRequest.model_validate(args)
     context = WorkflowContext(request)
     return context
 
 
 @celery_app.task(name="workflows.comfy-workflow", queue="comfy")
-def comfy_workflow(request_dict):
+def comfy_workflow(args, **kwargs):
     from workflows.comfy.comfy_workflow import main
 
-    context = validate_request_and_context(request_dict)
+    context = validate_request_and_context(args)
     result = main(context)
 
     return process_result(context, result)

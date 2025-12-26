@@ -1,9 +1,19 @@
 import os
 
-from fastapi import Depends, HTTPException
+import redis
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader
+from slowapi.util import get_ipaddr, get_remote_address
+
+from common.limiter import get_rate_limit_key
 
 api_key_header = APIKeyHeader(name="Authorization")
+
+
+# Connect to Redis
+redis_url = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
+r = redis.from_url(redis_url, decode_responses=True)
+_KEY_PREFIX = "DDIFFUSION_API_KEY"
 
 
 def verify_token(
@@ -12,17 +22,25 @@ def verify_token(
     if not authorization:
         raise HTTPException(status_code=403, detail="Missing authorization token")
 
-    # Get API key from environment variable
-    api_keys_env = os.environ.get("DDIFFUSION_API_KEYS")
-    if not api_keys_env:
-        raise HTTPException(status_code=403, detail="Server configuration error: authorization not set")
-
-    api_keys = api_keys_env.split(",")
-
-    # Check if token matches expected format and is in the list of valid keys
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=403, detail="Invalid token format")
-
     token = authorization.replace("Bearer ", "")
-    if token not in api_keys:
-        raise HTTPException(status_code=403, detail="Invalid or expired token")
+
+    # Check Redis for the key
+    key_name = f"{_KEY_PREFIX}:{token}"
+
+    # Check if key exists and is active
+    # hget returns None if key or field doesn't exist
+    if r.hget(key_name, "active") != "1":
+        raise HTTPException(status_code=403, detail="Invalid or revoked token")
+
+
+def request_identity(request: Request) -> dict:
+    """
+    Extracts identity information from the request to pass to the worker.
+    """
+
+    return {
+        "user_id": request.headers.get("x-user-id", "unknown"),
+        "machine_id": request.headers.get("x-machine-id", "unknown"),
+        "client_ip": get_remote_address(request),
+        "hash_key": get_rate_limit_key(request),
+    }

@@ -1,9 +1,10 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from common.auth import verify_token
+from common.auth import request_identity, verify_token
+from common.limiter import CREATE_LIMIT, limiter
 from common.schemas import DeleteResponse, TaskStatus
 from images.schemas import (
     MODEL_META,
@@ -28,9 +29,19 @@ router = APIRouter(
     description=generate_model_docs(),
     operation_id="images_create",
 )
-def create(request: ImageRequest, response: Response):
+@limiter.limit(CREATE_LIMIT)
+def create(
+    request: Request,
+    image_request: ImageRequest,
+    response: Response,
+):
     try:
-        result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
+        result = celery_app.send_task(
+            image_request.task_name,
+            queue=image_request.task_queue,
+            args=[image_request.model_dump()],
+            kwargs=request_identity(request),
+        )
         response.headers["Location"] = f"/images/{result.id}"
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:
