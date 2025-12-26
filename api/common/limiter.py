@@ -5,6 +5,8 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from starlette.requests import Request
 
+from common.redis_client import redis_url
+
 
 def get_rate_limit_key(request: Request) -> str:
     """
@@ -21,7 +23,6 @@ def get_rate_limit_key(request: Request) -> str:
 
 
 # Use Redis if available, otherwise memory (fallback)
-redis_url = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 limiter = Limiter(key_func=get_rate_limit_key, storage_uri=redis_url)
 
 CREATE_LIMIT = os.getenv("CREATE_LIMIT", "60/minute")
