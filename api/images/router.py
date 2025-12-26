@@ -22,15 +22,19 @@ router = APIRouter(
 )
 
 
-@router.post(
-    "",
-    response_model=ImageCreateResponse,
-    description=generate_model_docs(),
-    operation_id="images_create",
-)
-def create(request: ImageRequest, response: Response):
+@router.post("", response_model=ImageCreateResponse, description=generate_model_docs(), operation_id="images_create")
+def create(
+    image_request: ImageRequest,
+    response: Response,
+    identity: dict = Depends(verify_token),
+):
     try:
-        result = celery_app.send_task(request.task_name, queue=request.task_queue, args=[request.model_dump()])
+        result = celery_app.send_task(
+            image_request.task_name,
+            queue=image_request.task_queue,
+            args=[image_request.model_dump()],
+            kwargs=identity,
+        )
         response.headers["Location"] = f"/images/{result.id}"
         return ImageCreateResponse(id=result.id, status=result.status)
     except Exception as e:

@@ -9,12 +9,15 @@ services:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
-      - DDIFFUSION_API_KEYS=${DDIFFUSION_API_KEYS}
+      - DDIFFUSION_ADMIN_KEY=${DDIFFUSION_ADMIN_KEY} # Admin key for creating API keys
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
 
   gpu-workers:
     image: deferred-diffusion-workers:latest
@@ -76,8 +79,14 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - FLOWER_PERSISTENT=True
+      - FLOWER_DB=/data/flower.db
+      - FLOWER_STATE_SAVE_INTERVAL=5000
+      - FLOWER_UNAUTHENTICATED_API=true
     ports:
       - "5555:5555"
+    volumes:
+      - flower_data:/data
     depends_on:
       - gpu-workers
       - cpu-workers
@@ -86,3 +95,7 @@ services:
 volumes:
   hf_cache:
     name: deferred-diffusion_hf_cache
+  redis_data:
+    name: deferred-diffusion_redis_data
+  flower_data:
+    name: deferred-diffusion_flower_data

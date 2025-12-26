@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from admin import router as admin
 from common.logger import logger
 from images import router as images
 from texts import router as texts
@@ -86,6 +87,7 @@ app.include_router(images.router, prefix="/api")
 app.include_router(texts.router, prefix="/api")
 app.include_router(videos.router, prefix="/api")
 app.include_router(workflows.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 
 @app.get("/")

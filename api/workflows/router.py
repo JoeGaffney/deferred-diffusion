@@ -25,9 +25,14 @@ router = APIRouter(
     description="ComfyUI workflow execution endpoint. Requires workflow JSON Api workflow and patches to swap out user data.",
     operation_id="workflows_create",
 )
-def create(request: WorkflowRequest, response: Response):
+def create(workflow_request: WorkflowRequest, response: Response, identity: dict = Depends(verify_token)):
     try:
-        result = celery_app.send_task(request.task_name, queue="comfy", args=[request.model_dump()])
+        result = celery_app.send_task(
+            workflow_request.task_name,
+            queue="comfy",
+            args=[workflow_request.model_dump()],
+            kwargs=identity,
+        )
         response.headers["Location"] = f"/workflows/{result.id}"
         return WorkflowCreateResponse(id=result.id, status=result.status)
     except Exception as e:
