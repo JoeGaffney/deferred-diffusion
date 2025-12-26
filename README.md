@@ -180,13 +180,16 @@ Server for the containers
 OPENAI_API_KEY=your-openai-key # For OpenAI services
 REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
 HF_TOKEN=your-huggingface-token # For Hugging Face model access
+DDIFFUSION_ADMIN_KEY=******* # Admin key for managing API keys
 ```
+
+> **Note**: You must use the `DDIFFUSION_ADMIN_KEY` to create your first API key via the `/admin/keys` endpoint before you can use the clients or Swagger UI.
 
 For the clients where the tool sets are used
 
 ```env
 DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
-DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
+DDIFFUSION_API_KEY=******* # API key for client authentication
 ```
 
 ## **Project Structure Overview**

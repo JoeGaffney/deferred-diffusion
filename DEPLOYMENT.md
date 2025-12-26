@@ -37,11 +37,12 @@ Set these on the host where containers run:
 
 ```env
 OPENAI_API_KEY=your-openai-key # For OpenAI services
-RUNWAYML_API_SECRET=your-runway-secret # For RunwayML services
 REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
 HF_TOKEN=your-huggingface-token # For Hugging Face model access
-DDIFFUSION_API_KEYS=Welcome1!,Welcome2! # API keys for authentication
+DDIFFUSION_ADMIN_KEY=******* # Admin key for managing API keys
 ```
+
+> **Note**: You must use the `DDIFFUSION_ADMIN_KEY` to create your first API key via the `/admin/keys` endpoint before you can use the clients or Swagger UI.
 
 ### Client Configuration
 
@@ -49,7 +50,7 @@ Set these where client tools (Houdini, Nuke) are used:
 
 ```env
 DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
-DDIFFUSION_API_KEY=Welcome1! # API key for client authentication
+DDIFFUSION_API_KEY=******* # API key for client authentication
 ```
 
 ## Testing Deployment
