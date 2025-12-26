@@ -5,11 +5,8 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 
 from admin import router as admin
-from common.limiter import limiter
 from common.logger import logger
 from images import router as images
 from texts import router as texts
@@ -30,8 +27,6 @@ def truncate_strings(data: Any, max_length: int = 100) -> Any:
 
 # NOTE imporant keep name API as clients will use the title
 app = FastAPI(title="API")
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
 
 @app.exception_handler(RequestValidationError)

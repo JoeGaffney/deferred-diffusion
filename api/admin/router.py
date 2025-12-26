@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from common.api_key_manager import key_manager
 from common.auth import admin_only
@@ -7,9 +7,12 @@ router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(admin_
 
 
 @router.post("/keys", operation_id="keys_create")
-def create(name: str):
-    token = key_manager.create_key(name)
-    return {"api_key": token, "name": name}
+def create(name: str = Query(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9 _-]+$")):
+    try:
+        token = key_manager.create_key(name)
+        return {"api_key": token, "name": name}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @router.get("/keys", operation_id="keys_list")
@@ -17,9 +20,9 @@ def list():
     return key_manager.list_keys()
 
 
-@router.delete("/keys", operation_id="keys_delete")
-def delete(token: str):
-    if key_manager.revoke_key(token):
-        return {"revoked": True}
+@router.delete("/keys/{key_id}", operation_id="keys_delete")
+def delete(key_id: str):
+    if key_manager.delete_key(key_id):
+        return {"deleted": True}
 
     raise HTTPException(404, "Key not found")

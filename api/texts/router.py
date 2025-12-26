@@ -4,7 +4,6 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from common.auth import verify_token
-from common.limiter import CREATE_LIMIT, limiter
 from common.schemas import DeleteResponse, TaskStatus
 from texts.schemas import (
     MODEL_META,
@@ -22,11 +21,13 @@ router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify
 
 
 @router.post("", response_model=TextCreateResponse, operation_id="texts_create", description=generate_model_docs())
-@limiter.limit(CREATE_LIMIT)
-def create(request: Request, text_request: TextRequest, response: Response):
+def create(text_request: TextRequest, response: Response, identity: dict = Depends(verify_token)):
     try:
         result = celery_app.send_task(
-            text_request.task_name, queue=text_request.task_queue, args=[text_request.model_dump()]
+            text_request.task_name,
+            queue=text_request.task_queue,
+            args=[text_request.model_dump()],
+            kwargs=identity,
         )
         response.headers["Location"] = f"/texts/{result.id}"
         return TextCreateResponse(id=result.id, status=result.status)

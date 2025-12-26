@@ -2,18 +2,28 @@ import os
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader
-from slowapi.util import get_remote_address
 
 from common.api_key_manager import key_manager
-from common.limiter import get_rate_limit_key
+
+
+def get_remote_address(request: Request) -> str:
+    """
+    Returns the ip address for the current request (or 127.0.0.1 if none found)
+    """
+    if not request.client or not request.client.host:
+        return "127.0.0.1"
+
+    return request.client.host
+
 
 api_key_header = APIKeyHeader(name="Authorization")
 admin_api_key_header = APIKeyHeader(name="Authorization")
 
 
 def verify_token(
+    request: Request,
     authorization: str = Depends(api_key_header),
-) -> None:
+) -> dict:
     if not authorization:
         raise HTTPException(status_code=403, detail="Missing authorization token")
 
@@ -22,20 +32,22 @@ def verify_token(
     if not key_manager.is_active(token):
         raise HTTPException(status_code=403, detail="Invalid or revoked token")
 
+    key_hash = key_manager.hash_token(token)
+    key_name = key_manager.get_name(key_hash)
 
-def request_identity(request: Request) -> dict:
-    """
-    Extracts identity information from the request to pass to the worker.
-    """
-    auth_header = request.headers.get("Authorization")
-    key_name = key_manager.get_name(auth_header.replace("Bearer ", ""))
+    # Only rate limit POST requests (task creation) so polling doesn't consume quota
+    if request.method == "POST":
+        limit = int(os.getenv("CREATES_PER_MINUTE", "30"))
+
+        if not key_manager.check_rate_limit(key_hash, limit=limit, window=60):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
     return {
         "user_id": request.headers.get("x-user-id", "unknown"),
         "machine_id": request.headers.get("x-machine-id", "unknown"),
         "client_ip": get_remote_address(request),
         "key_name": key_name,
-        "key_hash": get_rate_limit_key(request),
+        "key_hash": key_hash,
     }
 
 
