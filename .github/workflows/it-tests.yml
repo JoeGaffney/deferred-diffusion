@@ -60,7 +60,7 @@ jobs:
 
     - name: Create Test API Key
       run: |
-        RESPONSE=$(curl -s -X POST "http://127.0.0.1:5000/admin/keys?name=TestKey" \
+        RESPONSE=$(curl -s -X POST "http://127.0.0.1:5000/api/admin/keys?name=TestKey" \
           -H "Authorization: Bearer ${{ env.DDIFFUSION_ADMIN_KEY }}" \
           -H "Content-Type: application/json")
         echo "Response: $RESPONSE"
