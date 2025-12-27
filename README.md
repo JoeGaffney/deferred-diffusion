@@ -22,11 +22,10 @@ Example **Houdini** and **Nuke** clients are included to demonstrate integration
 - **Air-gap ready**: API server and workers can run in isolated networks, exposing only necessary ports and connections to external AI providers.
 - **Controlled external access**: Only approved providers (Replicate and OpenAI) are called via their APIs. Uploaded data is retained only as long as necessary to complete the inference and is deleted soon after, minimizing exposure.
 - **Traceable and reproducible**: Local models are version-controlled in code; no downloading from random external repositories.
-- **Client / Workstations**: Don't need heavy GPU's, download models or call provider API's directly.
+- **Client / Workstations**: Don't need heavy GPUs, download models or call provider APIs directly.
 - **Server / Workers**: Do not require access to your main network drives, maintaining strong isolation and clear boundaries.
-- **ComfyUI Sidecar (Optional)**: Optional sidecar on the worker host, disabled by default. Allows dynamic code execution via custom nodes and therefore requires explicit enablement, localhost only access, reduced privileges, and manual one way syncing. (Can be further hardened in production if required.)
 
-#### **Image Flow Example**
+#### **Basic Flow Example**
 
 ```mermaid
 sequenceDiagram
@@ -49,17 +48,91 @@ sequenceDiagram
     API->>Client: Base64 image
 ```
 
-## Workflows (experimental, WIP)
+## **Project Structure Overview**
 
-⚠️ **ComfyUI sidecar workflows:** These run in a separate, fully isolated Docker container. They communicate with the main system only through stateless API calls / websockets and pull only the files needed for the workflow. ComfyUI's dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **require manual configuration**. Users must curate and sync their own custom nodes and models.
+This project follows a **feature-based structure**, grouping related components together by domain (`images`, `texts`, `videos`). This approach ensures a clear separation of concerns and improves maintainability, scalability, and collaboration.
 
-This feature enables the use of a **ComfyUI sidecar** to execute advanced, user-driven pipelines with support for **patching workflows**, modifying inputs, and updating files as needed.
+We use plural nouns to adhere to REST best practices.
 
-We still aim to enforce **stateless operations** and **typing validation** as much as possible from the client’s perspective. The sidecar can be deployed on a **separate network** with limited filesystem access, maintaining strong isolation.
+- All components related to a specific AI task (`images`, `texts`, `videos`) are grouped together.
+- They are grouped by the primary data type they return, but can have multi model inputs.
+  - eg. images can accept image and text inputs but always returns image based data.
+- Eliminates the need to navigate across multiple directories to understand a feature.
+- New developers can quickly locate relevant code without confusion.
+- AI models often require **domain-specific logic**. Keeping `schemas.py`, `context.py`, and `tasks/` in the same module makes it easier to extend functionality.
+- If a new AI domain (`audio`, `3D`, etc.) is introduced, the structure remains consistent just duplicate the existing pattern.
 
-This diagram shows how a Worker interacts with the ComfyUI sidecar. It extends the standard domain/task flow by integrating Comfy workflows while keeping the core **API → Broker → Worker** logic consistent. All interactions with the ComfyUI sidecar are request scoped and stateless from the core system’s perspective.
+### API
+
+```
+/api
+│── /images # Grouped by results type
+│ ├── schemas.py # ✅ Pydantic schemas (data validation)
+│ ├── router.py # ✅ API routes (FastAPI) Calls worker tasks
+│── /texts
+│ ├── ...
+│── /videos
+│ ├── ...
+│── /workflows # flexible user driven comfyui workflows (experimental, WIP)
+│ ├── ...
+│── /common # ✅ Shared components
+│── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
+│── /tests # ✅ Tests mirror the /api structure
+│── main.py # ✅ FastAPI entry point
+│── worker.py # ✅ Celery
+│── pytest.ini # ✅ Test configuration
+```
+
+### Workers
+
+```
+/workers
+│── /images # Grouped by results type
+│ ├── local/ # ✅ Local AI model pipeline tasks (GPU queue)
+│ ├── external/ # ✅ External AI model pipeline tasks (CPU queue)
+│ ├── schemas.py # ✅ Pydantic schemas (data validation mirrors from API)
+│ ├── context.py # ✅ Business logic layer
+│ ├── tasks.py # ✅ Celery tasks route to local or external tasks. Name should match module
+│── /texts
+│ ├── ...
+│── /videos
+│ ├── ...
+│── /workflows # validates and calls side car headless comfyui (experimental, WIP)
+│ ├── ...
+│── /common # ✅ Shared components
+│── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
+│── /tests # ✅ Tests mirror the /workers structure
+│── worker.py # ✅ Celery
+│── pytest.ini # ✅ Test configuration
+```
+
+### Clients
+
+```
+/clients
+│── /it_tests
+│ ├── generated/ # generated client
+│ ├── tests/
+│── /houdini
+│ ├── python/generated/ # generated client
+│── /nuke
+│ ├── python/generated/ # generated client
+│── openapi.json # API spec
+```
+
+Example clients for Houdini and Nuke are provided in the `/clients` directory.
+
+See [clients/README.md](clients/README.md) for detailed setup instructions.
+
+### Workflows (experimental, WIP)
+
+This feature enables the use of a **ComfyUI sidecar** to execute advanced, user-driven pipelines with support for **patching workflows**, modifying inputs, and updating files as needed. Workflows can return a mixed list of image and video data.
+
+> ⚠️ These run in a separate, isolated Docker container. They communicate with the main system only through stateless API calls / websockets and pull only the files needed for the workflow. ComfyUI's dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **require manual configuration**. Users must curate and sync their own custom nodes and models.
 
 #### Workflow Flow
+
+This diagram shows how a Worker interacts with the ComfyUI sidecar. It extends the standard domain/task flow by integrating Comfy workflows while keeping the core **API → Broker → Worker** logic consistent. All interactions with the ComfyUI sidecar are request scoped and stateless from the core system’s perspective.
 
 ```mermaid
 sequenceDiagram
@@ -91,23 +164,86 @@ sequenceDiagram
     API->>Client: Base64 image
 ```
 
+### Agentic
+
+Example Agentic layer which is a bit experimental that demonstrates connection to the MCP (Model Context Protocol) server.
+
+See [agentic/README.md](agentic/README.md) for more information.
+
+## Model Registration Philosophy
+
+User-facing model choices are simple names like "flux-1" or "flux-1-pro". The actual model calls and implementations are defined in the worker pipeline. Worker tasks follow these user-driven names but may share common logic for variants.
+
+For example, "flux-1" might internally use:
+
+- "black-forest-labs/FLUX.1-Krea-dev"
+- "black-forest-labs/FLUX.1-Kontext-dev"
+- "black-forest-labs/FLUX.1-Fill-dev"
+
+Depending on the inputs (e.g., whether an image is provided), we internally route to the most appropriate model variant.
+
+We avoid cluttering user model choices with minor versions (.1, .2, etc.) and instead select the best available minor version. This approach allows us to properly test and verify model behaviors for both external and local models without requiring users to understand implementation details.
+
+The model pipelines themselves serve as the source of truth for what models are actually used. This is especially important given various optimizations and edge cases that may apply.
+
+Model definitions are **version-controlled in code**, not loaded dynamically from configuration files. We match celery task names to the module names for clarity.
+
+This design choice ensures:
+
+- **Full test coverage** and deterministic behavior across releases
+- **Stable API contracts** between `/api` and `/workers`
+- **Clear traceability** between user-facing model identifiers and their actual implementations
+
+Developers who want to extend or modify available models can do so by editing the typed definitions directly in code:
+
+- `api/images/schemas.py`
+- `workers/images/tasks.py`
+- `workers/images/local/...`
+
+Each new model entry should include:
+
+1. A Pydantic schema entry in `ModelName`
+2. A corresponding task or pipeline implementation
+3. Updated tests under `tests/images`
+
+This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
+
+## Requirements
+
+- **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
+- **GPU**: Nvidia GPU with at least 12GB VRAM. 24GB recommended (Tested with RTX 3080ti, A4000, RTX 3090, RTX 5090)
+- **RAM**: Around 48-64Gb should be plenty for all containers.
+- **Environment Variables**: Ensure all required environment variables are set on the host.
+
+## Environment Variables
+
+Server for the containers
+
+```env
+OPENAI_API_KEY=your-openai-key # For OpenAI services
+REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
+HF_TOKEN=your-huggingface-token # For Hugging Face model access
+DDIFFUSION_ADMIN_KEY=******* # Admin key for managing API keys
+```
+
+> **Note**: You must use the `DDIFFUSION_ADMIN_KEY` to create your first API key via the `/api/admin/keys` endpoint before you can use the clients or Swagger UI.
+
+For the clients where the tool sets are used
+
+```env
+DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
+DDIFFUSION_API_KEY=******* # API key for client authentication
+```
+
 ## Quick start
 
 To pull and run the latest release.
 
 ```bash
-docker compose down
-docker compose -f docker-compose.release.yml pull
-docker compose -f docker-compose.release.yml up -d --no-build
-```
-
-Or run the make command.
-
-```bash
 make up-latest-release
 ```
 
-For production deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+For example deployment of latest release see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Building
 
@@ -165,152 +301,20 @@ make create-release
 make tag-and-push
 ```
 
-## Requirements
+## Logging
 
-- **Storage**: An NVMe drive with **at least 500GB** of available space is recommended.
-- **GPU**: Nvidia GPU with at least 12GB VRAM. 24GB recommended (Tested with RTX 3080ti, A4000, RTX 3090, RTX 5090)
-- **RAM**: Around 48-64Gb should be plenty for all containers.
-- **Environment Variables**: Ensure all required environment variables are set on the host.
+All services log exclusively to `stdout` and `stderr`. Flower and Redis contain task logs and kwargs identity metrics based on the submitted user's device and API key.
 
-### Required Environment Variables
-
-Server for the containers
-
-```env
-OPENAI_API_KEY=your-openai-key # For OpenAI services
-REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
-HF_TOKEN=your-huggingface-token # For Hugging Face model access
-DDIFFUSION_ADMIN_KEY=******* # Admin key for managing API keys
+```bash
+docker compose logs
 ```
 
-> **Note**: You must use the `DDIFFUSION_ADMIN_KEY` to create your first API key via the `/admin/keys` endpoint before you can use the clients or Swagger UI.
+You can extend this with centralized logging if needed, depending on your infrastructure.
 
-For the clients where the tool sets are used
+This approach keeps the system portable, auditable, and compatible with air-gapped or restricted environments.
 
-```env
-DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
-DDIFFUSION_API_KEY=******* # API key for client authentication
-```
+### Scaling / Multi-Worker
 
-## **Project Structure Overview**
+The provided `docker-compose.yml` is intended as a minimal example. You can scale workers horizontally by running multiple instances, or deploy using orchestration tools like **Docker Swarm** or **Kubernetes**.
 
-This project follows a **feature-based structure**, grouping related components together by domain (`images`, `texts`, `videos`). This approach ensures a clear separation of concerns and improves maintainability, scalability, and collaboration.
-
-We try to use plural to adhere to REST best practices.
-
-### **Cohesion & Readability**
-
-- All components related to a specific AI task (`images`, `texts`, `videos`) are grouped together.
-- They are grouped in a sense of what main data type they return, but can have multi model inputs.
-  - eg. images can accept image and text inputs but always returns image based data.
-- Eliminates the need to navigate across multiple directories to understand a feature.
-- New developers can quickly locate relevant code without confusion.
-
-### **Scalability for AI Projects**
-
-- AI models often require **domain-specific logic**. Keeping `schemas.py`, `context.py`, and `tasks/` in the same module makes it easier to extend functionality.
-- If a new AI domain (`audio`, `3D`, etc.) is introduced, the structure remains consistent just duplicate the existing pattern.
-
-```
-/api
-│── /images # Grouped by results type
-│ ├── schemas.py # ✅ Pydantic schemas (data validation)
-│ ├── router.py # ✅ API routes (FastAPI) Calls worker tasks
-│── /texts
-│ ├── ...
-│── /videos
-│ ├── ...
-│── /workflows # flexible user driven comfyui workflows (experimental, WIP)
-│ ├── ...
-│── /common # ✅ Shared components
-│── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
-│── /tests # ✅ Tests mirror the /api structure
-│── main.py # ✅ FastAPI entry point
-│── worker.py # ✅ Celery
-│── pytest.ini # ✅ Test configuration
-```
-
-```
-/workers
-│── /images # Grouped by results type
-│ ├── local/ # ✅ Local AI model pipeline tasks (GPU queue)
-│ ├── external/ # ✅ External AI model pipeline tasks (CPU queue)
-│ ├── schemas.py # ✅ Pydantic schemas (data validation mirrors from API)
-│ ├── context.py # ✅ Business logic layer
-│ ├── tasks.py # ✅ Celery tasks route to local or external tasks. Name should match module
-│── /texts
-│ ├── ...
-│── /videos
-│ ├── ...
-│── /workflows # validates and calls side car headless comfyui (experimental, WIP)
-│ ├── ...
-│── /common # ✅ Shared components
-│── /utils # ✅ General-purpose utilities (helpers, formatters, etc.)
-│── /tests # ✅ Tests mirror the /workers structure
-│── worker.py # ✅ Celery
-│── pytest.ini # ✅ Test configuration
-```
-
-## Clients
-
-```
-/clients
-│── /it_tests
-│ ├── generated/ # generated client
-│ ├── tests/
-│── /houdini
-│ ├── python/generated/ # generated client
-│── /nuke
-│ ├── python/generated/ # generated client
-│── openapi.json # API spec
-```
-
-Example clients for Houdini and Nuke are provided in the `/clients` directory.
-
-See [clients/README.md](clients/README.md) for detailed setup instructions.
-
-## Agentic
-
-Example Agentic layer which is a bit experimental that demonstrates connection to the MCP server.
-
-See [agentic/README.md](agentic/README.md) for more information.
-
-## Model naming / pathing
-
-User-facing model choices are simple names like "flux-1" or "flux-1-pro". The actual model calls and implementations are defined in the worker pipeline. Worker tasks follow these user-driven names but may share common logic for variants.
-
-For example, "flux-1" might internally use:
-
-- "black-forest-labs/FLUX.1-Krea-dev"
-- "black-forest-labs/FLUX.1-Kontext-dev"
-- "black-forest-labs/FLUX.1-Fill-dev"
-
-Depending on the inputs (e.g., whether an image is provided), we internally route to the most appropriate model variant.
-
-We avoid cluttering user model choices with minor versions (.1, .2, etc.) and instead select the best available minor version. This approach allows us to properly test and verify model behaviors for both external and local models without requiring users to understand implementation details.
-
-The model pipelines themselves serve as the source of truth for what models are actually used. This is especially important given various optimizations and edge cases that may apply.
-
-#### Model Registration Philosophy
-
-Model definitions are **version-controlled in code**, not loaded dynamically from configuration files. We match celery task names to the module names for clarity.
-
-This design choice ensures:
-
-- **Full test coverage** and deterministic behavior across releases
-- **Stable API contracts** between `/api` and `/workers`
-- **Clear traceability** between user-facing model identifiers and their actual implementations
-
-Developers who want to extend or modify available models can do so by editing the typed definitions directly in code:
-
-- `api/images/schemas.py`
-- `workers/images/tasks.py`
-- `workers/images/local/...`
-
-Each new model entry should include:
-
-1. A Pydantic schema entry in `ModelName`
-2. A corresponding task or pipeline implementation
-3. Updated tests under `tests/images`
-
-This deliberate coupling between **model definitions, pipelines, and tests** is what makes `deferred-diffusion` reliable and reproducible for self-hosted AI inference.
+All workers are stateless, so tasks can be processed independently across multiple nodes. This allows you to increase throughput without changing client interactions.

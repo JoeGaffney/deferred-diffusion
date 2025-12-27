@@ -1,14 +1,17 @@
-# Production Deployment Guide
+# Self-Hosting & Deployment Guide
 
-This guide covers deploying the **packaged minimal release** for production use.
+This guide covers deploying the **packaged minimal release** for production or shared server use.
 
+The provided compose configurations are meant to illustrate service boundaries, dependencies, and runtime expectations rather than prescribe a specific production topology.
+
+> For system requirements and environment variables, see the main [README.md](README.md).
 > For development setup, see the main [README.md](README.md) building section.
 
 ## Quick Start
 
 1. **Download and extract** `deferred-diffusion-*.tar.gz` from the [releases page](https://github.com/JoeGaffney/deferred-diffusion/releases)
 
-2. **Set environment variables** (see [Environment Variables](#environment-variables) section below)
+2. **Set environment variables** (see [README.md](README.md#environment-variables))
 
 3. **Change into the directory** containing the `docker-compose.yml` file
 
@@ -23,36 +26,6 @@ This guide covers deploying the **packaged minimal release** for production use.
 
 > **Note**: The packaged release contains pre-built containers and clients. Models will be downloaded automatically on first use or during testing.
 
-## System Requirements
-
-- **Storage**: An NVMe drive with **at least 500GB** of available space is recommended
-- **GPU**: Nvidia GPU with at least 12GB VRAM. 24GB recommended
-- **Environment Variables**: Ensure all required environment variables are set on the host
-
-## Environment Variables
-
-### Server Configuration
-
-Set these on the host where containers run:
-
-```env
-OPENAI_API_KEY=your-openai-key # For OpenAI services
-REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
-HF_TOKEN=your-huggingface-token # For Hugging Face model access
-DDIFFUSION_ADMIN_KEY=******* # Admin key for managing API keys
-```
-
-> **Note**: You must use the `DDIFFUSION_ADMIN_KEY` to create your first API key via the `/admin/keys` endpoint before you can use the clients or Swagger UI.
-
-### Client Configuration
-
-Set these where client tools (Houdini, Nuke) are used:
-
-```env
-DDIFFUSION_API_ADDRESS=http://127.0.0.1:5000 # API server address
-DDIFFUSION_API_KEY=******* # API key for client authentication
-```
-
 ## Testing Deployment
 
 Tests are included inside the containers and can be run to verify functionality and download missing models.
@@ -65,19 +38,11 @@ Will run the basic tests on most models to pull models and verify basic text-to-
 docker compose exec gpu-workers pytest -m "basic" -vs
 ```
 
-```bash
-docker compose exec gpu-workers pytest tests/images/local/test_flux.py -vs
-docker compose exec gpu-workers pytest tests/images/local -vs
-docker compose exec gpu-workers pytest tests/texts/local -vs
-docker compose exec gpu-workers pytest tests/videos/local -vs
-```
-
-### External Service Tests
+### Testing specific Models / Tasks
 
 ```bash
-docker compose exec gpu-workers pytest tests/images/external -vs
-docker compose exec gpu-workers pytest tests/texts/external -vs
-docker compose exec gpu-workers pytest tests/videos/external -vs
+docker compose exec gpu-workers pytest tests/images/local/test_flux_1.py -vs
+docker compose exec gpu-workers pytest tests/images/external/test_flux_1_pro.py -vs
 ```
 
 ## Troubleshooting
