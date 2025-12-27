@@ -4,7 +4,7 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
-from common.schemas import DeleteResponse, TaskStatus
+from common.schemas import DeleteResponse, Identity, TaskStatus
 from utils.utils import cancel_task
 from videos.schemas import (
     MODEL_META,
@@ -21,13 +21,13 @@ router = APIRouter(prefix="/videos", tags=["Videos"], dependencies=[Depends(veri
 
 
 @router.post("", response_model=VideoCreateResponse, operation_id="videos_create", description=generate_model_docs())
-def create(video_request: VideoRequest, response: Response, identity: dict = Depends(verify_token)):
+def create(video_request: VideoRequest, response: Response, identity: Identity = Depends(verify_token)):
     try:
         result = celery_app.send_task(
             video_request.task_name,
             queue=video_request.task_queue,
             args=[video_request.model_dump()],
-            kwargs=identity,
+            kwargs=identity.model_dump(),
         )
         response.headers["Location"] = f"/videos/{result.id}"
         return VideoCreateResponse(id=result.id, status=result.status)

@@ -4,7 +4,7 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
-from common.schemas import DeleteResponse, TaskStatus
+from common.schemas import DeleteResponse, Identity, TaskStatus
 from images.schemas import (
     MODEL_META,
     ImageCreateResponse,
@@ -26,14 +26,14 @@ router = APIRouter(
 def create(
     image_request: ImageRequest,
     response: Response,
-    identity: dict = Depends(verify_token),
+    identity: Identity = Depends(verify_token),
 ):
     try:
         result = celery_app.send_task(
             image_request.task_name,
             queue=image_request.task_queue,
             args=[image_request.model_dump()],
-            kwargs=identity,
+            kwargs=identity.model_dump(),
         )
         response.headers["Location"] = f"/images/{result.id}"
         return ImageCreateResponse(id=result.id, status=result.status)

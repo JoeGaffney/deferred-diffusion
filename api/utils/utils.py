@@ -1,49 +1,12 @@
 import asyncio
 import time
+from typing import Any
 from uuid import UUID
 
 from celery.result import AsyncResult
 from fastapi import HTTPException
 
-from common.logger import logger
-from common.schemas import DeleteResponse
-from worker import celery_app
-
-
-async def poll_until_resolved(id: str, timeout=300, poll_interval=3) -> AsyncResult:
-    """
-    Poll a Celery task until it's complete, max attempts reached, or timeout.
-
-    Returns:
-        AsyncResult object with task result/status
-    """
-    # Ensure id is a string
-    if not isinstance(id, str):
-        logger.warning(f"id is not a string, converting from {type(id)}")
-        id = str(id)
-
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        logger.info(f"Polling task {id}... {timeout - (time.time() - start_time)} seconds left")
-        # Get task result
-        result = AsyncResult(id, app=celery_app)
-
-        if result.ready():
-            if result.failed():
-                error_msg = str(result.result)
-                logger.error(f"Task {id} failed: {error_msg}")
-                return result
-            elif result.successful():
-                return result
-
-        # Wait before polling again
-        await asyncio.sleep(poll_interval)
-
-    logger.warning(f"Task {id} polling timeout ({timeout} seconds) reached")
-
-    # Get final status before returning
-    result = AsyncResult(id, app=celery_app)
-    return result
+from common.schemas import DeleteResponse, TaskStatus
 
 
 def cancel_task(id: UUID, celery_app) -> DeleteResponse:
@@ -58,4 +21,15 @@ def cancel_task(id: UUID, celery_app) -> DeleteResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error cancelling task: {str(e)}")
 
-    return DeleteResponse(id=id, status="REVOKED", message="Task cancellation requested")
+    return DeleteResponse(id=id, status=TaskStatus.REVOKED, message="Task cancellation requested")
+
+
+def truncate_strings(data: Any, max_length: int = 100) -> Any:
+    if isinstance(data, dict):
+        return {k: truncate_strings(v, max_length) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [truncate_strings(item, max_length) for item in data]
+    elif isinstance(data, str):
+        return data if len(data) <= max_length else data[:max_length] + "..."
+    else:
+        return data

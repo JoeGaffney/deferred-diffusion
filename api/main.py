@@ -10,20 +10,9 @@ from admin import router as admin
 from common.logger import logger
 from images import router as images
 from texts import router as texts
+from utils.utils import truncate_strings
 from videos import router as videos
 from workflows import router as workflows
-
-
-def truncate_strings(data: Any, max_length: int = 100) -> Any:
-    if isinstance(data, dict):
-        return {k: truncate_strings(v, max_length) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [truncate_strings(item, max_length) for item in data]
-    elif isinstance(data, str):
-        return data if len(data) <= max_length else data[:max_length] + "..."
-    else:
-        return data
-
 
 # NOTE imporant keep name API as clients will use the title
 app = FastAPI(title="API")

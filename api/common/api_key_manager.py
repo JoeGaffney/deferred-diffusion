@@ -1,5 +1,6 @@
 import datetime
 import hashlib
+import hmac
 import os
 import secrets
 from typing import Dict, List, cast
@@ -12,6 +13,12 @@ redis_url = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 redis_client = redis.from_url(redis_url, decode_responses=True)
 
 
+def get_hash_secret() -> bytes:
+    base = os.getenv("DDIFFUSION_KEY_HASH_SECRET", "supersecretdefaultvalue")
+    base = base.encode()
+    return hashlib.sha256(b"api-key-hmac" + base).digest()
+
+
 class APIKeyManager:
     def __init__(self):
         self.client: Redis = redis_client
@@ -22,7 +29,8 @@ class APIKeyManager:
 
     def hash_token(self, token: str) -> str:
         """Hashes the token so the secret is never stored in plaintext."""
-        return hashlib.sha256(token.encode()).hexdigest()
+        secret = get_hash_secret()
+        return hmac.new(secret, token.encode(), hashlib.sha256).hexdigest()
 
     def _name_exists(self, name: str) -> bool:
         for key in self.client.scan_iter(f"{self.prefix}:*"):
