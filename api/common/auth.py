@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader
 
 from common.api_key_manager import key_manager
+from common.logger import log_request
 from common.schemas import Identity
 
 
@@ -43,6 +44,7 @@ async def verify_token(
         key_name=key_name,
         key_hash=key_hash,
     )
+    await log_request(request, identity)
 
     # Only rate limit POST requests (task creation) so polling doesn't consume quota
     if request.method == "POST":
