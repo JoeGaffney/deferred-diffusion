@@ -79,6 +79,6 @@ jobs:
       run: |
         make mypy-cpu-workers
 
-    - name: Run IT Tests - External
+    - name: Run IT Tests - Basic
       run: |
-        make it-tests-external-ci
+        make it-tests-basic

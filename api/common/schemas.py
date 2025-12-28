@@ -31,3 +31,17 @@ class DeleteResponse(BaseModel):
 
 
 Provider: TypeAlias = Literal["local", "openai", "replicate"]
+
+
+class Identity(BaseModel):
+    user_id: str
+    machine_id: str
+    client_ip: str
+    key_name: str
+    key_id: str
+
+
+class APIKeyPublic(BaseModel):
+    key_id: str
+    name: str
+    created_at: str

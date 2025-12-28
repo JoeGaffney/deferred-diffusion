@@ -88,20 +88,12 @@ test-worker-basic: up
 	docker compose exec gpu-workers pytest -m "basic" -vs
 
 # make it-tests TEST_PATH=test_image_local.py
-it-tests: generate-clients
+it-tests:
 	cd clients/it_tests && pytest tests/$(TEST_PATH) -vs
 	cd ../..
 
-it-tests-local: generate-clients
-	cd clients/it_tests && pytest -m "local" -vs
-	cd ../..
-
-it-tests-external: generate-clients
-	cd clients/it_tests && pytest -m "external" -vs
-	cd ../..
-
-it-tests-external-ci:
-	cd clients/it_tests && pytest -m "external" -vs
+it-tests-basic:
+	cd clients/it_tests && pytest -m "basic" -vs
 	cd ../..
 
 tag-and-push: build

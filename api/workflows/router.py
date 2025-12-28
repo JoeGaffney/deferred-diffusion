@@ -4,7 +4,7 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
-from common.schemas import DeleteResponse, TaskStatus
+from common.schemas import DeleteResponse, Identity, TaskStatus
 from utils.utils import cancel_task
 from worker import celery_app
 from workflows.schemas import (
@@ -25,13 +25,13 @@ router = APIRouter(
     description="ComfyUI workflow execution endpoint. Requires workflow JSON Api workflow and patches to swap out user data.",
     operation_id="workflows_create",
 )
-def create(workflow_request: WorkflowRequest, response: Response, identity: dict = Depends(verify_token)):
+def create(workflow_request: WorkflowRequest, response: Response, identity: Identity = Depends(verify_token)):
     try:
         result = celery_app.send_task(
             workflow_request.task_name,
             queue="comfy",
             args=[workflow_request.model_dump()],
-            kwargs=identity,
+            kwargs=identity.model_dump(),
         )
         response.headers["Location"] = f"/workflows/{result.id}"
         return WorkflowCreateResponse(id=result.id, status=result.status)

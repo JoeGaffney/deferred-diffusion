@@ -15,7 +15,7 @@ from generated.api_client.models import (
 )
 from utils import assert_logs_exist, image_c, save_image_and_assert_file_exists
 
-models = [VideoRequestModel("ltx-video")]
+models = [VideoRequestModel("runway-gen-4")]
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def create_video(api_client, body: VideoRequest) -> UUID:
     return response.parsed.id
 
 
-@pytest.mark.local
+@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_create_video(api_client, model):
     body = VideoRequest(
