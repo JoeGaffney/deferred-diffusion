@@ -45,7 +45,7 @@ def create_text(api_client, model):
     return response.parsed.id
 
 
-@pytest.mark.external
+@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_create_text(api_client, model):
     """Test retrieving a text by ID."""

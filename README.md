@@ -284,8 +284,8 @@ Pytest is used for integration tests confirming the models run.
 You can call from the make file.
 
 ```bash
-make test-worker
-make test-it-tests
+make test-worker-basic
+make test-it-tests-basic
 ```
 
 See the make file for more info.

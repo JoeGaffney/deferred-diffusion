@@ -16,7 +16,7 @@ from generated.api_client.models import (
 )
 from utils import assert_logs_exist, image_a, save_image_and_assert_file_exists
 
-models = [ImageRequestModel("sd-xl")]
+models = [ImageRequestModel("flux-1-pro")]
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def create_image(api_client, body: ImageRequest) -> UUID:
     return response.parsed.id
 
 
-@pytest.mark.local
+@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_create_image(api_client, model):
     body = ImageRequest(model=model, prompt="A beautiful mountain landscape", width=512, height=512)
@@ -61,7 +61,7 @@ def test_create_image(api_client, model):
     assert_logs_exist(response.parsed.logs)
 
 
-@pytest.mark.local
+@pytest.mark.basic
 @pytest.mark.parametrize("model", models)
 def test_images_delete(api_client, model):
     body = ImageRequest(model=model, prompt="A beautiful mountain landscape", width=512, height=512)
@@ -86,7 +86,6 @@ def test_images_delete(api_client, model):
     assert response.parsed.message == "Task already completed"
 
 
-@pytest.mark.local
 @pytest.mark.parametrize("model", models)
 def test_multi_submit_image(api_client, model):
     body = ImageRequest(model=model, prompt="A beautiful mountain landscape", image=image_a, width=512, height=512)
@@ -96,7 +95,6 @@ def test_multi_submit_image(api_client, model):
         assert isinstance(image_id, UUID)
 
 
-@pytest.mark.local
 @pytest.mark.parametrize("model", models)
 def test_multi_get_image(api_client, model):
     body = ImageRequest(model=model, prompt="A beautiful mountain landscape", width=512, height=512)
@@ -107,7 +105,6 @@ def test_multi_get_image(api_client, model):
         assert response.status_code == HTTPStatus.OK
 
 
-@pytest.mark.local
 @pytest.mark.parametrize("model", models)
 def test_connection_reset_edge(api_client, model):
     body = ImageRequest(model=model, prompt="Test polling edge", width=512, height=512)
