@@ -2,7 +2,7 @@ import datetime
 import hashlib
 import hmac
 import secrets
-from typing import Dict, List, Optional, TypedDict, cast
+from typing import Dict, List, Optional, cast
 
 import redis
 from redis import Redis
@@ -12,13 +12,6 @@ from common.logger import logger
 from common.schemas import APIKeyPublic
 
 _redis_client = redis.from_url(settings.celery_broker_url, decode_responses=True)
-
-
-class APIKeyData(TypedDict):
-    name: str
-    hash: str
-    salt: str
-    created_at: str
 
 
 class APIKeyManager:
@@ -54,14 +47,14 @@ class APIKeyManager:
         if not data:
             return None
 
-        key_data = cast(APIKeyData, data)
+        key_data = cast(Dict, data)
         # Verify the secret against the stored hash and salt
         salt = key_data.get("salt")
         stored_hash = key_data.get("hash")
         name = key_data.get("name")
 
         if not salt or not stored_hash or not name:
-            logger.error(f"Malformed API key data in Redis for key_id: {key_id}")
+            logger.error(f"Malformed API key data")
             return None
 
         # Use HMAC for constant-time comparison
@@ -80,8 +73,10 @@ class APIKeyManager:
         if self._name_exists(name):
             raise ValueError("Key name already exists")
 
-        key_id = secrets.token_urlsafe(12)
-        secret = secrets.token_urlsafe(32)
+        # Replace underscores with hyphens so the dd_ID_SECRET format
+        # can be parsed unambiguously using split("_")
+        key_id = secrets.token_urlsafe(12).replace("_", "-")
+        secret = secrets.token_urlsafe(32).replace("_", "-")
         salt = secrets.token_hex(16)
 
         hashed = hashlib.sha256((secret + salt).encode()).hexdigest()
@@ -101,7 +96,7 @@ class APIKeyManager:
         keys = []
         for key in self.client.scan_iter(f"{self.prefix}:*"):
             data = self.client.hgetall(key)
-            key_data = cast(APIKeyData, data)
+            key_data = cast(Dict, data)
 
             key_id = key.split(f"{self.prefix}:")[1]
 
