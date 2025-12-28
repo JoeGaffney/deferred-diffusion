@@ -15,8 +15,8 @@ redis_client = redis.from_url(redis_url, decode_responses=True)
 
 def get_hash_secret() -> bytes:
     base = os.getenv("DDIFFUSION_KEY_HASH_SECRET", "supersecretdefaultvalue")
-    base = base.encode()
-    return hashlib.sha256(b"api-key-hmac" + base).digest()
+    base_bytes = base.encode()
+    return hashlib.sha256(b"api-key-hmac" + base_bytes).digest()
 
 
 class APIKeyManager:
