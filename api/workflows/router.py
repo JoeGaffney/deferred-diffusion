@@ -59,7 +59,6 @@ def get(id: UUID, identity: Identity = Depends(verify_token)):
         try:
             result_data = WorkflowWorkerResponse.model_validate(result.result)
             response.logs = result_data.logs
-            response.result = result_data
         except Exception as e:
             response.status = TaskStatus.FAILURE
             response.error_message = f"Error parsing result: {str(e)}"
@@ -69,9 +68,7 @@ def get(id: UUID, identity: Identity = Depends(verify_token)):
         for i, output in enumerate(result_data.outputs):
             ext = "png" if output.data_type == "image" else "mp4"
             download_url = promote_result_to_storage(id, output.base64_data, ext, base_url=identity.base_url, index=i)
-            if download_url:
-                response.output.append(download_url)
-                response.logs.append(f"Download URL: {download_url}")
+            response.output.append(download_url)
 
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"

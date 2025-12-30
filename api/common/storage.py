@@ -3,14 +3,15 @@ import hashlib
 import hmac
 import os
 import time
-from typing import Optional, Union
 from uuid import UUID
+
+from pydantic import HttpUrl
 
 from common.config import settings
 from common.logger import logger
 
 
-def generate_signed_url(base_url: str, path: str, method: str = "GET", expires_in: int = 3600) -> str:
+def generate_signed_url(base_url: str, path: str, method: str = "GET", expires_in: int = 3600) -> HttpUrl:
     """
     Generates a signed URL for internal studio use.
     path: e.g. "/api/files/task_123"
@@ -21,8 +22,8 @@ def generate_signed_url(base_url: str, path: str, method: str = "GET", expires_i
     sig = hmac.new(settings.encoded_storage_key, msg.encode(), hashlib.sha256).hexdigest()
 
     sep = "&" if "?" in path else "?"
-    result = f"{base_url}{path}{sep}expires={expires}&sig={sig}"
-    print(f"Generated signed URL: {result}")
+    result = HttpUrl(f"{base_url}{path}{sep}expires={expires}&sig={sig}")
+    logger.info(f"Generated signed URL: {result}")
     return result
 
 
@@ -45,7 +46,7 @@ def promote_result_to_storage(
     extension: str,
     base_url: str,
     index: int = 0,
-) -> str:
+) -> HttpUrl:
     """
     Lazy caches a base64 result from Redis to disk and returns a signed download URL.
     """

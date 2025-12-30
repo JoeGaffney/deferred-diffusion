@@ -10,11 +10,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 
 @router.get("/{file_id}", operation_id="files_get")
-async def download_file(file_id: str, expires: int, sig: str):
-    """
-    DOWNLOAD ROUTE: Requires a signature.
-    This is what the MCP/Agent returns to the user.
-    """
+async def get(file_id: str, expires: int, sig: str):
     # Verify the signature against the full path
     if not verify_signed_url(f"/api/files/{file_id}", "GET", expires, sig):
         raise HTTPException(status_code=403, detail="Invalid or expired signature")
