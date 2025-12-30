@@ -1,7 +1,7 @@
 from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 from common.schemas import (
     Base64Image,
@@ -238,8 +238,7 @@ class VideoWorkerResponse(BaseModel):
 class VideoResponse(BaseModel):
     id: UUID
     status: TaskStatus
-    output: List[str] = []
-    result: Optional[VideoWorkerResponse] = None
+    output: List[HttpUrl] = []
     error_message: Optional[str] = None
     logs: List[str] = []
     model_config = ConfigDict(

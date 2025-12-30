@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
+from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 from common.schemas import Base64ResponseBytes, TaskStatus
 
@@ -111,8 +111,7 @@ class WorkflowWorkerResponse(BaseModel):
 class WorkflowResponse(BaseModel):
     id: UUID
     status: TaskStatus
-    output: List[str] = []
-    result: Optional[WorkflowWorkerResponse] = None
+    output: List[HttpUrl] = []
     error_message: Optional[str] = None
     logs: List[str] = []
     model_config = ConfigDict(
@@ -120,7 +119,7 @@ class WorkflowResponse(BaseModel):
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
-                "outputs": ["http://localhost:5000/api/files/..."],
+                "output": ["http://localhost:5000/api/files/..."],
                 "error_message": None,
                 "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }

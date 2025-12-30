@@ -18,6 +18,7 @@ from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
     base64_to_file,
+    download_file,
     get_model_name,
     get_node_value,
     get_output_path,
@@ -70,12 +71,11 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
         with nuke_error_handling(node):
             if not isinstance(parsed, VideoResponse):
                 raise ValueError("Unexpected response type from API call.")
-            if not parsed.status == TaskStatus.SUCCESS or not parsed.result:
+            if not parsed.status == TaskStatus.SUCCESS or not parsed.output:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
             # Save the movie to the specified path
-            base64_to_file(parsed.result.base64_data, output_path)
-
+            download_file(parsed.output[0], output_path)
             output_read = nuke.toNode(f"{node.name()}.output_read")
             set_node_value(output_read, "file", output_path)
             update_read_range(output_read)

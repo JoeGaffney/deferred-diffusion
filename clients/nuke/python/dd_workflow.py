@@ -13,14 +13,13 @@ from generated.api_client.models import (
     PatchClassType,
     TaskStatus,
     WorkflowCreateResponse,
-    WorkflowOutputDataType,
     WorkflowRequest,
     WorkflowRequestWorkflow,
     WorkflowResponse,
 )
 from utils import (
     COMPLETED_STATUS,
-    base64_to_file,
+    download_file,
     get_node_root_path,
     get_node_value,
     node_to_base64,
@@ -246,10 +245,10 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
             if not isinstance(parsed, WorkflowResponse):
                 raise ValueError("Unexpected response type from API call.")
 
-            if not parsed.status == TaskStatus.SUCCESS or not parsed.result:
+            if not parsed.status == TaskStatus.SUCCESS or not parsed.output:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
-            if not parsed.result.outputs:
+            if len(parsed.output) == 0:
                 raise ValueError("No outputs found in workflow result.")
 
             # Position for new Read nodes
@@ -258,15 +257,14 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
             start_y = node.ypos() + spacing
             root_path = get_node_root_path(node)
 
-            for i, output in enumerate(parsed.result.outputs):
-                data = output.base64_data
+            for i, current in enumerate(parsed.output):
                 ext = "png"
-                if output.data_type == WorkflowOutputDataType.VIDEO:
+                if ".mp4" in current or ".mov" in current:
                     ext = "mp4"
 
                 # Generate unique path for each output
                 final_output_path = f"{root_path}/{id}_{i}.{ext}"
-                base64_to_file(data, final_output_path)
+                download_file(current, final_output_path)
 
                 # Create a new Read node outside the group
                 read_name = f"{node.name()}_{i}"

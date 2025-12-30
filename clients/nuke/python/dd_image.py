@@ -17,7 +17,7 @@ from generated.api_client.models import (
 from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
-    base64_to_file,
+    download_file,
     get_model_name,
     get_node_value,
     get_output_path,
@@ -72,12 +72,15 @@ def _api_get_call(node, id, output_path: str, current_frame: int, iterations=300
             if not isinstance(parsed, ImageResponse):
                 raise ValueError("Unexpected response type from API call.")
 
-            if not parsed.status == TaskStatus.SUCCESS or not parsed.result:
+            if not parsed.status == TaskStatus.SUCCESS or not parsed.output:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
+
+            if len(parsed.output) == 0:
+                raise ValueError("No output URL found in the response.")
 
             # Save the image to the specified path
             resolved_output_path = replace_hashes_with_frame(output_path, current_frame)
-            base64_to_file(parsed.result.base64_data, resolved_output_path)
+            download_file(parsed.output[0], resolved_output_path)
 
             output_read = nuke.toNode(f"{node.name()}.output_read")
             set_node_value(output_read, "file", output_path)

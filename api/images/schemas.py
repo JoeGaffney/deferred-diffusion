@@ -1,7 +1,7 @@
 from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 from common.schemas import Base64Image, Base64ResponseBytes, Provider, TaskStatus
 
@@ -293,8 +293,7 @@ class ImageWorkerResponse(BaseModel):
 class ImageResponse(BaseModel):
     id: UUID
     status: TaskStatus
-    outputs: List[str] = []
-    result: Optional[ImageWorkerResponse] = None
+    output: List[HttpUrl] = []
     error_message: Optional[str] = None
     logs: List[str] = []
     model_config = ConfigDict(
@@ -302,7 +301,7 @@ class ImageResponse(BaseModel):
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
-                "outputs": ["http://localhost:5000/api/files/..."],
+                "output": ["http://localhost:5000/api/files/..."],
                 "error_message": None,
                 "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }

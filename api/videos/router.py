@@ -70,9 +70,8 @@ def get(id: UUID, identity: Identity = Depends(verify_token)):
 
         # Lazy Cache to Disk and get Signed URL
         download_url = promote_result_to_storage(id, result_data.base64_data, "mp4", base_url=identity.base_url)
-        if download_url:
-            response.output = [download_url]
-            response.logs.append(f"Download URL: {download_url}")
+        response.output = [download_url]
+        response.logs.append(f"Download URL: {download_url}")
 
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"

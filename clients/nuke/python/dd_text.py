@@ -65,10 +65,10 @@ def _api_get_call(node, id, iterations=1, sleep_time=5, set_value="response"):
         with nuke_error_handling(node):
             if not isinstance(parsed, TextResponse):
                 raise ValueError("Unexpected response type from API call.")
-            if not parsed.status == "SUCCESS" or not parsed.result:
+            if not parsed.status == "SUCCESS" or not parsed.output:
                 raise ValueError(f"Task {parsed.status} with error: {parsed.error_message}")
 
-            response_str = str(parsed.result.response)
+            response_str = str(parsed.output)
             set_node_value(node, set_value, response_str)
             set_node_info(node, TaskStatus.SUCCESS, "")
 
