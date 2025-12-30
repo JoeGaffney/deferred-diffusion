@@ -97,17 +97,17 @@ class VideoContext:
     def duration_in_seconds(self, fps=24) -> int:
         return max(1, int(self.data.num_frames / fps))
 
-    def tmp_video_path(self, model="") -> str:
-        return tempfile.NamedTemporaryFile(dir=get_tmp_dir(model), suffix=".mp4").name
+    def tmp_video_path(self) -> str:
+        return tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
 
     def save_video(self, video, fps=24):
-        path = self.tmp_video_path(self.model)
+        path = self.tmp_video_path()
         path = export_to_video(video, output_video_path=path, fps=fps, quality=9)
         logger.info(f"Video saved at {path}")
         return path
 
     def save_video_url(self, url):
-        path = self.tmp_video_path(model=self.model)
+        path = self.tmp_video_path()
 
         response = requests.get(url, stream=True)
         if response.status_code == 200:
@@ -134,7 +134,7 @@ class VideoContext:
         if not self.video_frames:
             raise ValueError("No video frames available.")
 
-        tmp_path = self.tmp_video_path(model=self.model)
+        tmp_path = self.tmp_video_path()
         path = export_to_video(self.video_frames, output_video_path=tmp_path, fps=fps, quality=9)
         logger.info(f"Compressed video saved at {path}")
 

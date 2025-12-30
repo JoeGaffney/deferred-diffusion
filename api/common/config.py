@@ -1,10 +1,18 @@
 import logging
+import os
+import tempfile
 import warnings
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
+
+
+def get_tmp_dir() -> str:
+    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "api")
+    os.makedirs(subdir, exist_ok=True)
+    return subdir
 
 
 class Settings(BaseSettings):
@@ -16,6 +24,10 @@ class Settings(BaseSettings):
 
     # Security
     ddiffusion_admin_key: str = "supersecretadminkey"
+
+    # Storage
+    storage_dir: str = get_tmp_dir()
+    base_url: str = "http://localhost:5000"
 
     # Rate limiting
     creates_per_minute: int = 30
@@ -30,6 +42,11 @@ class Settings(BaseSettings):
                 UserWarning,
             )
         return v
+
+    @property
+    def encoded_storage_key(self) -> bytes:
+        extra = f"{self.ddiffusion_admin_key}:internal-storage-signing-v1"
+        return extra.encode()
 
 
 settings = Settings()  # type: ignore

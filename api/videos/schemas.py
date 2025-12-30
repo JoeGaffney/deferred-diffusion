@@ -1,9 +1,15 @@
 from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from common.schemas import Provider, TaskStatus
+from common.schemas import (
+    Base64Image,
+    Base64ResponseBytes,
+    Base64Video,
+    Provider,
+    TaskStatus,
+)
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -170,29 +176,17 @@ class VideoRequest(BaseModel):
         le=250,
     )
     seed: int = 42
-    image: Optional[str] = Field(
+    image: Optional[Base64Image] = Field(
         default=None,
         description="Base64 image string used for image-to-video conditioning or reference.",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
     )
-    last_image: Optional[str] = Field(
+    last_image: Optional[Base64Image] = Field(
         default=None,
         description="Optional Base64 image string for the last frame guidance in image-to-video generation (requires image).",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
     )
-    video: Optional[str] = Field(
+    video: Optional[Base64Video] = Field(
         default=None,
         description="Optional Base64 video string for video-to-video transformation or upscaling.",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "video/*",
-        },
     )
 
     @property
@@ -238,7 +232,8 @@ class VideoRequest(BaseModel):
 
 class VideoWorkerResponse(BaseModel):
     logs: List[str] = []
-    base64_data: Base64Bytes
+    base64_data: Optional[Base64ResponseBytes] = None
+    url: Optional[str] = Field(None, description="Signed URL to download the video")
 
 
 class VideoResponse(BaseModel):

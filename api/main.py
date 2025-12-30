@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from admin import router as admin
 from common.logger import logger
+from files import router as files
 from images import router as images
 from texts import router as texts
 from utils.utils import truncate_strings
@@ -48,6 +49,7 @@ app.include_router(images.router, prefix="/api")
 app.include_router(texts.router, prefix="/api")
 app.include_router(videos.router, prefix="/api")
 app.include_router(workflows.router, prefix="/api")
+app.include_router(files.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 
 

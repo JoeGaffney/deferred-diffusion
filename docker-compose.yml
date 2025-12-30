@@ -8,6 +8,8 @@ services:
     stdin_open: true
     ports:
       - "5000:5000"
+    volumes:
+      - ${OUTPUTS_PATH:-Y:/OUTPUTS}:/tmp/deferred-diffusion
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0

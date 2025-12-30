@@ -1,9 +1,9 @@
 from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from common.schemas import Provider, TaskStatus
+from common.schemas import Base64Image, Base64ResponseBytes, Provider, TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -203,12 +203,8 @@ def generate_model_docs():
 
 
 class References(BaseModel):
-    image: str = Field(
+    image: Base64Image = Field(
         description="Base64 image string",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
     )
 
 
@@ -228,27 +224,19 @@ class ImageRequest(BaseModel):
         le=1.0,
         description="How strongly to follow the input image when transforming it (image-to-image/inpainting only). Ignored for text-to-image.",
     )
-    image: Optional[str] = Field(
+    image: Optional[Base64Image] = Field(
         default=None,
         description=(
             "Base64 string image. If provided (and no mask), runs image-to-image using this as the starting point. "
             "PNG/JPEG recommended. Combine with prompt to guide the transformation."
         ),
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
     )
-    mask: Optional[str] = Field(
+    mask: Optional[Base64Image] = Field(
         default=None,
         description=(
             "Base64 string image mask for inpainting. Must be provided together with 'image'. "
             "Non-zero/opaque regions indicate areas to modify. Triggers inpainting when supported."
         ),
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
     )
     references: list[References] = Field(
         default_factory=list,
@@ -299,7 +287,7 @@ class ImageRequest(BaseModel):
 
 class ImageWorkerResponse(BaseModel):
     logs: List[str] = []
-    base64_data: Base64Bytes
+    base64_data: Base64ResponseBytes
 
 
 class ImageResponse(BaseModel):

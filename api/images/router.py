@@ -1,10 +1,11 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity, TaskStatus
+from common.storage import promote_result_to_storage
 from images.schemas import (
     MODEL_META,
     ImageCreateResponse,
@@ -49,7 +50,7 @@ def models():
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
-def get(id: UUID):
+def get(id: UUID, identity: Identity = Depends(verify_token)):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
@@ -65,12 +66,25 @@ def get(id: UUID):
     # Add appropriate fields based on status
     if result.successful():
         try:
-            result_data = ImageWorkerResponse.model_validate(result.result)
-            response.result = result_data
-            response.logs = result_data.logs
+            result_data = result.result
+            if not isinstance(result_data, dict):
+                raise ValueError("Result data is not a dictionary")
+
+            # Lazy Cache to Disk and get Signed URL
+            download_url = promote_result_to_storage(
+                id, result_data.get("base64_data"), "png", base_url=identity.base_url
+            )
+
+            # Return the URL and the base64_data
+            response.result = ImageWorkerResponse(
+                url=download_url,
+                base64_data=result_data.get("base64_data"),
+                logs=result_data.get("logs", []),
+            )
+            response.logs = response.result.logs
         except Exception as e:
             response.status = TaskStatus.FAILURE
-            response.error_message = f"Error parsing result: {str(e)}"
+            response.error_message = f"Error promoting result to storage: {str(e)}"
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"
 

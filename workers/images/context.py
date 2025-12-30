@@ -65,7 +65,7 @@ class ImageContext:
 
     def save_image(self, image):
         # Create a temporary file with .png extension
-        with tempfile.NamedTemporaryFile(dir=get_tmp_dir(self.model), suffix=".png", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".png", delete=False) as tmp_file:
             # tmp_file will be closed automatically when exiting the with block
             image.save(tmp_file, format="PNG")
             path = tmp_file.name

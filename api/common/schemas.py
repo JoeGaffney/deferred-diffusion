@@ -1,8 +1,8 @@
 from enum import Enum
-from typing import Literal, TypeAlias
+from typing import Annotated, Literal, TypeAlias
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Base64Bytes, BaseModel, Field
 
 # NOTE Status values should align with Celery task states
 # from celery.states import ALL_STATES
@@ -24,13 +24,41 @@ class TaskStatus(str, Enum):
         return str(self.value)
 
 
+MB_SIZE = 1024 * 1024
+MAX_BASE64_SIZE = MB_SIZE * 100
+
+Provider: TypeAlias = Literal["local", "openai", "replicate"]
+
+Base64Image = Annotated[
+    str,
+    Field(
+        max_length=MAX_BASE64_SIZE,
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "image/*",
+        },
+    ),
+]
+
+Base64Video = Annotated[
+    str,
+    Field(
+        max_length=MAX_BASE64_SIZE,
+        json_schema_extra={
+            "contentEncoding": "base64",
+            "contentMediaType": "video/*",
+        },
+    ),
+]
+
+
+Base64ResponseBytes = Annotated[Base64Bytes, Field(max_length=MB_SIZE * 100)]
+
+
 class DeleteResponse(BaseModel):
     id: UUID = Field(description="ID of the task")
     status: TaskStatus = Field(description="Status of the task after deletion attempt")
     message: str = Field(description="Additional information about the deletion result")
-
-
-Provider: TypeAlias = Literal["local", "openai", "replicate"]
 
 
 class Identity(BaseModel):
@@ -39,6 +67,7 @@ class Identity(BaseModel):
     client_ip: str
     key_name: str
     key_id: str
+    base_url: str
 
 
 class APIKeyPublic(BaseModel):

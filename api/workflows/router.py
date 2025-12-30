@@ -1,10 +1,11 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity, TaskStatus
+from common.storage import promote_result_to_storage
 from utils.utils import cancel_task
 from worker import celery_app
 from workflows.schemas import (
@@ -40,7 +41,7 @@ def create(workflow_request: WorkflowRequest, response: Response, identity: Iden
 
 
 @router.get("/{id}", response_model=WorkflowResponse, operation_id="workflows_get")
-def get(id: UUID):
+def get(id: UUID, identity: Identity = Depends(verify_token)):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
@@ -57,6 +58,14 @@ def get(id: UUID):
     if result.successful():
         try:
             result_data = WorkflowWorkerResponse.model_validate(result.result)
+
+            # Lazy Cache each output
+            for i, output in enumerate(result_data.outputs):
+                ext = "png" if output.data_type == "image" else "mp4"
+                # Use a unique ID for each output within the task
+                output_id = f"{id}_{i}"
+                output.url = promote_result_to_storage(output_id, output.base64_data, ext, base_url=identity.base_url)
+
             response.result = result_data
             response.logs = result_data.logs
         except Exception as e:

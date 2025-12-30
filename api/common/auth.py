@@ -40,6 +40,7 @@ async def verify_token(
         client_ip=get_remote_address(request),
         key_name=key_data.name,
         key_id=key_data.key_id,
+        base_url=str(request.base_url).rstrip("/"),
     )
     await log_request(request, identity)
 

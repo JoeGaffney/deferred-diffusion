@@ -101,6 +101,7 @@ class WorkflowOutput(BaseModel):
     data_type: Literal["image", "video"]
     filename: str
     base64_data: Base64Bytes
+    url: Optional[str] = Field(None, description="Signed URL to download the output")
 
 
 class WorkflowWorkerResponse(BaseModel):

@@ -47,11 +47,8 @@ def get_16_9_resolution(resolution: Resolutions) -> Tuple[int, int]:
     return resolutions_16_9.get(resolution, (960, 540))
 
 
-def get_tmp_dir(model="") -> str:
+def get_tmp_dir() -> str:
     subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "workers")
-    if model:
-        subdir = os.path.join(subdir, model)
-
     os.makedirs(subdir, exist_ok=True)
     return subdir
 
@@ -181,7 +178,7 @@ def load_video_frames_if_exists(base64_bytes: Optional[str], model="") -> Option
     if video_bytes is None:
         return None
 
-    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(model=model), suffix=".mp4").name
+    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
     with open(video_path, "wb") as f:
         f.write(video_bytes)
 
@@ -195,7 +192,7 @@ def load_video_into_file(base64_bytes: Optional[str], model="") -> str | None:
     if video_bytes is None:
         return None
 
-    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(model=model), suffix=".mp4").name
+    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
     with open(video_path, "wb") as f:
         f.write(video_bytes)
 
