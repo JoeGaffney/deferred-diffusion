@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
 
-from common.schemas import TaskStatus
+from common.schemas import Base64ResponseBytes, TaskStatus
 
 ClassTypes: TypeAlias = Literal[
     "PrimitiveInt",
@@ -100,7 +100,7 @@ class WorkflowRequest(BaseModel):
 class WorkflowOutput(BaseModel):
     data_type: Literal["image", "video"]
     filename: str
-    base64_data: Base64Bytes
+    base64_data: Base64ResponseBytes
 
 
 class WorkflowWorkerResponse(BaseModel):
@@ -111,6 +111,7 @@ class WorkflowWorkerResponse(BaseModel):
 class WorkflowResponse(BaseModel):
     id: UUID
     status: TaskStatus
+    output: List[str] = []
     result: Optional[WorkflowWorkerResponse] = None
     error_message: Optional[str] = None
     logs: List[str] = []
@@ -119,15 +120,7 @@ class WorkflowResponse(BaseModel):
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
-                "result": {
-                    "outputs": [
-                        {
-                            "data_type": "image",
-                            "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
-                            "filename": "comfy_node_filename.png",
-                        }
-                    ],
-                },
+                "outputs": ["http://localhost:5000/api/files/..."],
                 "error_message": None,
                 "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }

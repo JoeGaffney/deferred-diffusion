@@ -287,13 +287,13 @@ class ImageRequest(BaseModel):
 
 class ImageWorkerResponse(BaseModel):
     logs: List[str] = []
-    base64_data: Optional[Base64ResponseBytes] = None
-    url: Optional[str] = Field(None, description="Signed URL to download the image")
+    base64_data: Base64ResponseBytes
 
 
 class ImageResponse(BaseModel):
     id: UUID
     status: TaskStatus
+    outputs: List[str] = []
     result: Optional[ImageWorkerResponse] = None
     error_message: Optional[str] = None
     logs: List[str] = []
@@ -302,9 +302,7 @@ class ImageResponse(BaseModel):
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
-                "result": {
-                    "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
-                },
+                "outputs": ["http://localhost:5000/api/files/..."],
                 "error_message": None,
                 "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }

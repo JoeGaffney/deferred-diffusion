@@ -58,19 +58,21 @@ def get(id: UUID, identity: Identity = Depends(verify_token)):
     if result.successful():
         try:
             result_data = WorkflowWorkerResponse.model_validate(result.result)
-
-            # Lazy Cache each output
-            for i, output in enumerate(result_data.outputs):
-                ext = "png" if output.data_type == "image" else "mp4"
-                # Use a unique ID for each output within the task
-                output_id = f"{id}_{i}"
-                output.url = promote_result_to_storage(output_id, output.base64_data, ext, base_url=identity.base_url)
-
-            response.result = result_data
             response.logs = result_data.logs
+            response.result = result_data
         except Exception as e:
             response.status = TaskStatus.FAILURE
             response.error_message = f"Error parsing result: {str(e)}"
+            return response
+
+        # Lazy Cache to Disk and get Signed URL
+        for i, output in enumerate(result_data.outputs):
+            ext = "png" if output.data_type == "image" else "mp4"
+            download_url = promote_result_to_storage(id, output.base64_data, ext, base_url=identity.base_url, index=i)
+            if download_url:
+                response.output.append(download_url)
+                response.logs.append(f"Download URL: {download_url}")
+
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"
 

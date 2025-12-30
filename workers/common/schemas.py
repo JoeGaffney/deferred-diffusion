@@ -67,6 +67,7 @@ class Identity(BaseModel):
     client_ip: str
     key_name: str
     key_id: str
+    base_url: str
 
 
 class APIKeyPublic(BaseModel):

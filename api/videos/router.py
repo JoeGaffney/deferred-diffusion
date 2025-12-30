@@ -60,25 +60,20 @@ def get(id: UUID, identity: Identity = Depends(verify_token)):
     # Add appropriate fields based on status
     if result.successful():
         try:
-            result_data = result.result
-            if not isinstance(result_data, dict):
-                raise ValueError("Result data is not a dictionary")
-
-            # Lazy Cache to Disk and get Signed URL
-            download_url = promote_result_to_storage(
-                id, result_data.get("base64_data"), "mp4", base_url=identity.base_url
-            )
-
-            # Return the URL and the base64_data
-            response.result = VideoWorkerResponse(
-                url=download_url,
-                base64_data=result_data.get("base64_data"),
-                logs=result_data.get("logs", []),
-            )
-            response.logs = response.result.logs
+            result_data = VideoWorkerResponse.model_validate(result.result)
         except Exception as e:
             response.status = TaskStatus.FAILURE
-            response.error_message = f"Error promoting result to storage: {str(e)}"
+            response.error_message = f"Error parsing result: {str(e)}"
+            return response
+
+        response.logs = result_data.logs
+
+        # Lazy Cache to Disk and get Signed URL
+        download_url = promote_result_to_storage(id, result_data.base64_data, "mp4", base_url=identity.base_url)
+        if download_url:
+            response.output = [download_url]
+            response.logs.append(f"Download URL: {download_url}")
+
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"
 

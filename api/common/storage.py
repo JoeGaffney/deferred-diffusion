@@ -21,7 +21,9 @@ def generate_signed_url(base_url: str, path: str, method: str = "GET", expires_i
     sig = hmac.new(settings.encoded_storage_key, msg.encode(), hashlib.sha256).hexdigest()
 
     sep = "&" if "?" in path else "?"
-    return f"{base_url}{path}{sep}expires={expires}&sig={sig}"
+    result = f"{base_url}{path}{sep}expires={expires}&sig={sig}"
+    print(f"Generated signed URL: {result}")
+    return result
 
 
 def verify_signed_url(path: str, method: str, expires: int, sig: str) -> bool:
@@ -38,34 +40,26 @@ def verify_signed_url(path: str, method: str, expires: int, sig: str) -> bool:
 
 
 def promote_result_to_storage(
-    task_id: Union[UUID, str],
-    base64_data: Optional[Union[str, bytes]],
+    task_id: UUID,
+    base64_data: bytes,  # The raw binary data, not base64-encoded string, pydantic decodes allready
     extension: str,
-    base_url: Optional[str] = None,
-) -> Optional[str]:
+    base_url: str,
+    index: int = 0,
+) -> str:
     """
     Lazy caches a base64 result from Redis to disk and returns a signed download URL.
     """
-    if not base64_data:
-        return None
 
-    file_id = f"{task_id}.{extension}"
+    file_id = f"{task_id}_{index}.{extension}"
     file_path = os.path.join(settings.storage_dir, file_id)
 
     if not os.path.exists(file_path):
         os.makedirs(settings.storage_dir, exist_ok=True)
         try:
-            # Ensure we are dealing with bytes
-            if isinstance(base64_data, str):
-                data_bytes = base64.b64decode(base64_data)
-            else:
-                data_bytes = base64_data
-
             with open(file_path, "wb") as f:
-                f.write(data_bytes)
+                f.write(base64_data)
             logger.info(f"Promoted result {task_id} to storage: {file_path}")
         except Exception as e:
-            logger.error(f"Failed to promote result {task_id} to storage: {e}")
-            return None
+            raise ValueError(f"Failed to promote result to storage: {e}")
 
-    return generate_signed_url(base_url or settings.base_url, f"/api/files/{file_id}", method="GET")
+    return generate_signed_url(base_url, f"/api/files/{file_id}", method="GET")
