@@ -2,6 +2,7 @@ celery==5.5.3
 mypy==1.18.2
 openai==2.8.1
 pydantic==2.12.4
+pydantic-settings==2.7.1
 pytest==9.0.1
 redis==7.0.1
 replicate==1.0.7

@@ -1,6 +1,5 @@
 import base64
 import json
-import os
 import time
 import uuid
 from typing import Any, Optional
@@ -8,12 +7,13 @@ from typing import Any, Optional
 import httpx
 import websocket
 
+from common.config import settings
 from common.logger import logger, task_log
 
 
 class ComfyClient:
-    def __init__(self, server_url: str | None = None):
-        self.server_url = server_url or os.getenv("COMFY_API_URL")
+    def __init__(self):
+        self.server_url = settings.comfy_api_url
         if not self.server_url:
             raise RuntimeError("COMFY_API_URL environment variable is not set")
 
