@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     @property
     def storage_dir(self) -> str:
-        subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "storage")
+        subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "api")
         os.makedirs(subdir, exist_ok=True)
         return subdir
 

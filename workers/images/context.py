@@ -4,15 +4,10 @@ from typing import Literal
 
 import torch
 
+from common.config import settings
 from common.logger import logger, task_log
 from images.schemas import ImageRequest
-from utils.utils import (
-    ensure_divisible,
-    get_tmp_dir,
-    image_crop,
-    image_resize,
-    load_image_if_exists,
-)
+from utils.utils import ensure_divisible, image_crop, image_resize, load_image_if_exists
 
 
 class ImageContext:
@@ -65,8 +60,7 @@ class ImageContext:
 
     def save_image(self, image):
         # Create a temporary file with .png extension
-        with tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".png", delete=False) as tmp_file:
-            # tmp_file will be closed automatically when exiting the with block
+        with tempfile.NamedTemporaryFile(dir=settings.storage_dir, suffix=".png", delete=False) as tmp_file:
             image.save(tmp_file, format="PNG")
             path = tmp_file.name
             logger.info(f"Image saved at {path}")

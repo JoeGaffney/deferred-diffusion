@@ -7,7 +7,7 @@ def main(context: VideoContext):
         raise ValueError("Input video is None. Please provide a valid video.")
 
     model = "runwayml/upscale-v1"
-    video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
+    video_uri = f"data:video/mp4;base64,{context.data.video}"
     payload = {
         "video": video_uri,
     }

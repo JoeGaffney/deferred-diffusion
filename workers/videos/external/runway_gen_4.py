@@ -19,7 +19,7 @@ def video_to_video(context: VideoContext):
         raise ValueError("Input video is None. Please provide a valid video.")
 
     model = "runwayml/gen4-aleph"
-    video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
+    video_uri = f"data:video/mp4;base64,{context.data.video}"
     payload = {
         "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,

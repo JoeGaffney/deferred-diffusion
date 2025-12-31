@@ -8,6 +8,7 @@ from typing import Literal, Optional, Tuple
 from diffusers.utils import load_video
 from PIL import Image
 
+from common.config import settings
 from common.logger import logger
 
 Resolutions = Literal["1080p", "900p", "720p", "576p", "540p", "480p", "432p", "360p"]
@@ -45,12 +46,6 @@ def time_info_decorator(func):
 
 def get_16_9_resolution(resolution: Resolutions) -> Tuple[int, int]:
     return resolutions_16_9.get(resolution, (960, 540))
-
-
-def get_tmp_dir() -> str:
-    subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "workers")
-    os.makedirs(subdir, exist_ok=True)
-    return subdir
 
 
 def ensure_path_exists(path):
@@ -136,12 +131,6 @@ def mp4_to_base64(file_path: str) -> bytes:
         return base64.b64encode(video_file.read())
 
 
-def mp4_to_base64_decoded(file_path: str) -> str:
-    """Convert an MP4 file to base64 encoded str."""
-    with open(file_path, "rb") as video_file:
-        return base64.b64encode(video_file.read()).decode("utf-8")
-
-
 def pill_to_base64(image):
     buffered = io.BytesIO()
     image.save(buffered, format="PNG")
@@ -178,7 +167,7 @@ def load_video_frames_if_exists(base64_bytes: Optional[str], model="") -> Option
     if video_bytes is None:
         return None
 
-    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
+    video_path = tempfile.NamedTemporaryFile(dir=settings.storage_dir, suffix=".mp4").name
     with open(video_path, "wb") as f:
         f.write(video_bytes)
 
@@ -192,7 +181,7 @@ def load_video_into_file(base64_bytes: Optional[str], model="") -> str | None:
     if video_bytes is None:
         return None
 
-    video_path = tempfile.NamedTemporaryFile(dir=get_tmp_dir(), suffix=".mp4").name
+    video_path = tempfile.NamedTemporaryFile(dir=settings.storage_dir, suffix=".mp4").name
     with open(video_path, "wb") as f:
         f.write(video_bytes)
 
