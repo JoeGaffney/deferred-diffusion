@@ -63,4 +63,6 @@ def promote_result_to_storage(
         except Exception as e:
             raise ValueError(f"Failed to promote result to storage: {e}")
 
-    return generate_signed_url(base_url, f"/api/files/{file_id}", method="GET")
+    return generate_signed_url(
+        base_url, f"/api/files/{file_id}", method="GET", expires_in=settings.signed_url_expiry_seconds
+    )
