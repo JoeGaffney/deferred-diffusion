@@ -1,9 +1,12 @@
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastmcp import FastMCP
 
 from admin import router as admin
+from common.config import settings
 from common.logger import logger
 from files import router as files
 from images import router as images
@@ -13,10 +16,10 @@ from videos import router as videos
 from workflows import router as workflows
 
 # NOTE imporant keep name API as clients will use the title
-app = FastAPI(title="API")
+fastapi_app = FastAPI(title="API")
 
 
-@app.exception_handler(RequestValidationError)
+@fastapi_app.exception_handler(RequestValidationError)
 async def validation_handler(request: Request, exc: RequestValidationError):
     cleaned = []
     for err in exc.errors():
@@ -33,7 +36,7 @@ async def validation_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={"detail": cleaned})
 
 
-@app.exception_handler(Exception)
+@fastapi_app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
@@ -45,18 +48,54 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-app.include_router(images.router, prefix="/api")
-app.include_router(texts.router, prefix="/api")
-app.include_router(videos.router, prefix="/api")
-app.include_router(workflows.router, prefix="/api")
-app.include_router(files.router, prefix="/api")
-app.include_router(admin.router, prefix="/api")
+fastapi_app.include_router(images.router, prefix="/api")
+fastapi_app.include_router(texts.router, prefix="/api")
+fastapi_app.include_router(videos.router, prefix="/api")
+fastapi_app.include_router(workflows.router, prefix="/api")
+fastapi_app.include_router(files.router, prefix="/api")
+fastapi_app.include_router(admin.router, prefix="/api")
 
 
-@app.get("/")
+@fastapi_app.get("/")
 def root():
-    return {"message": "Welcome to the API!"}
+    return RedirectResponse(url="/docs")
 
+
+@fastapi_app.get("/health")
+def health():
+    return {"status": "healthy"}
+
+
+# Combine mcp and fastapi
+if settings.enable_mcp:
+    mcp = FastMCP.from_fastapi(
+        app=fastapi_app,
+        name="MCP",
+        httpx_client_kwargs={
+            "headers": {
+                "Authorization": "Bearer secret-token",
+            }
+        },
+    )
+
+    mcp_app = mcp.http_app(path="/mcp", transport="streamable-http", stateless_http=True)
+    app = FastAPI(
+        routes=[
+            *fastapi_app.routes,
+            *mcp_app.routes,
+        ],
+        lifespan=mcp_app.lifespan,
+    )
+else:
+    app = fastapi_app
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 # Run Uvicorn programmatically for convenience
 if __name__ == "__main__":

@@ -17,10 +17,11 @@ class Settings(BaseSettings):
     replicate_api_token: Optional[str] = None
     hf_home: str = ""
     comfy_api_url: Optional[str] = None
+    ddiffusion_storage_directory: str = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "storage")
 
     @property
     def storage_dir(self) -> str:
-        subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "workers")
+        subdir = self.ddiffusion_storage_directory
         os.makedirs(subdir, exist_ok=True)
         return subdir
 

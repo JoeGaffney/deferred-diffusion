@@ -48,8 +48,7 @@ class Deps:
             existing_media.status = call_dict.get("status", existing_media.status)
             if "result" in call_dict and isinstance(call_dict["result"], dict):
                 result_data = call_dict["result"]
-                existing_media.local_file_path = result_data.get("local_file_path", existing_media.local_file_path)
-                existing_media.base64_data = result_data.get("base64_data", existing_media.base64_data)
+                existing_media.output = result_data.get("output", existing_media.output)
             logger.info(f"Updated {media_type} {task_id} status: {existing_media.status}")
         else:
             # Create new media entry
@@ -58,8 +57,7 @@ class Deps:
             media = Media(
                 id=task_id,
                 status=call_dict.get("status", "UNKNOWN"),
-                local_file_path=result_data.get("local_file_path", ""),
-                base64_data=result_data.get("base64_data", ""),
+                output=result_data.get("output", []),
                 type=media_type,
             )
 

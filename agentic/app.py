@@ -4,8 +4,13 @@ import json
 
 import gradio as gr
 from gradio.components.chatbot import MetadataDict
+from gradio.processing_utils import PUBLIC_HOSTNAME_WHITELIST
 from pydantic import BaseModel
 from pydantic_ai import ToolCallPart, ToolReturnPart
+
+# allow localhost in gradio images and videos
+PUBLIC_HOSTNAME_WHITELIST.append("127.0.0.1")
+PUBLIC_HOSTNAME_WHITELIST.append("localhost")
 
 from agents.chat_agent import chat_agent
 from agents.fetch_agent import fetch_agent
@@ -17,22 +22,26 @@ from views.history import create_history_component
 
 def get_media_content(content_dict: dict) -> gr.components.Component | None:
     """
-    Checks for local file paths in the content_dict and appends appropriate media messages to the chatbot.
+    Checks for media URLs in the content_dict and appends appropriate media messages to the chatbot.
     Supports PNG images and MP4 videos.
     """
-    local_file_path = None
+    urls = []
     if isinstance(content_dict, dict):
         # Handle nested result structure
         if "result" in content_dict and isinstance(content_dict["result"], dict):
-            local_file_path = content_dict["result"].get("local_file_path")
+            urls = content_dict["result"].get("output", [])
         else:
-            local_file_path = content_dict.get("local_file_path")
+            urls = content_dict.get("output", [])
 
-    # Add image display if local file path exists and is an image
-    if local_file_path and str(local_file_path).lower().endswith(".png"):
-        return gr.Image(value=local_file_path, height="33%", width="33%")
-    if local_file_path and str(local_file_path).lower().endswith(".mp4"):
-        return gr.Video(value=local_file_path, height="33%", width="33%")
+    # Add image display if url exists and is an image
+    # For now, just display the first one
+    if urls and isinstance(urls, list) and len(urls) > 0:
+        url = urls[0]
+        url_str = str(url).lower()
+        if url_str.endswith(".png") or ".png?" in url_str:
+            return gr.Image(value=url, height="33%", width="33%")
+        if url_str.endswith(".mp4") or ".mp4?" in url_str:
+            return gr.Video(value=url, height="33%", width="33%")
     return None
 
 

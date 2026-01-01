@@ -17,6 +17,7 @@ async def get(file_id: str, expires: int, sig: str):
 
     file_path = os.path.join(settings.storage_dir, file_id)
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+        print(file_path)
+        raise HTTPException(status_code=402, detail=f"File not found {file_path}")
 
     return FileResponse(file_path)

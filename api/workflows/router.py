@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity, TaskStatus
@@ -41,7 +41,7 @@ def create(workflow_request: WorkflowRequest, response: Response, identity: Iden
 
 
 @router.get("/{id}", response_model=WorkflowResponse, operation_id="workflows_get")
-def get(id: UUID, identity: Identity = Depends(verify_token)):
+def get(id: UUID):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
@@ -67,7 +67,7 @@ def get(id: UUID, identity: Identity = Depends(verify_token)):
         # Lazy Cache to Disk and get Signed URL
         for i, output in enumerate(result_data.outputs):
             ext = "png" if output.data_type == "image" else "mp4"
-            download_url = promote_result_to_storage(id, output.base64_data, ext, base_url=identity.base_url, index=i)
+            download_url = promote_result_to_storage(id, output.base64_data, ext, index=i)
             response.output.append(download_url)
 
     elif result.failed():

@@ -15,23 +15,12 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - DDIFFUSION_ADMIN_KEY=${DDIFFUSION_ADMIN_KEY}
-
-  # Model Context Protocol service - for allowing LLM tools
-  mcp:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    command: fastmcp run mcp_server.py:mcp --transport http --host 0.0.0.0 --port 5001
-    tty: true
-    stdin_open: true
-    ports:
-      - "5001:5001"
-    environment:
-      - PYTHONUNBUFFERED=1
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - DDIFFUSION_STORAGE_ADDRESS=${DDIFFUSION_STORAGE_ADDRESS:-http://127.0.0.1:5000}
       - FASTMCP_EXPERIMENTAL_ENABLE_NEW_OPENAPI_PARSER=true
-      - DDIFFUSION_ADMIN_KEY=${DDIFFUSION_ADMIN_KEY}
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5000/health || exit 1"]
+      start_period: 3s
 
   # Redis service as message broker
   redis:
@@ -70,8 +59,10 @@ services:
       # Use http://192.168.x.x:8188 for a remote machine
       - COMFY_API_URL=${COMFY_API_URL:-http://host.docker.internal:8188}
     depends_on:
-      - redis
-      - api
+      redis:
+        condition: service_started
+      api:
+        condition: service_healthy
     deploy:
       replicas: 1 # Number of container
       resources:
@@ -103,8 +94,10 @@ services:
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
     depends_on:
-      - redis
-      - api
+      redis:
+        condition: service_started
+      api:
+        condition: service_healthy
     deploy:
       replicas: 1 # Number of container
 
@@ -137,9 +130,11 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DDIFFUSION_API_KEY=${DDIFFUSION_API_KEY}
-      - DDIFFUSION_MCP_ADDRESS=http://mcp:5001/mcp
+      # - DDIFFUSION_MCP_ADDRESS=api:5000/mcp
+      - DDIFFUSION_MCP_ADDRESS=http://api:5000/mcp
     depends_on:
-      - mcp
+      api:
+        condition: service_healthy
 
 # Volume definitions go at the root level, not nested inside the service
 volumes:

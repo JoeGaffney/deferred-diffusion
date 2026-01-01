@@ -50,7 +50,7 @@ def models():
 
 
 @router.get("/{id}", response_model=ImageResponse, operation_id="images_get")
-def get(id: UUID, identity: Identity = Depends(verify_token)):
+def get(id: UUID):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
@@ -74,7 +74,7 @@ def get(id: UUID, identity: Identity = Depends(verify_token)):
             return response
 
         # Lazy Cache to Disk and get Signed URL
-        download_url = promote_result_to_storage(id, result_data.base64_data, "png", base_url=identity.base_url)
+        download_url = promote_result_to_storage(id, result_data.base64_data, "png")
         response.output = [download_url]
 
     elif result.failed():

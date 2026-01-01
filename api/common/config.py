@@ -15,8 +15,13 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://redis:6379/0"
     celery_result_backend: str = "redis://redis:6379/1"
     ddiffusion_admin_key: str = "supersecretadminkey"
+    ddiffusion_storage_address: str = (
+        "http://127.0.0.1:5000"  # external services should use this to reach the API / used for signed URLs
+    )
+    ddiffusion_storage_directory: str = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "storage")
     signed_url_expiry_seconds: int = 3600  # 1 hour
     creates_per_minute: int = 30
+    enable_mcp: bool = True
 
     @property
     def encoded_storage_key(self) -> bytes:
@@ -26,7 +31,7 @@ class Settings(BaseSettings):
 
     @property
     def storage_dir(self) -> str:
-        subdir = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "api")
+        subdir = self.ddiffusion_storage_directory
         os.makedirs(subdir, exist_ok=True)
         return subdir
 

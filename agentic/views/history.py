@@ -30,18 +30,18 @@ def _show_deps_state(deps: Deps):
 
 
 def _get_media_gallery_items(deps: Deps):
-    """Extract local file paths for media gallery display"""
+    """Extract URLs for media gallery display"""
     media_paths = []
 
-    # Get images with local_file_path
+    # Get images with output
     for img in deps.images:
-        if hasattr(img, "local_file_path") and img.local_file_path:
-            media_paths.append(img.local_file_path)
+        if hasattr(img, "output") and img.output:
+            media_paths.extend(img.output)
 
-    # Get videos with local_file_path
+    # Get videos with output
     for vid in deps.videos:
-        if hasattr(vid, "local_file_path") and vid.local_file_path:
-            media_paths.append(vid.local_file_path)
+        if hasattr(vid, "output") and vid.output:
+            media_paths.extend(vid.output)
 
     return media_paths
 

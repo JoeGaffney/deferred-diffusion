@@ -10,6 +10,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - DDIFFUSION_ADMIN_KEY=${DDIFFUSION_ADMIN_KEY}
+      - DDIFFUSION_STORAGE_ADDRESS=${DDIFFUSION_STORAGE_ADDRESS:-http://127.0.0.1:5000}
     # volumes:
     # - ${OUTPUTS_PATH:-Y:/OUTPUTS}:/tmp/deferred-diffusion # Optional: Uncomment and update path to persist outputs
 

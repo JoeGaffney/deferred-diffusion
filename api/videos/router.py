@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity, TaskStatus
@@ -44,7 +44,7 @@ def models():
 
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
-def get(id: UUID, identity: Identity = Depends(verify_token)):
+def get(id: UUID):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
@@ -69,7 +69,7 @@ def get(id: UUID, identity: Identity = Depends(verify_token)):
         response.logs = result_data.logs
 
         # Lazy Cache to Disk and get Signed URL
-        download_url = promote_result_to_storage(id, result_data.base64_data, "mp4", base_url=identity.base_url)
+        download_url = promote_result_to_storage(id, result_data.base64_data, "mp4")
         response.output = [download_url]
 
     elif result.failed():
