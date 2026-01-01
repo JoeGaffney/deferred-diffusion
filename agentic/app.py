@@ -8,19 +8,14 @@ from gradio.processing_utils import PUBLIC_HOSTNAME_WHITELIST
 from pydantic import BaseModel
 from pydantic_ai import ToolCallPart, ToolReturnPart
 
-# allow localhost in gradio images and videos
-PUBLIC_HOSTNAME_WHITELIST.append("127.0.0.1")
-PUBLIC_HOSTNAME_WHITELIST.append("localhost")
-
 from agents.chat_agent import chat_agent
 from agents.fetch_agent import fetch_agent
 from common.logger import logger
 from common.schemas import ToolCallCoupling
-from common.state import Deps
 from views.history import create_history_component
 
 
-def get_media_content(content_dict: dict) -> gr.components.Component | None:
+def get_media_content(content_dict: dict) -> gr.components.Component | str | None:
     """
     Checks for media URLs in the content_dict and appends appropriate media messages to the chatbot.
     Supports PNG images and MP4 videos.
@@ -38,10 +33,18 @@ def get_media_content(content_dict: dict) -> gr.components.Component | None:
     if urls and isinstance(urls, list) and len(urls) > 0:
         url = urls[0]
         url_str = str(url).lower()
+        logger.info(f"Media URL detected: {url_str}")
+
         if url_str.endswith(".png") or ".png?" in url_str:
-            return gr.Image(value=url, height="33%", width="33%")
+            return f"![Generated Image]({url})"
         if url_str.endswith(".mp4") or ".mp4?" in url_str:
-            return gr.Video(value=url, height="33%", width="33%")
+            return f'<video width="100%" controls><source src="{url}" type="video/mp4"></video>'
+
+        # NOTE issue with localhost URLs in Gradio media components
+        # if url_str.endswith(".png") or ".png?" in url_str:
+        #     return gr.Image(value=url, height="33%", width="33%")
+        # if url_str.endswith(".mp4") or ".mp4?" in url_str:
+        #     return gr.Video(value=url, height="33%", width="33%")
     return None
 
 
@@ -52,26 +55,26 @@ def get_content_dict_from_call(call: ToolReturnPart) -> dict:
         return call.content if isinstance(call.content, dict) else {}
 
 
-async def run_agent_with_feedback(prompt: str, chatbot: list[gr.ChatMessage], past_messages: list, deps: Deps):
+async def run_agent_with_feedback(prompt: str, chatbot: list[gr.ChatMessage], past_messages: list):
     chatbot.append(gr.ChatMessage(role="user", content=prompt))
     chatbot.append(gr.ChatMessage(role="assistant", content="🤔 Processing..."))
-    yield gr.Textbox(interactive=False, value=""), chatbot, gr.skip(), gr.skip()
+    yield gr.Textbox(interactive=False, value=""), chatbot, gr.skip()
 
     result = None
     try:
         async with chat_agent.run_mcp_servers():
-            result = await chat_agent.run(prompt, deps=deps, message_history=past_messages)
+            result = await chat_agent.run(prompt, message_history=past_messages)
     except Exception as e:
         chatbot.pop()  # Remove "thinking" message
         logger.error(f"Error: {e}")
         chatbot.append(gr.ChatMessage(role="assistant", content=f"Error: {str(e)}"))
-        yield gr.Textbox(interactive=True), chatbot, gr.skip(), gr.skip()
+        yield gr.Textbox(interactive=True), chatbot, gr.skip()
         return
 
     chatbot.pop()  # Remove "thinking" message
     if result is None:
         chatbot.append(gr.ChatMessage(role="assistant", content="Error: No response from agent"))
-        yield gr.Textbox(interactive=True), chatbot, gr.skip(), gr.skip()
+        yield gr.Textbox(interactive=True), chatbot, gr.skip()
         return
 
     tool_calls: dict[str, ToolCallCoupling] = {}  # Track calls by ID
@@ -117,33 +120,37 @@ async def run_agent_with_feedback(prompt: str, chatbot: list[gr.ChatMessage], pa
             if media_content:
                 chatbot.append(gr.ChatMessage(role="assistant", content=media_content))
 
-            deps.add_or_update_media(content_dict, coupling.tool_return.tool_name or "")
-
     # Finally, render the agent's final output message
     if result.output:
         chatbot.append(gr.ChatMessage(role="assistant", content=result.output))
 
-    yield gr.Textbox(interactive=True), chatbot, past_messages, deps.clone()
+    # Add this line to update the history
+    past_messages.extend(result.new_messages())
+
+    yield gr.Textbox(interactive=True), chatbot, past_messages
 
 
-async def check_completed_generations(chatbot: list[gr.ChatMessage], past_messages: list, deps: Deps):
+async def check_completed_generations(chatbot: list[gr.ChatMessage], past_messages: list):
     """Silently check for completed generations and add media to chat"""
-    prompt = "fetch any incomplete generations that are in PENDING or STARTED state"
-    logger.info(f"Checking for completed generations... {deps.images}, {deps.videos}")
-    if not deps.get_pending_images_ids() and not deps.get_pending_videos_ids():
-        return gr.skip(), gr.skip(), gr.skip()
+    prompt = "fetch any incomplete generations"
+
+    # We don't have deps to check if there are pending items, so we rely on the agent to check history.
+    # But we can optimize: if history is empty, skip.
+    if not past_messages:
+        return gr.skip(), gr.skip()
 
     has_updates = False
     result = None
     try:
         async with fetch_agent.run_mcp_servers():
-            result = await fetch_agent.run(prompt, deps=deps, message_history=past_messages)
+            # Pass past_messages as deps so the tool can inspect them
+            result = await fetch_agent.run(prompt, deps=past_messages)
 
     except Exception as e:
         logger.error(f"Error during fetching completed generations: {e}")
 
     if result is None:
-        return gr.skip(), gr.skip(), gr.skip()
+        return gr.skip(), gr.skip()
 
     for message in result.new_messages():
         for call in message.parts:
@@ -154,26 +161,26 @@ async def check_completed_generations(chatbot: list[gr.ChatMessage], past_messag
                 media_content = get_media_content(content_dict)
                 if media_content:
                     chatbot.append(gr.ChatMessage(role="assistant", content=media_content))
-                deps.add_or_update_media(content_dict, call.tool_name or "")
-                has_updates = True
+                    has_updates = True
 
     if has_updates:
         # Update past_messages but don't show the tool calls in chat
+        # We append the fetch agent's interactions to the history so it knows it checked them.
         past_messages.extend(result.new_messages())
         if result.output:
             chatbot.append(gr.ChatMessage(role="assistant", content=result.output))
 
-        return chatbot, past_messages, deps.clone()
+        return chatbot, past_messages
 
     # to avoid overwriting the UI if no updates
-    return gr.skip(), gr.skip(), gr.skip()
+    return gr.skip(), gr.skip()
 
 
-async def handle_retry(chatbot, past_messages: list, deps: Deps, retry_data: gr.RetryData):
+async def handle_retry(chatbot, past_messages: list, retry_data: gr.RetryData):
     new_history = chatbot[: retry_data.index]
     previous_prompt = chatbot[retry_data.index]["content"]
     past_messages = past_messages[: retry_data.index]
-    async for update in run_agent_with_feedback(previous_prompt, new_history, past_messages, deps):
+    async for update in run_agent_with_feedback(previous_prompt, new_history, past_messages):
         yield update
 
 
@@ -189,7 +196,6 @@ def select_data(message: gr.SelectData) -> str:
 
 with gr.Blocks(fill_height=True) as demo:
     past_messages = gr.State([], time_to_live=None)
-    deps = gr.State(Deps(), time_to_live=None)
 
     with gr.Column(scale=10):
         chatbot = gr.Chatbot(
@@ -209,23 +215,23 @@ with gr.Blocks(fill_height=True) as demo:
             submit_btn=True,
         )
         # Create history component (includes button and modal with events)
-        create_history_component(past_messages, deps)
+        create_history_component(past_messages)
 
     generation = prompt.submit(
         run_agent_with_feedback,
-        inputs=[prompt, chatbot, past_messages, deps],
-        outputs=[prompt, chatbot, past_messages, deps],
+        inputs=[prompt, chatbot, past_messages],
+        outputs=[prompt, chatbot, past_messages],
     )
     chatbot.example_select(select_data, None, [prompt])
-    chatbot.retry(handle_retry, [chatbot, past_messages, deps], [prompt, chatbot, past_messages, deps])
+    chatbot.retry(handle_retry, [chatbot, past_messages], [prompt, chatbot, past_messages])
     chatbot.undo(undo, [chatbot, past_messages], [prompt, chatbot, past_messages])
 
     # Add timer for automatic checking
     timer = gr.Timer(30)  # 30 seconds
     timer.tick(
         check_completed_generations,
-        inputs=[chatbot, past_messages, deps],
-        outputs=[chatbot, past_messages, deps],
+        inputs=[chatbot, past_messages],
+        outputs=[chatbot, past_messages],
     )
 
 if __name__ == "__main__":

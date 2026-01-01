@@ -17,7 +17,6 @@ from generated.api_client.models.video_response import VideoResponse
 from generated.api_client.types import UNSET
 from utils import (
     COMPLETED_STATUS,
-    base64_to_file,
     download_file,
     get_model_name,
     get_node_value,
