@@ -1,5 +1,6 @@
 import copy
 import tempfile
+from pathlib import Path
 from typing import Literal
 
 import requests
@@ -7,7 +8,7 @@ import torch
 from diffusers.utils import export_to_video
 
 from common.config import settings
-from common.logger import logger, task_log
+from common.logger import get_task_id, logger, task_log
 from utils.utils import (
     ensure_divisible,
     image_crop,
@@ -19,8 +20,9 @@ from videos.schemas import VideoRequest
 
 
 class VideoContext:
-    def __init__(self, data: VideoRequest):
+    def __init__(self, data: VideoRequest, task_id: str = get_task_id()):
         self.model = data.model
+        self.task_id = task_id
         self.data = data
         self.width = copy.copy(data.width)
         self.height = copy.copy(data.height)
@@ -94,28 +96,35 @@ class VideoContext:
     def duration_in_seconds(self, fps=24) -> int:
         return max(1, int(self.data.num_frames / fps))
 
-    def tmp_video_path(self) -> str:
-        with tempfile.NamedTemporaryFile(dir=settings.storage_dir, suffix=".mp4", delete=False) as tmp:
-            path = tmp.name
-        return path
+    def save_output(self, video, index: int = 0, fps=24) -> Path:
+        # deterministic relative path
+        rel_path = Path(self.model) / f"{self.task_id}-{index}.mp4"
+        abs_path = settings.storage_dir / rel_path
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            export_to_video(video, output_video_path=str(abs_path), fps=fps, quality=9)
+            logger.info(f"Video saved at {abs_path}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to save video at {abs_path}: {e}")
 
-    def save_video(self, video, fps=24):
-        path = self.tmp_video_path()
-        path = export_to_video(video, output_video_path=path, fps=fps, quality=9)
-        logger.info(f"Video saved at {path}")
-        return path
+        return abs_path
 
-    def save_video_url(self, url):
-        path = self.tmp_video_path()
+    def save_output_url(self, url, index: int = 0) -> Path:
+        # deterministic relative path
+        rel_path = Path(self.model) / f"{self.task_id}-{index}.mp4"
+        abs_path = settings.storage_dir / rel_path
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
 
         response = requests.get(url, stream=True)
         response.raise_for_status()
 
         try:
-            with open(path, "wb") as file:
+            with open(abs_path, "wb") as file:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         file.write(chunk)
+            logger.info(f"Video saved at {abs_path}")
         except Exception as e:
             raise Exception(f"Failed to download or write file") from e
-        return path
+
+        return abs_path

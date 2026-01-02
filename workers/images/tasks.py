@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import List
 
-from PIL import Image
-
 from common.config import settings
 from common.logger import get_task_logs
 from images.context import ImageContext

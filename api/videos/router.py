@@ -4,8 +4,8 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
-from common.schemas import DeleteResponse, Identity, TaskStatus
-from common.storage import promote_result_to_storage
+from common.schemas import DeleteResponse, Identity
+from common.storage import signed_url_for_file
 from utils.utils import cancel_task
 from videos.schemas import (
     MODEL_META,
@@ -59,19 +59,11 @@ def get(id: UUID):
 
     # Add appropriate fields based on status
     if result.successful():
-        try:
-            result_data = VideoWorkerResponse.model_validate(result.result)
-        except Exception as e:
-            response.status = TaskStatus.FAILURE
-            response.error_message = f"Error parsing result: {str(e)}"
-            return response
-
+        result_data = VideoWorkerResponse.model_validate(result.result)
         response.logs = result_data.logs
 
-        # Lazy Cache to Disk and get Signed URL
-        download_url = promote_result_to_storage(id, result_data.base64_data, "mp4")
-        response.output = [download_url]
-
+        # Convert all file paths to signed URLs
+        response.output = [signed_url_for_file(file_id) for file_id in result_data.output]
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"
 

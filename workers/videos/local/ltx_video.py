@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import torch
 from diffusers.pipelines.ltx.pipeline_ltx_condition import (
     LTXConditionPipeline,
@@ -39,7 +42,7 @@ def get_pipeline(model_id):
     return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
 
-def image_to_video(context: VideoContext):
+def image_to_video(context: VideoContext) -> List[Path]:
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
     num_frames = context.data.num_frames
 
@@ -58,7 +61,7 @@ def image_to_video(context: VideoContext):
         )
         conditions.append(video_condition)
 
-    video = pipe.__call__(
+    output = pipe.__call__(
         prompt=context.data.cleaned_prompt,
         negative_prompt=_negative_prompt,
         width=context.width,
@@ -71,14 +74,13 @@ def image_to_video(context: VideoContext):
         callback_on_step_end=task_log_callback(10),  # type: ignore
     ).frames[0]
 
-    processed_path = context.save_video(video)
-    return processed_path
+    return [context.save_output(output, fps=24)]
 
 
-def text_to_video(context: VideoContext):
+def text_to_video(context: VideoContext) -> List[Path]:
     pipe = get_pipeline("Lightricks/LTX-Video-0.9.7-distilled")
 
-    video = pipe.__call__(
+    output = pipe.__call__(
         prompt=context.data.cleaned_prompt,
         negative_prompt=_negative_prompt,
         width=context.width,
@@ -90,11 +92,10 @@ def text_to_video(context: VideoContext):
         callback_on_step_end=task_log_callback(10),  # type: ignore
     ).frames[0]
 
-    processed_path = context.save_video(video)
-    return processed_path
+    return [context.save_output(output, fps=24)]
 
 
-def main(context: VideoContext):
+def main(context: VideoContext) -> List[Path]:
     context.rescale_to_max_megapixels(1.0)  # limit to 1 megapixel to avoid OOM
     context.ensure_divisible(32)
     if context.data.image:

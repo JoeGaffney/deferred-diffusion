@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import PIL.Image
 import torch
 from diffusers import AutoencoderKLWan, WanVACEPipeline, WanVACETransformer3DModel
@@ -42,7 +45,7 @@ def get_pipeline(model_id, torch_dtype=torch.bfloat16) -> WanVACEPipeline:
     return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
 
-def video_to_video(context: VideoContext):
+def video_to_video(context: VideoContext) -> List[Path]:
     if context.video_frames is None:
         raise ValueError("No video frames provided for video-to-video generation")
 
@@ -94,5 +97,4 @@ def video_to_video(context: VideoContext):
 
     # Extract frames from pipeline output
     video_frames_output = getattr(output, "frames", [output])[0]
-    processed_path = context.save_video(video_frames_output, fps=16)
-    return processed_path
+    return [context.save_output(video_frames_output, fps=16)]

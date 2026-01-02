@@ -1,6 +1,6 @@
 celery==5.5.3
 fastapi==0.121.2
-fastmcp==2.13.0.2
+fastmcp==2.14.2
 mypy==1.18.2
 openapi-python-client==0.26.2 # still supports python 3.9 typing
 pydantic==2.12.4

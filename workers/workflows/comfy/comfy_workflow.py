@@ -1,5 +1,6 @@
 import copy
 import uuid
+from pathlib import Path
 from typing import List
 
 from common.logger import log_pretty, logger, task_log
@@ -7,7 +8,7 @@ from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from workflows.comfy.comfy_client import ComfyClient
 from workflows.context import WorkflowContext
-from workflows.schemas import WorkflowOutput, WorkflowRequest
+from workflows.schemas import WorkflowRequest
 
 
 def patch_workflow(workflow_request: WorkflowRequest, comfy: ComfyClient) -> dict:
@@ -48,16 +49,13 @@ def patch_workflow(workflow_request: WorkflowRequest, comfy: ComfyClient) -> dic
     return remapped
 
 
-def main(context: WorkflowContext) -> List[WorkflowOutput]:
+def main(context: WorkflowContext) -> List[Path]:
     """Execute a ComfyUI workflow with optional patches and return the generated image."""
     # clear any cached pipelines or GPU memory before starting a new workflow
     clear_global_pipeline_cache()
     free_gpu_memory()
 
     with ComfyClient() as comfy:
-        if not comfy.is_running():
-            raise RuntimeError("ComfyUI is not running")
-
         comfy.free_memory(unload_models=True, free_memory=True)
         workflow = patch_workflow(context.data, comfy)
         log_pretty("Remapped ComfyUI workflow", workflow)
@@ -70,7 +68,8 @@ def main(context: WorkflowContext) -> List[WorkflowOutput]:
         comfy.track_progress(prompt_id)
         outputs = comfy.get_completed_history(prompt_id)
 
-        result: List[WorkflowOutput] = []
+        # gather potential output files
+        output_files: List[dict] = []
         for node_id, node_output in outputs.items():
             for output_name, output_data in node_output.items():
                 if output_data and isinstance(output_data, list) and len(output_data) > 0:
@@ -79,29 +78,20 @@ def main(context: WorkflowContext) -> List[WorkflowOutput]:
                     if isinstance(first_output, dict) and "filename" in first_output and "type" in first_output:
                         if first_output["type"] == "output":
                             task_log(f"{output_name} - {first_output}")
-                            filename = first_output.get("filename", "")
-                            subfolder = first_output.get("subfolder", "")
-
-                            if filename.endswith(".png"):
-                                result.append(
-                                    WorkflowOutput(
-                                        data_type="image",
-                                        base64_data=comfy.download_file(filename, subfolder),
-                                        filename=filename,
-                                    )
-                                )
-                            elif filename.endswith(".mp4"):
-                                result.append(
-                                    WorkflowOutput(
-                                        data_type="video",
-                                        base64_data=comfy.download_file(filename, subfolder),
-                                        filename=filename,
-                                    )
-                                )
+                            output_files.append(first_output)
                     else:
                         logger.warning(f"Skipping non-file output from node {node_id}: {first_output}")
 
-        if not result:
-            raise ValueError("ComfyUI workflow did not produce any valid image or video outputs")
+        # download and save valid output files
+        result: List[Path] = []
+        for current in output_files:
+            filename = str(current.get("filename", ""))
+            subfolder = str(current.get("subfolder", ""))
+            if context.is_extension_valid(filename):
+                base64_data = comfy.download_file(filename, subfolder)
+                result.append(context.save_output(base64_data, filename))
+
+        if not result or len(result) == 0:
+            raise ValueError("ComfyUI workflow did not produce any valid outputs")
 
         return result

@@ -33,19 +33,6 @@ class ComfyClient:
             )
         return self.http_client
 
-    def is_running(self, timeout: float = 5.0, attempts: int = 10) -> bool:
-        """Check if ComfyUI is up by making an HTTP request with a timeout."""
-        for attempt in range(attempts):
-            try:
-                client = self._get_http_client()
-                response = client.get("/", timeout=timeout)
-                return response.status_code == 200
-            except Exception:
-                logger.warning(f"ComfyUI not responding, attempt {attempt + 1} of {attempts}")
-                if attempt < attempts - 1:
-                    time.sleep(timeout)
-        return False
-
     def queue_prompt(self, workflow: dict[str, Any]) -> dict[str, Any]:
         """Send a workflow to ComfyUI for processing."""
         client = self._get_http_client()
@@ -117,10 +104,6 @@ class ComfyClient:
 
     def free_memory(self, unload_models: bool = True, free_memory: bool = False) -> None:
         """Trigger ComfyUI to release VRAM and/or unload models."""
-        if not self.is_running():
-            logger.warning("ComfyUI is not running — skipping resource cleanup.")
-            return
-
         payload = {"unload_models": unload_models, "free_memory": free_memory}
 
         try:

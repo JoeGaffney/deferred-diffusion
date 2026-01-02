@@ -56,28 +56,3 @@ def signed_url_for_file(file_id: str) -> HttpUrl:
         raise FileNotFoundError(f"File not found for signed URL generation: {full_path}")
 
     return generate_signed_url(file_id, method="GET", expires_in=settings.signed_url_expiry_seconds)
-
-
-def promote_result_to_storage(
-    task_id: UUID,
-    base64_data: bytes,  # The raw binary data, not base64-encoded string, pydantic decodes allready
-    extension: str,
-    index: int = 0,
-) -> HttpUrl:
-    """
-    Lazy caches a base64 result from Redis to disk and returns a signed download URL.
-    """
-
-    file_id = f"{task_id}_{index}.{extension}"
-    file_path = os.path.join(settings.storage_dir, file_id)
-
-    if not os.path.exists(file_path):
-        os.makedirs(settings.storage_dir, exist_ok=True)
-        try:
-            with open(file_path, "wb") as f:
-                f.write(base64_data)
-            logger.info(f"Promoted result {task_id} to storage: {file_path}")
-        except Exception as e:
-            raise ValueError(f"Failed to promote result to storage: {e}")
-
-    return generate_signed_url(file_id, method="GET", expires_in=settings.signed_url_expiry_seconds)

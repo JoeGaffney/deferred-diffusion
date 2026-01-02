@@ -67,6 +67,7 @@ def get(id: UUID):
     if result.successful():
         result_data = ImageWorkerResponse.model_validate(result.result)
         response.logs = result_data.logs
+
         # Convert all file paths to signed URLs
         response.output = [signed_url_for_file(file_id) for file_id in result_data.output]
     elif result.failed():

@@ -1,4 +1,6 @@
-from common.logger import logger
+from pathlib import Path
+from typing import List
+
 from common.replicate_helpers import process_replicate_video_output, replicate_run
 from utils.utils import convert_pil_to_bytes
 from videos.context import VideoContext
@@ -19,7 +21,7 @@ def get_resolution(context: VideoContext) -> str:
     return "720p"
 
 
-def main(context: VideoContext):
+def main(context: VideoContext) -> List[Path]:
     model = "bytedance/seedance-1-pro"
     payload = {
         "prompt": context.data.cleaned_prompt,
@@ -38,4 +40,4 @@ def main(context: VideoContext):
     output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)
 
-    return context.save_video_url(video_url)
+    return [context.save_output_url(video_url)]

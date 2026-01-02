@@ -3,13 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
-from common.schemas import (
-    Base64Image,
-    Base64ResponseBytes,
-    Base64Video,
-    Provider,
-    TaskStatus,
-)
+from common.schemas import Base64Image, Base64Video, Provider, TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -231,8 +225,8 @@ class VideoRequest(BaseModel):
 
 
 class VideoWorkerResponse(BaseModel):
-    logs: List[str] = []
-    base64_data: Base64ResponseBytes
+    output: List[str]
+    logs: List[str]
 
 
 class VideoResponse(BaseModel):

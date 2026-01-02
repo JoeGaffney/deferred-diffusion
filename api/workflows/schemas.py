@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, HttpUrl, model_validator
 
-from common.schemas import Base64ResponseBytes, TaskStatus
+from common.schemas import TaskStatus
 
 ClassTypes: TypeAlias = Literal[
     "PrimitiveInt",
@@ -97,15 +97,9 @@ class WorkflowRequest(BaseModel):
     )
 
 
-class WorkflowOutput(BaseModel):
-    data_type: Literal["image", "video"]
-    filename: str
-    base64_data: Base64ResponseBytes
-
-
 class WorkflowWorkerResponse(BaseModel):
-    logs: List[str] = []
-    outputs: List[WorkflowOutput]
+    output: List[str]
+    logs: List[str]
 
 
 class WorkflowResponse(BaseModel):

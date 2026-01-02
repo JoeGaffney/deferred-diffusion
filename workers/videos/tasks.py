@@ -1,15 +1,17 @@
+from pathlib import Path
+from typing import List
+
+from common.config import settings
 from common.logger import get_task_logs
-from utils.utils import mp4_to_base64
 from videos.context import VideoContext
 from videos.schemas import ModelName, VideoRequest, VideoWorkerResponse
 from worker import celery_app
 
 
-def process_result(context, result):
-    """Process the result of video generation."""
-    if result:
-        return VideoWorkerResponse(base64_data=mp4_to_base64(result), logs=get_task_logs()).model_dump()
-    raise ValueError("Video generation failed")
+def process_result(context: VideoContext, result: List[Path]):
+    storage_dir = Path(settings.storage_dir)
+    output = [str(path.relative_to(storage_dir)) for path in result]
+    return VideoWorkerResponse(output=output, logs=get_task_logs()).model_dump()
 
 
 # Helper to validate request and build context to avoid duplication across tasks

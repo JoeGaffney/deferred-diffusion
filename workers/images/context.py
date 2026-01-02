@@ -1,6 +1,4 @@
 import copy
-import tempfile
-import uuid
 from pathlib import Path
 from typing import Literal
 
@@ -62,15 +60,6 @@ class ImageContext:
 
         return result
 
-    def save_image(self, image):
-        # Create a temporary file with .png extension
-        with tempfile.NamedTemporaryFile(dir=settings.storage_dir, suffix=".png", delete=False) as tmp_file:
-            image.save(tmp_file, format="PNG")
-            path = tmp_file.name
-            logger.info(f"Image saved at {path}")
-
-        return path
-
     def save_output(self, image: Image.Image, index: int = 0) -> Path:
         # deterministic relative path
         rel_path = Path(self.model) / f"{self.task_id}-{index}.png"
@@ -82,4 +71,4 @@ class ImageContext:
         except Exception as e:
             raise RuntimeError(f"Failed to save image at {abs_path}: {e}")
 
-        return abs_path  # return abs_path for now
+        return abs_path

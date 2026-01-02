@@ -1,10 +1,9 @@
-from pathlib import Path, PosixPath
 from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
-from common.schemas import Base64Image, Base64ResponseBytes, Provider, TaskStatus
+from common.schemas import Base64Image, Provider, TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -287,11 +286,8 @@ class ImageRequest(BaseModel):
 
 
 class ImageWorkerResponse(BaseModel):
-    logs: List[str] = []
-    # base64_data: Base64ResponseBytes  # legacy, now removed
-    output: List[
-        str
-    ]  # Cant use PATH # List of relative storage keys for generated outputs [{task}/{task_id}-{index}.{ext}]
+    output: List[str]
+    logs: List[str]
 
 
 class ImageResponse(BaseModel):
