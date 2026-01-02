@@ -68,10 +68,11 @@ def health():
 
 # Combine mcp and fastapi
 if settings.enable_mcp:
+    # NOTE possibly there is a way to not spin up two servers, but this is the easiest way for now
     mcp = FastMCP.from_fastapi(
         app=fastapi_app,
         name="MCP",
-        httpx_client_kwargs={
+        httpx_client_kwargs={  # NOTE required hint for authenticated MCP calls
             "headers": {
                 "Authorization": "Bearer secret-token",
             }

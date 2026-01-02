@@ -12,7 +12,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 @router.get("/{file_id:path}", operation_id="files_get")
 async def get(file_id: str, expires: int, sig: str):
     # Verify the signature against the full path
-    if not verify_signed_url(f"/api/files/{file_id}", "GET", expires, sig):
+    if not verify_signed_url(file_id, "GET", expires, sig):
         raise HTTPException(status_code=403, detail="Invalid or expired signature")
 
     storage_root = os.path.abspath(settings.storage_dir)
@@ -24,5 +24,8 @@ async def get(file_id: str, expires: int, sig: str):
 
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail=f"File not found: {full_path}")
+
+    if not os.path.isfile(full_path):
+        raise HTTPException(status_code=400, detail=f"Not a file: {full_path}")
 
     return FileResponse(full_path)
