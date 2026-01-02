@@ -4,7 +4,6 @@ import json
 
 import gradio as gr
 from gradio.components.chatbot import MetadataDict
-from gradio.processing_utils import PUBLIC_HOSTNAME_WHITELIST
 from pydantic import BaseModel
 from pydantic_ai import ToolCallPart, ToolReturnPart
 

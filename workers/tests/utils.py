@@ -2,12 +2,21 @@ import base64
 import json
 import os
 import tempfile
-from typing import Optional
+from pathlib import Path
+from typing import List, Optional
 
 from PIL import Image
 
 from common.config import settings
 from utils.utils import ensure_path_exists
+
+
+def asset_outputs_exists(outputs: List[Path]):
+    """Check if all output asset files exist."""
+    assert len(outputs) > 0, "No output files to check."
+    for output in outputs:
+        assert output.exists(), "Output file path does not exist."
+        assert os.path.getsize(output) > 100, f"Output file {output} is empty."
 
 
 def setup_output_file(model_id, mode, suffix="", extension="png"):

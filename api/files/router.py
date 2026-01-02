@@ -15,7 +15,13 @@ async def get(file_id: str, expires: int, sig: str):
     if not verify_signed_url(f"/api/files/{file_id}", "GET", expires, sig):
         raise HTTPException(status_code=403, detail="Invalid or expired signature")
 
-    full_path = os.path.abspath(os.path.join(settings.storage_dir, file_id))
+    storage_root = os.path.abspath(settings.storage_dir)
+    full_path = os.path.abspath(os.path.join(storage_root, file_id))
+
+    # Ensure the resolved path is within the storage root to prevent path traversal
+    if os.path.commonpath([storage_root, full_path]) != storage_root:
+        raise HTTPException(status_code=403, detail="Invalid file path")
+
     if not os.path.exists(full_path):
         raise HTTPException(status_code=404, detail=f"File not found: {full_path}")
 

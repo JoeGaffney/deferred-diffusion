@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 import tempfile
@@ -25,9 +26,9 @@ class Settings(BaseSettings):
 
     @property
     def encoded_storage_key(self) -> bytes:
-        # we use the admin key as part of the storage signing key
-        extra = f"{self.ddiffusion_admin_key}:internal-storage-signing-v1"
-        return extra.encode()
+        # Derive a unique signing key from the admin key to avoid using it directly.
+        # This satisfies security recommendations while still being based on the admin key.
+        return hashlib.sha256(f"{self.ddiffusion_admin_key}:internal-storage-signing-v1".encode()).digest()
 
     @property
     def storage_dir(self) -> str:
