@@ -7,19 +7,25 @@ services:
     stdin_open: true
     ports:
       - "5000:5000"
+    volumes:
+      - storage:/STORAGE
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
       - DDIFFUSION_ADMIN_KEY=${DDIFFUSION_ADMIN_KEY}
+      - DDIFFUSION_STORAGE_ADDRESS=${DDIFFUSION_STORAGE_ADDRESS:-http://127.0.0.1:5000}
+      - FASTMCP_EXPERIMENTAL_ENABLE_NEW_OPENAPI_PARSER=true
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5000/health || exit 1"]
+      start_period: 3s
 
-  # Redis service as message broker
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
 
-  # Celery worker service
   cpu-workers:
     command: celery -A worker worker --concurrency=4 --loglevel=info -Q cpu
     build:
@@ -30,6 +36,7 @@ services:
     stdin_open: true
     volumes:
       - hf_cache:/WORKSPACE
+      - storage:/STORAGE
     environment:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -44,9 +51,10 @@ services:
       - redis
       - api
     deploy:
-      replicas: 1 # Number of container
+      replicas: 1
 
-# Volume definitions go at the root level, not nested inside the service
 volumes:
   hf_cache:
     name: deferred-diffusion_hf_cache
+  storage:
+    name: deferred-diffusion_storage

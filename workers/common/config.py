@@ -1,6 +1,5 @@
 import logging
 import os
-import tempfile
 from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,7 +16,7 @@ class Settings(BaseSettings):
     replicate_api_token: Optional[str] = None
     hf_home: str = ""
     comfy_api_url: Optional[str] = None
-    ddiffusion_storage_directory: str = os.path.join(tempfile.gettempdir(), "deferred-diffusion", "storage")
+    ddiffusion_storage_directory: str = "/STORAGE"
 
     @property
     def storage_dir(self) -> str:
