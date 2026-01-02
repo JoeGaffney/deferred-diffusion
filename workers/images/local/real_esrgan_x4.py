@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+from typing import List
 
 from RealESRGAN import RealESRGAN
 
@@ -8,7 +10,7 @@ from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
 
 
-def main(context: ImageContext):
+def main(context: ImageContext) -> List[Path]:
     if context.color_image is None:
         raise ValueError("No input image provided")
 
@@ -26,4 +28,5 @@ def main(context: ImageContext):
     model.model.to("cpu")
     del model.model
     del model
-    return result
+    # Save the upscaled image and return as a list of Path
+    return [context.save_output(result, index=0)]

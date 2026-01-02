@@ -1,4 +1,6 @@
 import random
+from pathlib import Path
+from typing import List
 
 import torch
 from PIL import Image, ImageChops
@@ -42,7 +44,7 @@ def overlay_masks(image, masks):
     return image
 
 
-def main(context: ImageContext):
+def main(context: ImageContext) -> List[Path]:
     if Sam3Model is None or Sam3Processor is None:
         raise ImportError("SAM-3 model requires a specific version of transformers with sam3 support. ")
 
@@ -136,4 +138,5 @@ def main(context: ImageContext):
         )
 
     del model, processor
-    return combined_clown_mask
+    # Save the mask image and return as a list of Path
+    return [context.save_output(combined_clown_mask, index=0)]

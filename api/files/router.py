@@ -9,15 +9,14 @@ from common.storage import verify_signed_url
 router = APIRouter(prefix="/files", tags=["files"])
 
 
-@router.get("/{file_id}", operation_id="files_get")
+@router.get("/{file_id:path}", operation_id="files_get")
 async def get(file_id: str, expires: int, sig: str):
     # Verify the signature against the full path
     if not verify_signed_url(f"/api/files/{file_id}", "GET", expires, sig):
         raise HTTPException(status_code=403, detail="Invalid or expired signature")
 
-    file_path = os.path.join(settings.storage_dir, file_id)
-    if not os.path.exists(file_path):
-        print(file_path)
-        raise HTTPException(status_code=402, detail=f"File not found {file_path}")
+    full_path = os.path.abspath(os.path.join(settings.storage_dir, file_id))
+    if not os.path.exists(full_path):
+        raise HTTPException(status_code=404, detail=f"File not found: {full_path}")
 
-    return FileResponse(file_path)
+    return FileResponse(full_path)

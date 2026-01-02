@@ -1,4 +1,5 @@
-from typing import Literal
+from pathlib import Path
+from typing import List, Literal
 
 from PIL import Image
 
@@ -18,15 +19,16 @@ def get_size(
     return "1:1"
 
 
-def text_to_image_call(context: ImageContext) -> Image.Image:
+def text_to_image_call(context: ImageContext) -> List[Path]:
     payload = {"prompt": context.data.cleaned_prompt, "output_format": "png", "aspect_ratio": get_size(context)}
 
     output = replicate_run("google/gemini-2.5-flash-image", payload)
 
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]
 
 
-def image_to_image_call(context: ImageContext) -> Image.Image:
+def image_to_image_call(context: ImageContext) -> List[Path]:
     # gather all possible reference images we piggy back on the ipdapter images
     reference_images = []
     if context.color_image:
@@ -45,10 +47,11 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
     }
     output = replicate_run("google/nano-banana", payload)
 
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     if context.color_image or context.get_reference_images() != []:
         return image_to_image_call(context)
 

@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import torch
 from diffusers import Flux2Pipeline, Flux2Transformer2DModel
 from PIL import Image
@@ -62,9 +65,8 @@ def text_to_image_call(context: ImageContext):
         generator=context.generator,
         callback_on_step_end=task_log_callback(20),  # type: ignore
     ).images[0]
+    return [context.save_output(processed_image, index=0)]
 
-    return processed_image
 
-
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     return text_to_image_call(context)

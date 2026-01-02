@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import torch
 from diffusers import ZImagePipeline, ZImageTransformer2DModel
 from PIL import Image
@@ -41,7 +44,7 @@ def get_pipeline(model_id):
     return optimize_pipeline(pipe, offload=is_memory_exceeded(15))
 
 
-def text_to_image_call(context: ImageContext):
+def text_to_image_call(context: ImageContext) -> List[Path]:
     pipe = get_pipeline("Tongyi-MAI/Z-Image-Turbo")
 
     processed_image = pipe.__call__(
@@ -53,10 +56,9 @@ def text_to_image_call(context: ImageContext):
         generator=context.generator,
         callback_on_step_end=task_log_callback(9),  # type: ignore
     ).images[0]
+    return [context.save_output(processed_image, index=0)]
 
-    return processed_image
 
-
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     context.ensure_divisible(16)
     return text_to_image_call(context)

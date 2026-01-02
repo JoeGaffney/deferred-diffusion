@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import numpy as np
 from lang_sam import LangSAM
 from PIL import Image, ImageChops
@@ -7,7 +10,7 @@ from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
 
 
-def main(context: ImageContext):
+def main(context: ImageContext) -> List[Path]:
     if context.color_image is None:
         raise ValueError("No image provided")
 
@@ -64,4 +67,5 @@ def main(context: ImageContext):
             offset=0,
         )
 
-    return combined_clown_mask
+    # Save the mask image and return as a list of Path
+    return [context.save_output(combined_clown_mask, index=0)]

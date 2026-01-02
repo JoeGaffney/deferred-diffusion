@@ -1,17 +1,19 @@
+from pathlib import Path
+from typing import List
+
 from PIL import Image
 
+from common.config import settings
 from common.logger import get_task_logs
 from images.context import ImageContext
 from images.schemas import ImageRequest, ImageWorkerResponse, ModelName
-from utils.utils import pil_to_base64
 from worker import celery_app
 
 
-def process_result(context, result):
-    if isinstance(result, Image.Image):
-        context.save_image(result)
-        return ImageWorkerResponse(base64_data=pil_to_base64(result), logs=get_task_logs()).model_dump()
-    raise ValueError("Image generation failed")
+def process_result(context: ImageContext, result: List[Path]):
+    storage_dir = Path(settings.storage_dir)
+    output = [str(path.relative_to(storage_dir)) for path in result]
+    return ImageWorkerResponse(output=output, logs=get_task_logs()).model_dump()
 
 
 # Helper to validate request and build context to avoid duplication across tasks

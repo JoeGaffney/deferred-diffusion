@@ -1,18 +1,22 @@
 import copy
 import tempfile
+import uuid
+from pathlib import Path
 from typing import Literal
 
 import torch
+from PIL import Image
 
 from common.config import settings
-from common.logger import logger, task_log
+from common.logger import get_task_id, logger, task_log
 from images.schemas import ImageRequest
 from utils.utils import ensure_divisible, image_crop, image_resize, load_image_if_exists
 
 
 class ImageContext:
-    def __init__(self, data: ImageRequest):
+    def __init__(self, data: ImageRequest, task_id: str = get_task_id()):
         self.model = data.model
+        self.task_id = task_id
         self.data = data
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
         self.width = copy.copy(data.width)
@@ -66,3 +70,16 @@ class ImageContext:
             logger.info(f"Image saved at {path}")
 
         return path
+
+    def save_output(self, image: Image.Image, index: int = 0) -> Path:
+        # deterministic relative path
+        rel_path = Path(self.model) / f"{self.task_id}-{index}.png"
+        abs_path = settings.storage_dir / rel_path
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            image.save(abs_path, format="PNG")
+            logger.info(f"Image saved at {abs_path}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to save image at {abs_path}: {e}")
+
+        return abs_path  # return abs_path for now

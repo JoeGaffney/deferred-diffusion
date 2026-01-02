@@ -1,6 +1,7 @@
 import base64
 import io
-from typing import Literal
+from pathlib import Path
+from typing import List, Literal
 
 from openai import OpenAI
 from openai.types.images_response import ImagesResponse
@@ -41,7 +42,7 @@ def process_openai_image_output(output: ImagesResponse) -> Image.Image:
     return processed_image
 
 
-def text_to_image_call(context: ImageContext):
+def text_to_image_call(context: ImageContext) -> List[Path]:
     client = OpenAI()
     model = "gpt-image-1.5"
 
@@ -52,10 +53,11 @@ def text_to_image_call(context: ImageContext):
         size=get_size(context),
     )
 
-    return process_openai_image_output(result)
+    processed_image = process_openai_image_output(result)
+    return [context.save_output(processed_image, index=0)]
 
 
-def image_to_image_call(context: ImageContext):
+def image_to_image_call(context: ImageContext) -> List[Path]:
     client = OpenAI()
     model = "gpt-image-1.5"
 
@@ -79,10 +81,11 @@ def image_to_image_call(context: ImageContext):
         image=reference_images,
     )
 
-    return process_openai_image_output(result)
+    processed_image = process_openai_image_output(result)
+    return [context.save_output(processed_image, index=0)]
 
 
-def inpainting_call(context: ImageContext):
+def inpainting_call(context: ImageContext) -> List[Path]:
     client = OpenAI()
     model = "gpt-image-1.5"
 
@@ -99,19 +102,20 @@ def inpainting_call(context: ImageContext):
             model=model,
             quality=_quality,
             prompt=context.data.cleaned_prompt,
-            size=get_size(context),  # type: ignore
-            image=[convert_pil_to_bytes(context.color_image)],
+            size=get_size(context),
+            image=convert_pil_to_bytes(context.color_image),
             mask=convert_pil_to_bytes(converted_mask),
         )
     except Exception as e:
-        raise RuntimeError(f"Error calling OpenAI API: {e}")
+        raise ValueError(f"Error in OpenAI inpainting call: {e}")
 
-    return process_openai_image_output(result)
+    processed_image = process_openai_image_output(result)
+    return [context.save_output(processed_image, index=0)]
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     if context.color_image and context.mask_image:
         return inpainting_call(context)
-    elif context.color_image or context.get_reference_images() != []:
+    elif context.color_image:
         return image_to_image_call(context)
     return text_to_image_call(context)

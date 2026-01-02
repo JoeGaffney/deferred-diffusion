@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity, TaskStatus
-from common.storage import promote_result_to_storage
+from common.storage import promote_result_to_storage, signed_url_for_file
 from images.schemas import (
     MODEL_META,
     ImageCreateResponse,
@@ -74,7 +74,7 @@ def get(id: UUID):
             return response
 
         # Lazy Cache to Disk and get Signed URL
-        download_url = promote_result_to_storage(id, result_data.base64_data, "png")
+        download_url = signed_url_for_file(result_data.output[0])
         response.output = [download_url]
 
     elif result.failed():

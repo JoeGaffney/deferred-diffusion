@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import os
 import time
+from pathlib import Path
 from uuid import UUID
 
 from pydantic import HttpUrl
@@ -64,3 +65,15 @@ def promote_result_to_storage(
             raise ValueError(f"Failed to promote result to storage: {e}")
 
     return generate_signed_url(f"/api/files/{file_id}", method="GET", expires_in=settings.signed_url_expiry_seconds)
+
+
+def signed_url_for_file(file_path: str) -> HttpUrl:
+    """
+    Generates a signed URL for a given file ID.
+    """
+    full_path = Path(settings.storage_dir) / Path(file_path)
+    if full_path.exists() is False:
+        raise FileNotFoundError(f"File not found for signed URL generation: {full_path}")
+
+    print(f"Generating signed URL for file: {full_path}")
+    return generate_signed_url(f"/api/files/{file_path}", method="GET", expires_in=settings.signed_url_expiry_seconds)

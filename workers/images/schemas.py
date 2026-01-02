@@ -1,3 +1,4 @@
+from pathlib import Path, PosixPath
 from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
@@ -287,7 +288,10 @@ class ImageRequest(BaseModel):
 
 class ImageWorkerResponse(BaseModel):
     logs: List[str] = []
-    base64_data: Base64ResponseBytes
+    # base64_data: Base64ResponseBytes  # legacy, now removed
+    output: List[
+        str
+    ]  # Cant use PATH # List of relative storage keys for generated outputs [{task}/{task_id}-{index}.{ext}]
 
 
 class ImageResponse(BaseModel):

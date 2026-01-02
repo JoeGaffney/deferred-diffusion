@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 from PIL import Image, ImageOps
 
 from common.replicate_helpers import process_replicate_image_output, replicate_run
@@ -43,17 +46,18 @@ def get_aspect_ratio(context: ImageContext) -> str:
         return "1:1"
 
 
-def text_to_image_call(context: ImageContext) -> Image.Image:
+def text_to_image_call(context: ImageContext) -> List[Path]:
     payload = {
         "prompt": context.data.cleaned_prompt,
         "aspect_ratio": get_aspect_ratio(context),
     }
 
     output = replicate_run("runwayml/gen4-image", payload)
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]
 
 
-def image_to_image_call(context: ImageContext) -> Image.Image:
+def image_to_image_call(context: ImageContext) -> List[Path]:
     # Gather all possible reference images
     reference_images = []
     reference_tags = []
@@ -80,10 +84,11 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
     }
 
     output = replicate_run("runwayml/gen4-image-turbo", payload)
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     if context.get_reference_images() != [] or context.color_image:
         return image_to_image_call(context)
 
