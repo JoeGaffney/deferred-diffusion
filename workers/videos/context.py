@@ -96,11 +96,15 @@ class VideoContext:
     def duration_in_seconds(self, fps=24) -> int:
         return max(1, int(self.data.num_frames / fps))
 
-    def save_output(self, video, index: int = 0, fps=24) -> Path:
+    def get_output_video_path(self, index: int = 0) -> Path:
         # deterministic relative path
         rel_path = Path(self.model) / f"{self.task_id}-{index}.mp4"
         abs_path = settings.storage_dir / rel_path
         abs_path.parent.mkdir(parents=True, exist_ok=True)
+        return abs_path
+
+    def save_output(self, video, index: int = 0, fps=24) -> Path:
+        abs_path = self.get_output_video_path(index)
         try:
             export_to_video(video, output_video_path=str(abs_path), fps=fps, quality=9)
             logger.info(f"Video saved at {abs_path}")
@@ -110,10 +114,7 @@ class VideoContext:
         return abs_path
 
     def save_output_url(self, url, index: int = 0) -> Path:
-        # deterministic relative path
-        rel_path = Path(self.model) / f"{self.task_id}-{index}.mp4"
-        abs_path = settings.storage_dir / rel_path
-        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        abs_path = self.get_output_video_path(index)
 
         response = requests.get(url, stream=True)
         response.raise_for_status()

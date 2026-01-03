@@ -31,8 +31,8 @@ class WorkflowContext:
         try:
             with open(abs_path, "wb") as f:
                 f.write(base64_bytes)
-            logger.info(f"Image saved at {abs_path}")
+            logger.info(f"File saved at {abs_path}")
         except Exception as e:
-            raise RuntimeError(f"Failed to save image at {abs_path}: {e}")
+            raise RuntimeError(f"Failed to save file at {abs_path}: {e}")
 
         return abs_path

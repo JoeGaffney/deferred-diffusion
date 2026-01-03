@@ -1,7 +1,5 @@
 from __future__ import annotations as _annotations
 
-from typing import Any
-
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.messages import ModelMessage, ToolReturnPart
 

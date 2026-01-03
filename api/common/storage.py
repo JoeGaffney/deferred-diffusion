@@ -1,9 +1,7 @@
 import hashlib
 import hmac
-import os
 import time
 from pathlib import Path
-from uuid import UUID
 
 from pydantic import HttpUrl
 

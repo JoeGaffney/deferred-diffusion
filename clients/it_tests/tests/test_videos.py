@@ -63,6 +63,6 @@ def test_create_video(api_client, model):
     assert isinstance(response.parsed, VideoResponse)
     assert response.parsed.id == video_id
     assert response.parsed.status == "SUCCESS"
-    assert response.parsed.output is List[str]
+    assert isinstance(response.parsed.output, list)
     asset_outputs_exists(response.parsed.output)
     assert_logs_exist(response.parsed.logs)

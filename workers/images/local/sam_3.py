@@ -15,7 +15,6 @@ except ImportError:
     Sam3Processor = None  # type: ignore
 
 from common.logger import log_pretty, task_log
-from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
 
@@ -103,7 +102,6 @@ def main(context: ImageContext) -> List[Path]:
     # Overlay masks on the original image for visualization
     masks_tensor = torch.stack([m if isinstance(m, torch.Tensor) else torch.from_numpy(m) for m in masks])
     overlay_result = overlay_masks(image_pil, masks_tensor)
-    context.save_image(overlay_result)
 
     combined_clown_mask = Image.new("RGB", (context.width, context.height), (0, 0, 0))
 
@@ -139,4 +137,4 @@ def main(context: ImageContext) -> List[Path]:
 
     del model, processor
     # Save the mask image and return as a list of Path
-    return [context.save_output(combined_clown_mask, index=0)]
+    return [context.save_output(combined_clown_mask, index=0), context.save_output(overlay_result, index=1)]

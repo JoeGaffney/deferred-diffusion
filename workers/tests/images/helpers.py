@@ -201,6 +201,7 @@ def references_depth(model: ModelName):
                     )
                 ],
             ),
+            task_id=output_name,
         )
     )
 
