@@ -287,7 +287,7 @@ class ImageRequest(BaseModel):
 
 class ImageWorkerResponse(BaseModel):
     output: List[str]
-    logs: List[str] = []
+    logs: List[str]
 
 
 class ImageResponse(BaseModel):

@@ -1,6 +1,7 @@
 import os
 import time
 from http import HTTPStatus
+from typing import List
 from uuid import UUID
 
 import pytest
@@ -14,7 +15,7 @@ from generated.api_client.models import (
     ImageRequestModel,
     ImageResponse,
 )
-from utils import assert_logs_exist, image_a, save_image_and_assert_file_exists
+from utils import assert_logs_exist, asset_outputs_exists, image_a
 
 models = [ImageRequestModel("flux-1-pro")]
 
@@ -57,7 +58,8 @@ def test_create_image(api_client, model):
     assert isinstance(response.parsed, ImageResponse)
     assert response.parsed.id == image_id
     assert response.parsed.status == "SUCCESS"
-    save_image_and_assert_file_exists(response.parsed.result.base64_data, f"test_images_{model}.png")  # type: ignore
+    assert response.parsed.output is List[str]
+    asset_outputs_exists(response.parsed.output)
     assert_logs_exist(response.parsed.logs)
 
 

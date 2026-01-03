@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Annotated, Literal, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, Field
+from pydantic import BaseModel, Field
 
 # NOTE Status values should align with Celery task states
 # from celery.states import ALL_STATES
@@ -50,9 +50,6 @@ Base64Video = Annotated[
         },
     ),
 ]
-
-
-Base64ResponseBytes = Annotated[Base64Bytes, Field(max_length=MB_SIZE * 100)]
 
 
 class DeleteResponse(BaseModel):

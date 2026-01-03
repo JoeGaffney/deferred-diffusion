@@ -1,45 +1,44 @@
 import base64
 import os
-from typing import Optional
-
-output_dir = "../tmp/it-tests/"
-
-
-def base64_to_image(base64_str: str, output_path: str):
-    """Convert a base64 string to an image and save it to the specified path."""
-
-    try:
-        # Handle both string and bytes input
-        if isinstance(base64_str, str):
-            if "," in base64_str and ";base64," in base64_str:
-                base64_str = base64_str.split(",", 1)[1]
-            base64_bytes = base64_str.encode("utf-8")
-        else:
-            base64_bytes = base64_str
-
-        # Decode the base64 to binary
-        image_bytes = base64.b64decode(base64_bytes)
-
-        # Create directory if it doesn't exist and create_dir is True
-        dir_path = os.path.dirname(output_path)
-        if dir_path and not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-
-        # Write the bytes to the specified file path
-        with open(output_path, "wb") as image_file:
-            image_file.write(image_bytes)
-
-    except Exception as e:
-        raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
+import urllib.request
+from typing import List, Optional
 
 
-def save_image_and_assert_file_exists(result, output_name):
-    output_path = os.path.join(output_dir, output_name)
-    if os.path.exists(output_path):
-        os.remove(output_path)
+def get_output_dir() -> str:
+    output_dir = "../tmp/it-tests/"
 
-    base64_to_image(result, output_path)
-    assert os.path.exists(output_path), f"Output file {output_path} was not created."
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    return output_dir
+
+
+def asset_outputs_exists(outputs: List[str]):
+    """Check if all output asset files exist."""
+    assert len(outputs) > 0, "No output files to check."
+
+    for i, url in enumerate(outputs):
+        print(f"Checking output file from URL: {url}")
+        # Download the file
+        try:
+            with urllib.request.urlopen(url) as response:
+                content = response.read()
+        except Exception as e:
+            raise AssertionError(f"Failed to download {url}: {e}")
+
+        assert len(content) > 100, f"Output file from {url} is too small ({len(content)} bytes)."
+
+        # Save it to output_dir
+        # Try to get a filename from the URL or use a default
+        filename = url.split("/")[-1].split("?")[0]
+        if not filename:
+            filename = f"output_{i}.bin"
+
+        output_path = os.path.join(get_output_dir(), filename)
+        with open(output_path, "wb") as f:
+            f.write(content)
+
+        assert os.path.exists(output_path), f"Output file {output_path} was not saved."
+        assert os.path.getsize(output_path) > 100, f"Output file {output_path} is empty."
 
 
 def assert_logs_exist(logs):
