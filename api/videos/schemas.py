@@ -1,9 +1,9 @@
 from typing import Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
-from common.schemas import Provider, TaskStatus
+from common.schemas import Base64Image, Base64Video, Provider, TaskStatus
 
 # User facing choice
 ModelName: TypeAlias = Literal[
@@ -170,29 +170,17 @@ class VideoRequest(BaseModel):
         le=250,
     )
     seed: int = 42
-    image: Optional[str] = Field(
+    image: Optional[Base64Image] = Field(
         default=None,
         description="Base64 image string used for image-to-video conditioning or reference.",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
     )
-    last_image: Optional[str] = Field(
+    last_image: Optional[Base64Image] = Field(
         default=None,
         description="Optional Base64 image string for the last frame guidance in image-to-video generation (requires image).",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "image/*",
-        },
     )
-    video: Optional[str] = Field(
+    video: Optional[Base64Video] = Field(
         default=None,
         description="Optional Base64 video string for video-to-video transformation or upscaling.",
-        json_schema_extra={
-            "contentEncoding": "base64",
-            "contentMediaType": "video/*",
-        },
     )
 
     @property
@@ -237,14 +225,14 @@ class VideoRequest(BaseModel):
 
 
 class VideoWorkerResponse(BaseModel):
-    logs: List[str] = []
-    base64_data: Base64Bytes
+    output: List[str]
+    logs: List[str]
 
 
 class VideoResponse(BaseModel):
     id: UUID
     status: TaskStatus
-    result: Optional[VideoWorkerResponse] = None
+    output: List[HttpUrl] = []
     error_message: Optional[str] = None
     logs: List[str] = []
     model_config = ConfigDict(
@@ -252,9 +240,7 @@ class VideoResponse(BaseModel):
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
-                "result": {
-                    "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
-                },
+                "output": ["http://localhost:5000/api/files/..."],
                 "error_message": None,
                 "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }

@@ -1,6 +1,6 @@
-import functools
 import logging
 import pprint
+import uuid
 
 from celery import current_task
 
@@ -62,3 +62,13 @@ def get_task_logs() -> list[str]:
         if isinstance(logs, list):
             return logs
     return []
+
+
+def get_task_id() -> str:
+    """Get the current task ID. Falls back to a new UUID if not in a task context."""
+    task_id: str = str(uuid.uuid4())
+
+    task = current_task
+    if not task:
+        return task_id
+    return getattr(task.request, "id", task_id)

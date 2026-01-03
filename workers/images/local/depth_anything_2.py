@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import torch
 from PIL import Image
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
@@ -17,7 +20,7 @@ def get_pipeline(model_id):
     return pipe
 
 
-def main(context: ImageContext):
+def main(context: ImageContext) -> List[Path]:
     if context.color_image is None:
         raise ValueError("No input image provided")
 
@@ -55,4 +58,4 @@ def main(context: ImageContext):
     del pipe
     del inputs
     del outputs
-    return processed_image
+    return [context.save_output(processed_image, index=0)]

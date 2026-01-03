@@ -1,4 +1,5 @@
-from typing import Literal
+from pathlib import Path
+from typing import List, Literal
 
 from PIL import Image
 
@@ -18,7 +19,7 @@ def get_size(
     return "1:1"
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     payload = {
         "prompt": context.data.cleaned_prompt,
         "size": "2K",
@@ -46,4 +47,5 @@ def main(context: ImageContext) -> Image.Image:
     if isinstance(output, list):
         output = output[0]
 
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]

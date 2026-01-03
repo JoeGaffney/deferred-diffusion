@@ -12,6 +12,7 @@ from diffusers import GGUFQuantizationConfig
 from huggingface_hub import hf_hub_download
 from transformers import BitsAndBytesConfig, TorchAoConfig
 
+from common.config import settings
 from common.logger import logger, task_log
 from common.memory import free_gpu_memory, gpu_memory_usage
 from utils.utils import time_info_decorator
@@ -178,8 +179,7 @@ def get_gguf_model(
 def get_quant_dir(model_id: str, subfolder: str, load_in_4bit: bool) -> str:
     quant_bit = "4bit" if load_in_4bit else "8bit"
     subfolder_name = "default" if subfolder == "" else subfolder
-    hf_home = os.getenv("HF_HOME", "")
-    quant_dir = os.path.join(hf_home, "quantized", model_id, quant_bit, subfolder_name)
+    quant_dir = os.path.join(settings.hf_home, "quantized", model_id, quant_bit, subfolder_name)
     return os.path.normpath(quant_dir)
 
 

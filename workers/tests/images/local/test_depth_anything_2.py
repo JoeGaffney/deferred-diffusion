@@ -1,22 +1,20 @@
+from typing import List
+
 import pytest
 
 from images.context import ImageContext
 from images.local.depth_anything_2 import main
 from images.schemas import ImageRequest, ModelName
-from tests.utils import (
-    image_to_base64,
-    save_image_and_assert_file_exists,
-    setup_output_file,
-)
+from tests.utils import asset_outputs_exists, image_to_base64
 from utils.utils import get_16_9_resolution
 
-model: ModelName = "depth-anything-2"
+models: List[ModelName] = ["depth-anything-2"]
 
 
-@pytest.mark.parametrize("mode", ["depth"])
-def test_models(mode):
-    output_name = setup_output_file(model, mode)
+@pytest.mark.parametrize("model", models)
+def test_image_to_image(model):
     width, height = get_16_9_resolution("540p")
+    output_name = "depth"
 
     result = main(
         ImageContext(
@@ -28,7 +26,8 @@ def test_models(mode):
                 width=width,
                 height=height,
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)

@@ -1,4 +1,5 @@
-from typing import Literal
+from pathlib import Path
+from typing import List, Literal
 
 from common.replicate_helpers import process_replicate_video_output, replicate_run
 from utils.utils import convert_pil_to_bytes
@@ -14,12 +15,12 @@ def get_aspect_ratio(context: VideoContext) -> Literal["16:9", "9:16", "1:1"]:
     return "1:1"
 
 
-def video_to_video(context: VideoContext):
+def video_to_video(context: VideoContext) -> List[Path]:
     if context.data.video is None:
         raise ValueError("Input video is None. Please provide a valid video.")
 
     model = "runwayml/gen4-aleph"
-    video_uri = f"data:video/mp4;base64,{context.get_compressed_video()}"
+    video_uri = f"data:video/mp4;base64,{context.data.video}"
     payload = {
         "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,
@@ -33,10 +34,10 @@ def video_to_video(context: VideoContext):
     output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)
 
-    return context.save_video_url(video_url)
+    return [context.save_output_url(video_url)]
 
 
-def image_to_video(context: VideoContext):
+def image_to_video(context: VideoContext) -> List[Path]:
     if context.image is None:
         raise ValueError("Input image is None. Please provide a valid image.")
 
@@ -52,10 +53,10 @@ def image_to_video(context: VideoContext):
     output = replicate_run(model, payload)
     video_url = process_replicate_video_output(output)
 
-    return context.save_video_url(video_url)
+    return [context.save_output_url(video_url)]
 
 
-def main(context: VideoContext):
+def main(context: VideoContext) -> List[Path]:
     if context.data.video:
         return video_to_video(context)
     return image_to_video(context)

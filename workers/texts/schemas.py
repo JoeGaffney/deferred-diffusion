@@ -147,16 +147,14 @@ class TextWorkerResponse(BaseModel):
 class TextResponse(BaseModel):
     id: UUID
     status: TaskStatus
-    result: Optional[TextWorkerResponse] = None
+    output: str = ""
     error_message: Optional[str] = None
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
-                "result": {
-                    "response": "This is a response from the model",
-                },
+                "output": "This is the generated text response from the model.",
                 "error_message": None,
             }
         }

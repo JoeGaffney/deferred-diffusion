@@ -1,19 +1,14 @@
 import importlib
-from typing import Dict, Tuple
-
-from PIL import Image
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 from images.context import ImageContext
 from images.schemas import ImageRequest, ModelName, References
-from tests.utils import (
-    image_to_base64,
-    save_image_and_assert_file_exists,
-    setup_output_file,
-)
+from tests.utils import asset_outputs_exists, image_to_base64
 from utils.utils import get_16_9_resolution
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     """Route to the specific model implementation by concrete model name.
 
     Lazy-imports the module/attribute that the corresponding celery task would call.
@@ -50,7 +45,7 @@ def main(context: ImageContext) -> Image.Image:
 
 
 def text_to_image(model: ModelName, seed=42):
-    output_name = setup_output_file(model, "text_to_image", suffix=str(seed))
+    output_name = f"text_to_image_{str(seed)}"
     width, height = get_16_9_resolution("720p")
 
     result = main(
@@ -63,14 +58,14 @@ def text_to_image(model: ModelName, seed=42):
                 height=height,
                 seed=seed,
             ),
+            task_id=output_name,
         )
     )
-
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def text_to_image_alt(model: ModelName, seed=42):
-    output_name = setup_output_file(model, "text_to_image_alt", suffix=str(seed))
+    output_name = f"text_to_image_alt_{str(seed)}"
     width, height = get_16_9_resolution("720p")
     prompt = """Bookstore window display. A sign displays “New Arrivals This Week”. Below, a shelf tag with the text “Best-Selling Novels Here”. To the side, a colorful poster advertises “Author Meet And Greet on Saturday” with a central portrait of the author. There are four books on the bookshelf, namely “The light between worlds” “When stars are scattered” “The slient patient” “The night circus”"""
 
@@ -84,14 +79,15 @@ def text_to_image_alt(model: ModelName, seed=42):
                 height=height,
                 seed=seed,
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def image_to_image(model: ModelName):
-    output_name = setup_output_file(model, "image_to_image")
+    output_name = "image_to_image"
 
     result = main(
         ImageContext(
@@ -101,15 +97,15 @@ def image_to_image(model: ModelName):
                 strength=0.5,
                 image=image_to_base64("../assets/color_v001.jpeg"),
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def image_to_image_alt(model: ModelName):
-    output_name = setup_output_file(model, "image_to_image_alt")
-
+    output_name = "image_to_image_alt"
     result = main(
         ImageContext(
             ImageRequest(
@@ -118,14 +114,15 @@ def image_to_image_alt(model: ModelName):
                 strength=0.5,
                 image=image_to_base64("../assets/color_v003.png"),
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def inpainting(model: ModelName):
-    output_name = setup_output_file(model, "inpainting")
+    output_name = "inpainting"
 
     result = main(
         ImageContext(
@@ -136,14 +133,15 @@ def inpainting(model: ModelName):
                 image=image_to_base64("../assets/inpaint.png"),
                 mask=image_to_base64("../assets/inpaint_mask.png"),
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def inpainting_alt(model: ModelName):
-    output_name = setup_output_file(model, "inpainting", suffix="_alt")
+    output_name = "inpainting_alt"
 
     result = main(
         ImageContext(
@@ -154,14 +152,15 @@ def inpainting_alt(model: ModelName):
                 image=image_to_base64("../assets/inpaint_v003.png"),
                 mask=image_to_base64("../assets/inpaint_mask_v003.png"),
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def references_canny(model: ModelName):
-    output_name = setup_output_file(model, "references", "_canny")
+    output_name = "references_canny"
 
     result = main(
         ImageContext(
@@ -173,20 +172,19 @@ def references_canny(model: ModelName):
                 height=768,
                 references=[
                     References(
-                        mode="canny",
                         image=image_to_base64("../assets/canny_v001.png"),
-                        strength=0.7,
                     )
                 ],
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def references_depth(model: ModelName):
-    output_name = setup_output_file(model, "references", "_depth")
+    output_name = "references_depth"
     width, height = get_16_9_resolution("540p")
 
     result = main(
@@ -199,20 +197,19 @@ def references_depth(model: ModelName):
                 height=height,
                 references=[
                     References(
-                        mode="depth",
                         image=image_to_base64("../assets/depth_v001.png"),
-                        strength=0.65,
                     )
                 ],
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def references_style(model: ModelName):
-    output_name = setup_output_file(model, "references", "_style")
+    output_name = "references_style"
     width, height = get_16_9_resolution("540p")
 
     result = main(
@@ -225,21 +222,19 @@ def references_style(model: ModelName):
                 height=height,
                 references=[
                     References(
-                        mode="style",
                         image=image_to_base64("../assets/style_v001.jpeg"),
-                        strength=0.5,
                     )
                 ],
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)
 
 
 def references_face(model: ModelName):
-    """Test models with face adapter."""
-    output_name = setup_output_file(model, "references", "_face")
+    output_name = "references_face"
     width, height = get_16_9_resolution("540p")
 
     result = main(
@@ -252,18 +247,15 @@ def references_face(model: ModelName):
                 height=height,
                 references=[
                     References(
-                        mode="style",
                         image=image_to_base64("../assets/style_v001.jpeg"),
-                        strength=0.5,
                     ),
                     References(
-                        mode="face",
                         image=image_to_base64("../assets/face_v001.jpeg"),
-                        strength=0.5,
                     ),
                 ],
             ),
+            task_id=output_name,
         )
     )
 
-    save_image_and_assert_file_exists(result, output_name)
+    asset_outputs_exists(result)

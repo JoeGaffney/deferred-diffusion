@@ -130,8 +130,7 @@ class Media(BaseModel):
     )
     model: str = Field(description="Model used for generating the media", default="")
     prompt: str = Field(description="Prompt used for generating the media", default="")
-    base64_data: str = Field(description="Base64 encoded media data", default="")
-    local_file_path: str = Field(description="Local file path to the media", default="")
+    output: List[str] = Field(description="List of URLs to the media", default_factory=list)
     type: str = Field(description="Type of media, e.g., image, video", default="image")
 
 

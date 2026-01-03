@@ -1,4 +1,6 @@
 import math
+from pathlib import Path
+from typing import List
 
 import torch
 from diffusers import (
@@ -103,11 +105,10 @@ def text_to_image_call(context: ImageContext):
         true_cfg_scale=1.0,
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
+    return [context.save_output(processed_image, index=0)]
 
-    return processed_image
 
-
-def image_edit_call(context: ImageContext):
+def image_edit_call(context: ImageContext) -> List[Path]:
     # see https://github.com/huggingface/diffusers/pull/12453/files
     import diffusers.pipelines.qwenimage.pipeline_qwenimage_edit_plus as qwen_edit_module
 
@@ -136,10 +137,10 @@ def image_edit_call(context: ImageContext):
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
 
-    return processed_image
+    return [context.save_output(processed_image, index=0)]
 
 
-def inpainting_call(context: ImageContext):
+def inpainting_call(context: ImageContext) -> List[Path]:
     if not context.color_image or not context.mask_image:
         raise ValueError("Inpainting call requires both color_image and mask_image.")
 
@@ -160,10 +161,10 @@ def inpainting_call(context: ImageContext):
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).images[0]
 
-    return processed_image
+    return [context.save_output(processed_image, index=0)]
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     if context.color_image and context.mask_image:
         return inpainting_call(context)
     if context.color_image or context.get_reference_images() != []:

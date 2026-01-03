@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import torch
 from diffusers import (
     AutoPipelineForText2Image,
@@ -67,7 +70,7 @@ def get_inpainting_pipeline(model_id):
     return optimize_pipeline(pipe, offload=is_memory_exceeded(15))
 
 
-def text_to_image_call(context: ImageContext):
+def text_to_image_call(context: ImageContext) -> List[Path]:
     pipe = AutoPipelineForText2Image.from_pipe(
         get_pipeline("black-forest-labs/FLUX.1-Krea-dev"),
         requires_safety_checker=False,
@@ -82,11 +85,10 @@ def text_to_image_call(context: ImageContext):
         guidance_scale=2.5,
         callback_on_step_end=task_log_callback(30),  # type: ignore
     ).images[0]
+    return [context.save_output(processed_image, index=0)]
 
-    return processed_image
 
-
-def image_to_image_call(context: ImageContext):
+def image_to_image_call(context: ImageContext) -> List[Path]:
     pipe = get_kontext_pipeline("black-forest-labs/FLUX.1-Kontext-dev")
 
     processed_image = pipe.__call__(
@@ -99,11 +101,10 @@ def image_to_image_call(context: ImageContext):
         guidance_scale=2.0,
         callback_on_step_end=task_log_callback(30),  # type: ignore
     ).images[0]
+    return [context.save_output(processed_image, index=0)]
 
-    return processed_image
 
-
-def inpainting_call(context: ImageContext):
+def inpainting_call(context: ImageContext) -> List[Path]:
     pipe = get_inpainting_pipeline("black-forest-labs/FLUX.1-Fill-dev")
 
     processed_image = pipe.__call__(
@@ -118,11 +119,10 @@ def inpainting_call(context: ImageContext):
         strength=context.data.strength,
         callback_on_step_end=task_log_callback(30),  # type: ignore
     ).images[0]
+    return [context.save_output(processed_image, index=0)]
 
-    return processed_image
 
-
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     if context.color_image and context.mask_image:
         return inpainting_call(context)
     elif context.color_image:

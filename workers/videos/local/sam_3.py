@@ -12,13 +12,16 @@ except ImportError:
     Sam3VideoModel = None  # type: ignore
     Sam3VideoProcessor = None  # type: ignore
 
+from pathlib import Path
+from typing import List
+
 from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from utils.utils import image_resize
 from videos.context import VideoContext
 
 
-def main(context: VideoContext):
+def main(context: VideoContext) -> List[Path]:
     """Using transformers implementation of SAM-3 for video segmentation. There is still some quaility isssues in the implementation currently."""
     if Sam3VideoModel is None or Sam3VideoProcessor is None:
         raise ImportError("SAM-3 video model requires a specific version of transformers with sam3_video support. ")
@@ -83,5 +86,4 @@ def main(context: VideoContext):
     del model, processor, inference_session
     free_gpu_memory(message="Post SAM-3 Video Processing")
 
-    processed_path = context.save_video(processed_frames, fps=24)
-    return processed_path
+    return [context.save_output(processed_frames, fps=24)]

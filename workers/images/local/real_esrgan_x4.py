@@ -1,13 +1,16 @@
 import os
+from pathlib import Path
+from typing import List
 
 from RealESRGAN import RealESRGAN
 
+from common.config import settings
 from common.logger import task_log
 from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
 
 
-def main(context: ImageContext):
+def main(context: ImageContext) -> List[Path]:
     if context.color_image is None:
         raise ValueError("No input image provided")
 
@@ -15,8 +18,7 @@ def main(context: ImageContext):
     model = RealESRGAN("cuda", scale=4)
 
     # keep with our other models
-    hf_home = os.getenv("HF_HOME", "")
-    model_path = os.path.join(hf_home, "weights/RealESRGAN_x4plus.pth")
+    model_path = os.path.join(settings.hf_home, "weights/RealESRGAN_x4plus.pth")
     model.load_weights(model_path, download=True)
 
     result = model.predict(context.color_image)
@@ -26,4 +28,5 @@ def main(context: ImageContext):
     model.model.to("cpu")
     del model.model
     del model
-    return result
+    # Save the upscaled image and return as a list of Path
+    return [context.save_output(result, index=0)]

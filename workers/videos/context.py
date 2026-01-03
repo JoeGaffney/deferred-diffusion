@@ -1,29 +1,28 @@
 import copy
 import tempfile
+from pathlib import Path
 from typing import Literal
 
 import requests
 import torch
 from diffusers.utils import export_to_video
 
-from common.logger import logger, task_log
+from common.config import settings
+from common.logger import get_task_id, logger, task_log
 from utils.utils import (
     ensure_divisible,
-    get_tmp_dir,
     image_crop,
     image_resize,
     load_image_if_exists,
     load_video_frames_if_exists,
-    mp4_to_base64_decoded,
 )
 from videos.schemas import VideoRequest
 
-ONE_MB_IN_BYTES = 1 * 1024 * 1024
-
 
 class VideoContext:
-    def __init__(self, data: VideoRequest):
+    def __init__(self, data: VideoRequest, task_id: str = get_task_id()):
         self.model = data.model
+        self.task_id = task_id
         self.data = data
         self.width = copy.copy(data.width)
         self.height = copy.copy(data.height)
@@ -97,52 +96,36 @@ class VideoContext:
     def duration_in_seconds(self, fps=24) -> int:
         return max(1, int(self.data.num_frames / fps))
 
-    def tmp_video_path(self, model="") -> str:
-        return tempfile.NamedTemporaryFile(dir=get_tmp_dir(model), suffix=".mp4").name
+    def get_output_video_path(self, index: int = 0) -> Path:
+        # deterministic relative path
+        rel_path = Path(self.model) / f"{self.task_id}-{index}.mp4"
+        abs_path = settings.storage_dir / rel_path
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        return abs_path
 
-    def save_video(self, video, fps=24):
-        path = self.tmp_video_path(self.model)
-        path = export_to_video(video, output_video_path=path, fps=fps, quality=9)
-        logger.info(f"Video saved at {path}")
-        return path
+    def save_output(self, video, index: int = 0, fps=24) -> Path:
+        abs_path = self.get_output_video_path(index)
+        try:
+            export_to_video(video, output_video_path=str(abs_path), fps=fps, quality=9)
+            logger.info(f"Video saved at {abs_path}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to save video at {abs_path}: {e}")
 
-    def save_video_url(self, url):
-        path = self.tmp_video_path(model=self.model)
+        return abs_path
+
+    def save_output_url(self, url, index: int = 0) -> Path:
+        abs_path = self.get_output_video_path(index)
 
         response = requests.get(url, stream=True)
-        if response.status_code == 200:
-            with open(path, "wb") as file:
+        response.raise_for_status()
+
+        try:
+            with open(abs_path, "wb") as file:
                 for chunk in response.iter_content(chunk_size=8192):
-                    file.write(chunk)
+                    if chunk:
+                        file.write(chunk)
+            logger.info(f"Video saved at {abs_path}")
+        except Exception as e:
+            raise Exception(f"Failed to download or write file") from e
 
-            logger.info(f"Video saved at {path}")
-        else:
-            raise Exception(f"Failed to download file. Status code: {response.status_code}")
-
-        return path
-
-    def get_compressed_video(self, fps=24, mb_limit=15) -> str:
-        if not self.data.video:
-            raise ValueError("No video available.")
-
-        if len(self.data.video) < mb_limit * ONE_MB_IN_BYTES:
-            logger.info(
-                f"Video size {len(self.data.video)/(ONE_MB_IN_BYTES):.2f} MB is within limit ({mb_limit} MB), no compression needed."
-            )
-            return self.data.video
-
-        if not self.video_frames:
-            raise ValueError("No video frames available.")
-
-        tmp_path = self.tmp_video_path(model=self.model)
-        path = export_to_video(self.video_frames, output_video_path=tmp_path, fps=fps, quality=9)
-        logger.info(f"Compressed video saved at {path}")
-
-        # convert and check size once more abort if still too large
-        compressed_video = mp4_to_base64_decoded(path)
-        if len(compressed_video) >= mb_limit * ONE_MB_IN_BYTES:
-            raise ValueError(
-                f"Compressed video size {len(compressed_video)/(ONE_MB_IN_BYTES):.2f} MB still exceeds limit of {mb_limit} MB."
-            )
-
-        return compressed_video
+        return abs_path

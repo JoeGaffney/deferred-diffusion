@@ -1,4 +1,5 @@
-from typing import Literal
+from pathlib import Path
+from typing import List, Literal
 
 from PIL import Image
 
@@ -18,7 +19,7 @@ def get_size(
     return "1:1"
 
 
-def text_to_image_call(context: ImageContext) -> Image.Image:
+def text_to_image_call(context: ImageContext) -> List[Path]:
 
     payload = {
         "prompt": context.data.cleaned_prompt,
@@ -31,10 +32,11 @@ def text_to_image_call(context: ImageContext) -> Image.Image:
 
     output = replicate_run("black-forest-labs/flux-1.1-pro", payload)
 
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]
 
 
-def image_to_image_call(context: ImageContext) -> Image.Image:
+def image_to_image_call(context: ImageContext) -> List[Path]:
     if context.color_image is None:
         raise ValueError("No color image provided")
 
@@ -48,10 +50,11 @@ def image_to_image_call(context: ImageContext) -> Image.Image:
 
     output = replicate_run("black-forest-labs/flux-kontext-pro", payload)
 
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]
 
 
-def inpainting_call(context: ImageContext) -> Image.Image:
+def inpainting_call(context: ImageContext) -> List[Path]:
     if context.color_image is None or context.mask_image is None:
         raise ValueError("No color image or mask image provided")
 
@@ -66,10 +69,11 @@ def inpainting_call(context: ImageContext) -> Image.Image:
 
     output = replicate_run("black-forest-labs/flux-fill-pro", payload)
 
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     if context.color_image and context.mask_image:
         return inpainting_call(context)
     elif context.color_image:

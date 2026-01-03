@@ -8,10 +8,10 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import Literal, Optional
 
+import httpx
 import nuke
 
 from generated.api_client.models import References, TaskStatus
-from generated.api_client.types import UNSET
 
 NODE_CONTROLNET = "dd_controlnet"
 NODE_ADAPTER = "dd_adapter"
@@ -215,35 +215,7 @@ def image_to_base64(image_path: str, debug=False) -> Optional[str]:
         raise ValueError(f"Error encoding image {image_path}: {str(e)}") from e
 
 
-def base64_to_file(base64_str: str, output_path: str, create_dir: bool = True):
-    """Convert a base64 string to an image and save it to the specified path."""
-    try:
-        # Handle both string and bytes input
-        if isinstance(base64_str, str):
-            # Remove data URI prefix if present (e.g., "data:image/jpeg;base64,")
-            if "," in base64_str and ";base64," in base64_str:
-                base64_str = base64_str.split(",", 1)[1]
-
-            # Convert string to bytes if needed
-            base64_bytes = base64_str.encode("utf-8")
-        else:
-            base64_bytes = base64_str
-
-        # Decode the base64 to binary
-        image_bytes = base64.b64decode(base64_bytes)
-
-        # Create directory if it doesn't exist and create_dir is True
-        dir_path = os.path.dirname(output_path)
-        if create_dir and dir_path and not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-
-        # Write the bytes to the specified file path
-        with open(output_path, "wb") as image_file:
-            image_file.write(image_bytes)
-
-    except Exception as e:
-        raise ValueError(f"Error saving base64 to image {output_path}: {str(e)}") from e
-
+def snapshot_file(output_path: str):
     # save a timestamped version by copying the file to the sample path prepended with a /tmp/timestamp
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -257,6 +229,24 @@ def base64_to_file(base64_str: str, output_path: str, create_dir: bool = True):
         shutil.copy2(output_path, tmp_path)
     except Exception as e:
         raise ValueError(f"Error creating snapshot of file {output_path}: {str(e)}") from e
+
+
+def download_file(url: str, output_path: str):
+    """Download a file from a URL and save it to the specified path."""
+    try:
+        dir_path = os.path.dirname(output_path)
+        if dir_path and not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        with httpx.stream("GET", url) as response:
+            response.raise_for_status()
+            with open(output_path, "wb") as f:
+                for chunk in response.iter_bytes():
+                    f.write(chunk)
+    except Exception as e:
+        raise ValueError(f"Error downloading file from {url}: {str(e)}") from e
+
+    snapshot_file(output_path)
 
 
 def node_to_base64(input_node, current_frame):

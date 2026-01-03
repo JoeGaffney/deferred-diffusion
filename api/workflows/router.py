@@ -4,7 +4,8 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
-from common.schemas import DeleteResponse, Identity, TaskStatus
+from common.schemas import DeleteResponse, Identity
+from common.storage import signed_url_for_file
 from utils.utils import cancel_task
 from worker import celery_app
 from workflows.schemas import (
@@ -55,13 +56,11 @@ def get(id: UUID):
 
     # Add appropriate fields based on status
     if result.successful():
-        try:
-            result_data = WorkflowWorkerResponse.model_validate(result.result)
-            response.result = result_data
-            response.logs = result_data.logs
-        except Exception as e:
-            response.status = TaskStatus.FAILURE
-            response.error_message = f"Error parsing result: {str(e)}"
+        result_data = WorkflowWorkerResponse.model_validate(result.result)
+        response.logs = result_data.logs
+
+        # Convert all file paths to signed URLs
+        response.output = [signed_url_for_file(file_id) for file_id in result_data.output]
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"
 

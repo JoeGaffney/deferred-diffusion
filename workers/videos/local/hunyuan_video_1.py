@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import torch
 from diffusers import (
     HunyuanVideo15ImageToVideoPipeline,
@@ -57,7 +60,7 @@ def get_pipeline_i2v(model_id) -> HunyuanVideo15ImageToVideoPipeline:
     return optimize_pipeline(pipe, offload=is_memory_exceeded(35))
 
 
-def text_to_video(context: VideoContext):
+def text_to_video(context: VideoContext) -> List[Path]:
     pipe = get_pipeline_t2v(model_id="hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-480p_t2v_distilled")
 
     with attention_backend("flash_hub"):
@@ -72,11 +75,10 @@ def text_to_video(context: VideoContext):
             # callback_on_step_end=task_log_callback(20),  # type: ignore
         ).frames[0]
 
-    processed_path = context.save_video(output, fps=24)
-    return processed_path
+    return [context.save_output(output, fps=24)]
 
 
-def image_to_video(context: VideoContext):
+def image_to_video(context: VideoContext) -> List[Path]:
     pipe = get_pipeline_i2v(model_id="hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-480p_i2v_step_distilled")
 
     with attention_backend("flash_varlen_hub"):
@@ -90,11 +92,10 @@ def image_to_video(context: VideoContext):
             # callback_on_step_end=task_log_callback(20),  # type: ignore
         ).frames[0]
 
-    processed_path = context.save_video(output, fps=24)
-    return processed_path
+    return [context.save_output(output, fps=24)]
 
 
-def main(context: VideoContext):
+def main(context: VideoContext) -> List[Path]:
     context.rescale_to_max_megapixels(1.0)  # limit to 1 megapixel to avoid OOM
     context.ensure_divisible(16)
     if context.data.image:

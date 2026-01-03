@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import torch
 from diffusers import (
     AutoencoderKLWan,
@@ -90,7 +93,7 @@ def get_pipeline_i2v(model_id) -> WanImageToVideoPipeline:
     return optimize_pipeline(pipe, offload=is_memory_exceeded(35))
 
 
-def text_to_video(context: VideoContext):
+def text_to_video(context: VideoContext) -> List[Path]:
     pipe = get_pipeline_t2v(model_id="Wan-AI/Wan2.2-T2V-A14B-Diffusers")
     if context.get_mega_pixels() >= 0.9:  # close to 720p or higher
         pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=5.0)
@@ -106,11 +109,10 @@ def text_to_video(context: VideoContext):
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).frames[0]
 
-    processed_path = context.save_video(output, fps=16)
-    return processed_path
+    return [context.save_output(output, fps=16)]
 
 
-def image_to_video(context: VideoContext):
+def image_to_video(context: VideoContext) -> List[Path]:
     if context.image is None:
         raise ValueError("No input image provided for image-to-video generation")
 
@@ -131,11 +133,10 @@ def image_to_video(context: VideoContext):
         callback_on_step_end=task_log_callback(8),  # type: ignore
     ).frames[0]
 
-    processed_path = context.save_video(output, fps=16)
-    return processed_path
+    return [context.save_output(output, fps=16)]
 
 
-def main(context: VideoContext):
+def main(context: VideoContext) -> List[Path]:
     context.rescale_to_max_megapixels(1.0)  # limit to 1 megapixel to avoid OOM
     context.ensure_divisible(16)
     if context.data.video and context.data.image:

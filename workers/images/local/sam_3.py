@@ -1,4 +1,6 @@
 import random
+from pathlib import Path
+from typing import List
 
 import torch
 from PIL import Image, ImageChops
@@ -13,7 +15,6 @@ except ImportError:
     Sam3Processor = None  # type: ignore
 
 from common.logger import log_pretty, task_log
-from common.memory import free_gpu_memory
 from common.pipeline_helpers import clear_global_pipeline_cache
 from images.context import ImageContext
 
@@ -42,7 +43,7 @@ def overlay_masks(image, masks):
     return image
 
 
-def main(context: ImageContext):
+def main(context: ImageContext) -> List[Path]:
     if Sam3Model is None or Sam3Processor is None:
         raise ImportError("SAM-3 model requires a specific version of transformers with sam3 support. ")
 
@@ -101,7 +102,6 @@ def main(context: ImageContext):
     # Overlay masks on the original image for visualization
     masks_tensor = torch.stack([m if isinstance(m, torch.Tensor) else torch.from_numpy(m) for m in masks])
     overlay_result = overlay_masks(image_pil, masks_tensor)
-    context.save_image(overlay_result)
 
     combined_clown_mask = Image.new("RGB", (context.width, context.height), (0, 0, 0))
 
@@ -136,4 +136,5 @@ def main(context: ImageContext):
         )
 
     del model, processor
-    return combined_clown_mask
+    # Save the mask image and return as a list of Path
+    return [context.save_output(combined_clown_mask, index=0), context.save_output(overlay_result, index=1)]

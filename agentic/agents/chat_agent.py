@@ -5,7 +5,6 @@ import asyncio
 from pydantic_ai import Agent
 
 from common.logger import logger
-from common.state import Deps
 from tools.dd_mcp_server import get_mcp_server
 
 chat_agent = Agent(
@@ -14,15 +13,13 @@ chat_agent = Agent(
         "You are are an expert in AI image and video generation. "
         "You help the user by generating images and videos based on their prompts."
     ),
-    deps_type=Deps,
     toolsets=[get_mcp_server()],
     retries=1,
 )
 
 
 async def main():
-    deps = Deps()
-    result = await chat_agent.run("What image models are available?", deps=deps)
+    result = await chat_agent.run("What image models are available?")
     logger.info("Response:", result.output)
 
 

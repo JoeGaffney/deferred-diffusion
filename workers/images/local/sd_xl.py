@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import List
+
 import torch
 from diffusers import (
     AutoPipelineForImage2Image,
@@ -5,7 +8,6 @@ from diffusers import (
     StableDiffusionXLInpaintPipeline,
     StableDiffusionXLPipeline,
 )
-from PIL import Image
 
 from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
@@ -43,7 +45,7 @@ def get_inpainting_pipeline(model_id) -> StableDiffusionXLInpaintPipeline:
     return optimize_pipeline(pipe, offload=is_memory_exceeded(11))
 
 
-def text_to_image_call(context: ImageContext):
+def text_to_image_call(context: ImageContext) -> List[Path]:
     pipe = AutoPipelineForText2Image.from_pipe(
         get_pipeline("SG161222/RealVisXL_V4.0"),
         requires_safety_checker=False,
@@ -61,10 +63,10 @@ def text_to_image_call(context: ImageContext):
         callback_on_step_end=task_log_callback(35),
     ).images[0]
 
-    return processed_image
+    return [context.save_output(processed_image, index=0)]
 
 
-def image_to_image_call(context: ImageContext):
+def image_to_image_call(context: ImageContext) -> List[Path]:
     pipe = AutoPipelineForImage2Image.from_pipe(
         get_pipeline("SG161222/RealVisXL_V4.0"),
         requires_safety_checker=False,
@@ -84,10 +86,10 @@ def image_to_image_call(context: ImageContext):
         callback_on_step_end=task_log_callback(35),
     ).images[0]
 
-    return processed_image
+    return [context.save_output(processed_image, index=0)]
 
 
-def inpainting_call(context: ImageContext):
+def inpainting_call(context: ImageContext) -> List[Path]:
     pipe = get_inpainting_pipeline("OzzyGT/RealVisXL_V4.0_inpainting")
 
     processed_image = pipe.__call__(
@@ -104,10 +106,10 @@ def inpainting_call(context: ImageContext):
         callback_on_step_end=task_log_callback(35),  # type: ignore
     ).images[0]
 
-    return processed_image
+    return [context.save_output(processed_image, index=0)]
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     context.ensure_divisible(16)
 
     if context.color_image and context.mask_image:

@@ -1,4 +1,5 @@
-from typing import Literal
+from pathlib import Path
+from typing import List, Literal
 
 from PIL import Image
 
@@ -18,7 +19,7 @@ def get_size(
     return "1:1"
 
 
-def main(context: ImageContext) -> Image.Image:
+def main(context: ImageContext) -> List[Path]:
     payload = {
         "prompt": context.data.cleaned_prompt,
         "resolution": "2 MP",
@@ -49,4 +50,5 @@ def main(context: ImageContext) -> Image.Image:
         payload["input_images"] = reference_images
 
     output = replicate_run("black-forest-labs/flux-2-pro", payload)
-    return process_replicate_image_output(output)
+    processed_image = process_replicate_image_output(output)
+    return [context.save_output(processed_image, index=0)]

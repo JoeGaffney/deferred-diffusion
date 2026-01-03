@@ -1,5 +1,4 @@
-from tests.utils import image_to_base64, load_json_file
-from tests.workflows.helpers import save_and_assert_workflow_outputs
+from tests.utils import asset_outputs_exists, image_to_base64, load_json_file
 from workflows.comfy.comfy_workflow import main
 from workflows.context import WorkflowContext
 from workflows.schemas import Patch, WorkflowRequest
@@ -20,10 +19,10 @@ def test_text_to_image():
             workflow=load_json_file(workflow_path),
             patches=patches,
         ),
+        task_id="text_to_image_v001",
     )
     result = main(context)
-
-    save_and_assert_workflow_outputs(context, result, "text_to_image_v001")
+    asset_outputs_exists(result)
 
 
 def test_image_to_image():
@@ -42,10 +41,10 @@ def test_image_to_image():
             workflow=load_json_file(workflow_path),
             patches=patches,
         ),
+        task_id="image_to_image_v001",
     )
     result = main(context)
-
-    save_and_assert_workflow_outputs(context, result, "image_to_image_v001")
+    asset_outputs_exists(result)
 
 
 def test_flux_kontext_dev_basic():
@@ -64,7 +63,7 @@ def test_flux_kontext_dev_basic():
             workflow=load_json_file(workflow_path),
             patches=patches,
         ),
+        task_id="flux_kontext_dev_basic",
     )
     result = main(context)
-
-    save_and_assert_workflow_outputs(context, result, "flux_kontext_dev_basic")
+    asset_outputs_exists(result)

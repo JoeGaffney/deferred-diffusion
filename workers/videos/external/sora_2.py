@@ -1,8 +1,8 @@
-from typing import Literal
+from pathlib import Path
+from typing import List, Literal
 
-import openai
 from openai import Omit, OpenAI
-from openai.types import VideoSeconds, VideoSize
+from openai.types import VideoSize
 from PIL import Image
 
 from common.logger import logger
@@ -28,7 +28,7 @@ def resize_image_to_aspect_ratio(image, context: VideoContext) -> Image.Image:
     return image_resize(image, (1280, 720))
 
 
-def main(context: VideoContext):
+def main(context: VideoContext) -> List[Path]:
     client = OpenAI()
 
     model: Literal["sora-2", "sora-2-pro"] = "sora-2-pro"
@@ -55,7 +55,7 @@ def main(context: VideoContext):
     except Exception as e:
         raise RuntimeError(f"Error calling OpenAI API: {e}")
 
-    tmp_path = context.tmp_video_path()
+    tmp_path = context.get_output_video_path()
     try:
         content = client.videos.download_content(video.id, variant="video")
         content.write_to_file(tmp_path)
@@ -63,4 +63,4 @@ def main(context: VideoContext):
         raise RuntimeError(f"Error downloading video content: {e}")
 
     logger.info(f"Video saved at {tmp_path}")
-    return tmp_path
+    return [tmp_path]

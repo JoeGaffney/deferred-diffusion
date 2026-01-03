@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import Base64Bytes, BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, HttpUrl, model_validator
 
 from common.schemas import TaskStatus
 
@@ -97,21 +97,15 @@ class WorkflowRequest(BaseModel):
     )
 
 
-class WorkflowOutput(BaseModel):
-    data_type: Literal["image", "video"]
-    filename: str
-    base64_data: Base64Bytes
-
-
 class WorkflowWorkerResponse(BaseModel):
-    logs: List[str] = []
-    outputs: List[WorkflowOutput]
+    output: List[str]
+    logs: List[str]
 
 
 class WorkflowResponse(BaseModel):
     id: UUID
     status: TaskStatus
-    result: Optional[WorkflowWorkerResponse] = None
+    output: List[HttpUrl] = []
     error_message: Optional[str] = None
     logs: List[str] = []
     model_config = ConfigDict(
@@ -119,15 +113,7 @@ class WorkflowResponse(BaseModel):
             "example": {
                 "id": "9a34ab0a-9e9a-4b84-90f7-d8b30c59b6ae",
                 "status": "SUCCESS",
-                "result": {
-                    "outputs": [
-                        {
-                            "data_type": "image",
-                            "base64_data": "iVBORw0KGgoAAAANSUhEUgAA...",
-                            "filename": "comfy_node_filename.png",
-                        }
-                    ],
-                },
+                "output": ["http://localhost:5000/api/files/..."],
                 "error_message": None,
                 "logs": ["Setup", "Progress: 10%", "Progress: 20%", "..."],
             }

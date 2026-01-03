@@ -23,7 +23,7 @@ Example **Houdini** and **Nuke** clients are included to demonstrate integration
 - **Controlled external access**: Only approved providers (Replicate and OpenAI) are called via their APIs. Uploaded data is retained only as long as necessary to complete the inference and is deleted soon after, minimizing exposure.
 - **Traceable and reproducible**: Local models are version-controlled in code; no downloading from random external repositories.
 - **Client / Workstations**: Don't need heavy GPUs, download models or call provider APIs directly.
-- **Server / Workers**: Do not require access to your main network drives, maintaining strong isolation and clear boundaries.
+- **API / Workers**: Workers remain fully stateless. The API temporarily stores inference results to generate signed URLs, but does not require access to your main network drives, maintaining strong isolation and clear boundaries.
 
 #### **Basic Flow Example**
 
@@ -44,8 +44,9 @@ sequenceDiagram
 
     Note over Client: Client polls for completion
     Client->>API: GET /images/{task_id}
-    API<<->>Broker: Retrieve task result
-    API->>Client: Base64 image
+    API<<->>Broker: Retrieve task result Base64
+    Note over API: Write Base64 result to storage, generate signed URL
+    API->>Client: Signed URL download
 ```
 
 ## **Project Structure Overview**
@@ -160,8 +161,9 @@ sequenceDiagram
 
     Note over Client: Client polls for completion
     Client->>API: GET /workflows/{task_id}
-    API<<->>Broker: Retrieve task result
-    API->>Client: Base64 image
+    API<<->>Broker: Retrieve task result Base64
+    Note over API: Write Base64 result to storage, generate signed URL
+    API->>Client: Signed URL download
 ```
 
 ### Agentic
@@ -224,6 +226,7 @@ OPENAI_API_KEY=your-openai-key # For OpenAI services
 REPLICATE_API_TOKEN=your-replicate-token # For Replicate API access
 HF_TOKEN=your-huggingface-token # For Hugging Face model access
 DDIFFUSION_ADMIN_KEY=<generate-a-random-secret>
+DDIFFUSION_STORAGE_ADDRESS=http://127.0.0.1:5000 # API server address required for signed URL store
 ```
 
 > **Note**: You must use the `DDIFFUSION_ADMIN_KEY` to create your first API key via the `/api/admin/keys` endpoint before you can use the clients or Swagger UI.

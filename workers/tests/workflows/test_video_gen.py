@@ -1,5 +1,4 @@
-from tests.utils import image_to_base64, load_json_file
-from tests.workflows.helpers import save_and_assert_workflow_outputs
+from tests.utils import asset_outputs_exists, image_to_base64, load_json_file
 from workflows.comfy.comfy_workflow import main
 from workflows.context import WorkflowContext
 from workflows.schemas import Patch, WorkflowRequest
@@ -22,6 +21,7 @@ def test_video_wan2_2_14B_fun_control():
             workflow=load_json_file(workflow_path),
             patches=patches,
         ),
+        task_id="video_wan2_2_14B_fun_control",
     )
     result = main(context)
-    save_and_assert_workflow_outputs(context, result, "video_wan2_2_14B_fun_control")
+    asset_outputs_exists(result)

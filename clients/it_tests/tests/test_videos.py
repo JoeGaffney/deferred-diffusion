@@ -1,6 +1,7 @@
 import os
 import time
 from http import HTTPStatus
+from typing import List
 from uuid import UUID
 
 import pytest
@@ -13,7 +14,7 @@ from generated.api_client.models import (
     VideoRequestModel,
     VideoResponse,
 )
-from utils import assert_logs_exist, image_c, save_image_and_assert_file_exists
+from utils import assert_logs_exist, asset_outputs_exists, image_c
 
 models = [VideoRequestModel("runway-gen-4")]
 
@@ -62,5 +63,6 @@ def test_create_video(api_client, model):
     assert isinstance(response.parsed, VideoResponse)
     assert response.parsed.id == video_id
     assert response.parsed.status == "SUCCESS"
-    save_image_and_assert_file_exists(response.parsed.result.base64_data, f"test_videos_{model}.mp4")  # type: ignore
+    assert isinstance(response.parsed.output, list)
+    asset_outputs_exists(response.parsed.output)
     assert_logs_exist(response.parsed.logs)
