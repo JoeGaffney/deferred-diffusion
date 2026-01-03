@@ -11,23 +11,23 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 @router.get("/{file_id:path}", operation_id="files_get")
 async def get(file_id: str, expires: int, sig: str):
-    # Verify the signature against the full path
+    # 1. Cryptographic validation (The real security)
     if not verify_signed_url(file_id, "GET", expires, sig):
         raise HTTPException(status_code=403, detail="Invalid or expired signature")
 
-    # Use pathlib for more robust path handling and to satisfy security scanners.
-    # .resolve() ensures we have an absolute, normalized path.
+    # 2. Explicit sanitization (To satisfy scanners)
+    if ".." in file_id or file_id.startswith("/"):
+        raise HTTPException(status_code=403, detail="Invalid file path")
+
     storage_root = Path(settings.storage_dir).resolve()
 
-    # Ensure the file_id is treated as a relative path to the storage root.
-    # lstrip("/") prevents it from being treated as an absolute path if it starts with /.
-    # We then resolve it to handle any '..' segments.
     try:
-        full_path = (storage_root / file_id.lstrip("/")).resolve()
+        # 3. Path resolution
+        full_path = (storage_root / file_id).resolve()
     except Exception:
         raise HTTPException(status_code=403, detail="Invalid file path")
 
-    # Ensure the resolved path is still within the storage root to prevent path traversal.
+    # 4. Boundary check
     if not full_path.is_relative_to(storage_root):
         raise HTTPException(status_code=403, detail="Invalid file path")
 
@@ -37,4 +37,4 @@ async def get(file_id: str, expires: int, sig: str):
     if not full_path.is_file():
         raise HTTPException(status_code=400, detail=f"Not a file: {file_id}")
 
-    return FileResponse(full_path)
+    return FileResponse(str(full_path))
