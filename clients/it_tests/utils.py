@@ -1,7 +1,8 @@
 import base64
 import os
-import urllib.request
 from typing import List, Optional
+
+import httpx
 
 
 def get_output_dir() -> str:
@@ -20,8 +21,10 @@ def asset_outputs_exists(outputs: List[str]):
         print(f"Checking output file from URL: {url}")
         # Download the file
         try:
-            with urllib.request.urlopen(url) as response:
-                content = response.read()
+            with httpx.Client() as client:
+                response = client.get(url)
+                response.raise_for_status()
+                content = response.content
         except Exception as e:
             raise AssertionError(f"Failed to download {url}: {e}")
 
