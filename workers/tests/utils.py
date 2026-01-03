@@ -1,14 +1,8 @@
 import base64
 import json
 import os
-import tempfile
 from pathlib import Path
 from typing import List, Optional
-
-from PIL import Image
-
-from common.config import settings
-from utils.utils import ensure_path_exists
 
 
 def asset_outputs_exists(outputs: List[Path]):
@@ -17,37 +11,6 @@ def asset_outputs_exists(outputs: List[Path]):
     for output in outputs:
         assert output.exists(), "Output file path does not exist."
         assert os.path.getsize(output) > 100, f"Output file {output} is empty."
-
-
-def setup_output_file(model_id, mode, suffix="", extension="png"):
-    """Prepare output path and delete existing file if needed."""
-    model_id_nice = model_id.replace("/", "_").replace(":", "_")
-    suffix_nice = f"_{suffix}" if suffix != "" else ""
-
-    subdir = os.path.join(settings.storage_dir, "tests")
-    os.makedirs(subdir, exist_ok=True)
-
-    output_name = f"{subdir}/{model_id_nice}/{model_id_nice}_{mode}{suffix_nice}.{extension}"
-
-    if os.path.exists(output_name):
-        os.remove(output_name)
-    ensure_path_exists(output_name)
-    return output_name
-
-
-def assert_file_exists(output_name: str, size: int = 100) -> None:
-    """Assert that a file exists at the given path."""
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-    assert os.path.getsize(output_name) > size, f"Output file {output_name} is empty."
-
-
-def save_image_and_assert_file_exists(result, output_name):
-    """Save image result and verify it exists."""
-    if isinstance(result, Image.Image):
-        ensure_path_exists(output_name)
-        result.save(output_name)
-
-    assert_file_exists(output_name)
 
 
 def _convert_image_to_base64(image_path: str) -> Optional[str]:

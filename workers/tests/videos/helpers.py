@@ -1,9 +1,7 @@
 import importlib
-import os
-import shutil
 from typing import Dict, Tuple
 
-from tests.utils import assert_file_exists, image_to_base64, setup_output_file
+from tests.utils import asset_outputs_exists, image_to_base64
 from videos.context import VideoContext
 from videos.schemas import ModelName, VideoRequest
 
@@ -43,7 +41,7 @@ def text_to_video(
     prompt="Two anthropomorphic cats in comfy boxing gear and bright gloves fight intensely on a spotlighted stage.",
     num_frames=24,
 ):
-    output_name = setup_output_file(model, "text_to_video", extension="mp4")
+    task_id = "text_to_video"
 
     result = main(
         VideoContext(
@@ -54,24 +52,18 @@ def text_to_video(
                 width=int(1280 / 1.5),
                 height=int(720 / 1.5),
             ),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    # Check if output file exists
-    assert os.path.exists(output_name), f"Output file {output_name} was not created."
-
-    # Check if the output file is a valid video file
-    assert os.path.getsize(output_name) > 100, f"Output file {output_name} is empty."
+    asset_outputs_exists(result)
 
 
 def text_to_video_portrait(
     model: ModelName,
     prompt="An avalanche crashes down a mountain side. Thick torrential snow. Bright sunny day. Cinematic. Film quality. People running away in panic.",
 ):
-    output_name = setup_output_file(model, "text_to_video_portrait", extension="mp4")
+    task_id = "text_to_video_portrait"
 
     result = main(
         VideoContext(
@@ -82,17 +74,15 @@ def text_to_video_portrait(
                 width=int(720 / 1.5),
                 height=int(1280 / 1.5),
             ),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    assert_file_exists(output_name)
+    asset_outputs_exists(result)
 
 
 def image_to_video(model: ModelName):
-    output_name = setup_output_file(model, "image_to_video", extension="mp4")
+    task_id = "image_to_video"
 
     result = main(
         VideoContext(
@@ -102,17 +92,15 @@ def image_to_video(model: ModelName):
                 prompt="A man with short gray hair plays a red electric guitar.",
                 num_frames=24,
             ),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    assert_file_exists(output_name)
+    asset_outputs_exists(result)
 
 
 def image_to_video_portrait(model):
-    output_name = setup_output_file(model, "image_to_video", extension="mp4", suffix="portrait")
+    task_id = "image_to_video_portrait"
     prompt = "POV selfie video, white cat with sunglasses standing on surfboard, relaxed smile, tropical beach behind (clear water, green hills, blue sky with clouds). Surfboard tips, cat falls into ocean, camera plunges underwater with bubbles and sunlight beams. Brief underwater view of cat’s face, then cat resurfaces, still filming selfie, playful summer vacation mood."
 
     result = main(
@@ -123,17 +111,15 @@ def image_to_video_portrait(model):
                 prompt=prompt,
                 num_frames=48,
             ),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    assert_file_exists(output_name)
+    asset_outputs_exists(result)
 
 
 def video_to_video(model: ModelName):
-    output_name = setup_output_file(model, "video_to_video", extension="mp4")
+    task_id = "video_to_video"
 
     result = main(
         VideoContext(
@@ -144,17 +130,15 @@ def video_to_video(model: ModelName):
                 prompt="A man in a tuxedo is waving at the camera.",
                 num_frames=24,
             ),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    assert_file_exists(output_name)
+    asset_outputs_exists(result)
 
 
 def video_upscale(model: ModelName):
-    output_name = setup_output_file(model, "video_upscale", extension="mp4")
+    task_id = "video_upscale"
 
     result = main(
         VideoContext(
@@ -162,17 +146,15 @@ def video_upscale(model: ModelName):
                 model=model,
                 video=image_to_base64("../assets/act_reference_v001.mp4"),
             ),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    assert_file_exists(output_name)
+    asset_outputs_exists(result)
 
 
 def first_frame_last_frame(model: ModelName):
-    output_name = setup_output_file(model, "first_frame_last_frame", extension="mp4")
+    task_id = "first_frame_last_frame"
 
     result = main(
         VideoContext(
@@ -183,42 +165,36 @@ def first_frame_last_frame(model: ModelName):
                 prompt="a dramatic dolly zoom",
                 num_frames=24,
             ),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    assert_file_exists(output_name)
+    asset_outputs_exists(result)
 
 
 def video_segmentation(model: ModelName):
-    output_name = setup_output_file(model, "video_segmentation", extension="mp4")
+    task_id = "video_segmentation"
 
     result = main(
         VideoContext(
             VideoRequest(model=model, video=image_to_base64("../assets/act_reference_v001.mp4"), prompt="man"),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    assert_file_exists(output_name)
+    asset_outputs_exists(result)
 
 
 def video_segmentation_alt(model: ModelName):
-    output_name = setup_output_file(model, "video_segmentation_alt", extension="mp4")
+    task_id = "video_segmentation_alt"
 
     result = main(
         VideoContext(
             VideoRequest(
                 model=model, video=image_to_base64("../assets/act_reference_v001.mp4"), prompt="man, hands, face"
             ),
+            task_id=task_id,
         )
     )
 
-    if os.path.exists(result):
-        shutil.copy(result, output_name)
-
-    assert_file_exists(output_name)
+    asset_outputs_exists(result)
