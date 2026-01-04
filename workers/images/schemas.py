@@ -296,6 +296,7 @@ class ImageResponse(BaseModel):
     output: List[HttpUrl] = []
     error_message: Optional[str] = None
     logs: List[str] = []
+    task_info: dict = Field(default_factory=dict)
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
