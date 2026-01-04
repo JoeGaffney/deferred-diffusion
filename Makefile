@@ -87,6 +87,9 @@ test-worker: up
 test-worker-basic: up
 	docker compose exec gpu-workers pytest -m "basic" -vs
 
+test-worker-workflows: up-comfy up 
+	docker compose exec gpu-workers pytest tests/workflows -vs
+
 # make it-tests TEST_PATH=test_image_local.py
 it-tests:
 	cd clients/it_tests && pytest tests/$(TEST_PATH) -vs

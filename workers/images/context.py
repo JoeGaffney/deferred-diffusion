@@ -12,9 +12,9 @@ from utils.utils import ensure_divisible, image_crop, image_resize, load_image_i
 
 
 class ImageContext:
-    def __init__(self, data: ImageRequest, task_id: str = get_task_id()):
+    def __init__(self, data: ImageRequest, task_id: str | None = None):
         self.model = data.model
-        self.task_id = task_id
+        self.task_id = task_id or get_task_id()
         self.data = data
         self.generator = torch.Generator(device="cpu").manual_seed(self.data.seed)
         self.width = copy.copy(data.width)
@@ -60,11 +60,16 @@ class ImageContext:
 
         return result
 
-    def save_output(self, image: Image.Image, index: int = 0) -> Path:
+    def get_output_path(self, index: int = 0) -> Path:
         # deterministic relative path
-        rel_path = Path(self.model) / f"{self.task_id}-{index}.png"
-        abs_path = settings.storage_dir / rel_path
+        task_dir = self.data.task_name.replace(".", "/")
+        rel_path = Path(task_dir) / f"{self.task_id}-{index}.png"
+        abs_path = Path(settings.storage_dir / rel_path).resolve()
         abs_path.parent.mkdir(parents=True, exist_ok=True)
+        return abs_path
+
+    def save_output(self, image: Image.Image, index: int = 0) -> Path:
+        abs_path = self.get_output_path(index)
         try:
             image.save(abs_path, format="PNG")
             logger.info(f"Image saved at {abs_path}")
