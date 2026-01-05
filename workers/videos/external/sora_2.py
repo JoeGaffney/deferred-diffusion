@@ -55,7 +55,7 @@ def main(context: VideoContext) -> List[Path]:
     except Exception as e:
         raise RuntimeError(f"Error calling OpenAI API: {e}")
 
-    tmp_path = context.get_output_video_path()
+    tmp_path = context.get_output_path()
     try:
         content = client.videos.download_content(video.id, variant="video")
         content.write_to_file(tmp_path)

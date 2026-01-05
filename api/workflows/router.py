@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity
 from common.storage import signed_url_for_file
-from utils.utils import cancel_task
+from common.task_helpers import cancel_task, get_task_info
 from worker import celery_app
 from workflows.schemas import (
     WorkflowCreateResponse,
@@ -45,10 +45,7 @@ def get(id: UUID):
     result = AsyncResult(str(id), app=celery_app)
 
     # Initialize response with common fields
-    response = WorkflowResponse(
-        id=id,
-        status=result.status,
-    )
+    response = WorkflowResponse(id=id, status=result.status, task_info=get_task_info(str(id)))
 
     if result.info:
         if isinstance(result.info, dict):

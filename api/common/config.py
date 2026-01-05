@@ -19,6 +19,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5000"  # external services should use this to reach the API / used for signed URLs
     )
     ddiffusion_storage_directory: str = "/STORAGE"
+    flower_url: str = "http://flower:5555"
     signed_url_expiry_seconds: int = 3600  # 1 hour
     creates_per_minute: int = 30
     enable_mcp: bool = True

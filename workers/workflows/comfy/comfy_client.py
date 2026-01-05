@@ -33,6 +33,13 @@ class ComfyClient:
             )
         return self.http_client
 
+    def _connect_websocket(self) -> str:
+        """Establish WebSocket connection, returns client_id."""
+        client_id = str(uuid.uuid4())
+        self.ws = websocket.WebSocket()
+        self.ws.connect(f"{self.ws_url}/ws?clientId={client_id}")
+        return client_id
+
     def queue_prompt(self, workflow: dict[str, Any]) -> dict[str, Any]:
         """Send a workflow to ComfyUI for processing."""
         client = self._get_http_client()
@@ -96,11 +103,7 @@ class ComfyClient:
         params = {"filename": filename, "subfolder": subfolder, "type": folder_type, "channel": "raw"}
         response = client.get("/view", params=params)
         response.raise_for_status()
-
-        try:
-            return base64.b64encode(response.content)
-        except Exception as e:
-            raise RuntimeError(f"Failed to encode ComfyUI view response: {e}") from e
+        return response.content
 
     def free_memory(self, unload_models: bool = True, free_memory: bool = False) -> None:
         """Trigger ComfyUI to release VRAM and/or unload models."""
@@ -136,16 +139,9 @@ class ComfyClient:
         except Exception as e:
             logger.warning(f"ComfyUI cleanup job failed: {e}")
 
-    def connect_websocket(self) -> str:
-        """Establish WebSocket connection, returns client_id."""
-        client_id = str(uuid.uuid4())
-        self.ws = websocket.WebSocket()
-        self.ws.connect(f"{self.ws_url}/ws?clientId={client_id}")
-        return client_id
-
     def track_progress(self, prompt_id: str) -> None:
         """Track workflow progress via WebSocket until completion."""
-        self.connect_websocket()
+        self._connect_websocket()
 
         if not self.ws:
             raise RuntimeError("WebSocket not connected")

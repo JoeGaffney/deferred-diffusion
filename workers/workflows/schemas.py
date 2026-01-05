@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Literal, Optional, TypeAlias
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 from common.schemas import TaskStatus
 
@@ -108,6 +108,7 @@ class WorkflowResponse(BaseModel):
     output: List[HttpUrl] = []
     error_message: Optional[str] = None
     logs: List[str] = []
+    task_info: dict = Field(default_factory=dict)
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

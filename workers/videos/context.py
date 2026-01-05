@@ -20,9 +20,9 @@ from videos.schemas import VideoRequest
 
 
 class VideoContext:
-    def __init__(self, data: VideoRequest, task_id: str = get_task_id()):
+    def __init__(self, data: VideoRequest, task_id: str | None = None):
         self.model = data.model
-        self.task_id = task_id
+        self.task_id = task_id or get_task_id()
         self.data = data
         self.width = copy.copy(data.width)
         self.height = copy.copy(data.height)
@@ -96,15 +96,16 @@ class VideoContext:
     def duration_in_seconds(self, fps=24) -> int:
         return max(1, int(self.data.num_frames / fps))
 
-    def get_output_video_path(self, index: int = 0) -> Path:
+    def get_output_path(self, index: int = 0) -> Path:
         # deterministic relative path
-        rel_path = Path(self.model) / f"{self.task_id}-{index}.mp4"
-        abs_path = settings.storage_dir / rel_path
+        task_dir = self.data.task_name.replace(".", "/")
+        rel_path = Path(task_dir) / f"{self.task_id}-{index}.mp4"
+        abs_path = Path(settings.storage_dir / rel_path).resolve()
         abs_path.parent.mkdir(parents=True, exist_ok=True)
         return abs_path
 
     def save_output(self, video, index: int = 0, fps=24) -> Path:
-        abs_path = self.get_output_video_path(index)
+        abs_path = self.get_output_path(index)
         try:
             export_to_video(video, output_video_path=str(abs_path), fps=fps, quality=9)
             logger.info(f"Video saved at {abs_path}")
@@ -114,8 +115,7 @@ class VideoContext:
         return abs_path
 
     def save_output_url(self, url, index: int = 0) -> Path:
-        abs_path = self.get_output_video_path(index)
-
+        abs_path = self.get_output_path(index)
         response = requests.get(url, stream=True)
         response.raise_for_status()
 

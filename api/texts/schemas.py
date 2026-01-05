@@ -149,6 +149,7 @@ class TextResponse(BaseModel):
     status: TaskStatus
     output: str = ""
     error_message: Optional[str] = None
+    task_info: dict = Field(default_factory=dict)
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

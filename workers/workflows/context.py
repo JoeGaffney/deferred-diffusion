@@ -6,9 +6,9 @@ from workflows.schemas import WorkflowRequest
 
 
 class WorkflowContext:
-    def __init__(self, data: WorkflowRequest, task_id: str = get_task_id()):
+    def __init__(self, data: WorkflowRequest, task_id: str | None = None):
         self.data = data
-        self.task_id = task_id
+        self.task_id = task_id or get_task_id()
         self.valid_extensions = [".png", ".mp4", ".exr"]
 
         task_log(
@@ -18,16 +18,20 @@ class WorkflowContext:
     def is_extension_valid(self, filename: str) -> bool:
         return any(filename.lower().endswith(ext) for ext in self.valid_extensions)
 
+    def get_output_path(self, filename: str) -> Path:
+        # deterministic relative path
+        task_dir = self.data.task_name.replace(".", "/")
+        rel_path = Path(task_dir) / f"{self.task_id}-{filename}"
+        abs_path = Path(settings.storage_dir / rel_path).resolve()
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        return abs_path
+
     def save_output(self, base64_bytes: bytes, filename: str) -> Path:
         # NOTE possibly we should validate the bytes here (e.g., try to open as image/video)
         if not self.is_extension_valid(filename):
             raise ValueError(f"Invalid file extension for output: {filename}")
 
-        # deterministic relative path
-        rel_path = Path("comfy-workflow") / f"{self.task_id}-{filename}"
-        abs_path = settings.storage_dir / rel_path
-        abs_path.parent.mkdir(parents=True, exist_ok=True)
-
+        abs_path = self.get_output_path(filename)
         try:
             with open(abs_path, "wb") as f:
                 f.write(base64_bytes)
