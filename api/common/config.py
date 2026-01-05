@@ -1,9 +1,8 @@
 import hashlib
 import logging
 import os
-import warnings
 
-from pydantic import field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -14,10 +13,9 @@ class Settings(BaseSettings):
 
     celery_broker_url: str = "redis://redis:6379/0"
     celery_result_backend: str = "redis://redis:6379/1"
-    ddiffusion_admin_key: str = "supersecretadminkey"
-    ddiffusion_storage_address: str = (
-        "http://127.0.0.1:5000"  # external services should use this to reach the API / used for signed URLs
-    )
+    ddiffusion_admin_key: str = Field(min_length=32)
+    # external services should use this to reach the API / used for signed URLs
+    ddiffusion_storage_address: str = "http://127.0.0.1:5000"
     ddiffusion_storage_directory: str = "/STORAGE"
     flower_url: str = "http://flower:5555"
     signed_url_expiry_seconds: int = 3600  # 1 hour
@@ -35,17 +33,6 @@ class Settings(BaseSettings):
         subdir = self.ddiffusion_storage_directory
         os.makedirs(subdir, exist_ok=True)
         return subdir
-
-    @field_validator("ddiffusion_admin_key")
-    @classmethod
-    def validate_admin_key(cls, v: str) -> str:
-        if v == "supersecretadminkey":
-            warnings.warn(
-                "Security risk: Using default value for DDIFFUSION_ADMIN_KEY. "
-                "Change this in production via environment variables.",
-                UserWarning,
-            )
-        return v
 
 
 settings = Settings()  # type: ignore

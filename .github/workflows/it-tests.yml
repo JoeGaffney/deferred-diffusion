@@ -13,7 +13,7 @@ env:
   REPO: deferred-diffusion
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
-  DDIFFUSION_ADMIN_KEY: ci_admin_key_1234567890abcdef
+  DDIFFUSION_ADMIN_KEY: ci_admin_key_SHsOgCLRqMT4RlfDwvFt83nmL/BRLA4rob/JXI8gKH8=
 
 jobs:
   it-tests:  
