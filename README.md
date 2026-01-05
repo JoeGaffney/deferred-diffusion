@@ -23,7 +23,7 @@ Example **Houdini** and **Nuke** clients are included to demonstrate integration
 - **Controlled external access**: Only approved providers (Replicate and OpenAI) are called via their APIs. Uploaded data is retained only as long as necessary to complete the inference and is deleted soon after, minimizing exposure.
 - **Traceable and reproducible**: Local models are version-controlled in code; no downloading from random external repositories.
 - **Client / Workstations**: Don't need heavy GPUs, download models or call provider APIs directly.
-- **API / Workers**: Workers remain fully stateless. The API temporarily stores inference results to generate signed URLs, but does not require access to your main network drives, maintaining strong isolation and clear boundaries.
+- **Storage Isolation**: Large media storage is kept at the API/Worker layer and is accessed through secure short-lived signed URLs. This removes the need for clients to have direct mount access to the inference storage.
 
 #### **Basic Flow Example**
 
@@ -40,12 +40,13 @@ sequenceDiagram
     Broker->>Worker: Pick up task
     Note over Worker: Validate and build context
     Note over Worker: Run inference / Call external
-    Worker->>Broker: Store result
+    Note over Worker: Write result to shared storage
+    Worker->>Broker: Store result (file paths)
 
     Note over Client: Client polls for completion
     Client->>API: GET /images/{task_id}
-    API<<->>Broker: Retrieve task result Base64
-    Note over API: Write Base64 result to storage, generate signed URL
+    API<<->>Broker: Retrieve task result (file paths)
+    Note over API: Generate signed URL for files
     API->>Client: Signed URL download
 ```
 
@@ -129,41 +130,28 @@ See [clients/README.md](clients/README.md) for detailed setup instructions.
 
 This feature enables the use of a **ComfyUI sidecar** to execute advanced, user-driven pipelines with support for **patching workflows**, modifying inputs, and updating files as needed. Workflows can return a mixed list of image and video data.
 
-> ⚠️ These run in a separate, isolated Docker container. They communicate with the main system only through stateless API calls / websockets and pull only the files needed for the workflow. ComfyUI's dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **require manual configuration**. Users must curate and sync their own custom nodes and models.
+> ⚠️ These run in a separate, isolated Docker container. They communicate with the main system only through stateless API calls / websockets and transfer only the files needed for the workflow. ComfyUI's dynamic loading of custom nodes and Python code at runtime introduces **additional security considerations**, so these workflows are **experimental** and **require manual configuration**. Users must curate and sync their own custom nodes and models.
 
 #### Workflow Flow
 
-This diagram shows how a Worker interacts with the ComfyUI sidecar. It extends the standard domain/task flow by integrating Comfy workflows while keeping the core **API → Broker → Worker** logic consistent. All interactions with the ComfyUI sidecar are request scoped and stateless from the core system’s perspective.
-
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant API
-    participant Broker
     participant Worker
     participant Sidecar as Comfy (Sidecar)
 
-    Client->>API: POST /workflows/create
-    API->>Broker: Queue task
-    API->>Client: Return task_id (202 Accepted)
-    Broker->>Worker: Pick up task
-    Note over Worker: Validate and build context
     Note over Worker: Patch Workflow
-    Worker->>Sidecar: POST /upload/image
-    Note over Sidecar: Base64 files now local
+    Worker->>Sidecar: POST /upload/image (Base64)
+    Note over Sidecar: Files now local to Comfy
     Worker->>Sidecar: POST /prompt
     Sidecar->>Worker: Return prompt_id (200 Accepted)
     Note over Sidecar: Run inference
-    Note over Worker: Worker polls for completion
+    Note over Worker: Websocket checks for completion
     Worker->>Sidecar: GET /history/{prompt_id}
-    Sidecar->>Worker: Base64 data
-    Worker->>Broker: Store result
-
-    Note over Client: Client polls for completion
-    Client->>API: GET /workflows/{task_id}
-    API<<->>Broker: Retrieve task result Base64
-    Note over API: Write Base64 result to storage, generate signed URL
-    API->>Client: Signed URL download
+    Sidecar->>Worker: Filenames & Metadata
+    Worker->>Sidecar: GET /view?filename=...
+    Sidecar->>Worker: Bytes data
+    Note over Worker: Save to shared storage
+    Worker->>Sidecar: POST /clean_memory
 ```
 
 ### Agentic
