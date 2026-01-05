@@ -36,8 +36,10 @@ def package_release(version, project_name):
         with open(path, "r") as f:
             content = f.read()
 
-        # A. Strip build sections (matches build: and dockerfile: blocks)
-        content = re.sub(r"^\s+build:.*?dockerfile:.*?(\r?\n|$)", "", content, flags=re.MULTILINE | re.DOTALL)
+        # A. Strip build sections (remove build: block and its indented children)
+        # This matches 'build:' at any indentation and then all subsequent lines
+        # that are indented deeper than the 'build:' line.
+        content = re.sub(r"^([ \t]+)build:.*(?:\n\1[ \t]+.*)*\n?", "", content, flags=re.MULTILINE)
 
         # B. Pin versions (Swap -latest for the specific version)
         # Handles :api-latest, :worker-latest, :agentic-latest, :comfy-latest
