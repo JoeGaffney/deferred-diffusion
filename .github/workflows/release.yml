@@ -202,8 +202,7 @@ jobs:
           ```
 
           ### Release Package
-          Download the release archive below for clients and docker compose file. Tags are set to :latest but can be changed to specific version as needed.
-          
+          Download the release archive below for clients and docker compose files.
           #### To run
           1. **Download and extract the archive:**
             ```bash
@@ -222,7 +221,7 @@ jobs:
             docker-compose up -d --no-build
             ```
 
-          - See README.md in the archive for more details.
+          - See README.md and DEPLOYMENT.md in the archive for more details.
           - For troubleshooting or advanced configuration, refer to the documentation in the repository.
 
       env:
