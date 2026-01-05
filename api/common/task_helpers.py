@@ -3,6 +3,7 @@ from typing import Any, Dict
 from uuid import UUID
 
 import httpx
+from cachetools import TTLCache, cached
 from celery.result import AsyncResult
 from fastapi import HTTPException
 
@@ -11,10 +12,12 @@ from common.logger import logger
 from common.schemas import DeleteResponse, TaskStatus
 
 
+@cached(cache=TTLCache(maxsize=128, ttl=5))
 def get_task_info(task_id: str) -> Dict[str, Any]:
     """
-    Fetch task information from Flower API. This includes all metrics with truncated strings.
-    So we can use this to provide more detailed task status in the API responses. Instead of using celerys extended results feature which would use a lot of storage.
+    Fetch task information from Flower API.
+    So we can use this to provide more detailed task status in the API responses.
+    Instead of using celerys extended results feature which would use a lot of storage.
     """
     result = {}
     try:
@@ -41,10 +44,12 @@ def get_task_info(task_id: str) -> Dict[str, Any]:
     for key in timestamp_keys:
         if key in result and isinstance(result[key], (int, float)):
             try:
-                result[key] = datetime.fromtimestamp(result[key], tz=timezone.utc).isoformat()
+                result[key] = datetime.fromtimestamp(result[key], tz=timezone.utc).isoformat(timespec="seconds")
             except (ValueError, OverflowError, TypeError):
+                # Use original value if conversion fails
                 pass
 
+    # NOTE possibly we could put into a fixed schema here instead of returning raw dict
     return result
 
 
@@ -61,14 +66,3 @@ def cancel_task(id: UUID, celery_app) -> DeleteResponse:
         raise HTTPException(status_code=500, detail=f"Error cancelling task: {str(e)}")
 
     return DeleteResponse(id=id, status=TaskStatus.REVOKED, message="Task cancellation requested")
-
-
-def truncate_strings(data: Any, max_length: int = 100) -> Any:
-    if isinstance(data, dict):
-        return {k: truncate_strings(v, max_length) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [truncate_strings(item, max_length) for item in data]
-    elif isinstance(data, str):
-        return data if len(data) <= max_length else data[:max_length] + "..."
-    else:
-        return data
