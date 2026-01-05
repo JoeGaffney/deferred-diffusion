@@ -1,3 +1,5 @@
+import secrets
+
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader
 
@@ -57,5 +59,5 @@ async def verify_token(
 def admin_only(authorization: str = Depends(admin_api_key_header)):
     token = authorization.replace("Bearer ", "")
 
-    if token != settings.ddiffusion_admin_key:
-        raise HTTPException(status_code=403, detail="Forbidden - Invalid Admin Key")
+    if not secrets.compare_digest(token, settings.ddiffusion_admin_key):
+        raise HTTPException(status_code=403, detail="Forbidden")

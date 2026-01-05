@@ -1,5 +1,6 @@
 services:
   api:
+    image: joegaffney/deferred-diffusion:api-latest
     build:
       context: .
       dockerfile: Dockerfile.api
@@ -30,11 +31,11 @@ services:
     command: redis-server --appendonly yes
 
   gpu-workers:
+    image: joegaffney/deferred-diffusion:worker-latest
     command: celery -A worker worker --loglevel=info --pool=threads --concurrency=1 -Q gpu,comfy
     build:
       context: .
       dockerfile: Dockerfile.workers
-    image: deferred-diffusion-workers
     tty: true
     stdin_open: true
     volumes:
@@ -70,11 +71,11 @@ services:
               capabilities: [gpu]
 
   cpu-workers:
+    image: joegaffney/deferred-diffusion:worker-latest
     command: celery -A worker worker --concurrency=4 --loglevel=info -Q cpu
     build:
       context: .
       dockerfile: Dockerfile.workers
-    image: deferred-diffusion-workers
     tty: true
     stdin_open: true
     volumes:
@@ -117,6 +118,7 @@ services:
       - redis
 
   agentic:
+    image: joegaffney/deferred-diffusion:agentic-latest
     build:
       context: .
       dockerfile: Dockerfile.agentic

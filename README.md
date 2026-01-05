@@ -217,7 +217,13 @@ DDIFFUSION_ADMIN_KEY=<generate-a-random-secret>
 DDIFFUSION_STORAGE_ADDRESS=http://127.0.0.1:5000 # API server address required for signed URL store
 ```
 
-> **Note**: You must use the `DDIFFUSION_ADMIN_KEY` to create your first API key via the `/api/admin/keys` endpoint before you can use the clients or Swagger UI.
+> **Note**: You must use the `DDIFFUSION_ADMIN_KEY` to create your first API key via the `/api/admin/keys` endpoint. Once created, use that API key for all other "non-admin" endpoints, clients, and the Swagger UI.
+
+You can generate a secure 32-character key using:
+
+```bash
+openssl rand -base64 32
+```
 
 For the clients where the tool sets are used
 
@@ -283,14 +289,15 @@ See the make file for more info.
 
 ## Releasing
 
-We have a GitHub action setup to do the release based on any v*.*.\* tag.
+Full releases (tagging, building Docker images, and pushing to Docker Hub) are handled automatically by **GitHub Actions** when a `v*.*.*` tag is pushed.
 
-To make a local release you can also run the make commands.
+To test the release packaging locally (generate clients and the portable `docker-compose.yml`), you can run:
 
 ```bash
-make create-release
-make tag-and-push
+make create-client-release
 ```
+
+This generates a `.tar.gz` in the `releases/` directory containing the unified compose file and generated clients for VFX host applications.
 
 ## Logging
 

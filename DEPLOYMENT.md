@@ -26,6 +26,14 @@ The provided compose configurations are meant to illustrate service boundaries, 
 
 > **Note**: The packaged release contains pre-built containers and clients. Models will be downloaded automatically on first use or during testing.
 
+6. **Optional ComfyUI sidecar**:
+   If you wish to use advanced ComfyUI workflows, run the sidecar service alongside the main stack:
+   ```bash
+   docker compose -f docker-compose.comfy.yml pull
+   docker compose -f docker-compose.comfy.yml up -d --no-build
+   ```
+   _Note: Ensure `COMFY_API_URL` in your `.env` points to the correct address (default: `http://host.docker.internal:8188`)._
+
 ## Testing Deployment
 
 Tests are included inside the containers and can be run to verify functionality and download missing models.

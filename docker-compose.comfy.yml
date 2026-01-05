@@ -1,7 +1,7 @@
 services:
   # ComfyUI service (sidecar for GPU workers)
   comfy:
-    container_name: comfy
+    image: joegaffney/deferred-diffusion:comfy-latest
     security_opt:
       - no-new-privileges:true
     cap_drop:
