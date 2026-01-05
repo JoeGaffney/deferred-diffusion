@@ -1,6 +1,6 @@
 .PHONY:  all down copy-schemas build up generate-clients test-worker test-it-tests create-release mypy-check
 
-VERSION ?= dev
+VERSION ?= latest
 PROJECT_NAME ?= deferred-diffusion
 REPO ?= deferred-diffusion
 REPO_USERNAME ?= joegaffney
@@ -101,37 +101,8 @@ it-tests-basic:
 
 # Create release package
 create-client-release: generate-clients-raw
-	if not exist releases mkdir releases
-	if exist releases\$(PROJECT_NAME) rmdir /S /Q releases\$(PROJECT_NAME)
-	mkdir releases\$(PROJECT_NAME)
-# copy files
-	copy docker-compose.yml releases\$(PROJECT_NAME)\docker-compose.yml
-	copy docker-compose.comfy.yml releases\$(PROJECT_NAME)\docker-compose.comfy.yml
-	copy README.md releases\$(PROJECT_NAME)\README.md
-	copy DEPLOYMENT.md releases\$(PROJECT_NAME)\DEPLOYMENT.md
-	xcopy /E /I /Y clients releases\$(PROJECT_NAME)\clients
-# Remove build sections from docker-compose.yml in the release
-	powershell -Command "$$c = Get-Content 'releases\$(PROJECT_NAME)\docker-compose.yml' -Raw; $$c -replace '(?ms)^\s+build:.*?dockerfile:.*?$$', '' | Set-Content 'releases\$(PROJECT_NAME)\docker-compose.yml'"
-	powershell -Command "$$c = Get-Content 'releases\$(PROJECT_NAME)\docker-compose.comfy.yml' -Raw; $$c -replace '(?ms)^\s+build:.*?dockerfile:.*?$$', '' | Set-Content 'releases\$(PROJECT_NAME)\docker-compose.comfy.yml'"
-# package release
-	cd releases && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
-	@echo Release files created in releases/$(PROJECT_NAME)
-	@echo Archive created: releases/$(PROJECT_NAME)-$(VERSION).tar.gz
+	python scripts/package_release.py $(VERSION) $(PROJECT_NAME)
 
-create-client-release-linux: generate-clients-raw
-	mkdir -p releases/$(PROJECT_NAME)
-	rm -rf releases/$(PROJECT_NAME)/* 2>/dev/null || true
-# copy files
-	cp docker-compose.yml releases/$(PROJECT_NAME)/docker-compose.yml
-	cp docker-compose.comfy.yml releases/$(PROJECT_NAME)/docker-compose.comfy.yml
-	cp README.md releases/$(PROJECT_NAME)/README.md
-	cp DEPLOYMENT.md releases/$(PROJECT_NAME)/DEPLOYMENT.md
-	cp -r clients releases/$(PROJECT_NAME)/
-# Remove build sections from docker-compose.yml in the release
-	sed -i '/build:/,+2d' releases/$(PROJECT_NAME)/docker-compose.yml
-	sed -i '/build:/,+2d' releases/$(PROJECT_NAME)/docker-compose.comfy.yml
-# package release
-	cd releases && tar -czf $(PROJECT_NAME)-$(VERSION).tar.gz $(PROJECT_NAME)
-	@echo Release files created in releases/$(PROJECT_NAME)
-	@echo Archive created: releases/$(PROJECT_NAME)-$(VERSION).tar.gz
+
+
 

@@ -181,7 +181,7 @@ jobs:
 
     - name: Create client release package using Makefile
       run: |
-        make create-client-release-linux VERSION=${{ steps.version.outputs.VERSION }}
+        make create-client-release VERSION=${{ steps.version.outputs.VERSION }}
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
