@@ -132,6 +132,22 @@ services:
       api:
         condition: service_healthy
 
+  agentic_web:
+    command: uvicorn web_app:app --host 0.0.0.0 --port 7932
+    image: joegaffney/deferred-diffusion:agentic-latest
+    build:
+      context: .
+      dockerfile: Dockerfile.agentic
+    ports:
+      - "7932:7932"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DDIFFUSION_API_KEY=${DDIFFUSION_API_KEY}
+      - DDIFFUSION_MCP_ADDRESS=http://api:5000/mcp
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   hf_cache:
     name: deferred-diffusion_hf_cache

@@ -1,9 +1,8 @@
 import copy
-import tempfile
 from pathlib import Path
 from typing import Literal
 
-import requests
+import httpx
 import torch
 from diffusers.utils import export_to_video
 
@@ -116,14 +115,14 @@ class VideoContext:
 
     def save_output_url(self, url, index: int = 0) -> Path:
         abs_path = self.get_output_path(index)
-        response = requests.get(url, stream=True)
+
+        logger.info(f"Downloading video from {url}")
+        response = httpx.get(url, follow_redirects=True)
         response.raise_for_status()
 
         try:
             with open(abs_path, "wb") as file:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        file.write(chunk)
+                file.write(response.content)
             logger.info(f"Video saved at {abs_path}")
         except Exception as e:
             raise Exception(f"Failed to download or write file") from e
