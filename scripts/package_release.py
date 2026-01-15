@@ -42,8 +42,8 @@ def package_release(version, project_name):
         content = re.sub(r"^([ \t]+)build:.*(?:\n\1[ \t]+.*)*\n?", "", content, flags=re.MULTILINE)
 
         # B. Pin versions (Swap -latest for the specific version)
-        # Handles :api-latest, :worker-latest, :agentic-latest, :comfy-latest
-        content = re.sub(r":(api|worker|agentic|comfy)-latest", rf":\1-{version}", content)
+        # Handles :api-latest, :worker-latest, :comfy-latest
+        content = re.sub(r":(api|worker|comfy)-latest", rf":\1-{version}", content)
 
         with open(path, "w") as f:
             f.write(content)

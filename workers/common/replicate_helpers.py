@@ -6,10 +6,10 @@ from diffusers.utils import load_image
 from PIL import Image
 from replicate.helpers import FileOutput
 
-from common.logger import task_log
+from common.logger import logger, task_log
 
 
-def replicate_run(model_path: str, payload: dict[str, Any]) -> Any:
+def replicate_run(model_path: str, payload: dict[str, Any], poll_interval: int = 3) -> Any:
     task_log(
         f"Calling Replicate API {model_path}",
     )
@@ -23,7 +23,8 @@ def replicate_run(model_path: str, payload: dict[str, Any]) -> Any:
         # Poll for status and stream logs
         last_log_position = 0
         while prediction.status not in ["succeeded", "failed", "canceled"]:
-            time.sleep(3)  # Small delay before next poll
+            time.sleep(poll_interval)  # Small delay before next poll
+            logger.info(f"Polling replicate for completion: {prediction.status}")
             prediction.reload()
 
             # Stream new logs if available
@@ -44,6 +45,9 @@ def replicate_run(model_path: str, payload: dict[str, Any]) -> Any:
     except Exception as e:
         raise RuntimeError(f"Error calling Replicate API {model_path}: {e}")
 
+    task_log(
+        f"Completed replicate call {model_path}",
+    )
     return output
 
 

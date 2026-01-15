@@ -3,7 +3,7 @@ from __future__ import annotations as _annotations
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.messages import ModelMessage, ToolReturnPart
 
-from tools.dd_mcp_server import get_mcp_server
+from .dd_mcp_server import get_mcp_server
 
 fetch_agent = Agent(
     "openai:gpt-4.1-mini",

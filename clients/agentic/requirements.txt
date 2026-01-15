@@ -1,0 +1,2 @@
+pydantic-ai-slim[openai,mcp,web]
+uvicorn

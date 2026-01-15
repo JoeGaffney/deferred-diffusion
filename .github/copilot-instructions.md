@@ -1,21 +1,24 @@
 # Deferred Diffusion AI Coding Instructions
 
 ## Big Picture Architecture
+
 - **Feature-Based Structure**: Code is grouped by domain (`images`, `texts`, `videos`) in both `api/` and `workers/`.
 - **API (FastAPI)**: Handles requests, validates input, and queues tasks via Celery. Entry point: `api/main.py`.
 - **Workers (Celery)**: Executes inference. Split into `gpu` (local models) and `cpu` (external APIs) queues. Entry point: `workers/worker.py`.
 - **Data Flow**: Client -> API (POST) -> Redis (Broker) -> Worker -> Redis -> API (GET) -> Client.
-- **Statelessness**: Workers are stateless; results are returned as Base64 and "promoted" to signed URLs by the API.
-- Everything is ran though the docker containers defined in `docker-compose.yml`. (NOTE we may change so workers write the file and return the paths instead of base64 in the future)
+- **Statelessness**: Workers are stateless; results are returned as file storage paths and "promoted" to signed URLs by the API.
+- Everything is ran though the docker containers defined in `docker-compose.yml`.
 
 ## Critical Workflows
+
 - **Schema Syncing**: `api/<feature>/schemas.py` is the source of truth. **ALWAYS** run `make copy-schemas` after editing API schemas to sync them to `workers/`.
 - **Client Generation**: Run `make all` to update typed clients in `clients/` (Houdini, Nuke, it_tests) after API changes.
-- **Testing**: 
+- **Testing**:
   - Worker tests: `make test-worker TEST_PATH=images/local/test_flux_1.py`
   - Integration tests: `make test-it-tests`
 
 ## Coding Patterns & Conventions
+
 - **Adding a New Model**:
   1. Update `api/<feature>/schemas.py` (add to `ModelName` enum and `MODEL_META`).
   2. Run `make copy-schemas`.
@@ -38,10 +41,9 @@
   - **UI Updates**: Use host-specific callbacks (e.g., `hou.ui.postEventCallback`) to update node status/info from background threads.
   - **Data Flow**: Convert node inputs to Base64 using `input_to_base64` (Houdini) or `node_to_base64` (Nuke) before sending to API.
   - **Generated Clients**: Do not edit files in `generated/` folders; they are overwritten by `make generate-clients`.
-- **Agentic Layer**:
-  - Uses Pydantic AI and MCP (`agentic/tools/dd_mcp_server.py`).
 
 ## Key Files
+
 - `api/common/schemas.py`: Shared task statuses and Base64 types.
 - `workers/common/config.py`: Worker-specific settings (storage, model paths).
 - `Makefile`: Central hub for builds, syncing, and testing.

@@ -70,3 +70,7 @@ custom_plugin_path = r"C:\development\deferred-diffusion\clients\nuke"
 nuke.pluginAddPath(custom_plugin_path)
 print(f"Custom plugin paths from {custom_plugin_path} have been added.")
 ```
+
+## Agentic Layer
+
+Example showing how to call the API through a pydantic-ai agent using MCP and the ag-ui protocol for the UI.

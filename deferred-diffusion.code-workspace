@@ -22,10 +22,6 @@
     {
       "path": "clients/nuke/python",
       "name": "Nuke"
-    },
-    {
-      "path": "agentic",
-      "name": "agentic"
     }
   ],
   "settings": {

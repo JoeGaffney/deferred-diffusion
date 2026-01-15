@@ -117,21 +117,6 @@ services:
       - cpu-workers
       - redis
 
-  agentic:
-    image: joegaffney/deferred-diffusion:agentic-latest
-    build:
-      context: .
-      dockerfile: Dockerfile.agentic
-    ports:
-      - "7000:7000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DDIFFUSION_API_KEY=${DDIFFUSION_API_KEY}
-      - DDIFFUSION_MCP_ADDRESS=http://api:5000/mcp
-    depends_on:
-      api:
-        condition: service_healthy
-
 volumes:
   hf_cache:
     name: deferred-diffusion_hf_cache

@@ -4,10 +4,6 @@ import uuid
 
 from celery import current_task
 
-# Suppress overly verbose logs from external libraries
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
-
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
