@@ -154,12 +154,6 @@ sequenceDiagram
     Worker->>Sidecar: POST /clean_memory
 ```
 
-### Agentic
-
-Example Agentic layer which is a bit experimental that demonstrates connection to the MCP (Model Context Protocol) server.
-
-See [agentic/README.md](agentic/README.md) for more information.
-
 ## Model Registration Philosophy
 
 User-facing model choices are simple names like "flux-1" or "flux-1-pro". The actual model calls and implementations are defined in the worker pipeline. Worker tasks follow these user-driven names but may share common logic for variants.
