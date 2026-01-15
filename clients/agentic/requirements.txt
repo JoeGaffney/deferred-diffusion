@@ -1,4 +1,2 @@
-pillow==11.3.0
-pydantic==2.11.10
-pydantic-ai-slim[openai,mcp,web]==1.39.1
+pydantic-ai-slim[openai,mcp,web]
 uvicorn

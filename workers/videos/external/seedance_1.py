@@ -22,13 +22,14 @@ def get_resolution(context: VideoContext) -> str:
 
 
 def main(context: VideoContext) -> List[Path]:
-    model = "bytedance/seedance-1-pro"
+    model = "bytedance/seedance-1.5-pro"
     payload = {
         "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,
-        "aspect_ratio": get_aspect_ratio(context),
+        # "aspect_ratio": get_aspect_ratio(context), # Currently not used by the model
         "duration": 5 if context.duration_in_seconds() <= 5 else 10,
         "resolution": get_resolution(context),
+        "generate_audio": False,
     }
 
     if context.image:

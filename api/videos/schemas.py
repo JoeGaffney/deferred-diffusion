@@ -87,7 +87,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         text_to_video=True,
         image_to_video=True,
         last_image=True,
-        description="Bytedance Seedance-1 flagship model. Great all rounder.",
+        description="Bytedance Seedance-1.5 pro flagship model. Great all rounder.",
     ),
     "kling-2": VideosModelInfo(
         provider="replicate",
@@ -95,7 +95,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         text_to_video=True,
         image_to_video=True,
         last_image=True,
-        description="Kling 2.5 flagship model. Great at first-last frame coherence.",
+        description="Kling 2.6 pro flagship model. Will fall back to 2.1 for first-frame last-image generation.",
     ),
     "veo-3": VideosModelInfo(
         provider="replicate",
@@ -110,7 +110,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=True,
         text_to_video=True,
         image_to_video=True,
-        description="OpenAI's Sora 2 openai flagship model. Expensive and not great at image-to-video.",
+        description="OpenAI's Sora 2 pro flagship model. Expensive and not great at image-to-video.",
     ),
     "hailuo-2": VideosModelInfo(
         provider="replicate",

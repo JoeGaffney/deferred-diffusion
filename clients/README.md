@@ -73,4 +73,4 @@ print(f"Custom plugin paths from {custom_plugin_path} have been added.")
 
 ## Agentic Layer
 
-Example how to call the api through an pydantic-ai agent using MCP and ag-ui protocol for the ui
+Example showing how to call the API through a pydantic-ai agent using MCP and the ag-ui protocol for the UI.

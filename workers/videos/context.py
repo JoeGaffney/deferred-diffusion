@@ -117,7 +117,7 @@ class VideoContext:
         abs_path = self.get_output_path(index)
 
         logger.info(f"Downloading video from {url}")
-        response = httpx.get(url, follow_redirects=True)
+        response = httpx.get(url, follow_redirects=True, timeout=90)
         response.raise_for_status()
 
         try:
