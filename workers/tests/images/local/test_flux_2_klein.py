@@ -16,7 +16,7 @@ from tests.images.helpers import (
     text_to_image_alt,
 )
 
-models: List[ModelName] = ["qwen-image"]
+models: List[ModelName] = ["flux-2-klein"]
 
 
 @pytest.mark.basic
@@ -32,16 +32,6 @@ def test_text_to_image_alt(model):
 
 
 @pytest.mark.parametrize("model", models)
-def test_inpainting(model):
-    inpainting(model)
-
-
-@pytest.mark.parametrize("model", models)
-def test_inpainting_alt(model):
-    inpainting_alt(model)
-
-
-@pytest.mark.parametrize("model", models)
 def test_image_to_image(model):
     image_to_image(model)
 
@@ -49,6 +39,16 @@ def test_image_to_image(model):
 @pytest.mark.parametrize("model", models)
 def test_image_to_image_alt(model):
     image_to_image_alt(model)
+
+
+@pytest.mark.parametrize("model", models)
+def test_inpainting(model):
+    inpainting(model)
+
+
+@pytest.mark.parametrize("model", models)
+def test_inpainting_alt(model):
+    inpainting_alt(model)
 
 
 @pytest.mark.parametrize("model", models)

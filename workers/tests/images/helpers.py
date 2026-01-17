@@ -19,6 +19,7 @@ def main(context: ImageContext) -> List[Path]:
         "sd-xl": ("images.local.sd_xl", "main"),
         "flux-1": ("images.local.flux_1", "main"),
         "flux-2": ("images.local.flux_2", "main"),
+        "flux-2-klein": ("images.local.flux_2_klein", "main"),
         "qwen-image": ("images.local.qwen_image", "main"),
         "z-image": ("images.local.z_image", "main"),
         "depth-anything-2": ("images.local.depth_anything_2", "main"),

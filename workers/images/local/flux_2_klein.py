@@ -2,8 +2,7 @@ from pathlib import Path
 from typing import List
 
 import torch
-from diffusers import Flux2Pipeline, Flux2Transformer2DModel
-from PIL import Image
+from diffusers import Flux2KleinPipeline, Flux2Transformer2DModel
 
 from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
@@ -12,32 +11,30 @@ from common.pipeline_helpers import (
     optimize_pipeline,
     task_log_callback,
 )
-from common.text_encoders import get_mistral3_text_encoder
+from common.text_encoders import get_qwen3_8b_text_encoder
 from images.context import ImageContext
-
-# Pre-shifted custom sigmas for 8-step turbo inference
-TURBO_SIGMAS = [1.0, 0.6509, 0.4374, 0.2932, 0.1893, 0.1108, 0.0495, 0.00031]
 
 
 @decorator_global_pipeline_cache
 def get_pipeline(model_id):
+
     transformer = get_quantized_model(
-        model_id="diffusers/FLUX.2-dev-bnb-4bit",
+        model_id=model_id,
         subfolder="transformer",
         model_class=Flux2Transformer2DModel,
-        target_precision=16,
+        target_precision=8,
         torch_dtype=torch.bfloat16,
     )
 
-    pipe = Flux2Pipeline.from_pretrained(
-        model_id, text_encoder=get_mistral3_text_encoder(), transformer=transformer, torch_dtype=torch.bfloat16
+    pipe = Flux2KleinPipeline.from_pretrained(
+        model_id, text_encoder=get_qwen3_8b_text_encoder(), transformer=transformer, torch_dtype=torch.bfloat16
     )
-    pipe.load_lora_weights("fal/FLUX.2-dev-Turbo", weight_name="flux.2-turbo-lora.safetensors")
-    return optimize_pipeline(pipe, offload=is_memory_exceeded(32))
+
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(16))
 
 
 def text_to_image_call(context: ImageContext):
-    model_id = "black-forest-labs/FLUX.2-dev"
+    model_id = "black-forest-labs/FLUX.2-klein-9B"
     pipe = get_pipeline(model_id)
     prompt = context.data.cleaned_prompt
 
@@ -58,16 +55,15 @@ def text_to_image_call(context: ImageContext):
             if current is not None:
                 reference_images.append(current)
 
-    processed_image = pipe.__call__(
+    processed_image = pipe(
         prompt=prompt,
-        image=None if len(reference_images) == 0 else reference_images[:3],  # max 3 reference images
-        sigmas=TURBO_SIGMAS,
-        guidance_scale=2.5,
-        num_inference_steps=8,
+        image=None if len(reference_images) == 0 else reference_images[:3],
+        num_inference_steps=4,
+        guidance_scale=1.0,
         height=context.height,
         width=context.width,
         generator=context.generator,
-        callback_on_step_end=task_log_callback(8),  # type: ignore
+        callback_on_step_end=task_log_callback(4),  # type: ignore
     ).images[0]
     return [context.save_output(processed_image, index=0)]
 

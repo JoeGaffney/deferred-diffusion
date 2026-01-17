@@ -3,6 +3,11 @@ from pathlib import Path
 from typing import List
 
 import torch
+
+from common.monkey_patches import apply_qwen_image_patches
+
+apply_qwen_image_patches()
+
 from diffusers import (
     FlowMatchEulerDiscreteScheduler,
     QwenImageEditPlusPipeline,
@@ -11,7 +16,6 @@ from diffusers import (
 )
 from nunchaku import NunchakuQwenImageTransformer2DModel
 from nunchaku.utils import get_precision
-from PIL import Image
 
 from common.memory import is_memory_exceeded
 from common.pipeline_helpers import (
