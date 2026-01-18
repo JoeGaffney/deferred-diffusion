@@ -4,6 +4,7 @@ import torch
 from transformers import (
     Mistral3ForConditionalGeneration,
     Qwen2_5_VLForConditionalGeneration,
+    Qwen3ForCausalLM,
     T5EncoderModel,
     UMT5EncoderModel,
 )
@@ -51,5 +52,25 @@ def get_mistral3_text_encoder() -> Mistral3ForConditionalGeneration:
         subfolder="text_encoder",
         model_class=Mistral3ForConditionalGeneration,
         target_precision=16,
+        torch_dtype=torch.bfloat16,
+    )
+
+
+def get_qwen3_4b_text_encoder() -> Qwen3ForCausalLM:
+    return get_quantized_model(
+        model_id="Qwen/Qwen3-4B",
+        subfolder="",
+        model_class=Qwen3ForCausalLM,
+        target_precision=8,
+        torch_dtype=torch.bfloat16,
+    )
+
+
+def get_qwen3_8b_text_encoder() -> Qwen3ForCausalLM:
+    return get_quantized_model(
+        model_id="Qwen/Qwen3-8B",
+        subfolder="",
+        model_class=Qwen3ForCausalLM,
+        target_precision=8,
         torch_dtype=torch.bfloat16,
     )

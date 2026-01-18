@@ -10,6 +10,7 @@ ModelName: TypeAlias = Literal[
     "sd-xl",
     "flux-1",
     "flux-2",
+    "flux-2-klein",
     "qwen-image",
     "z-image",
     "depth-anything-2",
@@ -69,6 +70,15 @@ MODEL_META: Dict[ModelName, ImagesModelInfo] = {
         inpainting=True,
         references=True,
         description="FLUX 2.0 dev model with edit capabilities.",
+    ),
+    "flux-2-klein": ImagesModelInfo(
+        provider="local",
+        external=False,
+        text_to_image=True,
+        image_to_image=True,
+        inpainting=True,
+        references=True,
+        description="FLUX 2.0 Klein distilled model (9B). Fast 4-step generation.",
     ),
     "qwen-image": ImagesModelInfo(
         provider="local",

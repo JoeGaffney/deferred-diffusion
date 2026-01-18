@@ -13,6 +13,7 @@ from common.pipeline_helpers import (
     optimize_pipeline,
     task_log_callback,
 )
+from common.text_encoders import get_qwen3_4b_text_encoder
 from images.context import ImageContext
 
 
@@ -26,17 +27,9 @@ def get_pipeline(model_id):
         torch_dtype=torch.bfloat16,
     )
 
-    text_encoder = get_quantized_model(
-        model_id="Qwen/Qwen3-4B",
-        subfolder="",
-        model_class=AutoModelForCausalLM,
-        target_precision=8,
-        torch_dtype=torch.bfloat16,
-    )
-
     pipe = ZImagePipeline.from_pretrained(
         model_id,
-        text_encoder=text_encoder,
+        text_encoder=get_qwen3_4b_text_encoder(),
         transformer=transformer,
         torch_dtype=torch.bfloat16,
     )

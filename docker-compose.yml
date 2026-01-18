@@ -52,6 +52,7 @@ services:
       - HF_HOME=/WORKSPACE
       - TORCH_HOME=/WORKSPACE
       - HF_ENABLE_PARALLEL_LOADING=yes
+      - HF_HUB_DISABLE_XET=1 # Disable for now until hub v1.0
       # Point to host machine or external IP.
       # Use http://host.docker.internal:8188 for local Windows/Mac
       # Use http://192.168.x.x:8188 for a remote machine

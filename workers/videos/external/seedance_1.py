@@ -26,9 +26,9 @@ def main(context: VideoContext) -> List[Path]:
     payload = {
         "prompt": context.data.cleaned_prompt,
         "seed": context.data.seed,
-        # "aspect_ratio": get_aspect_ratio(context), # Currently not used by the model
+        "aspect_ratio": get_aspect_ratio(context),
         "duration": 5 if context.duration_in_seconds() <= 5 else 10,
-        "resolution": get_resolution(context),
+        # "resolution": get_resolution(context),# Currently not used by the model
         "generate_audio": False,
     }
 

@@ -53,6 +53,15 @@ def flux_2(args, **kwargs):
     return process_result(context, result)
 
 
+@typed_task(name="flux-2-klein", queue="gpu")
+def flux_2_klein(args, **kwargs):
+    from images.local.flux_2_klein import main
+
+    context = validate_request_and_context(args)
+    result = main(context)
+    return process_result(context, result)
+
+
 @typed_task(name="qwen-image", queue="gpu")
 def qwen_image(args, **kwargs):
     from images.local.qwen_image import main
