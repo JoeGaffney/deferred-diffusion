@@ -10,7 +10,7 @@ Group {
  addUserKnob {1 node_type +HIDDEN}
  node_type dd_image
  addUserKnob {26 ""}
- addUserKnob {4 model l Model t "Select the image generation model." M {sd-xl flux-1 flux-2 qwen-image z-image depth-anything-2 sam-2 sam-3 real-esrgan-x4 external/gpt-image-1 external/runway-gen-4 external/flux-1-pro external/flux-2-pro external/topazlabs-upscale external/gemini-2 external/gemini-3 external/seedream-4}}
+ addUserKnob {4 model l Model t "Select the image generation model." M {sd-xl flux-1 flux-2 flux-2-klein qwen-image z-image depth-anything-2 sam-2 sam-3 real-esrgan-x4 external/gpt-image-1 external/runway-gen-4 external/flux-1-pro external/flux-2-pro external/topazlabs-upscale external/gemini-2 external/gemini-3 external/seedream-4}}
  addUserKnob {22 generate l Generate t "Start image generation with current settings." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.process_image(node)"}
  addUserKnob {1 task_id l "Task ID" t "ID of the current image generation task." -STARTLINE}
  addUserKnob {22 get_task l "Get Task" t "Fetch the latest image for this task." -STARTLINE T "import dd_image\nnode = nuke.thisNode()\ndd_image.get_image(node)"}
