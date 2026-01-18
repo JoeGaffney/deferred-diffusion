@@ -30,7 +30,7 @@ def get_pipeline(model_id):
         model_id, text_encoder=get_qwen3_8b_text_encoder(), transformer=transformer, torch_dtype=torch.bfloat16
     )
 
-    return optimize_pipeline(pipe, offload=is_memory_exceeded(16))
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
 
 def text_to_image_call(context: ImageContext):
