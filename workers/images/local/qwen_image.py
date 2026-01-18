@@ -49,7 +49,7 @@ def get_scheduler():
 
 
 @decorator_global_pipeline_cache
-def get_pipeline(model_id, inpainting: bool) -> QwenImagePipeline | QwenImageInpaintPipeline:
+def get_pipeline(model_id) -> QwenImagePipeline:
     rank = 128  # you can also use the rank=128 model to improve the quality
     model_paths = {
         4: f"nunchaku-tech/nunchaku-qwen-image/svdq-{get_precision()}_r{rank}-qwen-image-lightningv1.0-4steps.safetensors",
@@ -57,22 +57,13 @@ def get_pipeline(model_id, inpainting: bool) -> QwenImagePipeline | QwenImageInp
     }
     transformer = NunchakuQwenImageTransformer2DModel.from_pretrained(model_paths[8])
 
-    if inpainting:
-        pipe = QwenImageInpaintPipeline.from_pretrained(
-            model_id,
-            text_encoder=get_qwen2_5_text_encoder(),
-            scheduler=get_scheduler(),
-            transformer=transformer,
-            torch_dtype=torch.bfloat16,
-        )
-    else:
-        pipe = QwenImagePipeline.from_pretrained(
-            model_id,
-            text_encoder=get_qwen2_5_text_encoder(),
-            scheduler=get_scheduler(),
-            transformer=transformer,
-            torch_dtype=torch.bfloat16,
-        )
+    pipe = QwenImagePipeline.from_pretrained(
+        model_id,
+        text_encoder=get_qwen2_5_text_encoder(),
+        scheduler=get_scheduler(),
+        transformer=transformer,
+        torch_dtype=torch.bfloat16,
+    )
 
     return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
 
@@ -96,7 +87,7 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
 
 
 def text_to_image_call(context: ImageContext):
-    pipe = get_pipeline("Qwen/Qwen-Image", inpainting=False)
+    pipe = get_pipeline("Qwen/Qwen-Image")
     prompt = context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
 
     processed_image = pipe.__call__(
@@ -117,15 +108,24 @@ def image_edit_call(context: ImageContext) -> List[Path]:
     import diffusers.pipelines.qwenimage.pipeline_qwenimage_edit_plus as qwen_edit_module
 
     qwen_edit_module.VAE_IMAGE_SIZE = context.width * context.height
+    prompt = context.data.cleaned_prompt
 
     # gather all possible reference images
     reference_images = []
-    if context.color_image:
+    if context.mask_image and context.color_image:
+        prompt = (
+            "Use image 1 for the mask region for inpainting. And use image 2 for the base image only alter the mask region and aim for a seamless blend. "
+            + prompt
+        )
+        reference_images.append(context.mask_image.convert("RGB"))
         reference_images.append(context.color_image)
+    else:
+        if context.color_image:
+            reference_images.append(context.color_image)
 
-    for current in context.get_reference_images():
-        if current is not None:
-            reference_images.append(current)
+        for current in context.get_reference_images():
+            if current is not None:
+                reference_images.append(current)
 
     pipe = get_edit_pipeline("Qwen/Qwen-Image-Edit-2509")
 
@@ -144,33 +144,7 @@ def image_edit_call(context: ImageContext) -> List[Path]:
     return [context.save_output(processed_image, index=0)]
 
 
-def inpainting_call(context: ImageContext) -> List[Path]:
-    if not context.color_image or not context.mask_image:
-        raise ValueError("Inpainting call requires both color_image and mask_image.")
-
-    pipe = get_pipeline("Qwen/Qwen-Image", inpainting=True)
-
-    prompt = context.data.cleaned_prompt + " Ultra HD, 4K, cinematic composition."
-
-    processed_image = pipe.__call__(
-        width=context.width,
-        height=context.height,
-        prompt=prompt,
-        negative_prompt=" ",
-        image=context.color_image,  # type: ignore
-        mask_image=context.mask_image,  # type: ignore
-        generator=context.generator,
-        num_inference_steps=8,
-        true_cfg_scale=1.0,
-        callback_on_step_end=task_log_callback(8),  # type: ignore
-    ).images[0]
-
-    return [context.save_output(processed_image, index=0)]
-
-
 def main(context: ImageContext) -> List[Path]:
-    if context.color_image and context.mask_image:
-        return inpainting_call(context)
     if context.color_image or context.get_reference_images() != []:
         return image_edit_call(context)
     return text_to_image_call(context)
