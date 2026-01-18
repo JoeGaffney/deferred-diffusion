@@ -132,7 +132,7 @@ def image_edit_call(context: ImageContext) -> List[Path]:
     processed_image = pipe.__call__(
         width=context.width,
         height=context.height,
-        prompt=context.data.cleaned_prompt,
+        prompt=prompt,
         negative_prompt=" ",
         image=reference_images,
         generator=context.generator,
