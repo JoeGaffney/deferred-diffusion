@@ -28,6 +28,7 @@ class VideosModelInfo(BaseModel):
     image_to_video: bool = False
     video_to_video: bool = False
     last_image: bool = False
+    audio: bool = False
     description: Optional[str] = None
 
     @property
@@ -51,7 +52,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=False,
         text_to_video=True,
         image_to_video=True,
-        video_to_video=True,
+        video_to_video=False,
         last_image=True,
         description="Wan 2.2, quality open-source video generation model. Will fall back to Wan VACE 2.1 for video-to-video.",
     ),
@@ -87,6 +88,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         text_to_video=True,
         image_to_video=True,
         last_image=True,
+        audio=True,
         description="Bytedance Seedance-1.5 pro flagship model. Great all rounder.",
     ),
     "kling-2": VideosModelInfo(
@@ -95,6 +97,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         text_to_video=True,
         image_to_video=True,
         last_image=True,
+        audio=True,
         description="Kling 2.6 pro flagship model. Will fall back to 2.1 for first-frame last-image generation.",
     ),
     "veo-3": VideosModelInfo(
@@ -103,6 +106,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         text_to_video=True,
         image_to_video=True,
         last_image=True,
+        audio=True,
         description="Googles VEO-3.1 flagship model. Expensive.",
     ),
     "sora-2": VideosModelInfo(
@@ -110,6 +114,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         external=True,
         text_to_video=True,
         image_to_video=True,
+        audio=True,
         description="OpenAI's Sora 2 pro flagship model. Expensive and not great at image-to-video.",
     ),
     "hailuo-2": VideosModelInfo(
@@ -181,6 +186,10 @@ class VideoRequest(BaseModel):
     video: Optional[Base64Video] = Field(
         default=None,
         description="Optional Base64 video string for video-to-video transformation or upscaling.",
+    )
+    generate_audio: bool = Field(
+        default=False,
+        description="Some models support audio output, but this comes with increased computational cost and may affect generation time.",
     )
 
     @property

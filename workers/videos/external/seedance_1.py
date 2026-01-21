@@ -29,7 +29,7 @@ def main(context: VideoContext) -> List[Path]:
         "aspect_ratio": get_aspect_ratio(context),
         "duration": 5 if context.duration_in_seconds() <= 5 else 10,
         # "resolution": get_resolution(context),# Currently not used by the model
-        "generate_audio": False,
+        "generate_audio": context.data.generate_audio,
     }
 
     if context.image:
