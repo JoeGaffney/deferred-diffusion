@@ -92,7 +92,7 @@
   },
   "10": {
     "inputs": {
-      "image": "SD1.5_00002_.png"
+      "image": "ComfyUIDummy_00001_.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -128,6 +128,7 @@
     "inputs": {
       "upscale_method": "nearest-exact",
       "megapixels": 0.5,
+      "resolution_steps": 1,
       "image": [
         "10",
         0

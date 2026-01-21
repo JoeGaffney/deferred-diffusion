@@ -40,18 +40,30 @@ class ComfyClient:
         self.ws.connect(f"{self.ws_url}/ws?clientId={client_id}")
         return client_id
 
+    def _raise_for_status(self, response: httpx.Response) -> None:
+        """Helper to raise descriptive errors for ComfyUI responses."""
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            try:
+                error_data = response.json()
+                msg = json.dumps(error_data, indent=2)
+                raise RuntimeError(f"ComfyUI Error ({response.status_code}):\n{msg}") from e
+            except Exception:
+                raise RuntimeError(f"ComfyUI Error ({response.status_code}): {response.text}") from e
+
     def queue_prompt(self, workflow: dict[str, Any]) -> dict[str, Any]:
         """Send a workflow to ComfyUI for processing."""
         client = self._get_http_client()
         response = client.post("/prompt", json={"prompt": workflow})
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def get_history(self, prompt_id: str) -> dict[str, Any]:
         """Get the execution history for a specific prompt ID."""
         client = self._get_http_client()
         response = client.get(f"/history/{prompt_id}")
-        response.raise_for_status()
+        self._raise_for_status(response)
         result = response.json()
 
         if not isinstance(result, dict):
@@ -86,23 +98,25 @@ class ComfyClient:
 
         client = self._get_http_client()
         response = client.post("/upload/image", files=files, data=data)
-        response.raise_for_status()
+        self._raise_for_status(response)
 
         result = response.json()
         result_subfolder = result.get("subfolder")
         result_filename = result.get("name")
 
-        if not result_subfolder or not result_filename:
-            raise RuntimeError(f"ComfyUI upload response missing subfolder or filename: {result}")
+        if result_filename is None:
+            raise RuntimeError(f"ComfyUI upload response missing filename: {result}")
 
-        return f"{result_subfolder}/{result_filename}"
+        if result_subfolder:
+            return f"{result_subfolder}/{result_filename}"
+        return result_filename
 
     def download_file(self, filename: str, subfolder: str = "", folder_type: str = "output") -> bytes:
         """Download output data from ComfyUI (image or video)."""
         client = self._get_http_client()
         params = {"filename": filename, "subfolder": subfolder, "type": folder_type, "channel": "raw"}
         response = client.get("/view", params=params)
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.content
 
     def free_memory(self, unload_models: bool = True, free_memory: bool = False) -> None:
@@ -112,7 +126,7 @@ class ComfyClient:
         try:
             client = self._get_http_client()
             response = client.post("/free", json=payload)
-            response.raise_for_status()
+            self._raise_for_status(response)
         except Exception as e:
             logger.warning(f"Failed to set resource cleanup flags: {e}")
             return
@@ -148,7 +162,12 @@ class ComfyClient:
 
         while True:
             try:
-                message = json.loads(self.ws.recv())
+                out = self.ws.recv()
+                if isinstance(out, bytes):
+                    # ComfyUI sends binary data for previews (not needed for progress tracking)
+                    logger.info("Received binary WebSocket message")
+                    continue
+                message = json.loads(out)
             except Exception as e:
                 logger.error(f"Error receiving WebSocket message: {e}")
                 raise

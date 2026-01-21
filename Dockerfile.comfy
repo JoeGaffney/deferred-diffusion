@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime
+FROM pytorch/pytorch:2.9.1-cuda12.8-cudnn9-runtime
 
 # Create the directory first
 RUN mkdir -p /app/ComfyUI
@@ -8,11 +8,11 @@ WORKDIR /app/ComfyUI
 RUN apt-get update && apt-get install -y git
 
 # Clone ComfyUI v0.5.0 and install dependencies
-RUN git clone --depth 1 --branch v0.5.0 https://github.com/comfyanonymous/ComfyUI.git . && \
+RUN git clone --depth 1 --branch v0.9.2 https://github.com/comfyanonymous/ComfyUI.git . && \
     pip install --no-cache-dir -r requirements.txt
 
 # Expose port if ComfyUI serves a web UI or API
 EXPOSE 8188
 
 # Run ComfyUI with browser support
-CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188"]
+CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188", "--disable-smart-memory"]
