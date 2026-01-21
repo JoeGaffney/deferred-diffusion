@@ -177,6 +177,11 @@ def refresh_knobs(node):
         if class_type == PatchClassType.PRIMITIVEINT:
             new_knob = nuke.Int_Knob(knob_name, label)
             val = node_info.get("inputs", {}).get("value", 0)
+            if isinstance(val, list):
+                message = f"Warning: Encountered list value {val} for PrimitiveInt knob; skipping. {knob_name}"
+                nuke.message(message)
+                continue  # Skip list values for now
+
             new_knob.setValue(int(val))
         elif class_type == PatchClassType.PRIMITIVEFLOAT:
             new_knob = nuke.Double_Knob(knob_name, label)

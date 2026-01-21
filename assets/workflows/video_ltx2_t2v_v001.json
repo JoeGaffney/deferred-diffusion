@@ -34,7 +34,7 @@
   },
   "100": {
     "inputs": {
-      "value": 1280
+      "value": 720
     },
     "class_type": "PrimitiveInt",
     "_meta": {
@@ -50,13 +50,13 @@
       "title": "height"
     }
   },
-  "102": {
+  "103": {
     "inputs": {
       "value": 64
     },
     "class_type": "PrimitiveInt",
     "_meta": {
-      "title": "num_frames"
+      "title": "number_frames"
     }
   },
   "92:60": {
@@ -189,18 +189,6 @@
     "class_type": "EmptyImage",
     "_meta": {
       "title": "EmptyImage"
-    }
-  },
-  "92:62": {
-    "inputs": {
-      "value": [
-        "102",
-        0
-      ]
-    },
-    "class_type": "PrimitiveInt",
-    "_meta": {
-      "title": "Length"
     }
   },
   "92:41": {
@@ -422,6 +410,18 @@
     "class_type": "LTXVScheduler",
     "_meta": {
       "title": "LTXVScheduler"
+    }
+  },
+  "92:62": {
+    "inputs": {
+      "value": [
+        "103",
+        0
+      ]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Length"
     }
   }
 }
