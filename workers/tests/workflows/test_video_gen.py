@@ -25,3 +25,24 @@ def test_video_wan2_2_14B_fun_control():
     )
     result = main(context)
     asset_outputs_exists(result)
+
+
+def test_video_ltx2_t2v():
+    workflow_path = "../assets/workflows/video_ltx2_t2v_v001.json"
+
+    patches = [
+        Patch(
+            title="positive_prompt",
+            class_type="PrimitiveStringMultiline",
+            value="A man in a tuxedo is waving at the camera.",
+        ),
+    ]
+    context = WorkflowContext(
+        WorkflowRequest(
+            workflow=load_json_file(workflow_path),
+            patches=patches,
+        ),
+        task_id="video_ltx2_t2v",
+    )
+    result = main(context)
+    asset_outputs_exists(result)

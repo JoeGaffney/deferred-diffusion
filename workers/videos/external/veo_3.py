@@ -23,7 +23,7 @@ def main(context: VideoContext) -> List[Path]:
         "seed": context.data.seed,
         "aspect_ratio": get_aspect_ratio(context),
         "duration": 4 if context.duration_in_seconds() <= 4 else 8,
-        "generate_audio": False,  # cheaper without audio
+        "generate_audio": context.data.generate_audio,
     }
 
     if context.image:

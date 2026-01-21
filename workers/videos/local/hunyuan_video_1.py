@@ -33,7 +33,7 @@ def get_pipeline_t2v(model_id) -> HunyuanVideo15Pipeline:
     pipe = HunyuanVideo15Pipeline.from_pretrained(
         model_id,
         transformer=transformer,
-        text_encoder=get_qwen2_5_text_encoder(),
+        text_encoder=get_qwen2_5_text_encoder(8),
         torch_dtype=torch.bfloat16,
     )
 
@@ -53,7 +53,7 @@ def get_pipeline_i2v(model_id) -> HunyuanVideo15ImageToVideoPipeline:
     pipe = HunyuanVideo15ImageToVideoPipeline.from_pretrained(
         model_id,
         transformer=transformer,
-        text_encoder=get_qwen2_5_text_encoder(),
+        text_encoder=get_qwen2_5_text_encoder(8),
         torch_dtype=torch.bfloat16,
     )
 
@@ -63,7 +63,7 @@ def get_pipeline_i2v(model_id) -> HunyuanVideo15ImageToVideoPipeline:
 def text_to_video(context: VideoContext) -> List[Path]:
     pipe = get_pipeline_t2v(model_id="hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-480p_t2v_distilled")
 
-    with attention_backend("flash_hub"):
+    with attention_backend("flash_varlen_hub"):
         output = pipe(
             prompt=context.data.cleaned_prompt,
             width=context.width,
