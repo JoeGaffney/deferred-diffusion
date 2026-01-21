@@ -54,7 +54,7 @@ MODEL_META: Dict[ModelName, VideosModelInfo] = {
         image_to_video=True,
         video_to_video=False,
         last_image=True,
-        description="Wan 2.2, quality open-source video generation model. Will fall back to Wan VACE 2.1 for video-to-video.",
+        description="Wan 2.2, quality open-source video generation model.",
     ),
     "hunyuan-video-1": VideosModelInfo(
         provider="local",
