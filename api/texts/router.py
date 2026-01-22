@@ -57,12 +57,8 @@ def get(id: UUID):
 
     # Add appropriate fields based on status
     if result.successful():
-        try:
-            result_data = TextWorkerResponse.model_validate(result.result)
-            response.output = result_data.response
-        except Exception as e:
-            response.status = TaskStatus.FAILURE
-            response.error_message = f"Error parsing result: {str(e)}"
+        result_data = TextWorkerResponse.model_validate(result.result)
+        response.output = result_data.response
     elif result.failed():
         response.error_message = f"Task failed with error: {str(result.result)}"
 

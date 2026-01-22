@@ -19,35 +19,6 @@ from workflows import router as workflows
 fastapi_app = FastAPI(title="API")
 
 
-@fastapi_app.exception_handler(RequestValidationError)
-async def validation_handler(request: Request, exc: RequestValidationError):
-    cleaned = []
-    for err in exc.errors():
-        d = dict(err)
-        cleaned.append(
-            {
-                "loc": d.get("loc", []),
-                "msg": d.get("msg", ""),
-                "type": d.get("type", ""),
-            }
-        )
-
-    logger.warning(f"Validation error on {request.url.path}: {cleaned}")
-    return JSONResponse(status_code=422, content={"detail": cleaned})
-
-
-@fastapi_app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(
-        status_code=500,
-        content={
-            "message": "Internal server error",
-            "detail": truncate_strings(str(exc), 1000),
-            "path": request.url.path,
-        },
-    )
-
-
 fastapi_app.include_router(images.router, prefix="/api")
 fastapi_app.include_router(texts.router, prefix="/api")
 fastapi_app.include_router(videos.router, prefix="/api")
@@ -89,6 +60,36 @@ if settings.enable_mcp:
     )
 else:
     app = fastapi_app
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_handler(request: Request, exc: RequestValidationError):
+    cleaned = []
+    for err in exc.errors():
+        d = dict(err)
+        cleaned.append(
+            {
+                "loc": d.get("loc", []),
+                "msg": d.get("msg", ""),
+                "type": d.get("type", ""),
+            }
+        )
+
+    logger.warning(f"Validation error on {request.url.path}: {cleaned}")
+    return JSONResponse(status_code=422, content={"detail": cleaned})
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "message": "Internal server error",
+            "detail": truncate_strings(str(exc), 1000),
+            "path": request.url.path,
+        },
+    )
+
 
 app.add_middleware(
     CORSMiddleware,
