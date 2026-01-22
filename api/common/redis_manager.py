@@ -122,11 +122,10 @@ class RedisManager:
         waiting = sum(cast(int, self.client.llen(q)) for q in queues)
         return waiting
 
-    def get_queue_position(self, task_id: str) -> Optional[QueuePosition]:
+    def get_queue_position(self, task_id: str, queues=["gpu", "cpu", "comfy"]) -> Optional[QueuePosition]:
         """
         Finds the 1-based position of a task in the Redis queues.
         """
-        queues = ["gpu", "cpu", "comfy"]
         for q in queues:
             # lrange is O(N), but we keep our task_backlog_limit small
             # so this is fast at our scale.
