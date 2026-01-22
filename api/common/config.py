@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     ddiffusion_storage_address: str = "http://127.0.0.1:5000"
     ddiffusion_storage_directory: str = "/STORAGE"
     flower_url: str = "http://flower:5555"
-    signed_url_expiry_seconds: int = 3600  # 1 hour
-    creates_per_minute: int = 30
+    signed_url_expiry_seconds: int = 3600 * 1  # 1 hour
+    task_backlog_limit: int = 100  # Max number of waiting tasks allowed before rejecting new ones
     enable_mcp: bool = True
 
     @property

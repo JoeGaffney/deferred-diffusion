@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from common.config import settings
 from common.logger import logger
+from common.redis_manager import redis_manager
 from common.schemas import DeleteResponse, TaskStatus
 
 
@@ -51,6 +52,17 @@ def get_task_info(task_id: str) -> Dict[str, Any]:
 
     # NOTE possibly we could put into a fixed schema here instead of returning raw dict
     return result
+
+
+def get_queue_position_logs(task_id: str) -> list[str]:
+    """
+    Returns a list containing a log string with the task's queue position.
+    """
+    pos_data = redis_manager.get_queue_position(task_id)
+    if pos_data:
+        return [f"Queue {pos_data.queue} position: {pos_data.position} / {pos_data.total}"]
+
+    return [f"Task not found"]
 
 
 def cancel_task(id: UUID, celery_app) -> DeleteResponse:

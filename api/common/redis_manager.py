@@ -2,22 +2,36 @@ import datetime
 import hashlib
 import hmac
 import secrets
-from typing import Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 import redis
 from redis import Redis
 
 from common.config import settings
 from common.logger import logger
-from common.schemas import APIKeyPublic
+from common.schemas import APIKeyPublic, QueuePosition
 
 _redis_client = redis.from_url(settings.celery_broker_url, decode_responses=True)
 
 
-class APIKeyManager:
+class RedisManager:
     def __init__(self):
         self.client: Redis = _redis_client
         self.prefix = "DDIFFUSION_API_KEY"
+        # Register once at startup - see get_queue_position
+        self._pos_script = self.client.register_script(
+            """
+            local tasks = redis.call('LRANGE', KEYS[1], 0, -1)
+            local total = #tasks
+            for i, task in ipairs(tasks) do
+                if string.find(task, ARGV[1], 1, true) then
+                    -- FIFO correction: The tail of the list is position 1
+                    return {total - i + 1, total}
+                end
+            end
+            return nil
+        """
+        )
 
     def _get_redis_key(self, key_id: str) -> str:
         return f"{self.prefix}:{key_id}"
@@ -114,17 +128,25 @@ class APIKeyManager:
         key = self._get_redis_key(key_id)
         return bool(self.client.delete(key))
 
-    def check_rate_limit(self, key_id: str, limit: int = 60, window: int = 60) -> bool:
+    def waiting_tasks(self, queues=["gpu", "cpu", "comfy"]) -> int:
         """
-        Checks if the key_id has exceeded the rate limit.
+        Returns the number of waiting tasks
         """
-        key = f"{self.prefix}_RATE_LIMIT:{key_id}"
-        current_count = cast(int, self.client.incr(key))
 
-        if current_count == 1:
-            self.client.expire(key, window)
+        waiting = sum(cast(int, self.client.llen(q)) for q in queues)
+        return waiting
 
-        return current_count <= limit
+    def get_queue_position(self, task_id: str, queues=["gpu", "cpu", "comfy"]) -> Optional[QueuePosition]:
+        """
+        Finds the 1-based position of a task logic inside Redis using Lua.
+        This is MUCH faster because it avoids pulling large task payloads (Base64 images)
+        over the network to the API.
+        """
+        for q in queues:
+            result = cast(list, self._pos_script(keys=[q], args=[task_id]))
+            if result:
+                return QueuePosition(position=result[0], queue=q, total=result[1])
+        return None
 
 
-key_manager = APIKeyManager()
+redis_manager = RedisManager()

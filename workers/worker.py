@@ -39,6 +39,9 @@ celery_app.conf.task_reject_on_worker_lost = True  # Requeue task if worker cras
 celery_app.conf.task_default_retry_delay = 30  # Default retry delay (30 seconds)
 celery_app.conf.task_max_retries = 1  # Default max retries
 
+# Global Timeouts (Safe guard) does not work with some pools like threads (gpu worker queue)
+celery_app.conf.task_time_limit = 11 * 60  # 11 minutes hard limit
+celery_app.conf.task_soft_time_limit = 10 * 60  # 10 minutes soft limit
 
 # NOTE import task modules so they're registered with Celery
 import images.tasks

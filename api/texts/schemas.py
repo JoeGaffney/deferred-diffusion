@@ -149,6 +149,7 @@ class TextResponse(BaseModel):
     status: TaskStatus
     output: str = ""
     error_message: Optional[str] = None
+    logs: List[str] = []
     task_info: dict = Field(default_factory=dict)
     model_config = ConfigDict(
         json_schema_extra={
@@ -157,6 +158,7 @@ class TextResponse(BaseModel):
                 "status": "SUCCESS",
                 "output": "This is the generated text response from the model.",
                 "error_message": None,
+                "logs": ["Processing..."],
             }
         }
     )

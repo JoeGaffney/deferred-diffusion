@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity
 from common.storage import signed_url_for_file
-from common.task_helpers import cancel_task, get_task_info
+from common.task_helpers import cancel_task, get_queue_position_logs, get_task_info
 from videos.schemas import (
     MODEL_META,
     VideoCreateResponse,
@@ -49,6 +49,10 @@ def get(id: UUID):
 
     # Initialize response with common fields
     response = VideoResponse(id=id, status=result.status, task_info=get_task_info(str(id)))
+
+    # Use the helper to inject queue position into logs if still pending
+    if result.status == "PENDING":
+        response.logs = get_queue_position_logs(str(id))
 
     if result.info:
         if isinstance(result.info, dict):
