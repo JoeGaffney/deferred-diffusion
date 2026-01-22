@@ -9,12 +9,12 @@ from redis import Redis
 
 from common.config import settings
 from common.logger import logger
-from common.schemas import APIKeyPublic
+from common.schemas import APIKeyPublic, QueuePosition
 
 _redis_client = redis.from_url(settings.celery_broker_url, decode_responses=True)
 
 
-class APIKeyManager:
+class RedisManager:
     def __init__(self):
         self.client: Redis = _redis_client
         self.prefix = "DDIFFUSION_API_KEY"
@@ -114,17 +114,28 @@ class APIKeyManager:
         key = self._get_redis_key(key_id)
         return bool(self.client.delete(key))
 
-    def check_rate_limit(self, key_id: str, limit: int = 60, window: int = 60) -> bool:
+    def waiting_tasks(self, queues=["gpu", "cpu", "comfy"]) -> int:
         """
-        Checks if the key_id has exceeded the rate limit.
+        Returns the number of waiting tasks
         """
-        key = f"{self.prefix}_RATE_LIMIT:{key_id}"
-        current_count = cast(int, self.client.incr(key))
 
-        if current_count == 1:
-            self.client.expire(key, window)
+        waiting = sum(cast(int, self.client.llen(q)) for q in queues)
+        return waiting
 
-        return current_count <= limit
+    def get_queue_position(self, task_id: str) -> Optional[QueuePosition]:
+        """
+        Finds the 1-based position of a task in the Redis queues.
+        """
+        queues = ["gpu", "cpu", "comfy"]
+        for q in queues:
+            # lrange is O(N), but we keep our task_backlog_limit small
+            # so this is fast at our scale.
+            tasks = cast(List[bytes], self.client.lrange(q, 0, -1))
+            for index, task_payload in enumerate(tasks):
+                # We check for the task_id string inside the byte payload
+                if task_id in str(task_payload):
+                    return QueuePosition(position=index + 1, queue=q, total=len(tasks))
+        return None
 
 
-key_manager = APIKeyManager()
+redis_manager = RedisManager()

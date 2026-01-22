@@ -3,9 +3,9 @@ import secrets
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader
 
-from common.api_key_manager import key_manager
 from common.config import settings
 from common.logger import log_request
+from common.redis_manager import redis_manager
 from common.schemas import Identity
 
 
@@ -32,7 +32,7 @@ async def verify_token(
 
     token = authorization.replace("Bearer ", "")
 
-    key_data = key_manager.verify_token(token)
+    key_data = redis_manager.verify_token(token)
     if not key_data:
         raise HTTPException(status_code=403, detail="Invalid or revoked token")
 
@@ -45,12 +45,14 @@ async def verify_token(
     )
     await log_request(request, identity)
 
-    # Only rate limit POST requests (task creation) so polling doesn't consume quota
+    # Only limit POST requests (task creation)
     if request.method == "POST":
-        limit = settings.creates_per_minute
-
-        if not key_manager.check_rate_limit(key_data.key_id, limit=limit, window=60):
-            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+        waiting_tasks = redis_manager.waiting_tasks()
+        if waiting_tasks >= settings.task_backlog_limit:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Too many waiting tasks {waiting_tasks} / {settings.task_backlog_limit}, please try later",
+            )
 
     return identity
 

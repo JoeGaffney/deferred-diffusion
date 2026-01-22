@@ -70,3 +70,9 @@ class APIKeyPublic(BaseModel):
     key_id: str
     name: str
     created_at: str
+
+
+class QueuePosition(BaseModel):
+    position: int = Field(description="1-based position in the queue")
+    queue: str = Field(description="Name of the queue")
+    total: int = Field(description="Total tasks waiting in this queue")

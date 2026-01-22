@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity, TaskStatus
-from common.task_helpers import cancel_task, get_task_info
+from common.task_helpers import cancel_task, get_queue_position_logs, get_task_info
 from texts.schemas import (
     MODEL_META,
     TextCreateResponse,
@@ -50,6 +50,10 @@ def get(id: UUID):
         status=result.status,
         task_info=get_task_info(str(id)),
     )
+
+    # Use the helper to inject queue position into logs if still pending
+    if result.status == "PENDING":
+        response.logs = get_queue_position_logs(str(id))
 
     # Add appropriate fields based on status
     if result.successful():
