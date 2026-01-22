@@ -2,7 +2,7 @@ import datetime
 import hashlib
 import hmac
 import secrets
-from typing import Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 import redis
 from redis import Redis
@@ -18,6 +18,20 @@ class RedisManager:
     def __init__(self):
         self.client: Redis = _redis_client
         self.prefix = "DDIFFUSION_API_KEY"
+        # Register once at startup - see get_queue_position
+        self._pos_script = self.client.register_script(
+            """
+            local tasks = redis.call('LRANGE', KEYS[1], 0, -1)
+            local total = #tasks
+            for i, task in ipairs(tasks) do
+                if string.find(task, ARGV[1], 1, true) then
+                    -- FIFO correction: The tail of the list is position 1
+                    return {total - i + 1, total}
+                end
+            end
+            return nil
+        """
+        )
 
     def _get_redis_key(self, key_id: str) -> str:
         return f"{self.prefix}:{key_id}"
@@ -124,16 +138,14 @@ class RedisManager:
 
     def get_queue_position(self, task_id: str, queues=["gpu", "cpu", "comfy"]) -> Optional[QueuePosition]:
         """
-        Finds the 1-based position of a task in the Redis queues.
+        Finds the 1-based position of a task logic inside Redis using Lua.
+        This is MUCH faster because it avoids pulling large task payloads (Base64 images)
+        over the network to the API.
         """
         for q in queues:
-            # lrange is O(N), but we keep our task_backlog_limit small
-            # so this is fast at our scale.
-            tasks = cast(List[bytes], self.client.lrange(q, 0, -1))
-            for index, task_payload in enumerate(tasks):
-                # We check for the task_id string inside the byte payload
-                if task_id in str(task_payload):
-                    return QueuePosition(position=index + 1, queue=q, total=len(tasks))
+            result = cast(list, self._pos_script(keys=[q], args=[task_id]))
+            if result:
+                return QueuePosition(position=result[0], queue=q, total=result[1])
         return None
 
 
