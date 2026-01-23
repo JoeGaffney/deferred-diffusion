@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from celery import Celery, Task
 
 from common.config import settings
@@ -28,17 +30,15 @@ celery_app = Celery(
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
 )
-
+celery_app.conf.result_expires = timedelta(days=settings.result_expires_days)
 celery_app.conf.task_track_started = True
 celery_app.conf.worker_send_task_events = True
 celery_app.conf.task_send_sent_event = True
 celery_app.conf.worker_prefetch_multiplier = 1
 celery_app.conf.task_acks_late = True  # Tasks acknowledged after execution
 celery_app.conf.task_reject_on_worker_lost = True  # Requeue task if worker crashes
-
 celery_app.conf.task_default_retry_delay = 30  # Default retry delay (30 seconds)
 celery_app.conf.task_max_retries = 1  # Default max retries
-
 # Global Timeouts (Safe guard) does not work with some pools like threads (gpu worker queue)
 celery_app.conf.task_time_limit = 11 * 60  # 11 minutes hard limit
 celery_app.conf.task_soft_time_limit = 10 * 60  # 10 minutes soft limit

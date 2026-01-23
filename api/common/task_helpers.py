@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 import httpx
@@ -10,11 +10,12 @@ from fastapi import HTTPException
 from common.config import settings
 from common.logger import logger
 from common.redis_manager import redis_manager
-from common.schemas import DeleteResponse, TaskStatus
+from common.schemas import DeleteResponse, Identity, TaskStatus
+from worker import celery_app
 
 
 @cached(cache=TTLCache(maxsize=128, ttl=5))
-def get_task_info(task_id: str) -> Dict[str, Any]:
+def _get_task_info(task_id: str) -> Dict[str, Any]:
     """
     Fetch task information from Flower API.
     So we can use this to provide more detailed task status in the API responses.
@@ -54,18 +55,63 @@ def get_task_info(task_id: str) -> Dict[str, Any]:
     return result
 
 
-def get_queue_position_logs(task_id: str) -> list[str]:
+def create_task(task_name: str, task_queue: str, payload: dict, identity: Identity) -> AsyncResult:
     """
-    Returns a list containing a log string with the task's queue position.
+    Unified helper to create a task in Celery.
     """
-    pos_data = redis_manager.get_queue_position(task_id)
-    if pos_data:
-        return [f"Queue {pos_data.queue} position: {pos_data.position} / {pos_data.total}"]
+    try:
+        return celery_app.send_task(
+            task_name,
+            queue=task_queue,
+            args=[payload],
+            kwargs=identity.model_dump(),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
-    return [f"Task not found"]
+
+def get_task_detailed(id: UUID) -> tuple[AsyncResult, dict, list[str]]:
+    """
+    Fetches the task across current Redis storage (Broker and Result Backend).
+    Returns (AsyncResult, task_info, initial_logs).
+    Raises 404 if the task is not in Redis (either never existed or has expired).
+    """
+
+    def get_queue_position(task_id: str) -> Optional[str]:
+        """
+        Inner helper to check the broker and format the queue position log.
+        """
+        pos_data = redis_manager.get_queue_position(task_id)
+        if pos_data:
+            return f"Queue {pos_data.queue} position: {pos_data.position} / {pos_data.total}"
+
+        return None
+
+    result = AsyncResult(str(id), app=celery_app)
+    logs = []
+
+    # Celery reports waiting tasks as PENDING and also unknown tasks as PENDING.
+    if result.status == TaskStatus.PENDING:
+        queue_position = get_queue_position(str(id))
+        if queue_position is None:
+            # Truly not found
+            raise HTTPException(status_code=404, detail="Task not found or has expired")
+
+        # Keep the queue position logs to return to the user
+        logs = [queue_position]
+    else:
+        # get the running logs of the task if available
+        if result.info:
+            if isinstance(result.info, dict):
+                logs = result.info.get("logs", [])
+
+    # Enrich with Flower metadata if available (metrics, worker info, etc)
+    task_info = _get_task_info(str(id))
+
+    return result, task_info, logs
 
 
-def cancel_task(id: UUID, celery_app) -> DeleteResponse:
+def cancel_task(id: UUID) -> DeleteResponse:
     result = AsyncResult(str(id), app=celery_app)
 
     if result.status in ["SUCCESS", "FAILURE", "REVOKED"]:

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from celery import Celery
 
 from common.config import settings
@@ -13,3 +15,4 @@ celery_app.conf.update(
     result_backend_always_retry=False,  # Do not always retry result backend operations
     result_backend_max_retries=2,  # Number of retries for result backend operations
 )
+celery_app.conf.result_expires = timedelta(days=settings.result_expires_days)
