@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 import httpx
@@ -54,17 +54,6 @@ def get_task_info(task_id: str) -> Dict[str, Any]:
     return result
 
 
-def get_queue_position_logs(task_id: str) -> list[str]:
-    """
-    Returns a list containing a log string with the task's queue position.
-    """
-    pos_data = redis_manager.get_queue_position(task_id)
-    if pos_data:
-        return [f"Queue {pos_data.queue} position: {pos_data.position} / {pos_data.total}"]
-
-    return [f"Task not found"]
-
-
 def cancel_task(id: UUID, celery_app) -> DeleteResponse:
     result = AsyncResult(str(id), app=celery_app)
 
@@ -78,3 +67,44 @@ def cancel_task(id: UUID, celery_app) -> DeleteResponse:
         raise HTTPException(status_code=500, detail=f"Error cancelling task: {str(e)}")
 
     return DeleteResponse(id=id, status=TaskStatus.REVOKED, message="Task cancellation requested")
+
+
+def get_task_detailed(id: UUID, celery_app) -> tuple[AsyncResult, dict, list[str]]:
+    """
+    Fetches the task across current Redis storage (Broker and Result Backend).
+    Returns (AsyncResult, task_info, initial_logs).
+    Raises 404 if the task is not in Redis (either never existed or has expired).
+    """
+
+    def get_queue_position(task_id: str) -> Optional[str]:
+        """
+        Inner helper to check the broker and format the queue position log.
+        """
+        pos_data = redis_manager.get_queue_position(task_id)
+        if pos_data:
+            return f"Queue {pos_data.queue} position: {pos_data.position} / {pos_data.total}"
+
+        return None
+
+    result = AsyncResult(str(id), app=celery_app)
+    logs = []
+
+    # Celery reports waiting tasks as PENDING and also unknown tasks as PENDING.
+    if result.status == TaskStatus.PENDING:
+        queue_position = get_queue_position(str(id))
+        if queue_position is None:
+            # Truly not found
+            raise HTTPException(status_code=404, detail="Task not found or has expired")
+
+        # Keep the queue position logs to return to the user
+        logs = [queue_position]
+    else:
+        # get the running logs of the task if available
+        if result.info:
+            if isinstance(result.info, dict):
+                logs = result.info.get("logs", [])
+
+    # Enrich with Flower metadata if available (metrics, worker info, etc)
+    task_info = get_task_info(str(id))
+
+    return result, task_info, logs

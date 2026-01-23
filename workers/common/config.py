@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     hf_home: str = ""
     comfy_api_url: Optional[str] = None
     ddiffusion_storage_directory: str = "/STORAGE"
+    result_expires_days: int = 30  # Number of days to keep task results
 
     @property
     def storage_dir(self) -> str:

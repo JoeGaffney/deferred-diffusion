@@ -1,12 +1,11 @@
 from uuid import UUID
 
-from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity
 from common.storage import signed_url_for_file
-from common.task_helpers import cancel_task, get_queue_position_logs, get_task_info
+from common.task_helpers import cancel_task, get_task_detailed
 from videos.schemas import (
     MODEL_META,
     VideoCreateResponse,
@@ -45,18 +44,10 @@ def models():
 
 @router.get("/{id}", response_model=VideoResponse, operation_id="videos_get")
 def get(id: UUID):
-    result = AsyncResult(str(id), app=celery_app)
+    result, task_info, logs = get_task_detailed(id, celery_app)
 
     # Initialize response with common fields
-    response = VideoResponse(id=id, status=result.status, task_info=get_task_info(str(id)))
-
-    # Use the helper to inject queue position into logs if still pending
-    if result.status == "PENDING":
-        response.logs = get_queue_position_logs(str(id))
-
-    if result.info:
-        if isinstance(result.info, dict):
-            response.logs = result.info.get("logs", [])
+    response = VideoResponse(id=id, status=result.status, task_info=task_info, logs=logs)
 
     # Add appropriate fields based on status
     if result.successful():

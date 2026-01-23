@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     signed_url_expiry_seconds: int = 3600 * 1  # 1 hour
     task_backlog_limit: int = 100  # Max number of waiting tasks allowed before rejecting new ones
     enable_mcp: bool = True
+    result_expires_days: int = 30  # Number of days to keep task results
 
     @property
     def encoded_storage_key(self) -> bytes:
