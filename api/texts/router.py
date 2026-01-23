@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends
 
 from common.auth import verify_token
 from common.schemas import DeleteResponse, Identity
-from common.task_helpers import cancel_task, get_task_detailed
+from common.task_helpers import cancel_task, create_task, get_task_detailed
 from texts.schemas import (
     MODEL_META,
     TextCreateResponse,
@@ -14,24 +14,19 @@ from texts.schemas import (
     TextWorkerResponse,
     generate_model_docs,
 )
-from worker import celery_app
 
 router = APIRouter(prefix="/texts", tags=["Texts"], dependencies=[Depends(verify_token)])
 
 
 @router.post("", response_model=TextCreateResponse, operation_id="texts_create", description=generate_model_docs())
-def create(text_request: TextRequest, response: Response, identity: Identity = Depends(verify_token)):
-    try:
-        result = celery_app.send_task(
-            text_request.task_name,
-            queue=text_request.task_queue,
-            args=[text_request.model_dump()],
-            kwargs=identity.model_dump(),
-        )
-        response.headers["Location"] = f"/texts/{result.id}"
-        return TextCreateResponse(id=result.id, status=result.status)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+def create(text_request: TextRequest, identity: Identity = Depends(verify_token)):
+    result = create_task(
+        text_request.task_name,
+        text_request.task_queue,
+        text_request.model_dump(),
+        identity,
+    )
+    return TextCreateResponse(id=UUID(str(result.id)), status=result.status)
 
 
 @router.get("/models", response_model=TextModelsResponse, summary="List text models", operation_id="texts_list_models")
@@ -41,7 +36,7 @@ def models():
 
 @router.get("/{id}", response_model=TextResponse, operation_id="texts_get")
 def get(id: UUID):
-    result, task_info, logs = get_task_detailed(id, celery_app)
+    result, task_info, logs = get_task_detailed(id)
 
     # Initialize response with common fields
     response = TextResponse(
@@ -63,4 +58,4 @@ def get(id: UUID):
 
 @router.delete("/{id}", response_model=DeleteResponse, operation_id="texts_delete")
 def delete(id: UUID):
-    return cancel_task(id, celery_app)
+    return cancel_task(id)

@@ -10,11 +10,12 @@ from fastapi import HTTPException
 from common.config import settings
 from common.logger import logger
 from common.redis_manager import redis_manager
-from common.schemas import DeleteResponse, TaskStatus
+from common.schemas import DeleteResponse, Identity, TaskStatus
+from worker import celery_app
 
 
 @cached(cache=TTLCache(maxsize=128, ttl=5))
-def get_task_info(task_id: str) -> Dict[str, Any]:
+def _get_task_info(task_id: str) -> Dict[str, Any]:
     """
     Fetch task information from Flower API.
     So we can use this to provide more detailed task status in the API responses.
@@ -54,22 +55,22 @@ def get_task_info(task_id: str) -> Dict[str, Any]:
     return result
 
 
-def cancel_task(id: UUID, celery_app) -> DeleteResponse:
-    result = AsyncResult(str(id), app=celery_app)
-
-    if result.status in ["SUCCESS", "FAILURE", "REVOKED"]:
-        return DeleteResponse(id=id, status=result.status, message="Task already completed")
-
+def create_task(task_name: str, task_queue: str, payload: dict, identity: Identity) -> AsyncResult:
+    """
+    Unified helper to create a task in Celery.
+    """
     try:
-        celery_app.control.revoke(str(id), terminate=True)
-        # result.forget()  # Optional: removes result from backend/Flower after revoke
+        return celery_app.send_task(
+            task_name,
+            queue=task_queue,
+            args=[payload],
+            kwargs=identity.model_dump(),
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error cancelling task: {str(e)}")
-
-    return DeleteResponse(id=id, status=TaskStatus.REVOKED, message="Task cancellation requested")
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
 
-def get_task_detailed(id: UUID, celery_app) -> tuple[AsyncResult, dict, list[str]]:
+def get_task_detailed(id: UUID) -> tuple[AsyncResult, dict, list[str]]:
     """
     Fetches the task across current Redis storage (Broker and Result Backend).
     Returns (AsyncResult, task_info, initial_logs).
@@ -105,6 +106,21 @@ def get_task_detailed(id: UUID, celery_app) -> tuple[AsyncResult, dict, list[str
                 logs = result.info.get("logs", [])
 
     # Enrich with Flower metadata if available (metrics, worker info, etc)
-    task_info = get_task_info(str(id))
+    task_info = _get_task_info(str(id))
 
     return result, task_info, logs
+
+
+def cancel_task(id: UUID) -> DeleteResponse:
+    result = AsyncResult(str(id), app=celery_app)
+
+    if result.status in ["SUCCESS", "FAILURE", "REVOKED"]:
+        return DeleteResponse(id=id, status=result.status, message="Task already completed")
+
+    try:
+        celery_app.control.revoke(str(id), terminate=True)
+        # result.forget()  # Optional: removes result from backend/Flower after revoke
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error cancelling task: {str(e)}")
+
+    return DeleteResponse(id=id, status=TaskStatus.REVOKED, message="Task cancellation requested")
