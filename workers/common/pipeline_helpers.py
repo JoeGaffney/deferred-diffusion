@@ -15,6 +15,7 @@ from transformers import BitsAndBytesConfig, TorchAoConfig
 from common.config import settings
 from common.logger import logger, task_log
 from common.memory import free_gpu_memory, gpu_memory_usage
+from common.prompt_caching import clear_global_prompt_cache, enable_prompt_caching
 from utils.utils import time_info_decorator
 
 torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
@@ -118,6 +119,7 @@ global_pipeline_cache = ModelLRUCache(max_models=1)
 
 def clear_global_pipeline_cache():
     global_pipeline_cache.clear()
+    clear_global_prompt_cache()
 
 
 def decorator_global_pipeline_cache(func):
@@ -129,7 +131,7 @@ def decorator_global_pipeline_cache(func):
     return wrapper
 
 
-def optimize_pipeline(pipe, offload=True, vae_tiling=True):
+def optimize_pipeline(pipe, offload=True, vae_tiling=True, apply_prompt_caching=True):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
@@ -152,6 +154,10 @@ def optimize_pipeline(pipe, offload=True, vae_tiling=True):
 
     if hasattr(pipe, "disable_safety_checker"):
         pipe.safety_checker = dummy_safety_checker
+
+    # Apply generic prompt caching to the optimized pipeline
+    if apply_prompt_caching:
+        enable_prompt_caching(pipe)
 
     return pipe
 
