@@ -82,7 +82,6 @@ def enable_prompt_caching(pipeline: DiffusionPipeline) -> DiffusionPipeline:
         return pipeline
 
     if hasattr(pipeline, "_prompt_cache_enabled"):
-        logger.warning("Prompt caching already enabled on this pipeline instance")
         return pipeline  # Already enabled
 
     original_encode_prompt = pipeline.encode_prompt
@@ -90,7 +89,6 @@ def enable_prompt_caching(pipeline: DiffusionPipeline) -> DiffusionPipeline:
 
     @wraps(original_encode_prompt)
     def wrapped_encode_prompt(*args, **kwargs):
-        print("wrapped_encode_prompt called")
         try:
             # Create a cache key from identity and hashable representation of all arguments
             # Identity ensures we don't use Flux embeddings for a Wan model, etc.

@@ -65,7 +65,7 @@ def get_pipeline(model_id) -> QwenImagePipeline:
         torch_dtype=torch.bfloat16,
     )
 
-    return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(23), apply_prompt_caching=False)
 
 
 @decorator_global_pipeline_cache
@@ -83,7 +83,7 @@ def get_edit_pipeline(model_id) -> QwenImageEditPlusPipeline:
         torch_dtype=torch.bfloat16,
     )
 
-    return optimize_pipeline(pipe, offload=is_memory_exceeded(23))
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(23), apply_prompt_caching=False)
 
 
 def text_to_image_call(context: ImageContext):
