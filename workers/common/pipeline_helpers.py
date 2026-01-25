@@ -196,6 +196,7 @@ def get_quantized_model(
     model_class,
     target_precision: Literal[4, 8, 16] = 8,
     torch_dtype=torch.bfloat16,
+    device_map_cpu: bool = False,  # bits and bytes will force loading on cuda if not specified
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -207,14 +208,18 @@ def get_quantized_model(
         model_class (class): The HF model class to load (e.g., WanTransformer3DModel).
         target_precision (Literal[4, 8, 16]): Target precision for quantization.
         torch_dtype (torch.dtype): Dtype to use when loading.
+        device_map_cpu (bool): Whether to force loading on CPU.
 
     Returns:
         model instance
     """
+    args = {}
+    if device_map_cpu:
+        args["device_map"] = "cpu"
 
     if target_precision == 16:
         logger.debug(f"Quantization disabled for {model_id} subfolder {subfolder}")
-        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype)
+        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype, **args)
 
     load_in_4bit = target_precision == 4
     quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit=load_in_4bit)
@@ -231,6 +236,9 @@ def get_quantized_model(
             bnb_4bit_compute_dtype=torch_dtype,
             bnb_4bit_use_double_quant=False,  # NOTE test this out
         )
+
+        # load on CPU first to avoid double swapping during load
+        args["device_map"] = "cpu"
     else:  # 8-bit quantization
         # torchAO seems best fit for 8-bit currently as still supported offloading
         quant_config = TorchAoConfig("int8_weight_only")
@@ -239,7 +247,7 @@ def get_quantized_model(
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
         model = model_class.from_pretrained(
-            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors
+            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors, **args
         )
     except Exception as e:
         logger.warning(f"Failed to load quantized model from {quant_dir}: {e}")
