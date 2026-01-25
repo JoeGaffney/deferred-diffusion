@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from functools import wraps
+from typing import Any
 
 import torch
 from diffusers import DiffusionPipeline
@@ -12,35 +13,28 @@ GLOBAL_PROMPT_CACHE = OrderedDict()
 MAX_PROMPT_CACHE_SIZE = 64
 
 
+def _move_to_device(obj: Any, device):
+    """Recursively move tensors in a nested structure to a device."""
+    if isinstance(obj, torch.Tensor):
+        # NOTE important we must detach and clone tensors before caching them
+        return obj.detach().clone().to(device)
+    if isinstance(obj, (list, tuple)):
+        return type(obj)(_move_to_device(x, device) for x in obj)
+
+    # Dict support removed as encode_prompt does not return dicts
+    return obj
+
+
 def clear_global_prompt_cache():
     """Clear the global prompt embeddings cache."""
     GLOBAL_PROMPT_CACHE.clear()
     logger.debug("Global prompt cache cleared")
 
 
-def get_prompt_cache_total_mb() -> float:
-    """
-    Calculate the total memory usage of the prompt cache in Megabytes (MB).
-    Each element in GLOBAL_PROMPT_CACHE can be a Tensor or a tuple/list of Tensors.
-    """
-    total_bytes = 0
-
-    def get_size(obj):
-        if isinstance(obj, torch.Tensor):
-            return obj.element_size() * obj.nelement()
-        if isinstance(obj, (list, tuple)):
-            return sum(get_size(i) for i in obj)
-        return 0
-
-    for value in GLOBAL_PROMPT_CACHE.values():
-        total_bytes += get_size(value)
-
-    return total_bytes / (1024 * 1024)
-
-
 def get_prompt_cache_if_exists(cache_key):
     """
     Retrieve cached result if it exists and move to Most Recently Used.
+    Note: The caller is responsible for moving the result to the correct device.
     """
     if cache_key in GLOBAL_PROMPT_CACHE:
         GLOBAL_PROMPT_CACHE.move_to_end(cache_key)
@@ -52,14 +46,17 @@ def get_prompt_cache_if_exists(cache_key):
 def add_prompt_cache(cache_key, result):
     """
     Add a result to the global cache and manage its size.
+    Automatically moves the result to CPU to save VRAM.
     """
-    GLOBAL_PROMPT_CACHE[cache_key] = result
+    # Move to CPU for storage
+    cpu_result = _move_to_device(result, "cpu")
+
+    GLOBAL_PROMPT_CACHE[cache_key] = cpu_result
     if len(GLOBAL_PROMPT_CACHE) > MAX_PROMPT_CACHE_SIZE:
         GLOBAL_PROMPT_CACHE.popitem(last=False)  # Remove Least Recently Used
 
-    mb = get_prompt_cache_total_mb()
     logger.info(
-        f"Prompt cached for {cache_key[0]}. Current cache size: {mb:.2f} MB ({len(GLOBAL_PROMPT_CACHE)}/{MAX_PROMPT_CACHE_SIZE})"
+        f"Prompt cached for {cache_key[0]}. Current cache size: ({len(GLOBAL_PROMPT_CACHE)}/{MAX_PROMPT_CACHE_SIZE})"
     )
 
 
@@ -90,22 +87,19 @@ def enable_prompt_caching(pipeline: DiffusionPipeline) -> DiffusionPipeline:
     @wraps(original_encode_prompt)
     def wrapped_encode_prompt(*args, **kwargs):
         try:
-            # Create a cache key from identity and hashable representation of all arguments
-            # Identity ensures we don't use Flux embeddings for a Wan model, etc.
             cache_key = (pipeline_identity, make_hashable(args), make_hashable(kwargs))
         except (TypeError, ValueError):
             logger.warning("Failed to create hashable cache key; skipping prompt caching")
-            # Fallback: if something isn't hashable, just compute normally
             return original_encode_prompt(*args, **kwargs)
 
         cached_result = get_prompt_cache_if_exists(cache_key)
         if cached_result is not None:
-            return cached_result
+            # Move back to the target device (e.g. CUDA)
+            target_device = kwargs.get("device") or getattr(pipeline, "device", torch.device("cuda"))
+            return _move_to_device(cached_result, target_device)
 
-        # Compute new results (e.g., prompt_embeds, negative_prompt_embeds)
         result = original_encode_prompt(*args, **kwargs)
 
-        # Store in global cache
         add_prompt_cache(cache_key, result)
 
         return result
