@@ -9,7 +9,7 @@ from common.logger import logger
 
 # Global cache for prompt embeddings
 # Key is (pipeline_type, args, kwargs)
-GLOBAL_PROMPT_CACHE = OrderedDict()
+GLOBAL_PROMPT_CACHE: OrderedDict[Any, Any] = OrderedDict()
 MAX_PROMPT_CACHE_SIZE = 64
 
 
@@ -106,5 +106,5 @@ def enable_prompt_caching(pipeline: DiffusionPipeline) -> DiffusionPipeline:
 
     # Monkey patch the instance method
     pipeline.encode_prompt = wrapped_encode_prompt
-    pipeline._prompt_cache_enabled = True
+    pipeline._prompt_cache_enabled = True  # type: ignore[attr-defined]
     return pipeline
