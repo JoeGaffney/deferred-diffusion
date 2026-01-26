@@ -3,8 +3,7 @@ from typing import List
 
 import torch
 from diffusers import (
-    AutoPipelineForImage2Image,
-    AutoPipelineForText2Image,
+    StableDiffusionXLImg2ImgPipeline,
     StableDiffusionXLInpaintPipeline,
     StableDiffusionXLPipeline,
 )
@@ -31,26 +30,24 @@ def get_pipeline(model_id) -> StableDiffusionXLPipeline:
 
 
 @decorator_global_pipeline_cache
-def get_inpainting_pipeline(model_id) -> StableDiffusionXLInpaintPipeline:
-    args = {}
-    args["variant"] = "fp16"
+def get_pipeline_image_to_image(model_id) -> StableDiffusionXLImg2ImgPipeline:
+    pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16, use_safetensors=True)
+    return optimize_pipeline(pipe, offload=is_memory_exceeded(11))
 
+
+@decorator_global_pipeline_cache
+def get_inpainting_pipeline(model_id) -> StableDiffusionXLInpaintPipeline:
     pipe = StableDiffusionXLInpaintPipeline.from_pretrained(
         model_id,
         torch_dtype=torch.bfloat16,
         use_safetensors=True,
-        **args,
+        variant="fp16",
     )
-
     return optimize_pipeline(pipe, offload=is_memory_exceeded(11))
 
 
 def text_to_image_call(context: ImageContext) -> List[Path]:
-    pipe = AutoPipelineForText2Image.from_pipe(
-        get_pipeline("SG161222/RealVisXL_V4.0"),
-        requires_safety_checker=False,
-        torch_dtype=torch.bfloat16,
-    )
+    pipe = get_pipeline("SG161222/RealVisXL_V4.0")
 
     processed_image = pipe.__call__(
         width=context.width,
@@ -60,30 +57,26 @@ def text_to_image_call(context: ImageContext) -> List[Path]:
         num_inference_steps=35,
         generator=context.generator,
         guidance_scale=3.5,
-        callback_on_step_end=task_log_callback(35),
+        callback_on_step_end=task_log_callback(35),  # type: ignore
     ).images[0]
 
     return [context.save_output(processed_image, index=0)]
 
 
 def image_to_image_call(context: ImageContext) -> List[Path]:
-    pipe = AutoPipelineForImage2Image.from_pipe(
-        get_pipeline("SG161222/RealVisXL_V4.0"),
-        requires_safety_checker=False,
-        torch_dtype=torch.bfloat16,
-    )
+    pipe = get_pipeline_image_to_image("SG161222/RealVisXL_V4.0")
 
     processed_image = pipe.__call__(
         width=context.width,
         height=context.height,
         prompt=context.data.cleaned_prompt,
         negative_prompt=_negative_prompt_default,
-        image=context.color_image,
+        image=context.color_image,  # type: ignore
         num_inference_steps=35,
         generator=context.generator,
         strength=context.data.strength,
         guidance_scale=3.5,
-        callback_on_step_end=task_log_callback(35),
+        callback_on_step_end=task_log_callback(35),  # type: ignore
     ).images[0]
 
     return [context.save_output(processed_image, index=0)]

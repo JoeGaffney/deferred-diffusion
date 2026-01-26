@@ -53,6 +53,7 @@ def get_mistral3_text_encoder() -> Mistral3ForConditionalGeneration:
         model_class=Mistral3ForConditionalGeneration,
         target_precision=16,
         torch_dtype=torch.bfloat16,
+        device_map_cpu=True,
     )
 
 

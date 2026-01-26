@@ -15,6 +15,7 @@ from transformers import BitsAndBytesConfig, TorchAoConfig
 from common.config import settings
 from common.logger import logger, task_log
 from common.memory import free_gpu_memory, gpu_memory_usage
+from common.prompt_caching import clear_global_prompt_cache, enable_prompt_caching
 from utils.utils import time_info_decorator
 
 torch.backends.cuda.matmul.allow_tf32 = True  # Enable TF32 for faster matrix multiplications
@@ -118,6 +119,7 @@ global_pipeline_cache = ModelLRUCache(max_models=1)
 
 def clear_global_pipeline_cache():
     global_pipeline_cache.clear()
+    clear_global_prompt_cache()
 
 
 def decorator_global_pipeline_cache(func):
@@ -129,7 +131,7 @@ def decorator_global_pipeline_cache(func):
     return wrapper
 
 
-def optimize_pipeline(pipe, offload=True, vae_tiling=True):
+def optimize_pipeline(pipe, offload=True, vae_tiling=True, apply_prompt_caching=True):
     # Override the safety checker
     def dummy_safety_checker(images, **kwargs):
         return images, [False] * len(images)
@@ -152,6 +154,10 @@ def optimize_pipeline(pipe, offload=True, vae_tiling=True):
 
     if hasattr(pipe, "disable_safety_checker"):
         pipe.safety_checker = dummy_safety_checker
+
+    # Apply generic prompt caching to the optimized pipeline
+    if apply_prompt_caching:
+        enable_prompt_caching(pipe)
 
     return pipe
 
@@ -190,6 +196,7 @@ def get_quantized_model(
     model_class,
     target_precision: Literal[4, 8, 16] = 8,
     torch_dtype=torch.bfloat16,
+    device_map_cpu: bool = False,  # bits and bytes will force loading on cuda if not specified
 ):
     """
     Load a quantized model component if available locally; otherwise, load original,
@@ -201,14 +208,18 @@ def get_quantized_model(
         model_class (class): The HF model class to load (e.g., WanTransformer3DModel).
         target_precision (Literal[4, 8, 16]): Target precision for quantization.
         torch_dtype (torch.dtype): Dtype to use when loading.
+        device_map_cpu (bool): Whether to force loading on CPU.
 
     Returns:
         model instance
     """
+    args = {}
+    if device_map_cpu:
+        args["device_map"] = "cpu"
 
     if target_precision == 16:
         logger.debug(f"Quantization disabled for {model_id} subfolder {subfolder}")
-        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype)
+        return model_class.from_pretrained(model_id, subfolder=subfolder, torch_dtype=torch_dtype, **args)
 
     load_in_4bit = target_precision == 4
     quant_dir = get_quant_dir(model_id, subfolder, load_in_4bit=load_in_4bit)
@@ -225,6 +236,9 @@ def get_quantized_model(
             bnb_4bit_compute_dtype=torch_dtype,
             bnb_4bit_use_double_quant=False,  # NOTE test this out
         )
+
+        # load on CPU first to avoid double swapping during load
+        args["device_map"] = "cpu"
     else:  # 8-bit quantization
         # torchAO seems best fit for 8-bit currently as still supported offloading
         quant_config = TorchAoConfig("int8_weight_only")
@@ -233,7 +247,7 @@ def get_quantized_model(
     try:
         logger.info(f"Loading quantized model from {quant_dir}")
         model = model_class.from_pretrained(
-            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors
+            quant_dir, torch_dtype=torch_dtype, local_files_only=True, use_safetensors=use_safetensors, **args
         )
     except Exception as e:
         logger.warning(f"Failed to load quantized model from {quant_dir}: {e}")

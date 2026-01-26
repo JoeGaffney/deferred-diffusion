@@ -71,10 +71,7 @@ def get_inpainting_pipeline(model_id):
 
 
 def text_to_image_call(context: ImageContext) -> List[Path]:
-    pipe = AutoPipelineForText2Image.from_pipe(
-        get_pipeline("black-forest-labs/FLUX.1-Krea-dev"),
-        requires_safety_checker=False,
-    )
+    pipe = get_pipeline("black-forest-labs/FLUX.1-Krea-dev")
 
     processed_image = pipe.__call__(
         prompt=context.data.cleaned_prompt,
