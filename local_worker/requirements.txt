@@ -1,0 +1,8 @@
+celery>=5.4.0
+redis>=5.0.0
+# Machine learning / Worker heavy dependencies
+torch>=2.0.0
+transformers>=4.40.0
+diffusers>=0.27.0
+accelerate>=0.29.0
+openai>=1.14.0

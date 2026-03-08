@@ -3,7 +3,7 @@ services:
     image: joegaffney/deferred-diffusion:api-latest
     build:
       context: .
-      dockerfile: Dockerfile.api
+      dockerfile: Dockerfile.api_v2
     tty: true
     stdin_open: true
     ports:

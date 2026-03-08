@@ -1,0 +1,5 @@
+celery>=5.4.0
+redis>=5.0.0
+# Only lightweight API dependencies
+requests>=2.30.0
+openai>=1.14.0

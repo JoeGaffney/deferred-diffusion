@@ -25,23 +25,40 @@ deferred-diffusion/
 │   ├── dependencies.py   # whats this?
 │   └── requirements.txt  # FastAPI, Pydantic, Celery (NO ML LIBRARIES)
 │
-├── workers_v2/           # 🔴 Heavy Execution Engine (Celery)
+├── worker_local/           # 🔴 Heavy Execution Engine (Celery)
 │   ├── worker.py         # Registers Celery tasks from the `tasks` module
 │   ├── context.py        # Business logic, loading models/files
 │   └── requirements.txt  # PyTorch, Diffusers, Transformers, etc.
-│
-├── tasks/                # 🟡 The Source of Truth (Task Definitions)
-│   ├── __init__.py
-│   ├── common_schemas.py # The base TaskRequest / TaskResponse schemas
-│   ├── flux_1/
-│   │   ├── schemas.py    # Pydantic input schema for Flux 1 (Safe for API) used also by worker
-│   │   └── execute.py    # PyTorch/ML execution pipeline (Safe ONLY for Worker) at can import stuff in workers module
-│   ├── wan_2_1/
-│   │   ├── schemas.py
-│   │   └── execute.py
-│   └── gpt_4_1-mini/
-│       ├── schemas.py
-│       └── execute.py
+    │
+    ├── tasks/                # 🟡 The Source of Truth (Task Definitions)
+    │   ├── __init__.py
+    │   ├── common_schemas.py # The base TaskRequest / TaskResponse schemas
+    │   ├── flux_1/
+    │   │   ├── schemas.py    # Pydantic input schema for Flux 1 (Safe for API) used also by worker
+    │   │   └── execute.py    # PyTorch/ML execution pipeline (Safe ONLY for Worker) at can import stuff in workers module
+    │   ├── wan_2_1/
+    │   │   ├── schemas.py
+    │   │   └── execute.py
+    │   └── gpt_4_1-mini/
+    │       ├── schemas.py
+    │       └── execute.py
+├── worker_external/      # Execution Engine (Celery) api calls
+│   ├── worker.py         # Registers Celery tasks from the `tasks` module
+│   ├── context.py        # Business logic, loading models/files
+│   └── requirements.txt  # PyTorch, Diffusers, Transformers, etc.
+    │
+    ├── tasks/                # 🟡 The Source of Truth (Task Definitions)
+    │   ├── __init__.py
+    │   ├── common_schemas.py # The base TaskRequest / TaskResponse schemas
+    │   ├── flux_1/
+    │   │   ├── schemas.py    # Pydantic input schema for Flux 1 (Safe for API) used also by worker
+    │   │   └── execute.py    # PyTorch/ML execution pipeline (Safe ONLY for Worker) at can import stuff in workers module
+    │   ├── wan_2_1/
+    │   │   ├── schemas.py
+    │   │   └── execute.py
+    │   └── gpt_4_1-mini/
+    │       ├── schemas.py
+    │       └── execute.py
 │
 ├── clients/              # 🟣 Generated Clients & Integrations
 │   ├── houdini/

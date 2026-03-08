@@ -1,0 +1,6 @@
+fastapi>=0.111.0
+pydantic>=2.7.0
+uvicorn>=0.30.0
+# Celery is used for enqueuing tasks
+celery>=5.4.0
+redis>=5.0.0
